@@ -1,11 +1,13 @@
 package com.github.nankotsu029.landformcraft.generator;
 
+import com.github.nankotsu029.landformcraft.model.StructurePlan;
 import com.github.nankotsu029.landformcraft.model.WorldBlueprint;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
 
 final class TerrainChecksum {
     private TerrainChecksum() {
@@ -46,7 +48,8 @@ final class TerrainChecksum {
             int[] heights,
             int[] waterDepths,
             byte[] materials,
-            int[] featureMasks
+            int[] featureMasks,
+            List<StructurePlan> structures
     ) {
         MessageDigest digest = sha256();
         digest.update(blueprint.requestId().getBytes(StandardCharsets.UTF_8));
@@ -66,6 +69,20 @@ final class TerrainChecksum {
         digest.update(materials);
         for (int value : featureMasks) {
             updateInt(digest, value);
+        }
+        for (StructurePlan structure : structures) {
+            digest.update(structure.assetId().getBytes(StandardCharsets.UTF_8));
+            digest.update(structure.assetChecksum().getBytes(StandardCharsets.UTF_8));
+            updateInt(digest, structure.type().ordinal());
+            updateInt(digest, structure.anchorX());
+            updateInt(digest, structure.anchorY());
+            updateInt(digest, structure.anchorZ());
+            updateInt(digest, structure.rotation().ordinal());
+            updateInt(digest, structure.sizeX());
+            updateInt(digest, structure.sizeY());
+            updateInt(digest, structure.sizeZ());
+            digest.update((byte) (structure.terrainFollowing() ? 1 : 0));
+            digest.update((byte) (structure.preferredZoneFallback() ? 1 : 0));
         }
         return HexFormat.of().formatHex(digest.digest());
     }

@@ -1,0 +1,35 @@
+{
+  "formatVersion": 1,
+  "generatorVersion": "3.0.0-phase6",
+  "minecraftVersion": "1.21.11",
+  "requestId": "release-example",
+  "width": 64,
+  "length": 64,
+  "minY": -32,
+  "maxY": 160,
+  "tileSize": 128,
+  "tileCountX": 1,
+  "tileCountZ": 1,
+  "anchor": "MINIMUM_CORNER",
+  "seed": 827413,
+  "tiles": [
+    {
+      "id": "tile-00-00",
+      "xIndex": 0,
+      "zIndex": 0,
+      "originX": 0,
+      "originY": -32,
+      "originZ": 0,
+      "width": 64,
+      "length": 64,
+      "minY": -32,
+      "maxY": 160,
+      "file": "schematics/tile-00-00.schem",
+      "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+      "terrainChecksum": "1111111111111111111111111111111111111111111111111111111111111111",
+      "blockCount": 790528,
+      "airPolicy": "INCLUDED",
+      "status": "READY"
+    }
+  ]
+}

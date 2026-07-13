@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "generatorVersion": "3.0.0-phase6",
+  "structures": [
+    {
+      "assetId": "path-v1",
+      "assetChecksum": "284a18fd391bf5abc75105713f366a0207d566617fd9148686fc0c0953fe9eff",
+      "minecraftVersion": "1.21.11",
+      "type": "PATH",
+      "anchorX": 0,
+      "anchorY": 40,
+      "anchorZ": 84,
+      "rotation": "CLOCKWISE_270",
+      "sizeX": 9,
+      "sizeY": 1,
+      "sizeZ": 3,
+      "terrainFollowing": true,
+      "preferredZoneFallback": false
+    },
+    {
+      "assetId": "fence-v1",
+      "assetChecksum": "0973a529e5577777871d558afb8c419bc1494e2b7e217e391ecc90cf5468c81a",
+      "minecraftVersion": "1.21.11",
+      "type": "FENCE",
+      "anchorX": 11,
+      "anchorY": 41,
+      "anchorZ": 48,
+      "rotation": "CLOCKWISE_180",
+      "sizeX": 1,
+      "sizeY": 1,
+      "sizeZ": 9,
+      "terrainFollowing": true,
+      "preferredZoneFallback": false
+    },
+    {
+      "assetId": "fence-v1",
+      "assetChecksum": "0973a529e5577777871d558afb8c419bc1494e2b7e217e391ecc90cf5468c81a",
+      "minecraftVersion": "1.21.11",
+      "type": "FENCE",
+      "anchorX": 46,
+      "anchorY": 37,
+      "anchorZ": 32,
+      "rotation": "CLOCKWISE_180",
+      "sizeX": 1,
+      "sizeY": 1,
+      "sizeZ": 9,
+      "terrainFollowing": true,
+      "preferredZoneFallback": false
+    },
+    {
+      "assetId": "stone-ruin-v1",
+      "assetChecksum": "ea79c799425828eb57bb31692f6177128233aef536defea20ff61ba320451ee2",
+      "minecraftVersion": "1.21.11",
+      "type": "STONE_RUIN",
+      "anchorX": 2,
+      "anchorY": 39,
+      "anchorZ": 18,
+      "rotation": "NONE",
+      "sizeX": 7,
+      "sizeY": 5,
+      "sizeZ": 7,
+      "terrainFollowing": false,
+      "preferredZoneFallback": false
+    }
+  ]
+}

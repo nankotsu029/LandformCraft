@@ -6,6 +6,7 @@ import com.github.nankotsu029.landformcraft.model.GenerationRequest;
 import com.github.nankotsu029.landformcraft.model.GenerationMetrics;
 import com.github.nankotsu029.landformcraft.model.TerrainIntent;
 import com.github.nankotsu029.landformcraft.model.TerrainPlan;
+import com.github.nankotsu029.landformcraft.model.StructurePlacementManifest;
 import com.github.nankotsu029.landformcraft.model.ValidationResult;
 import com.github.nankotsu029.landformcraft.model.WorldBlueprint;
 import com.github.nankotsu029.landformcraft.preview.PreviewArtifacts;
@@ -77,12 +78,15 @@ public final class GenerationApplicationService {
             Path normalizedOutput = outputDirectory.toAbsolutePath().normalize();
             PreviewArtifacts previews = previewRenderer.render(plan, validation, normalizedOutput, token);
             codec.writeWorldBlueprint(normalizedOutput.resolve("world-blueprint.json"), plan.blueprint());
+            codec.writeStructurePlacements(normalizedOutput.resolve("structures.json"),
+                    new StructurePlacementManifest(1, plan.blueprint().generatorVersion(), plan.structures()));
             codec.writeJson(normalizedOutput.resolve("validation.json"), validation);
             codec.writeJson(normalizedOutput.resolve("generation-summary.json"), new GenerationSummary(
                     plan.checksum(),
                     plan.blueprint().generatorVersion(),
                     plan.blueprint().seed(),
                     plan.tiles().size(),
+                    plan.structures().size(),
                     metrics.generationMillis(),
                     metrics.estimatedRetainedBytes(),
                     metrics.estimatedPeakWorkingBytes(),
@@ -115,6 +119,7 @@ public final class GenerationApplicationService {
             String generatorVersion,
             long seed,
             int tileCount,
+            int structureCount,
             long generationMillis,
             long estimatedRetainedBytes,
             long estimatedPeakWorkingBytes,

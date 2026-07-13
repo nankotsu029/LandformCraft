@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "assetId": "custom-coast-path-v1",
+  "type": "PATH",
+  "minecraftVersion": "1.21.11",
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "allowedRotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "CLOCKWISE_270"],
+  "placementKind": "DRY_FOLLOWING",
+  "maximumSlope": 4,
+  "waterAllowed": false
+}

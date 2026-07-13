@@ -1,0 +1,17 @@
+package com.github.nankotsu029.landformcraft.validation;
+
+public enum ImageInputFailureCode {
+    MISSING_FILE,
+    UNSAFE_PATH,
+    UNSUPPORTED_FORMAT,
+    FILE_TOO_LARGE,
+    TOTAL_BYTES_EXCEEDED,
+    INVALID_MAGIC,
+    CORRUPT_IMAGE,
+    DIMENSIONS_EXCEEDED,
+    PIXELS_EXCEEDED,
+    MULTI_FRAME,
+    NORMALIZED_TOO_LARGE,
+    PROMPT_IMAGE_CONFLICT,
+    IMAGE_IMAGE_CONFLICT
+}

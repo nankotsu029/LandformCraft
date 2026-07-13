@@ -1,0 +1,58 @@
+{
+  "schemaVersion" : 1,
+  "requestId" : "image-example",
+  "normalizationVersion" : "image-normalization-v1",
+  "providerId" : "openai",
+  "providerResponseId" : "resp_example",
+  "promptVersion" : "terrain-intent-v1",
+  "images" : [ {
+    "index" : 0,
+    "imageId" : "image-00",
+    "sourceFile" : "images/map.png",
+    "role" : "TOP_DOWN_SKETCH",
+    "providerSubmitted" : true,
+    "validationStatus" : "VERIFIED",
+    "sourceMediaType" : "image/png",
+    "sourceBytes" : 1024,
+    "sourceWidth" : 100,
+    "sourceHeight" : 80,
+    "sourceChecksum" : "0000000000000000000000000000000000000000000000000000000000000000",
+    "normalizedMediaType" : "image/png",
+    "normalizedBytes" : 980,
+    "normalizedWidth" : 100,
+    "normalizedHeight" : 80,
+    "normalizedChecksum" : "1111111111111111111111111111111111111111111111111111111111111111",
+    "metadataDetected" : false,
+    "exifOrientation" : 1,
+    "transformations" : [
+      "DECODED", "COLOR_SPACE_NORMALIZED", "METADATA_STRIPPED", "PNG_REENCODED", "TOP_DOWN_COORDINATES_NORMALIZED"
+    ],
+    "coordinateMappings" : [ {
+      "origin" : "TOP_LEFT",
+      "horizontalAxis" : "POSITIVE_X_EAST",
+      "verticalAxis" : "POSITIVE_Z_SOUTH",
+      "targetWidth" : 500,
+      "targetLength" : 500
+    } ],
+    "edgeWaterRatios" : {
+      "NORTH" : 0.5,
+      "EAST" : 1.0,
+      "SOUTH" : 0.5,
+      "WEST" : 0.0
+    }
+  } ],
+  "consistencyChecks" : [ {
+    "sourceFile" : "images/map.png",
+    "side" : "EAST",
+    "expected" : "SEA",
+    "observedWaterRatio" : 1.0,
+    "status" : "CONSISTENT"
+  }, {
+    "sourceFile" : "images/map.png",
+    "side" : "WEST",
+    "expected" : "LAND",
+    "observedWaterRatio" : 0.0,
+    "status" : "CONSISTENT"
+  } ],
+  "createdAt" : "2026-07-13T00:00:00Z"
+}

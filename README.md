@@ -1,109 +1,106 @@
 # LandformCraft
 
-LandformCraft は、自然言語や参考画像を構造化された地形設計へ変換し、決定論的な Java エンジンで Minecraft 地形を生成する Paper プラグイン／オフラインツールです。
+LandformCraft は、自然言語・役割付き参考画像・手動JSONから設計意図を作り、決定論的なJavaエンジンでMinecraft 1.21.11向け地形と小規模構造物を生成するPaperプラグイン／CLIです。
 
-正式な製品名とプラグイン名は `LandformCraft`、Paper のメインクラスは `com.github.nankotsu029.landformcraft.Landformcraft` です。旧案の `AIWorldComposer` や GyoSai には依存しません。
+## Beta status
 
-## 基本方針
+現在のrelease candidate versionは `0.9.0-beta.1`、generatorは `3.0.0-phase6`、Schemaはv1です。監査で未完了項目が残るため、まだ公開可能なbetaとは判定していません。評価時もデータのbackup、Release検証、test worldでの事前配置を必須運用とします。独自Web UIは提供せず、CLIとPaperコマンドを正規UIとします。ブラウザ版ChatGPT／ClaudeでTerrainIntent JSONを作りCLIへimportする運用は利用できます。
 
-```text
-自然言語・画像
-    ↓
-AIまたは手動JSONが TerrainIntent を作る
-    ↓
-Javaの決定論的ジェネレーターが WorldBlueprint と地形を作る
-    ↓
-検証・PNGプレビュー
-    ↓
-128×128タイルの .schem と Release Package を出力
-    ↓
-WorldEditまたはFAWEで安全に配置・Undo
-```
+## できること
 
-AIは「何を作るか」だけを設計します。100万列分のブロックを列挙させたり、AIが生成した Java コードをサーバーで実行したりしません。
+- 手動JSON、OpenAI Responses API、Anthropic Messages APIからTerrainIntentを作成
+- 6 roleのPNG／JPEGを安全に前処理してDesign Packageへ記録
+- seed再現可能な地形、8種類のbuilt-in小規模構造物、8種類のPNG previewを生成
+- tiled Sponge Schematic v3、checksum、directory／ZIPを含むRelease Packageを生成・検証
+- WorldEditまたはFAWEの公開APIでsnapshot付き配置、verify、rollback、Undo、明示Recovery
+- world UUID＋inclusive boundsの予約、actor-bound一回用token、disk容量予約、snapshot cleanup
+- 制限付きcustom asset catalog（Sponge v3、vanilla allowlist、entity／biome／block entityなし。TerrainIntent v1からの選択は未対応）
 
-## 現在の実装状況
+## できないこと
 
-現在は **Phase 2（SchematicとRelease Package）開始時点** です。Phase 0の入力契約とPhase 1の純粋Java地形エンジンは完了しています。
+独自Web UI、巨大都市の全自動生成、AIによる全block列挙、AI生成コードの実行、entity／高度なblock entity、洞窟・高度な植生・biome書換えは対象外です。詳しくは [制限事項](docs/limitations.md) を参照してください。
 
-- Java 21、Gradle Kotlin DSL、Paper 1.21.11 の単一プロジェクト構成
-- コードはルートの `src/main`、テストは `src/test` に集約
-- `GenerationRequest`、`TerrainIntent`、`WorldBlueprint` などの Java record
-- `CompletableFuture` と明示所有する `ExecutorService` の実行基盤
-- admission制限付きVirtual Threadsと、上限付きqueueを持つCPU生成pool
-- Futureの取消を実タスクのinterruptへ伝播し、全pool共通期限で停止するlifecycle
-- Paper Scheduler 経由でメインスレッドへ戻す `PaperMainThreadDispatcher`
-- Paper プラグインと CLI の起動スキャフォールド
-- 入力例、JSON Schema、設計・安全性・ロードマップ文書
-- Draft 2020-12 Schema検証と、重複key／未知fieldを拒否するJSON・YAML codec
-- seedから再現可能なheightmap、海岸、島、川、湖、surface material、vegetation
-- global座標に基づく128×128 tile planとSHA-256
-- overview／height／water／slope／materials／features／structures／validation PNG
-- CLIからの非同期preview生成
-- 64×64／128×128論理layoutからの補間、zone反映、局所侵食
-- 16 block margin付きtile単独生成と全セルseam一致テスト
-- 孤立水域、river flow reversal、height／water整合validator
-- 500×500／1000×1000 performance budget検証
+## 必要環境
 
-まだ`.schem`書き出し、Release Package、AI API、Paperコマンド、ワールド配置は実装されていません。進捗の正本は [docs/roadmap.md](docs/roadmap.md) です。
+- Java 21
+- Paper 1.21.11
+- 配置する場合はWorldEdit 7.3.19、またはPaper 1.21.11対応FAWEをどちらか一方
+- buildには同梱Gradle Wrapper
 
-## 要件
+Paper、Bukkit、WorldEdit、FAWE本体は配布JARへshadeしません。WorldEditとFAWEを同時に導入しないでください。
 
-- JDK 21
-- Gradle Wrapper（同梱）
-- Paper 1.21.11（Paper プラグインを実行する場合）
-- WorldEdit 7.3.19 または対応する FAWE（schematic／配置機能の実装後）
-
-WorldEdit と FAWE は同時にサーバーへ導入しないでください。
-
-## ビルドと確認
+## 5分Quick Start
 
 ```bash
 ./gradlew clean build
-./gradlew test
-./gradlew run --args="--help"
-./gradlew run --args="generate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/phase1-preview"
-./gradlew runServer
+./gradlew run --args="validate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json"
+./gradlew run --args="generate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/preview"
+./gradlew run --args="export examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/exports"
+./gradlew run --args="verify build/exports/rocky-coast-001/<release-id>"
 ```
 
-Paper 用の配布JARは `build/libs/LandformCraft-<version>.jar` です。CLI distribution用のJARは `-cli` classifierで区別します。`runServer` は開発用Paperサーバーを `run/` に作成します。
+Paperへ `build/libs/LandformCraft-0.9.0-beta.1.jar` とWorldEditまたはFAWEを配置し、test worldで次を実行します。
 
-## ソース構成
+```text
+/lfc version
+/lfc doctor
+/lfc apply plan rocky-coast-001/<release-id> world 0 64 0
+/lfc apply execute <placement-id> <one-time-token>
+/lfc apply status <placement-id>
+/lfc apply undo <placement-id>
+/lfc undo execute <placement-id> <one-time-token>
+```
 
-現段階ではコード量が少ないため、Gradle subprojectへ分割せず、1つの`src`内をJava packageで分離します。独立配布や依存隔離が実際に必要になるまでは、この形を維持します。
+完全な手順は [Quick Start](docs/quickstart.md) を参照してください。
 
-| package | 責務 | 現在 |
-|---|---|---|
-| `landformcraft.model` | 外部ライブラリ非依存のrecord／enum | Phase 0契約あり |
-| `landformcraft.core` | Application Service、job、Executor所有 | Executor基盤あり |
-| `landformcraft.ai.spi` | AI Provider共通契約 | 契約あり |
-| `landformcraft.ai.openai` | OpenAI API adapter | Phase 4予定 |
-| `landformcraft.ai.anthropic` | Anthropic API adapter | Phase 4予定 |
-| `landformcraft.generator` | 決定論的な地形生成 | Phase 1初版あり |
-| `landformcraft.validation` | 入力・Intent・生成結果検証 | Schema／地形validator初版あり |
-| `landformcraft.preview` | PNG preview | 8レイヤー実装済み |
-| `landformcraft.format` | Plan、Manifest、checksum、ZIP | Phase 2予定 |
-| `landformcraft.worldedit` | WorldEdit公開APIと`.schem` | Phase 2〜3予定 |
-| `landformcraft.paper` | Scheduler、配置、Undo | 起動基盤のみ |
-| `landformcraft.cli` | サーバー不要の生成CLI | Phase 1 generate実装済み |
+## CLI
+
+主要コマンドは `validate`、`design`、`design-verify`、`generate`、`preview`、`export`、`verify`、`journal-verify`、`doctor`、`request`、`job`、`candidate`、`asset`、`recovery` です。共通optionは `--data-dir`、`--json`、`--quiet`、`--verbose` です。
+
+```bash
+./gradlew run --args="--help"
+./gradlew run --args="doctor --data-dir build/beta-data --json"
+```
+
+CLIからMinecraft worldは変更しません。
+
+## Paper
+
+Paperではrequest→design/import→job→generate→candidate→export→apply→Undo／Recoveryを実行できます。長文promptは5分期限の一回用chat sessionで受け取り、`cancel`で中断できます。API keyをchatやコマンドへ入力してはいけません。コマンドとpermission一覧は [コマンドリファレンス](docs/commands.md) を参照してください。
+
+## AI Providerと画像
+
+キーは `OPENAI_API_KEY`／`ANTHROPIC_API_KEY`など、`config.yml`で指定した環境変数からだけ取得します。model IDはcommandまたは空でないdefault modelとして明示します。画像roleは `MOOD_REFERENCE`、`TOP_DOWN_SKETCH`、`HEIGHT_REFERENCE`、`ZONE_REFERENCE`、`MATERIAL_REFERENCE`、`STRUCTURE_REFERENCE` です。詳しくは [User Guide](docs/user-guide.md) と [AI Provider](docs/ai-providers.md) を参照してください。
+
+## Release、配置、Undoの安全性
+
+Releaseは持ち運び可能な正本です。配置順序は `validate → preview/export → confirm → snapshot → apply → verify` です。同じworldの重複領域、別actor／world／origin／operationのtoken、期限切れ／再利用token、disk不足、改変Releaseをworld変更前に拒否します。Recoveryで判断できない状態は成功にせず `MANUAL_INTERVENTION_REQUIRED` とします。
+
+## ビルド
+
+```bash
+./gradlew clean test
+./gradlew build
+./gradlew shadowJar
+```
+
+- Paper JAR: `build/libs/LandformCraft-0.9.0-beta.1.jar`
+- CLI JAR: `build/libs/LandformCraft-0.9.0-beta.1-cli.jar`
 
 ## ドキュメント
 
-- [アーキテクチャ](docs/architecture.md)
-- [データモデルとスキーマ](docs/data-model.md)
-- [成果物形式](docs/artifact-format.md)
-- [開発手順](docs/development.md)
-- [セキュリティ](docs/security.md)
-- [運用と復旧](docs/operations.md)
-- [コマンド計画](docs/commands.md)
-- [進行フェーズと完了条件](docs/roadmap.md)
-- [性能budgetと計測結果](docs/performance.md)
-- [設計判断記録](docs/adr/README.md)
-- [Codex／開発エージェント向け規約](AGENTS.md)
+- [Quick Start](docs/quickstart.md)
+- [User Guide](docs/user-guide.md)
+- [Admin Guide](docs/admin-guide.md)
+- [How It Works](docs/how-it-works.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Limitations](docs/limitations.md)
+- [Beta Release Checklist](docs/beta-release-checklist.md)
+- [Architecture](docs/architecture.md)
+- [Artifact Format](docs/artifact-format.md)
+- [Security](docs/security.md)
+- [Roadmap](docs/roadmap.md)
+- [Phase 6 Beta Audit](docs/audits/phase-6-beta-audit.md)
+- [0.9.0-beta.1 Release Note](docs/releases/0.9.0-beta.1.md)
 
-## 入力例
-
-- [examples/rocky-coast/request.yml](examples/rocky-coast/request.yml)
-- [examples/rocky-coast/terrain-intent.json](examples/rocky-coast/terrain-intent.json)
-
-API キーは入力、チャット、manifest、Git に書かず、`OPENAI_API_KEY` や `ANTHROPIC_API_KEY` などの環境変数から読み取ります。
+API key、Authorization header、Cookie、secret fileを入力、chat、manifest、fixture、log、Gitへ保存しないでください。

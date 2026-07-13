@@ -31,7 +31,8 @@
         "additionalProperties": false,
         "required": [
           "id", "xIndex", "zIndex", "originX", "originY", "originZ",
-          "width", "length", "minY", "maxY", "file", "checksum"
+          "width", "length", "minY", "maxY", "file", "checksum", "terrainChecksum",
+          "blockCount", "airPolicy", "status"
         ],
         "properties": {
           "id": { "type": "string", "pattern": "^tile-[0-9]{2,}-[0-9]{2,}$" },
@@ -48,7 +49,11 @@
             "type": "string",
             "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
           },
-          "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "terrainChecksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "blockCount": { "type": "integer", "minimum": 1, "maximum": 33554432 },
+          "airPolicy": { "const": "INCLUDED" },
+          "status": { "const": "READY" }
         }
       }
     }

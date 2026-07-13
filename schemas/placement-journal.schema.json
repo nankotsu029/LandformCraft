@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/placement-journal.schema.json",
+  "title": "LandformCraft PlacementJournal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "plan", "state", "confirmationAction", "confirmationActor", "confirmationHash",
+    "confirmationCreatedAt", "confirmationExpiresAt", "tiles", "reservedBytes", "snapshotBytesUsed",
+    "updatedAt", "message"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "plan": { "$ref": "#/$defs/plan" },
+    "state": {
+      "enum": ["PLANNED", "APPLYING", "APPLIED", "ROLLING_BACK", "ROLLED_BACK", "UNDOING", "UNDONE", "RECOVERY_REQUIRED"]
+    },
+    "confirmationAction": { "enum": ["NONE", "APPLY", "UNDO", "RECOVERY_ROLLBACK", "RECOVERY_ACCEPT"] },
+    "confirmationActor": { "$ref": "#/$defs/actor" },
+    "confirmationHash": { "type": "string", "pattern": "^(?:|[0-9a-f]{64})$" },
+    "confirmationCreatedAt": { "type": "string", "format": "date-time" },
+    "confirmationExpiresAt": { "type": "string", "format": "date-time" },
+    "tiles": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/tile" }
+    },
+    "reservedBytes": { "type": "integer", "minimum": 0 },
+    "snapshotBytesUsed": { "type": "integer", "minimum": 0 },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "message": { "type": "string", "minLength": 1, "maxLength": 2000 }
+  },
+  "$defs": {
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["PLAYER", "CONSOLE", "SYSTEM"] },
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion", "placementId", "releaseDirectory", "releaseChecksum", "requestId",
+        "worldId", "worldName", "actor", "targetX", "targetY", "targetZ",
+        "minimumX", "minimumY", "minimumZ", "maximumX", "maximumY", "maximumZ", "createdAt"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "placementId": { "type": "string", "format": "uuid" },
+        "releaseDirectory": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+        },
+        "releaseChecksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "requestId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "worldId": { "type": "string", "format": "uuid" },
+        "worldName": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "actor": { "$ref": "#/$defs/actor" },
+        "targetX": { "type": "integer" },
+        "targetY": { "type": "integer" },
+        "targetZ": { "type": "integer" },
+        "minimumX": { "type": "integer" },
+        "minimumY": { "type": "integer" },
+        "minimumZ": { "type": "integer" },
+        "maximumX": { "type": "integer" },
+        "maximumY": { "type": "integer" },
+        "maximumZ": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "tile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tileId", "state", "snapshotFile", "snapshotChecksum"],
+      "properties": {
+        "tileId": { "type": "string", "pattern": "^tile-[0-9]{2,}-[0-9]{2,}$" },
+        "state": { "enum": ["PENDING", "SNAPSHOTTED", "APPLIED", "VERIFIED", "RESTORED"] },
+        "snapshotFile": {
+          "type": "string",
+          "pattern": "^(?:|(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+)$"
+        },
+        "snapshotChecksum": { "type": "string", "pattern": "^(?:|[0-9a-f]{64})$" }
+      }
+    }
+  }
+}

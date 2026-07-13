@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/placement-safety-state.schema.json",
+  "title": "LandformCraft Placement Safety State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "placementReservations", "diskReservations"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "placementReservations": {
+      "type": "array", "maxItems": 4096,
+      "items": { "$ref": "#/$defs/placementReservation" }
+    },
+    "diskReservations": {
+      "type": "array", "maxItems": 4096,
+      "items": { "$ref": "#/$defs/diskReservation" }
+    }
+  },
+  "$defs": {
+    "actor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["PLAYER", "CONSOLE", "SYSTEM"] },
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "placementReservation": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "placementId", "worldId", "minimumX", "minimumY", "minimumZ",
+        "maximumX", "maximumY", "maximumZ", "operation", "actor",
+        "createdAt", "expiresAt", "state"
+      ],
+      "properties": {
+        "placementId": { "type": "string", "format": "uuid" },
+        "worldId": { "type": "string", "format": "uuid" },
+        "minimumX": { "type": "integer" }, "minimumY": { "type": "integer" },
+        "minimumZ": { "type": "integer" }, "maximumX": { "type": "integer" },
+        "maximumY": { "type": "integer" }, "maximumZ": { "type": "integer" },
+        "operation": { "enum": ["APPLY", "UNDO", "RECOVERY_ROLLBACK", "RECOVERY_ACCEPT"] },
+        "actor": { "$ref": "#/$defs/actor" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "state": { "enum": ["PLANNED", "ACTIVE", "RECOVERY_REQUIRED"] }
+      }
+    },
+    "diskReservation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["placementId", "fileStoreKey", "reservedBytes", "createdAt", "expiresAt"],
+      "properties": {
+        "placementId": { "type": "string", "format": "uuid" },
+        "fileStoreKey": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "reservedBytes": { "type": "integer", "minimum": 0 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

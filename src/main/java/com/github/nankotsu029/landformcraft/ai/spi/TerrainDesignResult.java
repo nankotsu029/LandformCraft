@@ -1,6 +1,7 @@
 package com.github.nankotsu029.landformcraft.ai.spi;
 
 import com.github.nankotsu029.landformcraft.model.TerrainIntent;
+import com.github.nankotsu029.landformcraft.model.ProviderUsage;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -9,12 +10,22 @@ public record TerrainDesignResult(
         TerrainIntent intent,
         String providerId,
         String modelId,
+        String promptVersion,
+        String responseId,
+        ProviderUsage usage,
+        int attempts,
         Instant createdAt
 ) {
     public TerrainDesignResult {
         Objects.requireNonNull(intent, "intent");
         providerId = requireNonBlank(providerId, "providerId");
         modelId = requireNonBlank(modelId, "modelId");
+        promptVersion = requireNonBlank(promptVersion, "promptVersion");
+        responseId = requireNonBlank(responseId, "responseId");
+        Objects.requireNonNull(usage, "usage");
+        if (attempts < 1 || attempts > 10) {
+            throw new IllegalArgumentException("attempts must be between 1 and 10");
+        }
         Objects.requireNonNull(createdAt, "createdAt");
     }
 

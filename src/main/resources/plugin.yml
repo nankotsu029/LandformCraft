@@ -5,9 +5,124 @@ description: Deterministic Minecraft terrain composition from structured natural
 api-version: '1.21.11'
 load: POSTWORLD
 authors: [nankotsu029]
-softdepend: [WorldEdit]
+softdepend: [WorldEdit, FastAsyncWorldEdit]
+
+commands:
+  landformcraft:
+    description: Creates, generates, exports, places, verifies, and recovers LandformCraft terrain releases.
+    usage: /landformcraft help
+    aliases: [lfc]
 
 permissions:
   landformcraft.admin:
-    description: Allows administrative LandformCraft operations.
+    description: Allows all LandformCraft beta operations.
+    default: op
+    children:
+      landformcraft.help: true
+      landformcraft.version: true
+      landformcraft.doctor: true
+      landformcraft.request.create: true
+      landformcraft.request.edit: true
+      landformcraft.request.validate: true
+      landformcraft.request.list: true
+      landformcraft.design.create: true
+      landformcraft.design.import: true
+      landformcraft.design.verify: true
+      landformcraft.generate: true
+      landformcraft.job.status: true
+      landformcraft.job.cancel: true
+      landformcraft.candidate.read: true
+      landformcraft.export.plan: true
+      landformcraft.export.execute: true
+      landformcraft.export.verify: true
+      landformcraft.selection: true
+      landformcraft.apply.plan: true
+      landformcraft.apply.execute: true
+      landformcraft.apply.status: true
+      landformcraft.undo.plan: true
+      landformcraft.undo.execute: true
+      landformcraft.recovery: true
+      landformcraft.asset.read: true
+      landformcraft.asset.manage: true
+      landformcraft.cleanup: true
+  landformcraft.help:
+    description: Shows LandformCraft help.
+    default: true
+  landformcraft.version:
+    description: Shows plugin and format versions.
+    default: true
+  landformcraft.doctor:
+    description: Runs secret-free read-only diagnostics.
+    default: op
+  landformcraft.request.create:
+    description: Creates generation requests.
+    default: op
+  landformcraft.request.edit:
+    description: Edits request bounds and prompt.
+    default: op
+  landformcraft.request.validate:
+    description: Validates and reads requests.
+    default: op
+  landformcraft.request.list:
+    description: Lists requests.
+    default: op
+  landformcraft.design.create:
+    description: Calls enabled external design providers.
+    default: op
+  landformcraft.design.import:
+    description: Imports or fixtures TerrainIntent JSON.
+    default: op
+  landformcraft.design.verify:
+    description: Reads and verifies Design Packages.
+    default: op
+  landformcraft.generate:
+    description: Starts deterministic candidate generation.
+    default: op
+  landformcraft.job.status:
+    description: Reads asynchronous job state.
+    default: op
+  landformcraft.job.cancel:
+    description: Cancels owned background work.
+    default: op
+  landformcraft.candidate.read:
+    description: Reads candidate validation and preview artifacts.
+    default: op
+  landformcraft.export.plan:
+    description: Plans Release Package creation.
+    default: op
+  landformcraft.export.execute:
+    description: Executes token-confirmed Release Package creation.
+    default: op
+  landformcraft.export.verify:
+    description: Lists and verifies Release Packages.
+    default: op
+  landformcraft.selection:
+    description: Reads a WorldEdit selection for LandformCraft.
+    default: op
+  landformcraft.apply.plan:
+    description: Plans a verified placement without changing the world.
+    default: op
+  landformcraft.apply.execute:
+    description: Applies a token-confirmed placement.
+    default: op
+  landformcraft.apply.status:
+    description: Reads placement status.
+    default: op
+  landformcraft.undo.plan:
+    description: Plans Undo without changing the world.
+    default: op
+  landformcraft.undo.execute:
+    description: Executes token-confirmed snapshot restoration.
+    default: op
+  landformcraft.recovery:
+    description: Diagnoses and explicitly resolves RECOVERY_REQUIRED placements.
+    default: op
+  landformcraft.asset.read:
+    description: Validates and reads restricted custom assets.
+    default: op
+  landformcraft.asset.manage:
+    description: Imports or removes restricted custom assets.
+    default: op
+  landformcraft.cleanup:
+    description: Plans and executes token-confirmed snapshot retention cleanup.
     default: op

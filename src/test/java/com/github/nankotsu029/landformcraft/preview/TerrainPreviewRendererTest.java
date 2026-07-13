@@ -18,8 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,5 +66,13 @@ class TerrainPreviewRendererTest {
             assertEquals(64, image.getHeight());
             assertArrayEquals(Files.readAllBytes(file), Files.readAllBytes(repeated.files().get(index)));
         }
+        long distinctLayers = artifacts.files().stream().map(path -> {
+            try {
+                return com.github.nankotsu029.landformcraft.format.Sha256.file(path);
+            } catch (IOException exception) {
+                throw new java.io.UncheckedIOException(exception);
+            }
+        }).distinct().count();
+        assertEquals(8L, distinctLayers, "each preview layer must carry distinct diagnostic information");
     }
 }

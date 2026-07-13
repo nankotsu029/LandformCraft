@@ -1,2 +1,2 @@
-/** OpenAI adapter planned for Phase 4. No API call is made by the initial scaffold. */
+/** OpenAI Responses API adapter for structured TerrainIntent generation. */
 package com.github.nankotsu029.landformcraft.ai.openai;

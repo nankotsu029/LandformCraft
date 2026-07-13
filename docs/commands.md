@@ -1,112 +1,75 @@
-# コマンド計画
+# コマンドリファレンス
 
-Phase 1のCLI preview生成だけを実装済みです。Paper、schematic export、配置コマンドは未実装です。Paper側の名称は正式名に合わせて `/landformcraft`、短縮aliasを `/lfc` とする案です。
+## Paper
 
-## Paper command案
+rootは `/landformcraft`、aliasは `/lfc` です。tokenはTab補完しません。token付きclick eventは入力欄へcopyするだけで自動実行しません。
 
-### Request
-
-```text
-/landformcraft request create <request-id>
-/landformcraft request bounds selection
-/landformcraft request bounds <request-id> <minX> <minY> <minZ> <maxX> <maxY> <maxZ>
-/landformcraft request validate <request-id>
-```
-
-WorldEdit selectionを使用するcommandはWorldEdit／FAWEがない場合に明確なエラーを返します。
-
-### Design
-
-```text
-/landformcraft design create <request-id> openai
-/landformcraft design create <request-id> anthropic
-/landformcraft design import <request-id> <relative-json-path>
-```
-
-pathはrequest root配下の相対pathだけを許可します。APIキーをcommand引数として受け取りません。
-
-### Generate／candidate
-
-```text
-/landformcraft generate <request-id>
-/landformcraft job status <job-id>
-/landformcraft job cancel <job-id>
-/landformcraft candidate list <request-id>
-/landformcraft candidate info <candidate-id>
-/landformcraft candidate preview <candidate-id>
-```
-
-長時間処理はjob IDを直ちに返し、chat threadをblockしません。
-
-### Export
-
-```text
-/landformcraft export plan <candidate-id>
-/landformcraft export create <plan-id> confirm
-/landformcraft export verify <release-id>
-```
-
-### Apply／undo
-
-```text
-/landformcraft apply plan <release-id> <world> <x> <y> <z>
-/landformcraft apply execute <placement-plan-id> confirm
-/landformcraft apply status <placement-id>
-/landformcraft apply undo <placement-id> confirm
-```
-
-`plan`は読み取り専用、`execute`は変更操作です。confirm tokenはplanのchecksum、world、origin、期限へ結び付け、別planへ流用できないようにします。
-
-## Permission案
-
-| Permission | 用途 | Default |
+| Command | Permission | 説明 |
 |---|---|---|
-| `landformcraft.request` | request作成／検証 | op |
-| `landformcraft.design` | AI／import設計 | op |
-| `landformcraft.generate` | candidate生成 | op |
-| `landformcraft.export` | Release作成 | op |
-| `landformcraft.apply.plan` | dry-run | op |
-| `landformcraft.apply.execute` | world変更 | op |
-| `landformcraft.apply.undo` | rollback | op |
-| `landformcraft.admin` | 全権限と運用操作 | op |
+| `help` | `landformcraft.help` | help |
+| `version` | `landformcraft.version` | plugin／generator／Schema／Minecraft／Paper／WE検出 |
+| `doctor` | `landformcraft.doctor` | secret非表示のread-only診断 |
+| `request create <id>` | `request.create` | request作成 |
+| `request bounds selection <id>` | `request.edit` | WorldEdit選択をboundsへ設定 |
+| `request bounds <id> <minX> <minY> <minZ> <maxX> <maxY> <maxZ>` | `request.edit` | inclusive bounds設定 |
+| `request prompt <id>` | `request.edit` | 5分のchat prompt session |
+| `request validate/info <id>` | `request.validate` | Schema／record検証、表示 |
+| `request list` | `request.list` | 一覧 |
+| `design create <request> <openai\|anthropic> <model>` | `design.create` | 非同期Provider設計 |
+| `design import/fixture <request> <relative-json>` | `design.import` | imports rootから設計 |
+| `design status <job>` | `job.status` | 設計job状態 |
+| `design info/verify <design>` | `design.verify` | Design Package検証 |
+| `generate <design>` | `generate` | candidate生成job開始 |
+| `job status/cancel <job>` | `job.status` / `job.cancel` | 永続job操作 |
+| `candidate list <request-id>` | `candidate.read` | request別candidate一覧 |
+| `candidate info/preview/validate <id>` | `candidate.read` | preview directory、file、checksum |
+| `export plan <candidate>` | `export.plan` | Release生成計画、token発行 |
+| `export create <plan> <token>` | `export.execute` | token確認後のRelease job |
+| `export status <job>` | `job.status` | export job状態 |
+| `export verify/info <request/release>` | `export.verify` | strict verification |
+| `export list` | `export.verify` | Release一覧 |
+| `selection` | `selection` | WorldEdit選択表示 |
+| `apply plan <release> <world> <x> <y> <z>` | `apply.plan` | verify、予約、disk見積、token |
+| `apply execute <placement> <token>` | `apply.execute` | snapshot付き配置 |
+| `apply status <placement>` | `apply.status` | journal状態 |
+| `apply undo <placement>` | `undo.plan` | world drift検査前のUndo計画 |
+| `undo execute <placement> <token>` | `undo.execute` | snapshot逆順復元 |
+| `apply recover status/diagnose <placement>` | `recovery` | 復旧状態／保守的診断 |
+| `apply recover rollback/accept <placement> <token>` | `recovery` | 明示復旧。acceptは全一致時だけ |
+| `asset validate/import <schem> <metadata>` | `asset.read` / `asset.manage` | 制限付きasset |
+| `asset list/info <id>` | `asset.read` | catalog読取 |
+| `asset remove <id>` | `asset.manage` | 使用中は拒否 |
+| `cleanup plan/status` | `cleanup` | retention dry-run／状態 |
+| `cleanup execute <plan> <token>` | `cleanup` | 再検査して削除、audit |
 
-実装時に`plugin.yml`へ追加し、各subcommandで明示的に検査します。
+permissionの完全名はすべて `landformcraft.` prefix付きです。`landformcraft.admin`は全childを持ちます。
 
-## 実装済みCLI
+## CLI
 
-```bash
-landformcraft generate <request.yml> <terrain-intent.json> [output-directory] [candidate-index]
+```text
+landformcraft [--data-dir <dir>] [--json] [--quiet] [--verbose] <command>
 ```
 
-このコマンドはSchema検証、Blueprint compile、地形生成、検証、PNGとJSON summaryの保存を行います。summaryには生成時間、推定retained memory、推定peak working memoryを含みます。既定出力先は`build/landformcraft-preview`です。
+実行名はGradleでは `./gradlew run --args="..."` です。
 
-Gradleからは次のように実行します。
-
-```bash
-./gradlew run --args="generate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/phase1-preview"
+```text
+validate <request.yml> <intent.json>
+generate|preview <request.yml> <intent.json> [output] [candidate-index]
+export <request.yml> <intent.json> [exports-root] [candidate-index]
+verify <release-directory-or-zip>
+journal-verify <placement-journal.json>
+design <import|fixture|openai|anthropic> <request.yml> <intent-or-model> [designs] [jobs]
+design-verify <design-directory>
+version
+doctor
+request <create|bounds|prompt|validate|info|list> ...
+job <status|cancel> <job-id>
+candidate list <request-id>
+candidate <info|preview|validate> <candidate-id>
+asset <validate|import|list|info|remove> ...
+recovery <list|status|diagnose> [placement-id]
 ```
 
-## 将来のCLI案
+`--json` error契約は `errorCode`、`safeMessage`、`correlationId`、`operation`、`resourceId`、`stage`、`suggestedAction`、`exitCode`です。usage errorは2、処理失敗は1、成功は0です。CLIからworld mutationはしません。
 
-```bash
-landformcraft request validate request.yml
-landformcraft design import request.yml terrain-intent.json
-landformcraft generate request.yml
-landformcraft preview <job-id>
-landformcraft export <job-id>
-landformcraft verify <release-directory-or-zip>
-```
-
-Gradle distributionの実行名は初期段階から `landformcraft` に固定しています。将来、machine-readableな `--json` 出力、`--data-dir`、cancel signal、進捗logを追加します。usage errorの非ゼロexit codeは実装済みです。secretを引数へ渡すoptionは作りません。
-
-## エラー契約
-
-command errorは最低限次を含めます。
-
-- 安定したerror code
-- request／job／release／placement ID
-- 失敗したstage
-- ユーザーが安全に取れる次の操作
-- 詳細logのcorrelation ID
-
-secret、Authorization header、画像内容、内部stack traceは一般ユーザー向けchatへ表示しません。
+`job status`は永続snapshotを読めます。`job cancel`はcancel intentを永続化しますが、別processで実行中のCLI taskへ通知するIPCはこのrelease candidateにありません。foreground commandはCtrl+C shutdown hookで実Futureへcancelを伝播し、Paper jobは同じplugin process内の所有Futureをcancelします。cross-process cancelが必要な運用ではbeta公開しないでください。

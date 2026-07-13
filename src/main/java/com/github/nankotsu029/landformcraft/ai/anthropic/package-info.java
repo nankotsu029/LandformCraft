@@ -1,2 +1,2 @@
-/** Anthropic adapter planned for Phase 4. No API call is made by the initial scaffold. */
+/** Claude Messages API adapter for structured TerrainIntent generation. */
 package com.github.nankotsu029.landformcraft.ai.anthropic;

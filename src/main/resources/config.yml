@@ -2,11 +2,6 @@ storage:
   # Relative to plugins/LandformCraft. Absolute paths are intentionally discouraged.
   root: data
 
-limits:
-  max-width: 1000
-  max-length: 1000
-  default-tile-size: 128
-
 executors:
   # 0 selects max(1, min(4, available processors - 1)). This pool is only for CPU-heavy generation.
   generation-parallelism: 0
@@ -18,11 +13,38 @@ executors:
 providers:
   openai:
     enabled: false
+    # This is the environment variable name, never an API key value.
     api-key-env: OPENAI_API_KEY
+    # Empty means the Paper command must include an explicit model ID.
+    default-model: ""
   anthropic:
     enabled: false
     api-key-env: ANTHROPIC_API_KEY
+    default-model: ""
+
+provider-policy:
+  timeout-seconds: 60
+  max-attempts: 3
+  initial-backoff-millis: 250
+  max-output-tokens: 4096
+  requests-per-minute: 20
+  process-token-budget: 100000
+
+disk:
+  # These values are checked and reserved before snapshot or world mutation begins.
+  minimum-free-bytes: 536870912
+  maximum-snapshot-bytes: 8589934592
+  safety-margin-bytes: 268435456
+
+retention:
+  # Cleanup is never automatic. This age is used by `cleanup plan` only.
+  days: 30
+
+placement:
+  # Empty allow-list means all worlds except denied-worlds. Policy is captured at startup.
+  allowed-worlds: []
+  denied-worlds: []
 
 worldedit:
   # Either WorldEdit or FAWE may satisfy the WorldEdit API at runtime. Do not install both.
-  enabled: false
+  enabled: true

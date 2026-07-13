@@ -33,7 +33,7 @@
 - `landformcraft.generator` packageはAI ProviderやMinecraftワールドへ依存させない。
 - AIは `TerrainIntent` を生成する。全ブロック一覧や実行可能コードを生成・実行させない。
 - 同じ正規化済みBlueprint、seed、generator versionから同じ結果を再生成できるようにする。
-- UI（CLI、Paper、将来のWeb）は `landformcraft.core` のApplication Serviceを呼び、生成処理を直接持たない。
+- UI（CLI、Paper）は `landformcraft.core` のApplication Serviceを呼び、生成処理を直接持たない。
 - WorldEditは公開APIだけを `landformcraft.worldedit` packageへ隔離する。FAWE固有APIが必要なら専用packageへ隔離する。
 - Release Packageを持ち運び可能な正本とし、`.schem` はタイル成果物として扱う。
 

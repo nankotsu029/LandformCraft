@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/custom-asset-catalog-entry.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "metadata", "width", "height", "length", "blockCount", "artifactChecksum", "semanticChecksum", "importedAt"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "metadata": {"$ref": "custom-asset-metadata.schema.json"},
+    "width": {"type": "integer", "minimum": 1, "maximum": 64},
+    "height": {"type": "integer", "minimum": 1, "maximum": 64},
+    "length": {"type": "integer", "minimum": 1, "maximum": 64},
+    "blockCount": {"type": "integer", "minimum": 1, "maximum": 32768},
+    "artifactChecksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "semanticChecksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "importedAt": {"type": "string", "format": "date-time"}
+  }
+}

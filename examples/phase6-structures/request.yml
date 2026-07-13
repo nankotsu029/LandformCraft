@@ -1,0 +1,24 @@
+schema-version: 1
+request-id: phase6-structures
+
+bounds:
+  width: 96
+  length: 96
+  min-y: 0
+  max-y: 63
+  water-level: 31
+
+prompt: |
+  東側を海、西側を緩やかな草地にしてください。
+  草地へ短い道、低い柵、石造りの小さな遺跡を配置してください。
+
+images: []
+
+generation:
+  candidates: 1
+  base-seed: 827413
+
+output:
+  tile-size: 32
+  create-schematics: true
+  create-zip: true

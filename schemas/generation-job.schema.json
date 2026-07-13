@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/generation-job.schema.json",
+  "title": "LandformCraft GenerationJobSnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "jobId", "requestId", "stage", "progress", "updatedAt", "message"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "jobId": { "type": "string", "format": "uuid" },
+    "requestId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "stage": {
+      "enum": [
+        "QUEUED", "VALIDATING_REQUEST", "CALLING_AI", "VALIDATING_INTENT", "COMPILING_BLUEPRINT",
+        "GENERATING_LAYOUT", "GENERATING_TERRAIN", "GENERATING_FEATURES", "GENERATING_STRUCTURES",
+        "VALIDATING_RESULT", "RENDERING_PREVIEWS", "EXPORTING_TILES", "PACKAGING", "READY",
+        "RECOVERY_REQUIRED", "FAILED", "CANCELLED"
+      ]
+    },
+    "progress": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "message": { "type": "string", "maxLength": 512 }
+  }
+}

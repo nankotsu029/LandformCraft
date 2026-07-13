@@ -9,6 +9,7 @@
 
 # Local Paper runtime
 run/
+run-*/
 server/
 plugins/
 

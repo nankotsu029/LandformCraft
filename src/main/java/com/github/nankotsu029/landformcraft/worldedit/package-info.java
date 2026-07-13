@@ -1,2 +1,2 @@
-/** WorldEdit public API integration planned for Phase 2 and Phase 3. */
+/** Sponge schematic conversion and isolated WorldEdit/FAWE public-API integration. */
 package com.github.nankotsu029.landformcraft.worldedit;

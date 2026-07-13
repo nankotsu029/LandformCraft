@@ -21,6 +21,7 @@ dependencies {
     implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.3"))
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("com.networknt:json-schema-validator:2.0.4")
     runtimeOnly("org.slf4j:slf4j-nop:2.0.17")
 
@@ -29,6 +30,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:6.1.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("com.sk89q.worldedit:worldedit-core:7.3.19")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

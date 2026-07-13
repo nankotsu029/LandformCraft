@@ -25,7 +25,17 @@ public final class StructuredDataValidator {
             "generation-request.schema.json",
             "terrain-intent.schema.json",
             "world-blueprint.schema.json",
-            "export-manifest.schema.json"
+            "export-manifest.schema.json",
+            "placement-journal.schema.json",
+            "placement-safety-state.schema.json",
+            "snapshot-cleanup-plan.schema.json",
+            "custom-asset-metadata.schema.json",
+            "custom-asset-catalog-entry.schema.json",
+            "design-audit.schema.json",
+            "generation-job.schema.json",
+            "image-input-evidence.schema.json",
+            "required-assets.schema.json",
+            "structure-placements.schema.json"
     );
 
     private final SchemaRegistry registry;

@@ -84,9 +84,11 @@ public final class TerrainPreviewRenderer {
         try {
             graphics.setColor(new Color(0, 0, 0, 255));
             graphics.fillRect(0, 0, width, length);
-            graphics.setColor(new Color(255, 170, 32, 255));
             for (StructurePlan structure : plan.structures()) {
                 token.throwIfCancellationRequested();
+                graphics.setColor(structure.preferredZoneFallback()
+                        ? new Color(255, 72, 196, 255)
+                        : new Color(255, 170, 32, 255));
                 graphics.fillOval(structure.anchorX() - 3, structure.anchorZ() - 3, 7, 7);
             }
         } finally {

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "theme": "海沿いの緩やかな草地と小さな人工物",
+  "topology": "COAST",
+  "seaSides": ["EAST"],
+  "landRatio": 0.58,
+  "relief": {
+    "minimum": 0.08,
+    "average": 0.24,
+    "maximum": 0.48
+  },
+  "coastline": {
+    "irregularity": 0.25,
+    "bayCount": 1,
+    "capeCount": 1
+  },
+  "water": {
+    "riverCount": 0,
+    "lakeCount": 0,
+    "maximumSeaDepth": 12,
+    "shallowShelfWidth": 18
+  },
+  "zones": [
+    {
+      "id": "western-plains",
+      "type": "PLAINS",
+      "preferredArea": "WEST",
+      "areaShare": 0.55
+    },
+    {
+      "id": "eastern-beach",
+      "type": "SANDY_BEACH",
+      "preferredArea": "EAST",
+      "areaShare": 0.30
+    }
+  ],
+  "structures": [
+    {"type": "PATH", "count": 1, "preferredZone": "western-plains"},
+    {"type": "FENCE", "count": 2, "preferredZone": "western-plains"},
+    {"type": "STONE_RUIN", "count": 1, "preferredZone": "western-plains"}
+  ]
+}

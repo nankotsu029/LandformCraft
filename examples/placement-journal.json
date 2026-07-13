@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "plan": {
+    "schemaVersion": 1,
+    "placementId": "11111111-2222-4333-8444-555555555555",
+    "releaseDirectory": "rocky-coast-001/release-example",
+    "releaseChecksum": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "requestId": "rocky-coast-001",
+    "worldId": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+    "worldName": "world",
+    "actor": {
+      "kind": "CONSOLE",
+      "id": "CONSOLE"
+    },
+    "targetX": 100,
+    "targetY": -32,
+    "targetZ": 200,
+    "minimumX": 100,
+    "minimumY": -32,
+    "minimumZ": 200,
+    "maximumX": 599,
+    "maximumY": 160,
+    "maximumZ": 699,
+    "createdAt": "2026-07-13T00:00:00Z"
+  },
+  "state": "PLANNED",
+  "confirmationAction": "APPLY",
+  "confirmationActor": {
+    "kind": "CONSOLE",
+    "id": "CONSOLE"
+  },
+  "confirmationHash": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+  "confirmationCreatedAt": "2026-07-13T00:00:00Z",
+  "confirmationExpiresAt": "2026-07-13T00:10:00Z",
+  "tiles": [
+    {
+      "tileId": "tile-00-00",
+      "state": "PENDING",
+      "snapshotFile": "",
+      "snapshotChecksum": ""
+    }
+  ],
+  "reservedBytes": 1073741824,
+  "snapshotBytesUsed": 0,
+  "updatedAt": "2026-07-13T00:00:00Z",
+  "message": "Dry-run complete; no world blocks have been changed"
+}

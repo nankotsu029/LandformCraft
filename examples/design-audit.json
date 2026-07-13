@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "jobId": "6d62a1e0-163b-4dbc-b5df-2f0191ba826a",
+  "requestId": "rocky-coast-001",
+  "providerId": "imported-json",
+  "modelId": "manual-json-v1",
+  "promptVersion": "terrain-intent-v2-images",
+  "responseId": "import-000000000000000000000000",
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "totalTokens": 0
+  },
+  "attempts": 1,
+  "requestChecksum": "0000000000000000000000000000000000000000000000000000000000000000",
+  "intentChecksum": "1111111111111111111111111111111111111111111111111111111111111111",
+  "startedAt": "2026-07-13T00:00:00Z",
+  "completedAt": "2026-07-13T00:00:01Z"
+}

@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 public record GenerationJobSnapshot(
+        int schemaVersion,
         UUID jobId,
         String requestId,
         GenerationStage stage,
@@ -13,11 +14,12 @@ public record GenerationJobSnapshot(
         String message
 ) {
     public GenerationJobSnapshot {
+        schemaVersion = ModelValidation.requireSchemaVersion(schemaVersion, "schemaVersion");
         Objects.requireNonNull(jobId, "jobId");
-        requestId = ModelValidation.requireNonBlank(requestId, "requestId");
+        requestId = ModelValidation.requireSlug(requestId, "requestId");
         Objects.requireNonNull(stage, "stage");
         progress = ModelValidation.requireUnitInterval(progress, "progress");
         Objects.requireNonNull(updatedAt, "updatedAt");
-        Objects.requireNonNull(message, "message");
+        message = ModelValidation.requireNonBlank(message, "message", 512);
     }
 }

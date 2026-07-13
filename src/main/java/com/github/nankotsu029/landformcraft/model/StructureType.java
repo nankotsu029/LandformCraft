@@ -6,5 +6,7 @@ public enum StructureType {
     FISHING_HUT,
     STONE_RUIN,
     PATH,
-    RETAINING_WALL
+    RETAINING_WALL,
+    STONE_STEPS,
+    FENCE
 }

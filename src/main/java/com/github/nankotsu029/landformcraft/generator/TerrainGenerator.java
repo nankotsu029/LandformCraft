@@ -6,6 +6,7 @@ import com.github.nankotsu029.landformcraft.model.GenerationBounds;
 import com.github.nankotsu029.landformcraft.model.IntGrid;
 import com.github.nankotsu029.landformcraft.model.SurfaceMaterial;
 import com.github.nankotsu029.landformcraft.model.SurfaceMaterialGrid;
+import com.github.nankotsu029.landformcraft.model.StructurePlan;
 import com.github.nankotsu029.landformcraft.model.TerrainFeature;
 import com.github.nankotsu029.landformcraft.model.TerrainIntent;
 import com.github.nankotsu029.landformcraft.model.TerrainPlan;
@@ -27,6 +28,7 @@ public final class TerrainGenerator {
     private static final int[][] EROSION_NEIGHBORS = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
     private final LogicalLayoutGenerator layoutGenerator = new LogicalLayoutGenerator();
+    private final StructurePlanner structurePlanner = new StructurePlanner();
 
     public TerrainPlan generate(WorldBlueprint blueprint, CancellationToken cancellationToken) {
         Objects.requireNonNull(blueprint, "blueprint");
@@ -36,13 +38,18 @@ public final class TerrainGenerator {
         GeneratedRegion region = generateRegion(
                 blueprint, layout, 0, 0, bounds.width(), bounds.length(), 0, cancellationToken
         );
+        List<StructurePlan> structures = structurePlanner.plan(
+                blueprint, region.heights(), region.waterDepths(),
+                region.featureMasks(), cancellationToken
+        );
         List<TilePlan> tiles = createTiles(blueprint, region);
         String checksum = TerrainChecksum.terrain(
                 blueprint,
                 region.heights(),
                 region.waterDepths(),
                 region.materialOrdinals(),
-                region.featureMasks()
+                region.featureMasks(),
+                structures
         );
         return new TerrainPlan(
                 blueprint,
@@ -51,7 +58,7 @@ public final class TerrainGenerator {
                 new SurfaceMaterialGrid(bounds.width(), bounds.length(), region.materials()),
                 new IntGrid(bounds.width(), bounds.length(), region.featureMasks()),
                 tiles,
-                List.of(),
+                structures,
                 checksum
         );
     }
@@ -162,19 +169,23 @@ public final class TerrainGenerator {
                 int slope = slopeAt(
                         expandedHeights, expandedWidth, expandedLength, expandedX, expandedZ
                 );
+                int surfaceSlope = waterDepth == 0
+                        ? drySurfaceSlopeAt(expandedHeights, expandedWidth, expandedLength,
+                        expandedX, expandedZ, bounds.waterLevel())
+                        : slope;
                 int globalX = originX + x;
                 int globalZ = originZ + z;
                 SurfaceMaterial material = materialAt(
                         blueprint, globalX, globalZ, height, waterDepth, slope
                 );
+                TerrainZone zone = dominantZone(blueprint, globalX, globalZ);
                 int featureMask = expandedFeatures[expandedIndex];
-                if (slope >= 8) {
+                if (surfaceSlope >= 8) {
                     featureMask |= TerrainFeature.CLIFF.mask();
                 }
                 if (waterDepth == 0 && height <= bounds.waterLevel() + 2) {
                     featureMask |= TerrainFeature.COAST.mask();
                 }
-                TerrainZone zone = dominantZone(blueprint, globalX, globalZ);
                 boolean forestZone = zone != null && zone.type() == TerrainZoneType.FOREST;
                 if (material == SurfaceMaterial.GRASS
                         && (forestZone || DeterministicNoise.value(
@@ -351,6 +362,24 @@ public final class TerrainGenerator {
         int south = heights[Math.min(length - 1, z + 1) * width + x];
         return Math.max(Math.max(Math.abs(center - west), Math.abs(center - east)),
                 Math.max(Math.abs(center - north), Math.abs(center - south)));
+    }
+
+    private static int drySurfaceSlopeAt(
+            int[] heights, int width, int length, int x, int z, int waterLevel
+    ) {
+        int center = heights[z * width + x];
+        int result = 0;
+        int[][] neighbors = {
+                {Math.max(0, x - 1), z}, {Math.min(width - 1, x + 1), z},
+                {x, Math.max(0, z - 1)}, {x, Math.min(length - 1, z + 1)}
+        };
+        for (int[] neighbor : neighbors) {
+            int height = heights[neighbor[1] * width + neighbor[0]];
+            if (height >= waterLevel) {
+                result = Math.max(result, Math.abs(center - height));
+            }
+        }
+        return result;
     }
 
     private static List<TilePlan> createTiles(WorldBlueprint blueprint, GeneratedRegion region) {

@@ -5,13 +5,15 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LandformCraftCliTest {
     @Test
-    void helpListsPhaseOneGenerateCommand() {
+    void helpListsPhaseTwoCommands() {
         ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
 
         int exitCode = LandformCraftCli.run(
@@ -22,6 +24,11 @@ class LandformCraftCliTest {
 
         assertEquals(0, exitCode);
         assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("generate <request.yml>"));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("export <request.yml>"));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("verify <release-directory-or-zip>"));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("journal-verify <placement-journal.json>"));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("design <import|fixture|openai|anthropic>"));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("design-verify <design-directory>"));
     }
 
     @Test
@@ -36,5 +43,68 @@ class LandformCraftCliTest {
 
         assertEquals(2, exitCode);
         assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("Unknown command"));
+    }
+
+    @Test
+    void verifiesPlacementJournalExample() {
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+
+        int exitCode = LandformCraftCli.run(
+                new String[]{"journal-verify", "examples/placement-journal.json"},
+                new PrintStream(outputBytes, true, StandardCharsets.UTF_8),
+                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)
+        );
+
+        assertEquals(0, exitCode);
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("state: PLANNED"));
+    }
+
+    @Test
+    void reportsInvalidPlacementJournalWithoutThrowing(@org.junit.jupiter.api.io.TempDir Path directory)
+            throws java.io.IOException {
+        Path invalid = directory.resolve("invalid.json");
+        Files.writeString(invalid, Files.readString(Path.of("examples/placement-journal.json"))
+                .replace("\"state\": \"PLANNED\"", "\"state\": \"BROKEN\""));
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+
+        int exitCode = LandformCraftCli.run(
+                new String[]{"journal-verify", invalid.toString()},
+                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8),
+                new PrintStream(errorBytes, true, StandardCharsets.UTF_8)
+        );
+
+        assertEquals(1, exitCode);
+        assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("Journal verification failed"));
+    }
+
+    @Test
+    void importsAndVerifiesDesignArtifact(@org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
+        Path designs = directory.resolve("designs");
+        Path jobs = directory.resolve("jobs");
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+
+        int designExit = LandformCraftCli.run(
+                new String[]{
+                        "design", "import", "examples/rocky-coast/request.yml",
+                        "examples/rocky-coast/terrain-intent.json", designs.toString(), jobs.toString()
+                },
+                new PrintStream(outputBytes, true, StandardCharsets.UTF_8),
+                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)
+        );
+        Path artifact;
+        try (var requestDirectories = Files.list(designs.resolve("rocky-coast-001"))) {
+            artifact = requestDirectories.filter(Files::isDirectory).findFirst().orElseThrow();
+        }
+
+        int verifyExit = LandformCraftCli.run(
+                new String[]{"design-verify", artifact.toString()},
+                new PrintStream(outputBytes, true, StandardCharsets.UTF_8),
+                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)
+        );
+
+        assertEquals(0, designExit);
+        assertEquals(0, verifyExit);
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("Published verified design"));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("Verified design"));
     }
 }

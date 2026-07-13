@@ -4,13 +4,20 @@ import com.github.nankotsu029.landformcraft.model.GenerationBounds;
 import com.github.nankotsu029.landformcraft.model.GridPosition;
 import com.github.nankotsu029.landformcraft.model.TerrainFeature;
 import com.github.nankotsu029.landformcraft.model.TerrainPlan;
+import com.github.nankotsu029.landformcraft.model.StructurePlan;
+import com.github.nankotsu029.landformcraft.model.StructureType;
 import com.github.nankotsu029.landformcraft.model.TilePlan;
 import com.github.nankotsu029.landformcraft.model.ValidationIssue;
 import com.github.nankotsu029.landformcraft.model.ValidationResult;
 import com.github.nankotsu029.landformcraft.model.ValidationSeverity;
+import com.github.nankotsu029.landformcraft.generator.StructurePlanner;
+import com.github.nankotsu029.landformcraft.structure.BuiltInStructureAssetCatalog;
+import com.github.nankotsu029.landformcraft.structure.StructureAsset;
+import com.github.nankotsu029.landformcraft.structure.StructurePlacementKind;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Set;
 
@@ -25,7 +32,158 @@ public final class TerrainValidator {
         validateRiverPresence(plan, issues);
         validateWaterConnectivity(plan, issues);
         validateRiverFlow(plan, issues);
+        validateStructures(plan, issues);
         return new ValidationResult(issues);
+    }
+
+    private static void validateStructures(TerrainPlan plan, List<ValidationIssue> issues) {
+        BuiltInStructureAssetCatalog catalog = new BuiltInStructureAssetCatalog();
+        EnumMap<StructureType, Integer> actualCounts = new EnumMap<>(StructureType.class);
+        for (int index = 0; index < plan.structures().size(); index++) {
+            StructurePlan placement = plan.structures().get(index);
+            actualCounts.merge(placement.type(), 1, Integer::sum);
+            if (placement.preferredZoneFallback()) {
+                issues.add(warning("structure-preferred-zone-fallback",
+                        placement.type() + " was placed outside its preferred zone after all safe preferred-zone "
+                                + "candidates failed water, cliff, slope, bounds, or spacing checks"));
+            }
+            StructureAsset asset;
+            try {
+                asset = catalog.requireById(placement.assetId());
+            } catch (IllegalArgumentException exception) {
+                issues.add(error("unknown-structure-asset", exception.getMessage(), GridPosition.GLOBAL));
+                continue;
+            }
+            if (asset.type() != placement.type()
+                    || !asset.semanticChecksum().equals(placement.assetChecksum())
+                    || !asset.minecraftVersion().equals(placement.minecraftVersion())
+                    || asset.rotatedWidth(placement.rotation()) != placement.sizeX()
+                    || asset.height() != placement.sizeY()
+                    || asset.rotatedLength(placement.rotation()) != placement.sizeZ()
+                    || asset.terrainFollowing() != placement.terrainFollowing()) {
+                issues.add(error("structure-asset-mismatch",
+                        "placement metadata does not match asset: " + placement.assetId(), GridPosition.GLOBAL));
+                continue;
+            }
+            if (!structureWithinBounds(plan, placement)) {
+                issues.add(error("structure-out-of-bounds",
+                        "structure exceeds generation bounds: " + placement.assetId(), GridPosition.GLOBAL));
+                continue;
+            }
+            validateStructureFootprint(plan, placement, asset, issues);
+            for (int otherIndex = 0; otherIndex < index; otherIndex++) {
+                if (structuresCollide(placement, plan.structures().get(otherIndex))) {
+                    issues.add(error("structure-collision",
+                            "structure footprints overlap or lack the required separation", GridPosition.GLOBAL));
+                    break;
+                }
+            }
+        }
+        EnumMap<StructureType, Integer> requestedCounts = new EnumMap<>(StructureType.class);
+        plan.blueprint().intent().structures().forEach(intent ->
+                requestedCounts.merge(intent.type(), intent.count(), Integer::sum));
+        requestedCounts.forEach((type, requested) -> {
+            int actual = actualCounts.getOrDefault(type, 0);
+            if (actual < requested) {
+                issues.add(warning("structure-not-placed",
+                        "placed " + actual + " of " + requested + " requested " + type
+                                + " structures; no remaining candidate satisfied preferred zone, water, cliff, "
+                                + "slope, bounds, and spacing constraints"));
+            }
+        });
+    }
+
+    private static boolean structureWithinBounds(TerrainPlan plan, StructurePlan placement) {
+        GenerationBounds bounds = plan.blueprint().bounds();
+        if (placement.anchorX() < 0 || placement.anchorZ() < 0
+                || placement.anchorX() + placement.sizeX() > bounds.width()
+                || placement.anchorZ() + placement.sizeZ() > bounds.length()
+                || placement.anchorY() < bounds.minY()) {
+            return false;
+        }
+        int highest = placement.anchorY() + placement.sizeY() - 1;
+        if (placement.terrainFollowing()) {
+            highest = Integer.MIN_VALUE;
+            for (int z = placement.anchorZ(); z < placement.anchorZ() + placement.sizeZ(); z++) {
+                for (int x = placement.anchorX(); x < placement.anchorX() + placement.sizeX(); x++) {
+                    highest = Math.max(highest, plan.heightMap().get(x, z) + placement.sizeY());
+                }
+            }
+        }
+        return highest <= bounds.maxY();
+    }
+
+    private static void validateStructureFootprint(
+            TerrainPlan plan,
+            StructurePlan placement,
+            StructureAsset asset,
+            List<ValidationIssue> issues
+    ) {
+        int minimumHeight = Integer.MAX_VALUE;
+        int maximumHeight = Integer.MIN_VALUE;
+        int water = 0;
+        int cliffs = 0;
+        int entranceDry = 0;
+        int farWater = 0;
+        int farDry = 0;
+        int centerWater = 0;
+        for (int localZ = 0; localZ < asset.length(); localZ++) {
+            for (int localX = 0; localX < asset.width(); localX++) {
+                var rotated = StructurePlanner.rotate(asset, placement.rotation(), localX, localZ);
+                int x = placement.anchorX() + rotated.x();
+                int z = placement.anchorZ() + rotated.z();
+                boolean wet = plan.waterDepthMap().get(x, z) > 0;
+                int height = plan.heightMap().get(x, z);
+                if (!wet || asset.placementKind() == StructurePlacementKind.DRY_FLAT
+                        || asset.placementKind() == StructurePlacementKind.DRY_FOLLOWING) {
+                    minimumHeight = Math.min(minimumHeight, height);
+                    maximumHeight = Math.max(maximumHeight, height);
+                }
+                water += wet ? 1 : 0;
+                cliffs += TerrainFeature.CLIFF.isPresent(plan.featureMask().get(x, z))
+                        && (!wet || asset.placementKind() == StructurePlacementKind.DRY_FLAT
+                        || asset.placementKind() == StructurePlacementKind.DRY_FOLLOWING) ? 1 : 0;
+                entranceDry += localZ == 0 && !wet ? 1 : 0;
+                farWater += localZ >= asset.length() - 2 && wet ? 1 : 0;
+                farDry += localZ == asset.length() - 1 && !wet ? 1 : 0;
+                centerWater += Math.abs(localZ - asset.length() / 2) <= 1 && wet ? 1 : 0;
+            }
+        }
+        if (minimumHeight == Integer.MAX_VALUE) {
+            minimumHeight = plan.blueprint().bounds().waterLevel();
+            maximumHeight = plan.blueprint().bounds().waterLevel();
+        }
+        if (cliffs > 0 || maximumHeight - minimumHeight > asset.maximumSlope()) {
+            issues.add(error("structure-cliff-collision",
+                    "structure intersects a cliff or exceeds its slope limit", placement.anchorX(), placement.anchorZ()));
+        }
+        int cells = asset.width() * asset.length();
+        boolean waterValid;
+        if (asset.placementKind() == StructurePlacementKind.WATER_EDGE) {
+            waterValid = entranceDry >= Math.max(1, asset.width() / 2)
+                    && farWater >= Math.max(2, asset.width()) && water >= cells / 4
+                    && maximumHeight <= plan.blueprint().bounds().waterLevel() + 4;
+        } else if (asset.placementKind() == StructurePlacementKind.WATER_CROSSING) {
+            waterValid = entranceDry >= Math.max(1, asset.width() - 1)
+                    && farDry >= Math.max(1, asset.width() - 1)
+                    && centerWater >= asset.width() * 2 && water >= cells / 4
+                    && maximumHeight <= plan.blueprint().bounds().waterLevel() + 4;
+        } else {
+            waterValid = water == 0;
+        }
+        if (!waterValid) {
+            issues.add(error("structure-water-collision",
+                    "structure does not satisfy its land/water placement rule",
+                    placement.anchorX(), placement.anchorZ()));
+        }
+    }
+
+    private static boolean structuresCollide(StructurePlan left, StructurePlan right) {
+        int padding = 1;
+        return left.anchorX() - padding <= right.anchorX() + right.sizeX() - 1 + padding
+                && left.anchorX() + left.sizeX() - 1 + padding >= right.anchorX() - padding
+                && left.anchorZ() - padding <= right.anchorZ() + right.sizeZ() - 1 + padding
+                && left.anchorZ() + left.sizeZ() - 1 + padding >= right.anchorZ() - padding;
     }
 
     private static void validateCells(TerrainPlan plan, List<ValidationIssue> issues) {
@@ -53,6 +211,7 @@ public final class TerrainValidator {
             return;
         }
         Set<String> ids = new HashSet<>();
+        Set<Long> coordinates = new HashSet<>();
         long coveredColumns = 0L;
         for (TilePlan tile : plan.tiles()) {
             coveredColumns += (long) tile.width() * tile.length();
@@ -62,6 +221,33 @@ public final class TerrainValidator {
             if (tile.originX() + tile.width() > plan.blueprint().bounds().width()
                     || tile.originZ() + tile.length() > plan.blueprint().bounds().length()) {
                 issues.add(error("tile-out-of-bounds", "tile exceeds blueprint bounds: " + tile.id(), GridPosition.GLOBAL));
+            }
+            long coordinate = ((long) tile.zIndex() << 32) | Integer.toUnsignedLong(tile.xIndex());
+            if (!coordinates.add(coordinate)) {
+                issues.add(error("duplicate-tile-coordinate", "duplicate tile coordinate: " + tile.id(),
+                        GridPosition.GLOBAL));
+            }
+            if (tile.xIndex() >= plan.blueprint().tileCountX()
+                    || tile.zIndex() >= plan.blueprint().tileCountZ()) {
+                issues.add(error("tile-grid-mismatch", "tile index is outside the blueprint grid: " + tile.id(),
+                        GridPosition.GLOBAL));
+                continue;
+            }
+            int expectedOriginX = tile.xIndex() * plan.blueprint().tileSize();
+            int expectedOriginZ = tile.zIndex() * plan.blueprint().tileSize();
+            int expectedWidth = Math.min(
+                    plan.blueprint().tileSize(), plan.blueprint().bounds().width() - expectedOriginX
+            );
+            int expectedLength = Math.min(
+                    plan.blueprint().tileSize(), plan.blueprint().bounds().length() - expectedOriginZ
+            );
+            String expectedId = String.format(java.util.Locale.ROOT, "tile-%02d-%02d", tile.xIndex(), tile.zIndex());
+            if (expectedWidth < 1 || expectedLength < 1
+                    || !tile.id().equals(expectedId)
+                    || tile.originX() != expectedOriginX || tile.originZ() != expectedOriginZ
+                    || tile.width() != expectedWidth || tile.length() != expectedLength) {
+                issues.add(error("tile-grid-mismatch", "tile does not match the blueprint grid: " + tile.id(),
+                        GridPosition.GLOBAL));
             }
         }
         if (coveredColumns != plan.blueprint().bounds().columnCount()) {
@@ -309,5 +495,9 @@ public final class TerrainValidator {
 
     private static ValidationIssue error(String code, String message, GridPosition position) {
         return new ValidationIssue(ValidationSeverity.ERROR, code, message, position);
+    }
+
+    private static ValidationIssue warning(String code, String message) {
+        return new ValidationIssue(ValidationSeverity.WARNING, code, message, GridPosition.GLOBAL);
     }
 }

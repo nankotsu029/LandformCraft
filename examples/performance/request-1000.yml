@@ -19,5 +19,5 @@ generation:
 
 output:
   tile-size: 128
-  create-schematics: false
-  create-zip: false
+  create-schematics: true
+  create-zip: true

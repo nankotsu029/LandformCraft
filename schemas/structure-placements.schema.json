@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/structure-placements.schema.json",
+  "title": "LandformCraft Structure Placements",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatorVersion", "structures"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatorVersion": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "structures": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/placement" }
+    }
+  },
+  "$defs": {
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId", "assetChecksum", "minecraftVersion", "type", "anchorX", "anchorY", "anchorZ",
+        "rotation", "sizeX", "sizeY", "sizeZ", "terrainFollowing", "preferredZoneFallback"
+      ],
+      "properties": {
+        "assetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "assetChecksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "minecraftVersion": { "type": "string", "pattern": "^1\\.21\\.[0-9]{1,2}$" },
+        "type": {
+          "enum": [
+            "SMALL_PIER", "SMALL_BRIDGE", "FISHING_HUT", "STONE_RUIN",
+            "PATH", "RETAINING_WALL", "STONE_STEPS", "FENCE"
+          ]
+        },
+        "anchorX": { "type": "integer", "minimum": 0, "maximum": 999 },
+        "anchorY": { "type": "integer", "minimum": -2048, "maximum": 2048 },
+        "anchorZ": { "type": "integer", "minimum": 0, "maximum": 999 },
+        "rotation": { "enum": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "CLOCKWISE_270"] },
+        "sizeX": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "sizeY": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "sizeZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "terrainFollowing": { "type": "boolean" },
+        "preferredZoneFallback": { "type": "boolean" }
+      }
+    }
+  }
+}

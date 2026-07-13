@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "minecraftVersion": "1.21.11",
+  "assets": [
+    {
+      "assetId": "fence-v1",
+      "type": "FENCE",
+      "minecraftVersion": "1.21.11",
+      "semanticChecksum": "0973a529e5577777871d558afb8c419bc1494e2b7e217e391ecc90cf5468c81a",
+      "file": "assets/schematics/fence-v1.schem",
+      "fileChecksum": "ff02ed9267a5b8907eaa57f8f6a929b0ddd4495a4cdcd1be9d65738f008656fa",
+      "width": 1,
+      "height": 1,
+      "length": 9
+    },
+    {
+      "assetId": "path-v1",
+      "type": "PATH",
+      "minecraftVersion": "1.21.11",
+      "semanticChecksum": "284a18fd391bf5abc75105713f366a0207d566617fd9148686fc0c0953fe9eff",
+      "file": "assets/schematics/path-v1.schem",
+      "fileChecksum": "0dce82cddf044eaf83cbd4d51ea7108a6aaf8cd05a576e7b959a9851cca6b1a9",
+      "width": 3,
+      "height": 1,
+      "length": 9
+    },
+    {
+      "assetId": "stone-ruin-v1",
+      "type": "STONE_RUIN",
+      "minecraftVersion": "1.21.11",
+      "semanticChecksum": "ea79c799425828eb57bb31692f6177128233aef536defea20ff61ba320451ee2",
+      "file": "assets/schematics/stone-ruin-v1.schem",
+      "fileChecksum": "891d0199762be476e2be5330084335994ec905529818b0e28f17e1d5c16ed447",
+      "width": 7,
+      "height": 5,
+      "length": 7
+    }
+  ]
+}

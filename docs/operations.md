@@ -1,150 +1,49 @@
 # 運用と復旧
 
-この文書には将来コマンドを含む目標運用も記載します。現在、Paper側はplugin起動、config読込、Executor初期化／停止までです。CLI側はSchema検証済みのPhase 1 preview生成まで実装しています。
+日常運用の手順は [Admin Guide](admin-guide.md)、初回手順は [Quick Start](quickstart.md)、commandは [commands.md](commands.md) を正本とします。
 
-## 導入予定構成
+## Lifecycleとthread
 
-```text
-Paper 1.21.11 / Java 21
-├── LandformCraft.jar
-└── WorldEdit 7.3.19 または対応するFAWE
-```
+Paper起動時にdefault configの初回copy、hard range検証、bounded CPU executor、admission制限付きVirtual Thread I/O、command、Provider、placement repositoryを初期化します。Provider、画像、artifact I/O、generationはPaperメインスレッドで実行しません。Bukkit world read/writeだけをschedulerへdispatchします。停止時は新規mutationを拒否し、workflow futureをcancelし、dispatcherと所有executorを5秒共通deadlineでshutdownします。
 
-WorldEditとFAWEは同時に導入しません。現在のpluginは `softdepend: [WorldEdit]` のため、どちらもない状態でも起動します。schematic／選択／配置機能はWorldEdit互換pluginを実行時に検査してから有効化します。
+## 正常配置
 
-## Server data directory予定
+1. Release directory／ZIPをCLI verifyする。
+2. `apply plan`でRelease、world identity、height／border、inclusive boundsを検証する。
+3. 同world reservationとdisk reservationをstrict atomic stateへ保存する。
+4. 同じactorが10分以内にtokenでexecuteする。
+5. execute直前にRelease、actor、予約、world identityを再検査する。
+6. tileごとにsnapshot checksum→apply→full verify→journal checkpointを保存する。
+7. terminal stateでregion／disk reservationを解放する。
 
-```text
-plugins/LandformCraft/
-├── config.yml
-└── data/
-    ├── requests/
-    ├── designs/
-    ├── candidates/
-    ├── jobs/
-    ├── exports/
-    ├── placements/
-    ├── snapshots/
-    ├── assets/
-    └── logs/
-```
+失敗時はsnapshot済みtileを逆順復元します。復元も確定できなければ `RECOVERY_REQUIRED`です。
 
-大量artifactをplugin JAR内やworld directoryへ混在させません。各request／job／release／placementにIDを付けます。
+## Reservation
 
-## 初期設定
+region reservationはworld UUID、inclusive XYZ bounds、placement ID、operation、actor、createdAt、expiresAt、stateを保存します。整数overflowを拒否し、座標を1つ共有すればoverlap、`max+1 == next.min`だけなら非重複です。planとexecute直前の双方で検査し、apply／Undo／rollback／Recovery中は保持します。startupでは非terminal journalから再構築します。
 
-`config.yml`の現在の項目:
+disk reservationは実際のsnapshot root `FileStore`ごとにRelease working space、全tile snapshot worst case、journal、temporary、rollback overhead、safety marginを合算します。他placementの予約を差し引き、usable space不明または不足ならworld変更前に `LFC-SNAPSHOT-NO-SPACE`です。実snapshot bytesをjournalへ保存します。
 
-```yaml
-storage:
-  root: data
+## Confirmation
 
-limits:
-  max-width: 1000
-  max-length: 1000
-  default-tile-size: 128
+token hashはoperation、plan checksum、Release checksum、world UUID、origin／bounds、actor、createdAt、expiresAt、nonceへ結合します。LandformCraftのjournal／safety state／auditには平文を保存せず、一回使用、actor mismatch、別operation、期限切れ、再利用を拒否します。再起動後もPLANNED journalと期限内tokenは検証可能です。ただし標準PaperのCONSOLEへ送ったcommand候補はserver loggerにも複製されるため、現release candidateはCONSOLE tokenの厳密な非永続化を満たしません。該当logを秘密として保護し、このblockerが解消するまでbeta公開しないでください。
 
-executors:
-  generation-parallelism: 0
-  io-concurrency: 32
-  generation-queue-capacity: 128
+## Cleanup
 
-providers:
-  openai:
-    enabled: false
-    api-key-env: OPENAI_API_KEY
-  anthropic:
-    enabled: false
-    api-key-env: ANTHROPIC_API_KEY
+cleanupはstartupで自動実行しません。planはretention超過のterminal journalに列挙されたsnapshotだけを検査します。RECOVERY_REQUIRED、active、journalなし、symlink、root外、checksum不一致は削除しません。execute時にactor、token、journal updatedAt、size、checksumを再検査し、audit JSONLへ記録します。
 
-worldedit:
-  enabled: false
-```
+## Recovery
 
-`generation-parallelism: 0` は `max(1, min(4, CPU数 - 1))` です。I/O同時数は1〜256、生成threadは1〜64、CPU queueは1〜4096のhard rangeです。上限到達時は無制限に滞留させずfailed futureとしてjob層へ返し、job層がbackpressure／retryを判断します。
+startupはAPPLYING／ROLLING_BACK／UNDOINGを `RECOVERY_REQUIRED`へ移しreservationを再構築します。diagnoseはRelease checksum、snapshot checksum、world identity、tileのRelease／snapshot一致を検査します。
 
-ProviderはPhase 4まで未実装です。`enabled: true` にしても現在はAPIを呼びません。
+- `SAFE_TO_ACCEPT`: 全tileがReleaseに一致。accept可能
+- `SAFE_TO_ROLLBACK`: snapshotへ戻せる証拠あり
+- `SAFE_TO_RESUME`: 再開可能な形だがbetaは保守的rollback tokenを出す
+- `MANUAL_INTERVENTION_REQUIRED`: 判断不能。tokenなし
+- `CORRUPTED`: Release／snapshot証拠が破損。tokenなし
 
-## Secret設定予定
+不明状態をAPPLIEDへ推測しません。Recovery snapshotはcleanupしません。
 
-Paper processを起動するservice manager、container、shellで環境変数を渡します。
+## Provider retryとidempotency境界
 
-```text
-OPENAI_API_KEY=<secret>
-ANTHROPIC_API_KEY=<secret>
-```
-
-値はMinecraft console、chat、commandへ貼り付けません。設定確認コマンドも値そのものを表示せず、present／missingだけを返します。
-
-## 標準運用フロー
-
-```text
-request作成
-  → validate
-  → design/import
-  → candidates生成
-  → previewとvalidation確認
-  → Release export/verify
-  → placement dry-run
-  → confirm
-  → snapshot付きapply
-  → verify
-```
-
-設計と生成をPaper server内に閉じず、CLI／外部WorkerでReleaseを作ってPaperがverify／applyする運用を最終推奨とします。
-
-## 再起動復旧
-
-- job stage変更はatomicに永続化する
-- stage開始前に入力checksum、stage完了後に出力checksumを保存する
-- process停止時、実行中jobを黙ってQUEUEDへ戻さない
-- 安全な完了checkpointがあればそこから再開候補にする
-- 外部API requestの結果不明時は重複課金を避け、`RECOVERY_REQUIRED`にする
-- apply中断時はplacement journalを読み、未検証tileを確認してrollbackまたは手動復旧する
-
-## SnapshotとUndo
-
-- snapshot容量をapply前に見積もる
-- tile適用前にそのtileのsnapshotを閉じてchecksumを確定する
-- applyとverify成功後もretention期間中はsnapshotを残す
-- undoは適用順の逆順で実行する
-- world ID、seed、target origin、release checksumが一致しないsnapshotを自動適用しない
-- snapshot削除は配置journalと監査logを残した別operationにする
-
-## Backup
-
-- plugin dataとworld backupを別storageへ取得する
-- Releaseは再生成可能でも、placement journalとsnapshotはworld復旧に必要
-- secretを通常backupへ含める場合は暗号化とaccess controlを設定する
-- restore手順を定期的にtestする
-
-## 監視項目
-
-- queue length、stage duration、failure／retry率
-- Paper tick timeとwatchdog警告
-- CPU、heap、native memory、virtual thread数
-- artifact／snapshot disk使用量
-- provider latency、429／5xx、token／cost quota
-- apply／rollback時間と失敗tile
-
-## 障害別対応
-
-### Provider失敗
-
-worldは変更しません。retry上限後はFAILEDまたはRECOVERY_REQUIREDにし、manual JSON importへ切り替えられるようにします。
-
-### 生成／validation失敗
-
-候補を不採用にし、diagnostic previewとissueを残します。ReleaseをREADYにしません。
-
-### Export途中停止
-
-temporary releaseを公開せず、次回startup時にageとjob IDを確認してcleanupまたはdiagnostic保存します。
-
-### Apply途中停止
-
-新規applyを停止し、placement journal、world identity、snapshot checksumを検査します。自動判断できない場合はRECOVERY_REQUIREDにして管理者へ提示します。
-
-### Disk不足
-
-生成開始前とsnapshot前に余裕を検査します。書込途中のartifactをREADYにせず、world apply前ならworldへ影響させません。
+HTTP 429／5xx／timeout／transport errorはpolicy上限内だけretryし、`Retry-After`を尊重します。OpenAIへ決定論的client request IDを送り、Design auditへjob ID、request checksum、provider、model、prompt version、attempts、response IDを保存します。同じDesign Packageを後続generateで再利用できますが、新しいdesign jobは現在Providerを再呼出しします。成功応答のdurable cacheは未実装であり、Providerがresponseを作成した後、clientが受信する前に切断した場合のexactly-once／非課金は保証できません。

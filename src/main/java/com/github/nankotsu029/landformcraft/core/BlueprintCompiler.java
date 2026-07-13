@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /** Converts validated input contracts into a provider-independent deterministic blueprint. */
 public final class BlueprintCompiler {
-    public static final String GENERATOR_VERSION = "1.1.0-phase1";
+    public static final String GENERATOR_VERSION = "3.0.0-phase6";
 
     public WorldBlueprint compile(GenerationRequest request, TerrainIntent intent, int candidateIndex) {
         Objects.requireNonNull(request, "request");
