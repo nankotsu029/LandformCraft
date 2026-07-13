@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/world-blueprint.schema.json",
+  "title": "LandformCraft WorldBlueprint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "bounds",
+    "intent",
+    "seed",
+    "tileSize",
+    "logicalResolution",
+    "generatorVersion"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "requestId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "length", "minY", "maxY", "waterLevel"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" }
+      }
+    },
+    "intent": {
+      "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v1/terrain-intent.schema.json"
+    },
+    "seed": { "type": "integer" },
+    "tileSize": { "enum": [32, 64, 128, 256] },
+    "logicalResolution": { "enum": [16, 32, 64, 128, 256, 512] },
+    "generatorVersion": { "type": "string", "minLength": 1, "maxLength": 128 }
+  }
+}

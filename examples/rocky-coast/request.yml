@@ -1,0 +1,29 @@
+schema-version: 1
+request-id: rocky-coast-001
+
+bounds:
+  width: 500
+  length: 500
+  min-y: -32
+  max-y: 160
+  water-level: 62
+
+prompt: |
+  西側を陸地、東側を海にしてください。
+  北東には急峻な岩場と小さな入り江を作り、
+  南側には広い遠浅の砂浜を作ってください。
+  中央には海へ注ぐ川を1本作ってください。
+  海岸沿いに小さな桟橋を2つだけ配置してください。
+
+# このfixture単体で検証できるよう画像は空です。画像を使う場合はrequest root配下の
+# 実在ファイルを配置し、MOOD_REFERENCEやTOP_DOWN_SKETCHなどのroleを必ず指定します。
+images: []
+
+generation:
+  candidates: 4
+  base-seed: 827413
+
+output:
+  tile-size: 128
+  create-schematics: true
+  create-zip: true

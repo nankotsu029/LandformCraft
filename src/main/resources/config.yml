@@ -1,0 +1,28 @@
+storage:
+  # Relative to plugins/LandformCraft. Absolute paths are intentionally discouraged.
+  root: data
+
+limits:
+  max-width: 1000
+  max-length: 1000
+  default-tile-size: 128
+
+executors:
+  # 0 selects max(1, min(4, available processors - 1)). This pool is only for CPU-heavy generation.
+  generation-parallelism: 0
+  # Virtual threads are lightweight; external connections and API quota are not, so admission is bounded.
+  io-concurrency: 32
+  # Submissions beyond the CPU pool and this queue fail fast and must be retried by job-level backpressure.
+  generation-queue-capacity: 128
+
+providers:
+  openai:
+    enabled: false
+    api-key-env: OPENAI_API_KEY
+  anthropic:
+    enabled: false
+    api-key-env: ANTHROPIC_API_KEY
+
+worldedit:
+  # Either WorldEdit or FAWE may satisfy the WorldEdit API at runtime. Do not install both.
+  enabled: false

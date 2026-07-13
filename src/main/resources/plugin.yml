@@ -1,0 +1,13 @@
+name: LandformCraft
+version: '${version}'
+main: com.github.nankotsu029.landformcraft.Landformcraft
+description: Deterministic Minecraft terrain composition from structured natural-language and image intent.
+api-version: '1.21.11'
+load: POSTWORLD
+authors: [nankotsu029]
+softdepend: [WorldEdit]
+
+permissions:
+  landformcraft.admin:
+    description: Allows administrative LandformCraft operations.
+    default: op

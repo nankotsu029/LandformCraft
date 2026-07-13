@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/generation-request.schema.json",
+  "title": "LandformCraft GenerationRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema-version",
+    "request-id",
+    "bounds",
+    "prompt",
+    "images",
+    "generation",
+    "output"
+  ],
+  "properties": {
+    "schema-version": {
+      "const": 1
+    },
+    "request-id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "bounds": {
+      "$ref": "#/$defs/bounds"
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000,
+      "pattern": "\\S"
+    },
+    "images": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/referenceImage"
+      }
+    },
+    "generation": {
+      "$ref": "#/$defs/generation"
+    },
+    "output": {
+      "$ref": "#/$defs/output"
+    }
+  },
+  "$defs": {
+    "bounds": {
+      "type": "object",
+      "description": "min-y and max-y are inclusive; semantic validation limits max-y - min-y + 1 to 512 and requires water-level inside the range.",
+      "additionalProperties": false,
+      "required": ["width", "length", "min-y", "max-y", "water-level"],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "min-y": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "max-y": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "water-level": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "referenceImage": {
+      "type": "object",
+      "description": "The lexical path must be safe here; semantic validation must also resolve it under the request root and reject symlinks or type/MIME mismatches.",
+      "additionalProperties": false,
+      "required": ["file", "role"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+        },
+        "role": {
+          "enum": [
+            "MOOD_REFERENCE",
+            "TOP_DOWN_SKETCH",
+            "HEIGHT_REFERENCE",
+            "ZONE_REFERENCE",
+            "MATERIAL_REFERENCE",
+            "STRUCTURE_REFERENCE"
+          ]
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidates", "base-seed"],
+      "properties": {
+        "candidates": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "base-seed": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tile-size", "create-schematics", "create-zip"],
+      "properties": {
+        "tile-size": {
+          "enum": [32, 64, 128, 256]
+        },
+        "create-schematics": {
+          "type": "boolean"
+        },
+        "create-zip": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

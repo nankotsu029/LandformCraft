@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/export-manifest.schema.json",
+  "title": "LandformCraft ExportManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion", "generatorVersion", "minecraftVersion", "requestId",
+    "width", "length", "minY", "maxY", "tileSize", "tileCountX", "tileCountZ",
+    "anchor", "seed", "tiles"
+  ],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "generatorVersion": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "minecraftVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?$" },
+    "requestId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "tileSize": { "enum": [32, 64, 128, 256] },
+    "tileCountX": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "tileCountZ": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "anchor": { "const": "MINIMUM_CORNER" },
+    "seed": { "type": "integer" },
+    "tiles": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "xIndex", "zIndex", "originX", "originY", "originZ",
+          "width", "length", "minY", "maxY", "file", "checksum"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^tile-[0-9]{2,}-[0-9]{2,}$" },
+          "xIndex": { "type": "integer", "minimum": 0 },
+          "zIndex": { "type": "integer", "minimum": 0 },
+          "originX": { "type": "integer", "minimum": 0 },
+          "originY": { "type": "integer" },
+          "originZ": { "type": "integer", "minimum": 0 },
+          "width": { "type": "integer", "minimum": 1, "maximum": 256 },
+          "length": { "type": "integer", "minimum": 1, "maximum": 256 },
+          "minY": { "type": "integer" },
+          "maxY": { "type": "integer" },
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+          },
+          "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  }
+}

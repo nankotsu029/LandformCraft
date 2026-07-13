@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/terrain-intent.schema.json",
+  "title": "LandformCraft TerrainIntent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "theme",
+    "topology",
+    "seaSides",
+    "landRatio",
+    "relief",
+    "coastline",
+    "water",
+    "zones",
+    "structures"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "theme": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "\\S"
+    },
+    "topology": {
+      "enum": [
+        "INLAND",
+        "COAST",
+        "COAST_WITH_RIVER",
+        "ISLAND",
+        "ARCHIPELAGO",
+        "RIVER_VALLEY",
+        "LAKE_DISTRICT"
+      ]
+    },
+    "seaSides": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["NORTH", "EAST", "SOUTH", "WEST"]
+      }
+    },
+    "landRatio": {
+      "$ref": "#/$defs/unitInterval"
+    },
+    "relief": {
+      "$ref": "#/$defs/relief"
+    },
+    "coastline": {
+      "$ref": "#/$defs/coastline"
+    },
+    "water": {
+      "$ref": "#/$defs/water"
+    },
+    "zones": {
+      "type": "array",
+      "description": "Zone ids must be unique and areaShare must total no more than 1.0; enforced semantically by the domain record.",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/zone"
+      }
+    },
+    "structures": {
+      "type": "array",
+      "description": "preferredZone must reference an existing zone and counts must total no more than 256; enforced semantically by the domain record.",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/structure"
+      }
+    }
+  },
+  "$defs": {
+    "unitInterval": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "relief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "average", "maximum"],
+      "properties": {
+        "minimum": {
+          "$ref": "#/$defs/unitInterval"
+        },
+        "average": {
+          "$ref": "#/$defs/unitInterval"
+        },
+        "maximum": {
+          "$ref": "#/$defs/unitInterval"
+        }
+      }
+    },
+    "coastline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["irregularity", "bayCount", "capeCount"],
+      "properties": {
+        "irregularity": {
+          "$ref": "#/$defs/unitInterval"
+        },
+        "bayCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "capeCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        }
+      }
+    },
+    "water": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["riverCount", "lakeCount", "maximumSeaDepth", "shallowShelfWidth"],
+      "properties": {
+        "riverCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "lakeCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "maximumSeaDepth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 512
+        },
+        "shallowShelfWidth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      }
+    },
+    "zone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "preferredArea", "areaShare"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "type": {
+          "enum": [
+            "PLAINS",
+            "SANDY_BEACH",
+            "ROCKY_COAST",
+            "MOUNTAINS",
+            "VALLEY",
+            "WETLAND",
+            "FOREST",
+            "CLIFFS"
+          ]
+        },
+        "preferredArea": {
+          "enum": [
+            "ANY",
+            "CENTER",
+            "NORTH",
+            "NORTH_EAST",
+            "EAST",
+            "SOUTH_EAST",
+            "SOUTH",
+            "SOUTH_WEST",
+            "WEST",
+            "NORTH_WEST"
+          ]
+        },
+        "areaShare": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "count", "preferredZone"],
+      "properties": {
+        "type": {
+          "enum": [
+            "SMALL_PIER",
+            "SMALL_BRIDGE",
+            "FISHING_HUT",
+            "STONE_RUIN",
+            "PATH",
+            "RETAINING_WALL"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "preferredZone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    }
+  }
+}

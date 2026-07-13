@@ -1,0 +1,23 @@
+schema-version: 1
+request-id: rocky-coast-1000
+
+bounds:
+  width: 1000
+  length: 1000
+  min-y: -32
+  max-y: 160
+  water-level: 62
+
+prompt: |
+  Phase 1の1000×1000性能、タイル境界、メモリbudgetを検証するための海岸fixtureです。
+
+images: []
+
+generation:
+  candidates: 1
+  base-seed: 827413
+
+output:
+  tile-size: 128
+  create-schematics: false
+  create-zip: false

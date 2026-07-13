@@ -1,0 +1,33 @@
+# Gradle and build output
+.gradle/
+**/build/
+
+# IDE and OS metadata
+.idea/
+*.iml
+.DS_Store
+
+# Local Paper runtime
+run/
+server/
+plugins/
+
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+secrets.yml
+**/secrets.yml
+*.pem
+*.key
+
+# Generated LandformCraft data
+/data/
+requests/
+designs/
+candidates/
+jobs/
+exports/
+placements/
+snapshots/
+logs/
