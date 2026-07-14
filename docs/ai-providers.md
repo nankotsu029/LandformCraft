@@ -26,7 +26,11 @@ Phase 4／5では、OpenAI Responses API、Anthropic Messages API、manual JSON 
 - `store = false`
 - `X-Client-Request-Id`（相関用。exactly-once保証ではない）
 
-OpenAIの現行公式ガイドではResponses APIのStructured Outputsは`text.format`へJSON Schemaを指定し、画像入力は`input_image`としてdata URLを渡せます。LandformCraftはmodel IDを既定選択せず、利用者がCLIで明示します。選んだmodelが画像入力とStructured Outputsの両方に対応することは運用時に確認してください。
+OpenAIの現行公式ガイドではResponses APIのStructured Outputsは`text.format`へJSON Schemaを指定し、画像入力は`input_image`としてdata URLを渡せます。ローカルSchemaの`const`はProvider送信時だけ、対応subsetで等価な1要素`enum`へ変換し、型のない`enum`には値から推論できる`type`を付けます。対応外の制約はSchemaノードからだけ除去し、`minimum`や`maximum`という同名のデータプロパティは保持します。完全なローカルSchemaは変更せず、応答時に再検証します。LandformCraftはmodel IDを既定選択せず、利用者がCLIで明示します。選んだmodelが画像入力とStructured Outputsの両方に対応することは運用時に確認してください。
+
+HTTP 4xx／5xxではProviderのerror本文やpromptを表示せず、英数字からなる`type`、`code`、`param`だけを診断情報として表示します。たとえば`code=invalid_json_schema; param=text.format.schema`なら送信Schemaの互換性エラーです。
+
+JSON Schemaでは`zones[].areaShare`の配列全体の合計を制約できないため、promptでも合計1.0以下を明示します。それでもProviderが、各値は0より大きく1以下なのに合計だけが1.0を超える応答を返した場合は、相対比を保って合計1.0未満へ決定論的に正規化してから完全SchemaとJava recordで再検証します。0、負数、1超過の個別値や、その他のSchema／意味制約違反は修復せず拒否します。manual import／fixtureにはこのProvider限定正規化を適用しません。
 
 - [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
 - [OpenAI Images and vision](https://developers.openai.com/api/docs/guides/images-vision)

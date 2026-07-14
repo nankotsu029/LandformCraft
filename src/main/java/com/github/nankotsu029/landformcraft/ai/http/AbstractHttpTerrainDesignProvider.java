@@ -12,6 +12,7 @@ import com.github.nankotsu029.landformcraft.ai.spi.TerrainIntentPrompt;
 import com.github.nankotsu029.landformcraft.core.GenerationExecutors;
 import com.github.nankotsu029.landformcraft.format.LandformDataCodec;
 import com.github.nankotsu029.landformcraft.format.Sha256;
+import com.github.nankotsu029.landformcraft.validation.StructuredDataValidationException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -80,8 +81,11 @@ public abstract class AbstractHttpTerrainDesignProvider implements TerrainDesign
             requestHeaders.putAll(correlationHeaders(request, fingerprint));
             ProviderHttpResponse response = transport.post(endpoint, requestHeaders, body);
             ProviderPayload payload = parseResponse(response.body());
-            var intent = codec.readTerrainIntent(payload.intentJson(), id() + " response");
             quota.record(payload.usage());
+            String normalizedIntent = ProviderTerrainIntentNormalizer.normalizeZoneAreaShares(
+                    mapper, payload.intentJson()
+            );
+            var intent = codec.readTerrainIntent(normalizedIntent, id() + " response");
             return new TerrainDesignResult(
                     intent,
                     id(),
@@ -94,7 +98,7 @@ public abstract class AbstractHttpTerrainDesignProvider implements TerrainDesign
             );
         } catch (TerrainDesignException exception) {
             throw exception;
-        } catch (IOException | IllegalArgumentException exception) {
+        } catch (IOException | IllegalArgumentException | StructuredDataValidationException exception) {
             throw new TerrainDesignException(
                     ProviderFailureCode.INVALID_RESPONSE,
                     "provider returned an invalid structured TerrainIntent",
