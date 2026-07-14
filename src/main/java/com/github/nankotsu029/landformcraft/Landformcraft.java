@@ -123,7 +123,7 @@ public final class Landformcraft extends JavaPlugin {
                 storageRoot.resolve("imports"), storageRoot.resolve("assets"),
                 storageRoot.resolve("exports"), clock);
 
-        Plugin official = getServer().getPluginManager().getPlugin("WorldEdit");
+        /*Plugin official = getServer().getPluginManager().getPlugin("WorldEdit");
         Plugin fawe = getServer().getPluginManager().getPlugin("FastAsyncWorldEdit");
         if (official != null && official.isEnabled() && fawe != null && fawe.isEnabled()) {
             throw new IllegalStateException("WorldEdit and FAWE must not be enabled together");
@@ -134,7 +134,35 @@ public final class Landformcraft extends JavaPlugin {
                 && integration != null;
         String integrationStatus = !getConfig().getBoolean("worldedit.enabled", true)
                 ? "disabled by config" : integration == null ? "not detected"
-                : integration.getName() + " " + integration.getPluginMeta().getVersion();
+                : integration.getName() + " " + integration.getPluginMeta().getVersion();*/
+        Plugin official = getServer().getPluginManager().getPlugin("WorldEdit");
+        Plugin fawe = getServer().getPluginManager().getPlugin("FastAsyncWorldEdit");
+
+        if (official != null
+                && official.isEnabled()
+                && fawe != null
+                && fawe.isEnabled()
+                && official != fawe) {
+            throw new IllegalStateException(
+                    "WorldEdit and FAWE must not be enabled together"
+            );
+        }
+
+        Plugin integration = fawe != null && fawe.isEnabled()
+                ? fawe
+                : official != null && official.isEnabled()
+                ? official
+                : null;
+
+        boolean worldEditEnabled = getConfig().getBoolean("worldedit.enabled", true);
+        boolean placementEnabled = worldEditEnabled && integration != null;
+
+        String integrationStatus = !worldEditEnabled
+                ? "disabled by config"
+                : integration == null
+                ? "not detected"
+                : integration.getName() + " "
+                + integration.getPluginMeta().getVersion();
         PlacementApplicationService placements = null;
         PaperWorldEditSelectionService selections = null;
         if (placementEnabled) {
