@@ -249,8 +249,9 @@ public final class LandformCraftCli {
 
     private static int design(String[] args, PrintStream standardOutput, PrintStream errorOutput) {
         if (args.length < 4 || args.length > 6) {
-            return usage(errorOutput, "design", "Usage: design <import|fixture|openai|anthropic> <request.yml> "
-                    + "<intent.json|model> [designs-root] [jobs-root]");
+            return usage(errorOutput, "design", "Usage: design <import|fixture> <request.yml> <intent.json> "
+                    + "[designs-root] [jobs-root] | design <openai|anthropic> <request.yml> <model-id> "
+                    + "[designs-root] [jobs-root]");
         }
         String providerName = args[1];
         Path requestPath = Path.of(args[2]);
@@ -836,22 +837,51 @@ public final class LandformCraftCli {
 
     private static void printHelp(PrintStream output) {
         output.println("LandformCraft CLI " + VERSION);
-        output.println("  Common: --data-dir <directory> --json --quiet --verbose");
-        output.println("  version");
-        output.println("  doctor");
-        output.println("  request <create|bounds|prompt|validate|info|list> ...");
-        output.println("  job <status|cancel> <job-id>");
-        output.println("  candidate list <request-id> | candidate <info|preview|validate> <candidate-id>");
-        output.println("  asset <validate|import|list|info|remove> ...");
-        output.println("  recovery <list|status|diagnose> [placement-id]");
-        output.println("  validate <request.yml> <terrain-intent.json>");
-        output.println("  generate <request.yml> <terrain-intent.json> [output-directory] [candidate-index]");
-        output.println("  preview <request.yml> <terrain-intent.json> [output-directory] [candidate-index]");
-        output.println("  export <request.yml> <terrain-intent.json> [exports-root] [candidate-index]");
-        output.println("  verify <release-directory-or-zip>");
-        output.println("  journal-verify <placement-journal.json>");
-        output.println("  design <import|fixture|openai|anthropic> <request.yml> <intent.json|model> "
-                + "[designs-root] [jobs-root]");
-        output.println("  design-verify <design-directory>");
+        output.println("Usage:");
+        output.println("  landformcraft [共通オプション] <コマンド>");
+        output.println();
+        output.println("共通オプション:");
+        output.println("  --data-dir <directory>  管理データの保存先");
+        output.println("  --json                  機械可読なJSONで出力");
+        output.println("  --quiet                 正常出力を抑制");
+        output.println("  --verbose               失敗時にstack traceを表示");
+        output.println();
+        output.println("設計・生成:");
+        helpLine(output, "validate <request.yml> <terrain-intent.json>", "入力契約を検証");
+        helpLine(output, "design <import|fixture> <request.yml> <intent.json> [designs-root] [jobs-root]",
+                "既存TerrainIntentを取込");
+        helpLine(output, "design <openai|anthropic> <request.yml> <model-id> [designs-root] [jobs-root]",
+                "指定したAPI modelでTerrainIntentを作成");
+        helpLine(output, "design-verify <design-directory>", "Design Packageを検証");
+        helpLine(output, "generate <request.yml> <terrain-intent.json> [output-directory] [candidate-index]",
+                "地形候補とpreviewを生成");
+        helpLine(output, "preview <request.yml> <terrain-intent.json> [output-directory] [candidate-index]",
+                "generateの別名");
+        output.println();
+        output.println("Release・検証:");
+        helpLine(output, "export <request.yml> <terrain-intent.json> [exports-root] [candidate-index]",
+                "Release Packageを作成");
+        helpLine(output, "verify <release-directory-or-zip>", "Releaseのchecksumと内容を検証");
+        helpLine(output, "journal-verify <placement-journal.json>", "配置journalを検証");
+        output.println();
+        output.println("管理:");
+        helpLine(output, "request <create|bounds|prompt|validate|info|list> ...", "requestを管理");
+        helpLine(output, "job <status|cancel> <job-id>", "jobの状態確認・取消");
+        helpLine(output, "candidate list <request-id> | candidate <info|preview|validate> <candidate-id>",
+                "候補を確認");
+        helpLine(output, "asset <validate|import|list|info|remove> ...", "custom assetを管理");
+        helpLine(output, "recovery <list|status|diagnose> [placement-id]", "復旧状態をread-only確認");
+        helpLine(output, "version", "version情報を表示");
+        helpLine(output, "doctor", "実行環境を診断");
+        output.println();
+        output.println("例:");
+        output.println("  ./gradlew run --args=\"validate examples/sandy-coast/request.yml "
+                + "examples/sandy-coast/terrain-intent.json\"");
+        output.println("  ./gradlew run --args=\"doctor --data-dir build/data --json\"");
+    }
+
+    private static void helpLine(PrintStream output, String command, String description) {
+        output.println("  " + command);
+        output.println("      " + description);
     }
 }

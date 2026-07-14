@@ -33,10 +33,10 @@ Paper、Bukkit、WorldEdit、FAWE本体は配布JARへshadeしません。WorldE
 
 ```bash
 ./gradlew clean build
-./gradlew run --args="validate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json"
-./gradlew run --args="generate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/preview"
-./gradlew run --args="export examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/exports"
-./gradlew run --args="verify build/exports/rocky-coast-001/<release-id>"
+./gradlew run --args="validate examples/sandy-coast/request.yml examples/sandy-coast/terrain-intent.json"
+./gradlew run --args="generate examples/sandy-coast/request.yml examples/sandy-coast/terrain-intent.json build/preview"
+./gradlew run --args="export examples/sandy-coast/request.yml examples/sandy-coast/terrain-intent.json build/exports"
+./gradlew run --args="verify build/exports/sandy-coast-001/<release-id>"
 ```
 
 Paperへ `build/libs/LandformCraft-0.9.0-beta.1.jar` とWorldEditまたはFAWEを配置し、test worldで次を実行します。
@@ -93,6 +93,7 @@ Releaseは持ち運び可能な正本です。配置順序は `validate → prev
 - [User Guide](docs/user-guide.md)
 - [Admin Guide](docs/admin-guide.md)
 - [How It Works](docs/how-it-works.md)
+- [地形・構造物・画像入力ガイド](docs/terrain-design-guide.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Limitations](docs/limitations.md)
 - [Beta Release Checklist](docs/beta-release-checklist.md)

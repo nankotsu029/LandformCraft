@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "theme": "広い遠浅の砂浜と海岸丘陵の草地が共存する温暖で穏やかな自然海岸",
+  "topology": "COAST_WITH_RIVER",
+  "seaSides": [
+    "SOUTH",
+    "EAST"
+  ],
+  "landRatio": 0.56,
+  "relief": {
+    "minimum": 0.06,
+    "average": 0.2,
+    "maximum": 0.45
+  },
+  "coastline": {
+    "irregularity": 0.34,
+    "bayCount": 2,
+    "capeCount": 1
+  },
+  "water": {
+    "riverCount": 1,
+    "lakeCount": 1,
+    "maximumSeaDepth": 26,
+    "shallowShelfWidth": 72
+  },
+  "zones": [
+    {
+      "id": "southern-eastern-beach",
+      "type": "SANDY_BEACH",
+      "preferredArea": "SOUTH_EAST",
+      "areaShare": 0.7
+    },
+    {
+      "id": "northwestern-grassland",
+      "type": "PLAINS",
+      "preferredArea": "NORTH_WEST",
+      "areaShare": 0.3
+    }
+  ],
+  "structures": []
+}

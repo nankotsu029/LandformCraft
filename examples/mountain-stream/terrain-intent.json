@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "theme": "森林に覆われた岩山の段瀑を水源とし、深い滝壺、蛇行する渓流、静かな森林の釣り淵、河口、荒々しい岩礁海岸へ連続する大規模な釣り用自然地形",
+  "topology": "COAST_WITH_RIVER",
+  "seaSides": [
+    "SOUTH"
+  ],
+  "landRatio": 0.72,
+  "relief": {
+    "minimum": 0.08,
+    "average": 0.58,
+    "maximum": 0.96
+  },
+  "coastline": {
+    "irregularity": 0.82,
+    "bayCount": 4,
+    "capeCount": 4
+  },
+  "water": {
+    "riverCount": 1,
+    "lakeCount": 2,
+    "maximumSeaDepth": 14,
+    "shallowShelfWidth": 18
+  },
+  "zones": [
+    {
+      "id": "mountain-source",
+      "type": "MOUNTAINS",
+      "preferredArea": "NORTH",
+      "areaShare": 0.18
+    },
+    {
+      "id": "waterfall-cliffs",
+      "type": "CLIFFS",
+      "preferredArea": "NORTH",
+      "areaShare": 0.1
+    },
+    {
+      "id": "upper-stream-valley",
+      "type": "VALLEY",
+      "preferredArea": "CENTER",
+      "areaShare": 0.2
+    },
+    {
+      "id": "forest-fishing-pool",
+      "type": "FOREST",
+      "preferredArea": "CENTER",
+      "areaShare": 0.2
+    },
+    {
+      "id": "estuary-lowlands",
+      "type": "WETLAND",
+      "preferredArea": "SOUTH",
+      "areaShare": 0.1
+    },
+    {
+      "id": "southern-rocky-coast",
+      "type": "ROCKY_COAST",
+      "preferredArea": "SOUTH",
+      "areaShare": 0.22
+    }
+  ],
+  "structures": [
+    {
+      "type": "SMALL_PIER",
+      "count": 2,
+      "preferredZone": "forest-fishing-pool"
+    },
+    {
+      "type": "SMALL_PIER",
+      "count": 1,
+      "preferredZone": "southern-rocky-coast"
+    },
+    {
+      "type": "SMALL_BRIDGE",
+      "count": 2,
+      "preferredZone": "upper-stream-valley"
+    },
+    {
+      "type": "PATH",
+      "count": 1,
+      "preferredZone": "upper-stream-valley"
+    },
+    {
+      "type": "STONE_STEPS",
+      "count": 3,
+      "preferredZone": "waterfall-cliffs"
+    },
+    {
+      "type": "FENCE",
+      "count": 4,
+      "preferredZone": "upper-stream-valley"
+    }
+  ]
+}

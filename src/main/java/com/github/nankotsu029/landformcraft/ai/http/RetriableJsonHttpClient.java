@@ -126,27 +126,44 @@ public final class RetriableJsonHttpClient {
         } else {
             code = ProviderFailureCode.INVALID_REQUEST;
         }
-        String errorType = safeErrorType(body);
+        String errorMetadata = safeErrorMetadata(body);
         return new TerrainDesignException(
                 code,
-                "provider returned HTTP " + status + (errorType.isEmpty() ? "" : " (" + errorType + ")"),
+                "provider returned HTTP " + status
+                        + (errorMetadata.isEmpty() ? "" : " (" + errorMetadata + ")"),
                 status,
                 attempt
         );
     }
 
-    private String safeErrorType(byte[] body) {
+    private String safeErrorMetadata(byte[] body) {
         try {
             JsonNode root = mapper.readTree(body);
             JsonNode error = root == null ? null : root.path("error");
-            String type = error == null ? "" : error.path("type").asText("");
-            if (type.length() > 64 || !type.matches("[A-Za-z0-9_.-]*")) {
+            if (error == null) {
                 return "";
             }
-            return type;
+            StringBuilder metadata = new StringBuilder();
+            appendSafeMetadata(metadata, "type", error.path("type").asText(""), 64);
+            appendSafeMetadata(metadata, "code", error.path("code").asText(""), 64);
+            appendSafeMetadata(metadata, "param", error.path("param").asText(""), 160);
+            return metadata.toString();
         } catch (IOException ignored) {
             return "";
         }
+    }
+
+    private static void appendSafeMetadata(
+            StringBuilder metadata, String label, String value, int maximumLength
+    ) {
+        if (value.isEmpty() || value.length() > maximumLength
+                || !value.matches("[A-Za-z0-9_.\\[\\]-]*")) {
+            return;
+        }
+        if (!metadata.isEmpty()) {
+            metadata.append("; ");
+        }
+        metadata.append(label).append('=').append(value);
     }
 
     private static boolean isRetryable(int statusCode) {

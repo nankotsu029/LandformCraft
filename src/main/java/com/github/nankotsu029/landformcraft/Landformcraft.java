@@ -123,18 +123,6 @@ public final class Landformcraft extends JavaPlugin {
                 storageRoot.resolve("imports"), storageRoot.resolve("assets"),
                 storageRoot.resolve("exports"), clock);
 
-        /*Plugin official = getServer().getPluginManager().getPlugin("WorldEdit");
-        Plugin fawe = getServer().getPluginManager().getPlugin("FastAsyncWorldEdit");
-        if (official != null && official.isEnabled() && fawe != null && fawe.isEnabled()) {
-            throw new IllegalStateException("WorldEdit and FAWE must not be enabled together");
-        }
-        Plugin integration = official != null && official.isEnabled() ? official
-                : fawe != null && fawe.isEnabled() ? fawe : null;
-        boolean placementEnabled = getConfig().getBoolean("worldedit.enabled", true)
-                && integration != null;
-        String integrationStatus = !getConfig().getBoolean("worldedit.enabled", true)
-                ? "disabled by config" : integration == null ? "not detected"
-                : integration.getName() + " " + integration.getPluginMeta().getVersion();*/
         Plugin official = getServer().getPluginManager().getPlugin("WorldEdit");
         Plugin fawe = getServer().getPluginManager().getPlugin("FastAsyncWorldEdit");
 

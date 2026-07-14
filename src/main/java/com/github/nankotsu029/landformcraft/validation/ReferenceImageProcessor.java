@@ -57,12 +57,14 @@ public final class ReferenceImageProcessor {
     public static final int MAX_ASPECT_RATIO = 32;
     public static final long MAX_NORMALIZED_BYTES = 16L * 1024L * 1024L;
     public static final long MAX_TOTAL_NORMALIZED_BYTES = 16L * 1024L * 1024L;
+    private static final int MIN_WATER_BLUE = 24;
+    private static final int MIN_WATER_BLUE_RED_DELTA = 12;
+    private static final int MIN_WATER_BLUE_GREEN_DELTA = 6;
 
     private static final byte[] PNG_SIGNATURE = {
             (byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
     };
-    private static final Pattern ENGLISH_SEA = Pattern.compile("(?i)\\b%s\\b.{0,24}\\b(sea|ocean|water)\\b");
-    private static final Pattern ENGLISH_LAND = Pattern.compile("(?i)\\b%s\\b.{0,24}\\bland\\b");
+    private static final String ENGLISH_CARDINAL_DIRECTIONS = "(?:north|east|south|west)";
 
     private final Clock clock;
 
@@ -415,7 +417,10 @@ public final class ReferenceImageProcessor {
                 int red = argb >>> 16 & 0xff;
                 int green = argb >>> 8 & 0xff;
                 int blue = argb & 0xff;
-                if (alpha >= 128 && blue >= 90 && blue >= red + 20 && blue >= green + 10) {
+                if (alpha >= 128
+                        && blue >= MIN_WATER_BLUE
+                        && blue >= red + MIN_WATER_BLUE_RED_DELTA
+                        && blue >= green + MIN_WATER_BLUE_GREEN_DELTA) {
                     water++;
                 }
                 total++;
@@ -443,24 +448,35 @@ public final class ReferenceImageProcessor {
     }
 
     private static boolean mentions(String prompt, CardinalDirection direction, boolean sea) {
-        String japaneseDirection = switch (direction) {
-            case NORTH -> "北";
-            case EAST -> "東";
-            case SOUTH -> "南";
-            case WEST -> "西";
-        };
+        String japaneseDirection = japaneseDirection(direction);
         String japaneseConcept = sea ? "海" : "陸";
         Pattern japanese = Pattern.compile(
-                Pattern.quote(japaneseDirection) + "[^。、，,\\n]{0,16}" + Pattern.quote(japaneseConcept)
+                japaneseDirection
+                        + "(?:側|部|端|方)?"
+                        + "(?:を中心に|付近には|付近に|には|に|を|は|が|の)"
+                        + "[^北東南西。、，,\\n]{0,16}"
+                        + Pattern.quote(japaneseConcept)
         );
         if (japanese.matcher(prompt).find()) {
             return true;
         }
         String englishDirection = direction.name().toLowerCase(Locale.ROOT);
-        Pattern pattern = sea
-                ? Pattern.compile(ENGLISH_SEA.pattern().formatted(englishDirection), ENGLISH_SEA.flags())
-                : Pattern.compile(ENGLISH_LAND.pattern().formatted(englishDirection), ENGLISH_LAND.flags());
+        String englishConcept = sea ? "(?:sea|ocean|water)" : "land";
+        Pattern pattern = Pattern.compile(
+                "(?i)\\b" + Pattern.quote(englishDirection) + "\\b"
+                        + "(?:(?!\\b" + ENGLISH_CARDINAL_DIRECTIONS + "\\b)[^\\n]){0,24}"
+                        + "\\b" + englishConcept + "\\b"
+        );
         return pattern.matcher(prompt).find();
+    }
+
+    private static String japaneseDirection(CardinalDirection direction) {
+        return switch (direction) {
+            case NORTH -> "北(?:東|西)?";
+            case EAST -> "(?:北|南)?東";
+            case SOUTH -> "南(?:東|西)?";
+            case WEST -> "(?:北|南)?西";
+        };
     }
 
     private static void checkPromptConsistency(

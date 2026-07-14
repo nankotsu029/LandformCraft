@@ -3,6 +3,7 @@
 ## Paper
 
 rootは `/landformcraft`、aliasは `/lfc` です。tokenはTab補完しません。token付きclick eventは入力欄へcopyするだけで自動実行しません。
+`/lfc help` は「確認」「設計・生成」「配置・復旧」に分けて表示します。CLIの `--help` も「設計・生成」「Release・検証」「管理」に分け、各commandの用途と実行例を表示します。
 
 | Command | Permission | 説明 |
 |---|---|---|
@@ -58,7 +59,8 @@ generate|preview <request.yml> <intent.json> [output] [candidate-index]
 export <request.yml> <intent.json> [exports-root] [candidate-index]
 verify <release-directory-or-zip>
 journal-verify <placement-journal.json>
-design <import|fixture|openai|anthropic> <request.yml> <intent-or-model> [designs] [jobs]
+design <import|fixture> <request.yml> <intent.json> [designs] [jobs]
+design <openai|anthropic> <request.yml> <model-id> [designs] [jobs]
 design-verify <design-directory>
 version
 doctor

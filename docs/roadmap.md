@@ -49,3 +49,15 @@
 - 無制限サイズ、洞窟、高度な植生
 
 これらは将来予定ではなく、現在の製品境界です。変更する場合は新しいADRと脅威分析を必要とします。
+
+## 生成幅を広げる場合の検討順（未実装）
+
+これは確定マイルストーンではありません。現在の非目標を変更する判断をした場合の技術的な順序です。
+
+1. 決定論的palette／vegetation descriptor
+2. AIを介さないheight／zone／water raster constraint
+3. 標高制約付きriver graph／waterfall
+4. margin付きcave mask／3D density field
+5. biome、地下・海中palette、TerrainIntentからのcustom asset参照
+
+各項目はSchemaとgenerator versionの更新、Release互換性、memory budget、WorldEdit export、snapshot／rollback、脅威分析を完了するまで実装済みと扱いません。

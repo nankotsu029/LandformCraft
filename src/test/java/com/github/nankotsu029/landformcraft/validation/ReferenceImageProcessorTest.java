@@ -137,6 +137,39 @@ class ReferenceImageProcessorTest {
     }
 
     @Test
+    void keepsAdjacentJapaneseDirectionClausesIndependent(@TempDir Path root) throws Exception {
+        Path requestPath = createRequestFile(root);
+        writeNorthSouthMap(root.resolve("images/map.png"), 100, 80);
+        GenerationRequest request = request(
+                "北側を陸地、南側を海とし、陸地は北側から海へ張り出す形にしてください。",
+                List.of(new ReferenceImage("images/map.png", ReferenceImageRole.TOP_DOWN_SKETCH))
+        );
+
+        PreparedImageInputs result = processor.process(
+                request, processor.load(requestPath, request), () -> false
+        );
+
+        assertEquals(2, result.evidence().consistencyChecks().size());
+        assertTrue(result.evidence().consistencyChecks().stream()
+                .allMatch(check -> check.status() == ImageConsistencyStatus.CONSISTENT));
+    }
+
+    @Test
+    void stillRejectsExplicitlyConflictingJapaneseDirection(@TempDir Path root) throws Exception {
+        Path requestPath = createRequestFile(root);
+        writeNorthSouthMap(root.resolve("images/map.png"), 100, 80);
+        GenerationRequest request = request(
+                "北側を陸地にし、北側を海にもしてください。",
+                List.of(new ReferenceImage("images/map.png", ReferenceImageRole.TOP_DOWN_SKETCH))
+        );
+
+        assertCode(
+                ImageInputFailureCode.PROMPT_IMAGE_CONFLICT,
+                () -> processor.process(request, processor.load(requestPath, request), () -> false)
+        );
+    }
+
+    @Test
     void moodReferenceNeverAcquiresMapCoordinates(@TempDir Path root) throws Exception {
         Path requestPath = createRequestFile(root);
         writeMap(root.resolve("images/mood.jpg"), false, 48, 32);
@@ -307,6 +340,19 @@ class ReferenceImageProcessorTest {
         }
         String format = path.getFileName().toString().endsWith(".jpg") ? "jpg" : "png";
         assertTrue(ImageIO.write(image, format, path.toFile()));
+    }
+
+    private static void writeNorthSouthMap(Path path, int width, int height) throws Exception {
+        Files.createDirectories(path.getParent());
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Color land = new Color(70, 140, 70);
+        Color water = new Color(8, 30, 50);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                image.setRGB(x, y, (y < height / 2 ? land : water).getRGB());
+            }
+        }
+        assertTrue(ImageIO.write(image, "png", path.toFile()));
     }
 
     private static byte[] withExifOrientation(byte[] jpeg, int orientation) {

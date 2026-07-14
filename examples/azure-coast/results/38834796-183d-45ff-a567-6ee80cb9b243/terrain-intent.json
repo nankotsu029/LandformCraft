@@ -1,0 +1,84 @@
+{
+  "schemaVersion" : 1,
+  "theme" : "連続した3種の釣り場を持つ自然主体の海岸。北が細長い陸地、南が広い外洋で、西から東へ砂浜のbeach、低い石堤と深い入り江のbreakwater、荒い岩礁海岸のrockycapeへ段階的に変化する。全体はMinecraftで再現可能な緩やかな高低差と限定的な人工要素で構成する。",
+  "topology" : "COAST",
+  "seaSides" : [ "SOUTH" ],
+  "landRatio" : 0.32,
+  "relief" : {
+    "minimum" : 0.0,
+    "average" : 0.34,
+    "maximum" : 0.62
+  },
+  "coastline" : {
+    "irregularity" : 0.68,
+    "bayCount" : 4,
+    "capeCount" : 5
+  },
+  "water" : {
+    "riverCount" : 0,
+    "lakeCount" : 0,
+    "maximumSeaDepth" : 16,
+    "shallowShelfWidth" : 42
+  },
+  "zones" : [ {
+    "id" : "beach",
+    "type" : "SANDY_BEACH",
+    "preferredArea" : "SOUTH_WEST",
+    "areaShare" : 0.26470588235267645
+  }, {
+    "id" : "breakwater",
+    "type" : "ROCKY_COAST",
+    "preferredArea" : "SOUTH",
+    "areaShare" : 0.24999999999975
+  }, {
+    "id" : "rockycape",
+    "type" : "CLIFFS",
+    "preferredArea" : "SOUTH_EAST",
+    "areaShare" : 0.22058823529389704
+  }, {
+    "id" : "backshore_plains",
+    "type" : "PLAINS",
+    "preferredArea" : "NORTH",
+    "areaShare" : 0.13235294117633822
+  }, {
+    "id" : "low_hills",
+    "type" : "VALLEY",
+    "preferredArea" : "NORTH_EAST",
+    "areaShare" : 0.05882352941170588
+  }, {
+    "id" : "scattered_coastal_rocks",
+    "type" : "MOUNTAINS",
+    "preferredArea" : "EAST",
+    "areaShare" : 0.02941176470585294
+  }, {
+    "id" : "open_coastal_vegetation",
+    "type" : "FOREST",
+    "preferredArea" : "NORTH_WEST",
+    "areaShare" : 0.04411764705877941
+  } ],
+  "structures" : [ {
+    "type" : "PATH",
+    "count" : 1,
+    "preferredZone" : "backshore_plains"
+  }, {
+    "type" : "RETAINING_WALL",
+    "count" : 1,
+    "preferredZone" : "breakwater"
+  }, {
+    "type" : "STONE_STEPS",
+    "count" : 2,
+    "preferredZone" : "breakwater"
+  }, {
+    "type" : "FENCE",
+    "count" : 6,
+    "preferredZone" : "breakwater"
+  }, {
+    "type" : "SMALL_PIER",
+    "count" : 1,
+    "preferredZone" : "breakwater"
+  }, {
+    "type" : "STONE_RUIN",
+    "count" : 3,
+    "preferredZone" : "scattered_coastal_rocks"
+  } ]
+}
