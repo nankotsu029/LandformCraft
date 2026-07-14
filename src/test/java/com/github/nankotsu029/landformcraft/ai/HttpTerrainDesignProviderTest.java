@@ -52,9 +52,35 @@ class HttpTerrainDesignProviderTest {
             assertTrue(exchange.getRequestHeaders().getFirst("X-Client-Request-Id")
                     .matches("[0-9a-f-]{36}"));
             JsonNode request = mapper.readTree(exchange.getRequestBody());
+            JsonNode providerSchema = request.at("/text/format/schema");
+            assertTrue(request.at("/input/0/content/0/text").asText().contains(
+                    "their sum is at most 1.0"
+            ));
             assertEquals("json_schema", request.at("/text/format/type").asText());
             assertTrue(request.at("/text/format/strict").asBoolean());
-            assertTrue(request.at("/text/format/schema/properties/landRatio/minimum").isMissingNode());
+            assertTrue(providerSchema.at("/properties/landRatio/minimum").isMissingNode());
+            assertEquals("integer", providerSchema.at(
+                    "/properties/schemaVersion/type"
+            ).asText());
+            assertEquals(1, providerSchema.at(
+                    "/properties/schemaVersion/enum/0"
+            ).asInt());
+            assertTrue(providerSchema.at(
+                    "/properties/schemaVersion/const"
+            ).isMissingNode());
+            assertEquals("string", providerSchema.at(
+                    "/properties/topology/type"
+            ).asText());
+            assertEquals("string", providerSchema.at(
+                    "/properties/seaSides/items/type"
+            ).asText());
+            assertEquals("#/$defs/unitInterval", providerSchema.at(
+                    "/$defs/relief/properties/minimum/$ref"
+            ).asText());
+            assertEquals("#/$defs/unitInterval", providerSchema.at(
+                    "/$defs/relief/properties/maximum/$ref"
+            ).asText());
+            assertStrictObjectContracts(providerSchema);
             assertEquals(false, request.path("store").asBoolean());
             assertEquals("input_image", request.at("/input/1/content/2/type").asText());
             assertTrue(request.at("/input/1/content/1/text").asText().contains("TOP_DOWN_SKETCH"));
@@ -115,6 +141,46 @@ class HttpTerrainDesignProviderTest {
     }
 
     @Test
+    void normalizesOnlyAggregateZoneShareOverflowAndPreservesRatios() throws Exception {
+        String overflow = validIntentJson()
+                .replace("\"areaShare\": 0.28", "\"areaShare\": 0.8")
+                .replace("\"areaShare\": 0.32", "\"areaShare\": 0.6");
+        try (TestServer server = new TestServer(exchange -> respond(
+                exchange, 200, openAiResponse(overflow)
+        )); GenerationExecutors executors = GenerationExecutors.create(4, 1, 8)) {
+            var provider = openAi(executors, server.uri(), policy(1, 500));
+
+            var result = provider.design(request()).join();
+            double first = result.intent().zones().get(0).areaShare();
+            double second = result.intent().zones().get(1).areaShare();
+
+            assertTrue(first + second <= 1.0);
+            assertEquals(0.8 / 0.6, first / second, 1.0e-9);
+        }
+    }
+
+    @Test
+    void refusesToNormalizeAnIndividuallyInvalidZoneShare() throws Exception {
+        String invalid = validIntentJson().replace(
+                "\"areaShare\": 0.28", "\"areaShare\": 1.2"
+        );
+        try (TestServer server = new TestServer(exchange -> respond(
+                exchange, 200, openAiResponse(invalid)
+        )); GenerationExecutors executors = GenerationExecutors.create(4, 1, 8)) {
+            var provider = openAi(executors, server.uri(), policy(1, 500));
+
+            CompletionException thrown = assertThrows(
+                    CompletionException.class, () -> provider.design(request()).join()
+            );
+
+            assertEquals(
+                    ProviderFailureCode.INVALID_RESPONSE,
+                    ((TerrainDesignException) thrown.getCause()).code()
+            );
+        }
+    }
+
+    @Test
     void retries429ThenSucceedsAndReportsAttempts() throws Exception {
         AtomicInteger calls = new AtomicInteger();
         try (TestServer server = new TestServer(exchange -> {
@@ -156,7 +222,10 @@ class HttpTerrainDesignProviderTest {
         AtomicInteger calls = new AtomicInteger();
         try (TestServer server = new TestServer(exchange -> {
             calls.incrementAndGet();
-            respond(exchange, 400, "{\"error\":{\"type\":\"invalid_request_error\"}}");
+            respond(exchange, 400, """
+                    {"error":{"type":"invalid_request_error","code":"invalid_json_schema",
+                    "param":"text.format.schema","message":"private prompt"}}
+                    """);
         }); GenerationExecutors executors = GenerationExecutors.create(4, 1, 8)) {
             var provider = openAi(executors, server.uri(), policy(3, 500));
 
@@ -164,8 +233,12 @@ class HttpTerrainDesignProviderTest {
                     CompletionException.class, () -> provider.design(request()).join()
             );
 
-            assertEquals(ProviderFailureCode.INVALID_REQUEST,
-                    ((TerrainDesignException) thrown.getCause()).code());
+            TerrainDesignException failure = (TerrainDesignException) thrown.getCause();
+            assertEquals(ProviderFailureCode.INVALID_REQUEST, failure.code());
+            assertTrue(failure.getMessage().contains("type=invalid_request_error"));
+            assertTrue(failure.getMessage().contains("code=invalid_json_schema"));
+            assertTrue(failure.getMessage().contains("param=text.format.schema"));
+            assertTrue(!failure.getMessage().contains("private prompt"));
             assertEquals(1, calls.get());
         }
     }
@@ -221,6 +294,45 @@ class HttpTerrainDesignProviderTest {
                 executors, "test-secret", "gpt-test", endpoint, policy,
                 Clock.systemUTC(), HttpClient.newHttpClient()
         );
+    }
+
+    private static void assertStrictObjectContracts(JsonNode schema) {
+        if (!schema.isObject()) {
+            return;
+        }
+        if ("object".equals(schema.path("type").asText())) {
+            JsonNode properties = schema.path("properties");
+            JsonNode required = schema.path("required");
+            assertTrue(properties.isObject());
+            assertTrue(required.isArray());
+            assertEquals(false, schema.path("additionalProperties").asBoolean(true));
+            properties.fieldNames().forEachRemaining(property -> assertTrue(
+                    containsText(required, property), () -> "property is not required: " + property
+            ));
+            required.forEach(property -> assertTrue(
+                    properties.has(property.asText()),
+                    () -> "required property is undefined: " + property.asText()
+            ));
+        }
+        schema.path("properties").elements().forEachRemaining(
+                HttpTerrainDesignProviderTest::assertStrictObjectContracts
+        );
+        schema.path("$defs").elements().forEachRemaining(
+                HttpTerrainDesignProviderTest::assertStrictObjectContracts
+        );
+        assertStrictObjectContracts(schema.path("items"));
+        schema.path("anyOf").elements().forEachRemaining(
+                HttpTerrainDesignProviderTest::assertStrictObjectContracts
+        );
+    }
+
+    private static boolean containsText(JsonNode values, String expected) {
+        for (JsonNode value : values) {
+            if (expected.equals(value.asText())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private TerrainDesignRequest request() throws IOException {

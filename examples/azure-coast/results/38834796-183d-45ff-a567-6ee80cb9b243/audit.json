@@ -1,0 +1,19 @@
+{
+  "schemaVersion" : 1,
+  "jobId" : "38834796-183d-45ff-a567-6ee80cb9b243",
+  "requestId" : "azure-coast-001",
+  "providerId" : "openai",
+  "modelId" : "gpt-5.4-2026-03-05",
+  "promptVersion" : "terrain-intent-v3-semantic-guards",
+  "responseId" : "resp_0190bf9fe825721f016a55a3e59a408199a94bb3ff672a3adb",
+  "usage" : {
+    "inputTokens" : 13012,
+    "outputTokens" : 512,
+    "totalTokens" : 13524
+  },
+  "attempts" : 1,
+  "requestChecksum" : "4b88b08d829aaee7f305045a0bf3422ee5d75b70af8a56020592242f4d9a6f81",
+  "intentChecksum" : "6d6ba1ea99c35bd39edc0547742b700f714910e1f60ba53b3d384620c3d1137e",
+  "startedAt" : "2026-07-14T02:50:07.841010Z",
+  "completedAt" : "2026-07-14T02:50:24.804619Z"
+}

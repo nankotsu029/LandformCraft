@@ -69,7 +69,7 @@ structures[]
 
 0.0〜1.0の正規化値を使い、AI Provider固有のconfidenceやtoken usageはIntent本体へ混ぜず、provider response metadataへ保存します。
 
-AI出力は非信頼入力なので、湾／岬は各64、川16、湖64、海深512、遠浅幅1000、structure総数256のhard limitをrecordとschemaの両方で課します。zone IDは一意、structureのzone参照は実在必須、zone areaShare合計は1.0以下です。topologyと海・川・湖の最低限の整合もrecordで検査します。
+AI出力は非信頼入力なので、湾／岬は各64、川16、湖64、海深512、遠浅幅1000、structure総数256のhard limitをrecordとschemaの両方で課します。zone IDは一意、structureのzone参照は実在必須、zone areaShare合計は1.0以下です。HTTP Provider応答で各areaShareが個別には正常なのに合計だけが超過した場合は、相対比を保つProvider限定正規化後に完全検証します。manual importは正規化せず超過を拒否します。topologyと海・川・湖の最低限の整合もrecordで検査します。
 
 ### `WorldBlueprint`
 
