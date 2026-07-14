@@ -727,11 +727,14 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     private static void showHelp(CommandSender sender, String label) {
         sender.sendMessage(prefix("◆", NamedTextColor.AQUA)
                 .append(Component.text("コマンド一覧", NamedTextColor.AQUA)));
+        helpSection(sender, "確認");
         help(sender, "/" + label + " selection", "WorldEditの選択範囲を表示");
         help(sender, "/" + label + " version | doctor", "version表示／read-only診断");
+        helpSection(sender, "設計・生成");
         help(sender, "/" + label + " request …", "request作成・範囲・prompt・検証・一覧");
         help(sender, "/" + label + " design … | generate <design-id> | job …", "設計と非同期生成");
         help(sender, "/" + label + " candidate … | export …", "候補確認とRelease作成・検証");
+        helpSection(sender, "配置・復旧");
         help(sender, "/" + label + " apply plan <release> <world> <x> <y> <z>", "配置を検証（変更なし）");
         help(sender, "/" + label + " apply execute <id> <token>", "確認済み配置を実行");
         help(sender, "/" + label + " apply status <id>", "配置状態を表示");
@@ -740,6 +743,11 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         help(sender, "/" + label + " apply recover … | cleanup …", "復旧診断／snapshot cleanup");
         sender.sendMessage(Component.text("  Tabキーでサブコマンド、Release、world、IDを補完できます。",
                 NamedTextColor.GRAY));
+    }
+
+    private static void helpSection(CommandSender sender, String title) {
+        sender.sendMessage(Component.text("\n  " + title, NamedTextColor.GOLD)
+                .decorate(TextDecoration.BOLD));
     }
 
     private static void help(CommandSender sender, String usage, String description) {

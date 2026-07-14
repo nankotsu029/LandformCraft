@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LandformCraftCliTest {
     @Test
-    void helpListsPhaseTwoCommands() {
+    void helpGroupsCommandsByPurposeAndListsSupportedOperations() {
         ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
 
         int exitCode = LandformCraftCli.run(
@@ -23,12 +23,18 @@ class LandformCraftCliTest {
         );
 
         assertEquals(0, exitCode);
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("generate <request.yml>"));
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("export <request.yml>"));
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("verify <release-directory-or-zip>"));
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("journal-verify <placement-journal.json>"));
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("design <import|fixture|openai|anthropic>"));
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("design-verify <design-directory>"));
+        String help = outputBytes.toString(StandardCharsets.UTF_8);
+        assertTrue(help.contains("共通オプション:"));
+        assertTrue(help.contains("設計・生成:"));
+        assertTrue(help.contains("Release・検証:"));
+        assertTrue(help.contains("管理:"));
+        assertTrue(help.contains("generate <request.yml>"));
+        assertTrue(help.contains("export <request.yml>"));
+        assertTrue(help.contains("verify <release-directory-or-zip>"));
+        assertTrue(help.contains("journal-verify <placement-journal.json>"));
+        assertTrue(help.contains("design <import|fixture>"));
+        assertTrue(help.contains("design <openai|anthropic>"));
+        assertTrue(help.contains("design-verify <design-directory>"));
     }
 
     @Test

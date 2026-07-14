@@ -11,6 +11,7 @@
 | Provider 429 | `Retry-After`と上限付きretry後に失敗。RPM／token budgetを下げ、時間を置く |
 | Provider 5xx／timeout | job statusを確認。曖昧な失敗は二重課金を完全には排除できないため、成功済みDesignを先に探す |
 | 画像拒否 | PNG/JPEG、magic、8 MiB source、寸法／pixel、single frame、relative path、symlinkでないことを確認 |
+| promptと上面図の方角矛盾 | `TOP_DOWN_SKETCH`は上=北、右=東、下=南、左=西。promptは「北側を陸地、南側を海」のように直接指定し、画像四辺の色と一致させる |
 | Schema error | JSONだけを保存し、未知field、enum、request-id、範囲、重複keyを修正 |
 | structure-not-placed | preferred zone、水、崖、傾斜、bounds、間隔を満たさない。structures previewとvalidation warningを確認 |
 | atomic move unsupported | Design／Release／reservation／cleanup planの安全publishを拒否。data rootをatomic rename対応filesystemへ移す |

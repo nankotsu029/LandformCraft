@@ -20,11 +20,11 @@ Java 21とPaper 1.21.11を用意し、`LandformCraft-0.9.0-beta.1.jar`とWorldEd
 同梱fixtureを使う最短経路です。
 
 ```bash
-./gradlew run --args="validate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json"
-./gradlew run --args="generate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/quickstart-preview"
-./gradlew run --args="export examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/quickstart-exports"
-./gradlew run --args="verify build/quickstart-exports/rocky-coast-001/<release-id>"
-./gradlew run --args="verify build/quickstart-exports/rocky-coast-001/<release-id>.zip"
+./gradlew run --args="validate examples/sandy-coast/request.yml examples/sandy-coast/terrain-intent.json"
+./gradlew run --args="generate examples/sandy-coast/request.yml examples/sandy-coast/terrain-intent.json build/quickstart-preview"
+./gradlew run --args="export examples/sandy-coast/request.yml examples/sandy-coast/terrain-intent.json build/quickstart-exports"
+./gradlew run --args="verify build/quickstart-exports/sandy-coast-001/<release-id>"
+./gradlew run --args="verify build/quickstart-exports/sandy-coast-001/<release-id>.zip"
 ```
 
 `build/quickstart-preview`の8 PNGとwarningを確認してからReleaseを使います。
