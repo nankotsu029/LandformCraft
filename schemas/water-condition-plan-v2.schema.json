@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/water-condition-plan-v2.schema.json",
+  "title": "LandformCraft V2-4 regional water-condition field contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "fieldContractVersion",
+    "moduleId", "moduleVersion", "stageId",
+    "namedSeed", "seedNamespace", "width", "length", "minY", "maxY", "referenceWaterY",
+    "kernel", "hydrologyBinding", "climateBinding", "fields", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "fieldContractVersion": { "const": "water-condition-field-contract-v1" },
+    "moduleId": { "const": "v2.environment.water-condition" },
+    "moduleVersion": { "const": "0.1.0-v2-4-05" },
+    "stageId": { "const": "generate.water-condition" },
+    "namedSeed": { "type": "integer" },
+    "seedNamespace": { "const": "terrain.v2.water-condition" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "referenceWaterY": { "type": "integer" },
+    "kernel": { "$ref": "#/$defs/kernel" },
+    "hydrologyBinding": { "$ref": "#/$defs/hydrologyBinding" },
+    "climateBinding": { "$ref": "#/$defs/climateBinding" },
+    "fields": {
+      "type": "array", "minItems": 7, "maxItems": 7,
+      "items": { "$ref": "#/$defs/fieldBinding" }
+    },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "kernel": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "kernelVersion", "maximumDistanceBlocks", "groundwaterDecayRawPerBlock", "tidalFalloffRaw",
+        "salinityMarineBaseRaw", "freshwaterDilutionRaw", "hydroperiodTidalGainRaw",
+        "wetnessMoistureWeightRaw", "wetnessGroundwaterWeightRaw", "wetnessProximityWeightRaw",
+        "minimumRaw", "maximumRaw"
+      ],
+      "properties": {
+        "kernelVersion": { "const": "water-condition-fixed-v1" },
+        "maximumDistanceBlocks": { "type": "integer", "minimum": 8, "maximum": 64 },
+        "groundwaterDecayRawPerBlock": { "type": "integer", "minimum": 1, "maximum": 250 },
+        "tidalFalloffRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "salinityMarineBaseRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "freshwaterDilutionRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "hydroperiodTidalGainRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "wetnessMoistureWeightRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "wetnessGroundwaterWeightRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "wetnessProximityWeightRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "minimumRaw": { "const": 0 },
+        "maximumRaw": { "const": 1000 }
+      }
+    },
+    "hydrologyBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceHydrologyPlanChecksum", "maximumDistanceBlocks", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceHydrologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "maximumDistanceBlocks": { "type": "integer", "minimum": 8, "maximum": 64 },
+        "bindingContractVersion": { "const": "water-condition-hydrology-binding-v1" }
+      }
+    },
+    "climateBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceClimatePlanChecksum", "moistureFieldId", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceClimatePlanChecksum": { "$ref": "#/$defs/checksum" },
+        "moistureFieldId": { "const": "climate.final.moisture" },
+        "bindingContractVersion": { "const": "water-condition-climate-binding-v1" }
+      }
+    },
+    "fieldBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "fieldId", "semantic", "valueType", "ownerModuleId", "ownership", "sampling", "scaleMillionths"
+      ],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "semantic": {
+          "enum": [
+            "WATER_DISTANCE", "GROUNDWATER_PROXY", "TIDAL_INFLUENCE", "SALINITY",
+            "HYDROPERIOD", "WETNESS", "WETNESS_RESIDUAL"
+          ]
+        },
+        "valueType": { "enum": ["U16", "I16"] },
+        "ownerModuleId": { "const": "v2.environment.water-condition" },
+        "ownership": { "const": "SINGLE_OWNER" },
+        "sampling": { "const": "NEAREST" },
+        "scaleMillionths": { "const": 1000 }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumFields", "globalCellCount", "estimatedCpuWorkUnits",
+        "estimatedRetainedBytes", "maximumWindowSize", "maximumDistanceBlocks",
+        "maximumWorkingBytes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "water-condition-field-budget-v1" },
+        "maximumFields": { "const": 7 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 2097152 },
+        "maximumWindowSize": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "maximumDistanceBlocks": { "type": "integer", "minimum": 8, "maximum": 64 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1, "maximum": 131072 }
+      }
+    }
+  }
+}

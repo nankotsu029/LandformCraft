@@ -1,0 +1,54 @@
+{
+  "requestVersion": 2,
+  "requestId": "azure-coast-v2",
+  "bounds": {
+    "width": 400,
+    "length": 400,
+    "minY": 32,
+    "maxY": 72,
+    "waterLevel": 50
+  },
+  "prompt": "Generate the deterministic Azure Coast phase-gate fixture with a sandy beach, harbor basin, breakwater harbor, and rocky cape.",
+  "referenceImages": [],
+  "constraintMaps": [
+    {
+      "sourceId": "constraint-source:coast-mask",
+      "file": "maps/azure-coast-land-water-u8.png",
+      "expectedSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "expectedWidth": 400,
+      "expectedLength": 400,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": { "x": 0, "z": 0, "width": 400, "length": 400 }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "labels": [
+          { "sample": 0, "label": "water" },
+          { "sample": 1, "label": "land" }
+        ],
+        "noData": { "mode": "FORBIDDEN" }
+      }
+    }
+  ],
+  "generation": { "globalSeed": 827413, "tileSize": 128 },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  }
+}

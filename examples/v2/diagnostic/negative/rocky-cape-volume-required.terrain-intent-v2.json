@@ -1,0 +1,55 @@
+{
+  "intentVersion": 2,
+  "intentId": "rocky-cape-volume-required",
+  "theme": "Negative fixture: a ROCKY_CAPE request explicitly requires deferred local volume",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "volume-cape",
+      "kind": "ROCKY_CAPE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.55, 0.20], [0.88, 0.20], [0.94, 0.78], [0.55, 0.78], [0.55, 0.20]]]
+      },
+      "parameters": {
+        "cliffHeightBlocks": { "min": 8, "max": 12 },
+        "localReliefAboveSeaBlocks": { "min": 14, "max": 18 },
+        "cliffBandWidthBlocks": { "min": 6, "max": 10 },
+        "seaStackCount": { "min": 1, "max": 2 },
+        "seaStackRadiusBlocks": { "min": 2, "max": 3 },
+        "seaStackOffshoreDistanceBlocks": { "min": 6, "max": 10 },
+        "channelCount": { "min": 1, "max": 1 },
+        "channelWidthBlocks": { "min": 2, "max": 4 },
+        "channelLengthBlocks": { "min": 8, "max": 16 },
+        "channelDepthBlocks": { "min": 2, "max": 4 },
+        "rockExposure01": { "min": 0.70, "max": 0.90 },
+        "seawardSide": "EAST",
+        "capeMode": "LOCAL_VOLUME_REQUIRED"
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "negative-rocky-cape-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": { "climatePreset": "TEMPERATE_MARITIME" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "negative-rocky-cape-fixture",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

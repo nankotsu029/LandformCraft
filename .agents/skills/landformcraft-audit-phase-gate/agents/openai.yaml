@@ -1,0 +1,6 @@
+interface:
+  display_name: "LandformCraft Phase Gate監査"
+  short_description: "Phase末尾Taskの証拠とSUPPORTED昇格条件を監査"
+  default_prompt: "Use $landformcraft-audit-phase-gate to audit the explicitly named Phase gate task without adding new features."
+policy:
+  allow_implicit_invocation: false

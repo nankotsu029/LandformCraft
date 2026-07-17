@@ -1,0 +1,77 @@
+{
+  "planVersion": 1,
+  "graphContractVersion": "hydrology-graph-v1",
+  "moduleId": "v2.hydrology.ir",
+  "moduleVersion": "0.1.0-v2-3-01",
+  "fixedPriors": {
+    "priorVersion": 1,
+    "geologyPrior": "UNIFORM_GEOLOGY_PRIOR",
+    "uniformHardnessMillionths": 500000,
+    "uniformPermeabilityMillionths": 500000,
+    "runoffPrior": "CONSTANT_RUNOFF_PRIOR",
+    "constantRunoffMillionths": 1000000,
+    "priorChecksum": "a516011407c20c6931961bb752cda6c1f73619af2a2faa51e2a3bfa2ae21d142"
+  },
+  "basins": [],
+  "nodes": [],
+  "reaches": [],
+  "waterBodies": [],
+  "fallPlans": [],
+  "fields": [
+    {
+      "fieldId": "hydrology.bed-elevation",
+      "semantic": "BED_ELEVATION",
+      "valueType": "I32",
+      "ownerModuleId": "v2.hydrology.ir",
+      "ownership": "SINGLE_OWNER"
+    },
+    {
+      "fieldId": "hydrology.flow-accumulation",
+      "semantic": "FLOW_ACCUMULATION",
+      "valueType": "I32",
+      "ownerModuleId": "v2.hydrology.ir",
+      "ownership": "SINGLE_OWNER"
+    },
+    {
+      "fieldId": "hydrology.flow-direction",
+      "semantic": "FLOW_DIRECTION",
+      "valueType": "U8",
+      "ownerModuleId": "v2.hydrology.ir",
+      "ownership": "SINGLE_OWNER"
+    },
+    {
+      "fieldId": "hydrology.water-body-id",
+      "semantic": "WATER_BODY_ID",
+      "valueType": "I32",
+      "ownerModuleId": "v2.hydrology.ir",
+      "ownership": "SINGLE_OWNER"
+    },
+    {
+      "fieldId": "hydrology.water-depth",
+      "semantic": "WATER_DEPTH",
+      "valueType": "I32",
+      "ownerModuleId": "v2.hydrology.ir",
+      "ownership": "SINGLE_OWNER"
+    },
+    {
+      "fieldId": "hydrology.water-surface",
+      "semantic": "WATER_SURFACE",
+      "valueType": "I32",
+      "ownerModuleId": "v2.hydrology.ir",
+      "ownership": "SINGLE_OWNER"
+    }
+  ],
+  "budget": {
+    "budgetVersion": "hydrology-budget-v1",
+    "maximumBasins": 40,
+    "maximumNodes": 625,
+    "maximumReaches": 1250,
+    "maximumWaterBodies": 80,
+    "maximumFallPlans": 39,
+    "maximumFields": 6,
+    "globalCellCount": 160000,
+    "estimatedCpuWorkUnits": 10340000,
+    "estimatedResidentBytes": 9484480
+  },
+  "canonicalChecksum": "532a2eb9f0e7dafa77d501b07ada8a460168d4043039b0761c03cdd0d33661bc"
+}

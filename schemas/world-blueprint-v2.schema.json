@@ -1,0 +1,1135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/world-blueprint-v2.schema.json",
+  "title": "LandformCraft WorldBlueprint v2 compiled contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["identity", "space", "determinism", "modules", "stages", "fields", "fieldOwnership", "featurePlans", "coastalFeaturePlans", "sandyBeachPlans", "harborBasinPlans", "breakwaterHarborPlans", "rockyCapePlans", "coastalTransitionPlans", "meanderingRiverPlans", "lakePlans", "canyonPlans", "waterfallPlans", "deltaPlans", "tidalChannelPlans", "fjordPlans", "mountainPlans", "volcanicPlans", "geologyPlan", "lithologyPlan", "strataPlan", "climatePlan", "waterConditionPlan", "hydrologyPlan", "hydrologyReconciliationPlan", "validationTargets", "budgets", "diagnosticIssues", "canonicalChecksum"],
+  "properties": {
+    "identity": { "$ref": "#/$defs/identity" },
+    "space": { "$ref": "#/$defs/space" },
+    "determinism": { "$ref": "#/$defs/determinism" },
+    "modules": { "type": "array", "maxItems": 128, "items": { "$ref": "#/$defs/module" } },
+    "stages": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/stage" } },
+    "fields": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/field" } },
+    "fieldOwnership": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/fieldOwnership" } },
+    "featurePlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/featurePlan" } },
+    "coastalFeaturePlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/coastalFeaturePlan" } },
+    "sandyBeachPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/sandyBeachPlan" } },
+    "harborBasinPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/harborBasinPlan" } },
+    "breakwaterHarborPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/breakwaterHarborPlan" } },
+    "rockyCapePlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/rockyCapePlan" } },
+    "coastalTransitionPlans": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/coastalTransitionPlan" } },
+    "meanderingRiverPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/meanderingRiverPlan" } },
+    "lakePlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/lakePlan" } },
+    "canyonPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/canyonPlan" } },
+    "waterfallPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/waterfallPlan" } },
+    "deltaPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/deltaPlan" } },
+    "tidalChannelPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/tidalChannelPlan" } },
+    "fjordPlans": { "type": "array", "maxItems": 256, "items": true },
+    "mountainPlans": { "type": "array", "maxItems": 256, "items": true },
+    "volcanicPlans": { "type": "array", "maxItems": 256, "items": true },
+    "geologyPlan": { "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/geology-plan-v2.schema.json" },
+    "lithologyPlan": { "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/lithology-plan-v2.schema.json" },
+    "strataPlan": { "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/strata-plan-v2.schema.json" },
+    "climatePlan": { "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/climate-plan-v2.schema.json" },
+    "waterConditionPlan": { "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/water-condition-plan-v2.schema.json" },
+    "hydrologyPlan": { "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-plan-v2.schema.json" },
+    "hydrologyReconciliationPlan": { "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-reconciliation-plan-v2.schema.json" },
+    "validationTargets": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/validationTarget" } },
+    "budgets": { "$ref": "#/$defs/budget" },
+    "diagnosticIssues": { "type": "array", "maxItems": 2048, "items": { "$ref": "#/$defs/diagnosticIssue" } },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "qualifiedArray": { "type": "array", "maxItems": 128, "items": { "$ref": "#/$defs/qualified" } },
+    "slugArray": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/slug" } },
+    "featureKind": {
+      "enum": [
+        "SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "BACKSHORE_PLAINS",
+        "FJORD", "GLACIAL_MOUNTAIN_RANGE", "MEANDERING_RIVER", "LAKE", "DELTA", "VOLCANIC_ARCHIPELAGO",
+        "VOLCANIC_CALDERA", "LAVA_FLOW_FIELD", "CANYON", "BEDROCK_RIVER", "WATERFALL",
+        "MANGROVE_WETLAND", "TIDAL_CHANNEL_NETWORK", "ALPINE_MOUNTAIN_RANGE", "GLACIAL_CIRQUE_FIELD",
+        "CORAL_REEF", "LAGOON", "REEF_PASS", "CAVE_NETWORK", "CAVE_ENTRANCE", "LUSH_CAVE",
+        "SEA_CLIFF", "OVERHANG", "SKY_ISLAND_GROUP"
+      ]
+    },
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["blueprintVersion", "requestId", "sourceRequestChecksum", "sourceIntentChecksum", "compilerVersion", "generatorVersion"],
+      "properties": {
+        "blueprintVersion": { "const": 2 }, "requestId": { "$ref": "#/$defs/slug" },
+        "sourceRequestChecksum": { "$ref": "#/$defs/checksum" }, "sourceIntentChecksum": { "$ref": "#/$defs/checksum" },
+        "compilerVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "generatorVersion": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "bounds": {
+      "type": "object", "additionalProperties": false,
+      "required": ["width", "length", "minY", "maxY", "waterLevel"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "minY": { "type": "integer" }, "maxY": { "type": "integer" }, "waterLevel": { "type": "integer" }
+      }
+    },
+    "coordinateSystem": {
+      "type": "object", "additionalProperties": false,
+      "required": ["horizontal", "origin", "xAxis", "zAxis", "vertical"],
+      "properties": {
+        "horizontal": { "const": "NORMALIZED_XZ" }, "origin": { "const": "NORTH_WEST" },
+        "xAxis": { "const": "EAST" }, "zAxis": { "const": "SOUTH" },
+        "vertical": { "const": "BLOCK_Y_OR_SURFACE_OFFSET" }
+      }
+    },
+    "tilePolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["tileSize", "maximumHaloXZ", "maximumHaloY"],
+      "properties": {
+        "tileSize": { "enum": [32, 64, 128, 256] },
+        "maximumHaloXZ": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "maximumHaloY": { "type": "integer", "minimum": 0, "maximum": 512 }
+      }
+    },
+    "space": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bounds", "coordinateSystem", "tilePolicy"],
+      "properties": {
+        "bounds": { "$ref": "#/$defs/bounds" }, "coordinateSystem": { "$ref": "#/$defs/coordinateSystem" },
+        "tilePolicy": { "$ref": "#/$defs/tilePolicy" }
+      }
+    },
+    "determinism": {
+      "type": "object", "additionalProperties": false,
+      "required": ["globalSeed", "seedNamespace", "seedDerivationVersion", "canonicalizationVersion"],
+      "properties": {
+        "globalSeed": { "type": "integer" }, "seedNamespace": { "$ref": "#/$defs/qualified" },
+        "seedDerivationVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "canonicalizationVersion": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "fieldWrite": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "mergeOperator"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "mergeOperator": { "enum": ["SINGLE_OWNER", "MIN", "MAX", "ADD_CLAMP", "MASK_UNION", "PRIORITY_BLEND", "ORDERED_CSG"] }
+      }
+    },
+    "module": {
+      "type": "object", "additionalProperties": false,
+      "required": ["moduleId", "moduleVersion", "lifecycleStatus", "supportedFeatureKinds", "requiredFields", "providedFields", "fieldWrites", "stageId", "requiredHaloXZ", "requiredHaloY", "resourceClass", "validatorCapabilities", "previewCapabilities"],
+      "properties": {
+        "moduleId": { "$ref": "#/$defs/qualified" }, "moduleVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "lifecycleStatus": { "enum": ["EXPERIMENTAL", "SUPPORTED", "DEPRECATED"] },
+        "supportedFeatureKinds": { "type": "array", "maxItems": 128, "items": { "$ref": "#/$defs/featureKind" } },
+        "requiredFields": { "$ref": "#/$defs/qualifiedArray" }, "providedFields": { "$ref": "#/$defs/qualifiedArray" },
+        "fieldWrites": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/fieldWrite" } },
+        "stageId": { "$ref": "#/$defs/qualified" }, "requiredHaloXZ": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "requiredHaloY": { "type": "integer", "minimum": 0, "maximum": 512 },
+        "resourceClass": { "enum": ["DIAGNOSTIC_LOW", "REGIONAL_MEDIUM", "VOLUMETRIC_HIGH"] },
+        "validatorCapabilities": { "$ref": "#/$defs/qualifiedArray" }, "previewCapabilities": { "$ref": "#/$defs/qualifiedArray" }
+      }
+    },
+    "stage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stageId", "dependsOnStageIds"],
+      "properties": { "stageId": { "$ref": "#/$defs/qualified" }, "dependsOnStageIds": { "$ref": "#/$defs/qualifiedArray" } }
+    },
+    "field": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "semantic", "valueType", "width", "length", "space", "sampling", "storage", "artifact"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "semantic": {
+          "enum": [
+            "LAND_WATER_MASK", "HEIGHT_GUIDE", "ZONE_LABEL_MAP",
+            "DESIRED_LAND_WATER", "ACTUAL_LAND_WATER", "RESIDUAL_LAND_WATER",
+            "DESIRED_HEIGHT", "ACTUAL_HEIGHT", "RESIDUAL_HEIGHT", "DIAGNOSTIC_FEATURE_PLAN",
+            "COAST_NORMAL_X", "COAST_NORMAL_Z", "COAST_SIDE", "COAST_SIGNED_DISTANCE", "NEARSHORE_PROFILE",
+            "BEACH_LOCAL_WIDTH", "BEACH_SURFACE_HEIGHT", "BEACH_BAND", "BEACH_SEMANTIC_SAND",
+            "HARBOR_BASIN_REGION", "HARBOR_BASIN_WATER", "HARBOR_BASIN_WATER_DEPTH", "HARBOR_BASIN_BOTTOM_HEIGHT",
+            "BREAKWATER_REGION", "BREAKWATER_ARM_INDEX", "BREAKWATER_TOP_HEIGHT", "BREAKWATER_BOTTOM_HEIGHT",
+            "CAPE_REGION", "CAPE_SURFACE_HEIGHT", "CAPE_ROCK_EXPOSURE", "CAPE_DESCRIPTOR_INDEX",
+            "COASTAL_COMPOSED_LAND_WATER", "COASTAL_COMPOSED_SURFACE_HEIGHT",
+            "COASTAL_COMPOSED_OWNER_INDEX", "COASTAL_COMPOSED_BLEND_WEIGHT", "COASTAL_COMPOSED_CONFLICT",
+            "HYDROLOGY_WATER_BODY_ID", "HYDROLOGY_FLOW_DIRECTION", "HYDROLOGY_FLOW_ACCUMULATION",
+            "HYDROLOGY_BED_ELEVATION", "HYDROLOGY_WATER_SURFACE", "HYDROLOGY_WATER_DEPTH",
+            "HYDROLOGY_RIVER_CHANNEL_MASK", "HYDROLOGY_RIVER_BANK_MASK", "HYDROLOGY_RIVER_FLOODPLAIN_MASK",
+            "HYDROLOGY_RIVER_MEANDER_CORRIDOR", "HYDROLOGY_RIVER_LOCAL_WIDTH", "HYDROLOGY_RIVER_DISCHARGE_INDEX",
+            "HYDROLOGY_LAKE_BASIN_MASK", "HYDROLOGY_LAKE_RIM_MASK", "HYDROLOGY_LAKE_SPILLWAY_MASK",
+            "HYDROLOGY_LAKE_DEPTH", "HYDROLOGY_LAKE_FLOOR_HEIGHT", "HYDROLOGY_LAKE_SURFACE",
+            "LANDFORM_CANYON_MASK", "LANDFORM_CANYON_FLOOR_MASK", "LANDFORM_CANYON_RIM_MASK",
+            "LANDFORM_CANYON_TERRACE_MASK", "LANDFORM_CANYON_SURFACE_HEIGHT", "LANDFORM_CANYON_WALL_HEIGHT",
+            "HYDROLOGY_WATERFALL_LIP_MASK", "HYDROLOGY_WATERFALL_BASE_MASK", "HYDROLOGY_WATERFALL_PLUNGE_POOL_MASK",
+            "HYDROLOGY_WATERFALL_LIP_ELEVATION", "HYDROLOGY_WATERFALL_BASE_ELEVATION",
+            "HYDROLOGY_WATERFALL_PLUNGE_POOL_FLOOR",
+            "HYDROLOGY_DELTA_FAN_MASK", "HYDROLOGY_DELTA_CHANNEL_MASK", "HYDROLOGY_DELTA_BRANCH_INDEX",
+            "HYDROLOGY_DELTA_FAN_SURFACE", "HYDROLOGY_DELTA_SANDBAR_MASK",
+            "HYDROLOGY_DELTA_SHALLOW_SEA_DEPTH", "HYDROLOGY_DELTA_DISCHARGE_SHARE",
+            "HYDROLOGY_TIDAL_CHANNEL_MASK", "HYDROLOGY_TIDAL_BRANCH_INDEX",
+            "HYDROLOGY_TIDAL_DEPTH_CORRIDOR", "HYDROLOGY_TIDAL_MARINE_CONNECTION",
+            "LANDFORM_FJORD_CHANNEL_MASK", "LANDFORM_FJORD_FLOOR_MASK",
+            "LANDFORM_FJORD_SIDEWALL_MASK", "LANDFORM_FJORD_THALWEG_DEPTH",
+            "LANDFORM_FJORD_SIDEWALL_RELIEF",
+            "LANDFORM_MOUNTAIN_RIDGE_MASK", "LANDFORM_MOUNTAIN_PEAK_MASK",
+            "LANDFORM_MOUNTAIN_SADDLE_MASK", "LANDFORM_MOUNTAIN_SPUR_MASK",
+            "LANDFORM_MOUNTAIN_PROVISIONAL_SURFACE", "LANDFORM_MOUNTAIN_RIDGE_SEGMENT_ID",
+            "LANDFORM_VOLCANIC_ISLAND_MASK", "LANDFORM_VOLCANIC_ISLAND_INDEX",
+            "LANDFORM_VOLCANIC_SUMMIT_RELIEF", "LANDFORM_VOLCANIC_SUBMARINE_SADDLE_MASK",
+            "LANDFORM_VOLCANIC_RADIAL_DRAINAGE", "LANDFORM_VOLCANIC_PROVISIONAL_SURFACE",
+            "GEOLOGY_PROVINCE_ID", "GEOLOGY_FORMATION_ID", "GEOLOGY_HARDNESS", "GEOLOGY_PERMEABILITY",
+            "CLIMATE_PRIOR_PRECIPITATION", "CLIMATE_PRIOR_RUNOFF",
+            "CLIMATE_FINAL_TEMPERATURE", "CLIMATE_FINAL_MOISTURE",
+            "WATER_CONDITION_WATER_DISTANCE", "WATER_CONDITION_GROUNDWATER_PROXY",
+            "WATER_CONDITION_TIDAL_INFLUENCE", "WATER_CONDITION_SALINITY",
+            "WATER_CONDITION_HYDROPERIOD", "WATER_CONDITION_WETNESS",
+            "WATER_CONDITION_WETNESS_RESIDUAL"
+          ]
+        },
+        "valueType": { "enum": ["BIT", "U8", "U16", "I16", "I32", "Q16"] },
+        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "space": { "const": "RELEASE_LOCAL_XZ" },
+        "sampling": { "enum": ["NEAREST", "BILINEAR_FIXED"] },
+        "storage": { "enum": ["DESCRIPTOR_ONLY", "SIDECAR"] },
+        "artifact": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/fieldArtifact" }] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "storage": { "const": "SIDECAR" } } },
+          "then": { "properties": { "artifact": { "$ref": "#/$defs/fieldArtifact" } } },
+          "else": { "properties": { "artifact": { "type": "null" } } }
+        }
+      ]
+    },
+    "fieldArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "relativePath", "definition", "encodingVersion", "artifactChecksum", "semanticChecksum", "provenance"
+      ],
+      "properties": {
+        "relativePath": {
+          "type": "string",
+          "pattern": "^(?:[a-z0-9][a-z0-9._-]{0,63}/){0,7}[a-z0-9][a-z0-9._-]{0,63}\\.lfgrid$"
+        },
+        "definition": { "$ref": "#/$defs/fieldArtifactDefinition" },
+        "encodingVersion": { "const": "LFC_GRID_V1" },
+        "artifactChecksum": { "$ref": "#/$defs/checksum" },
+        "semanticChecksum": { "$ref": "#/$defs/checksum" },
+        "provenance": { "$ref": "#/$defs/fieldArtifactProvenance" }
+      }
+    },
+    "fieldArtifactDefinition": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "fieldId", "semantic", "valueType", "width", "length", "coordinateSpace", "sampling",
+        "scaleMillionths", "offsetMillionths", "hasNoData", "noDataRaw"
+      ],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "semantic": {
+          "enum": [
+            "LAND_WATER_MASK", "HEIGHT_GUIDE", "ZONE_LABEL_MAP",
+            "DESIRED_LAND_WATER", "ACTUAL_LAND_WATER", "RESIDUAL_LAND_WATER",
+            "DESIRED_HEIGHT", "ACTUAL_HEIGHT", "RESIDUAL_HEIGHT",
+            "HYDROLOGY_FLOW_DIRECTION", "HYDROLOGY_FLOW_ACCUMULATION",
+            "GEOLOGY_PROVINCE_ID", "GEOLOGY_FORMATION_ID", "GEOLOGY_HARDNESS", "GEOLOGY_PERMEABILITY"
+          ]
+        },
+        "valueType": { "enum": ["U8", "U16", "I32"] },
+        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "coordinateSpace": { "const": "RELEASE_LOCAL_XZ" },
+        "sampling": { "enum": ["NEAREST", "BILINEAR_FIXED"] },
+        "scaleMillionths": {
+          "type": "integer", "minimum": -1000000000, "maximum": 1000000000,
+          "not": { "const": 0 }
+        },
+        "offsetMillionths": {
+          "type": "integer", "minimum": -4000000000000, "maximum": 4000000000000
+        },
+        "hasNoData": { "type": "boolean" },
+        "noDataRaw": { "type": "integer" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "hasNoData": { "const": false } } },
+          "then": { "properties": { "noDataRaw": { "const": 0 } } }
+        }
+      ]
+    },
+    "fieldArtifactProvenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sourceKind", "sourceId", "sourceChecksum", "decoderId", "decoderVersion", "transformId"],
+      "properties": {
+        "sourceKind": { "enum": ["MANUAL", "CONSTRAINT_MAP", "DERIVED"] },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^(?:constraint-source|manual-source|derived-source):[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "sourceChecksum": { "$ref": "#/$defs/checksum" },
+        "decoderId": { "$ref": "#/$defs/qualified" },
+        "decoderVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "transformId": { "$ref": "#/$defs/qualified" }
+      }
+    },
+    "fieldOwnership": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "moduleId", "mergeOperator"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" }, "moduleId": { "$ref": "#/$defs/qualified" },
+        "mergeOperator": { "enum": ["SINGLE_OWNER", "MIN", "MAX", "ADD_CLAMP", "MASK_UNION", "PRIORITY_BLEND", "ORDERED_CSG"] }
+      }
+    },
+    "featurePlan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["featureId", "kind", "priority", "moduleId", "moduleVersion", "geometryType", "geometryChecksum", "namedSeed", "seedNamespace", "relationIds", "requiredFields", "providedFields", "validationTargetIds"],
+      "properties": {
+        "featureId": { "$ref": "#/$defs/slug" }, "kind": { "$ref": "#/$defs/featureKind" },
+        "priority": { "type": "integer", "minimum": -100, "maximum": 100 },
+        "moduleId": { "$ref": "#/$defs/qualified" }, "moduleVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "geometryType": { "enum": ["POINT", "MULTI_POINT", "SPLINE", "MULTI_SPLINE", "POLYGON", "VOLUME_GUIDE"] },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" }, "namedSeed": { "type": "integer" },
+        "seedNamespace": { "$ref": "#/$defs/qualified" }, "relationIds": { "$ref": "#/$defs/slugArray" },
+        "requiredFields": { "$ref": "#/$defs/qualifiedArray" }, "providedFields": { "$ref": "#/$defs/qualifiedArray" },
+        "validationTargetIds": { "$ref": "#/$defs/slugArray" }
+      }
+    },
+    "coastalBlockPoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+        "zMillionths": { "type": "integer", "minimum": 0, "maximum": 1000000000 }
+      }
+    },
+    "coastalBlockPath": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pathId", "interpolation", "points"],
+      "properties": {
+        "pathId": { "$ref": "#/$defs/slug" },
+        "interpolation": { "enum": ["POLYLINE", "CATMULL_ROM"] },
+        "points": { "type": "array", "minItems": 2, "maxItems": 1024, "items": { "$ref": "#/$defs/coastalBlockPoint" } }
+      }
+    },
+    "coastalBlockRing": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ringIndex", "points"],
+      "properties": {
+        "ringIndex": { "type": "integer", "minimum": 0, "maximum": 63 },
+        "points": { "type": "array", "minItems": 4, "maxItems": 2048, "items": { "$ref": "#/$defs/coastalBlockPoint" } }
+      }
+    },
+    "coastalBlockGeometry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["geometryVersion", "geometryType", "paths", "rings", "sourceGeometryChecksum"],
+      "properties": {
+        "geometryVersion": { "const": 1 },
+        "geometryType": { "enum": ["SPLINE", "MULTI_SPLINE", "POLYGON"] },
+        "paths": { "type": "array", "maxItems": 128, "items": { "$ref": "#/$defs/coastalBlockPath" } },
+        "rings": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/coastalBlockRing" } },
+        "sourceGeometryChecksum": { "$ref": "#/$defs/checksum" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "geometryType": { "const": "SPLINE" } } },
+          "then": { "properties": { "paths": { "minItems": 1, "maxItems": 1 }, "rings": { "maxItems": 0 } } }
+        },
+        {
+          "if": { "properties": { "geometryType": { "const": "MULTI_SPLINE" } } },
+          "then": { "properties": { "paths": { "minItems": 1 }, "rings": { "maxItems": 0 } } }
+        },
+        {
+          "if": { "properties": { "geometryType": { "const": "POLYGON" } } },
+          "then": { "properties": { "paths": { "maxItems": 0 }, "rings": { "minItems": 1 } } }
+        }
+      ]
+    },
+    "coastalSignedDistance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "sign", "maximumDistanceBlocks"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "sign": { "enum": ["POSITIVE_ON_LAND_SIDE", "UNSIGNED", "NEGATIVE_INSIDE", "POSITIVE_INSIDE"] },
+        "maximumDistanceBlocks": { "type": "integer", "minimum": 1, "maximum": 1000 }
+      }
+    },
+    "coastalNearshoreProfile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "kind", "distanceBlocks", "targetDepthBlocks"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "kind": { "enum": ["NONE", "LINEAR_DEPTH_TARGET"] },
+        "distanceBlocks": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "targetDepthBlocks": { "type": "integer", "minimum": 0, "maximum": 512 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "NONE" } } },
+          "then": { "properties": { "distanceBlocks": { "const": 0 }, "targetDepthBlocks": { "const": 0 } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "LINEAR_DEPTH_TARGET" } } },
+          "then": { "properties": { "distanceBlocks": { "minimum": 1 } } }
+        }
+      ]
+    },
+    "coastalFeaturePlan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["planVersion", "featureId", "kind", "geometry", "geometryRole", "coastSideFieldId", "coastSide", "signedDistance", "nearshoreProfile", "supportRadiusXZ"],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "kind": { "enum": ["SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE"] },
+        "geometry": { "$ref": "#/$defs/coastalBlockGeometry" },
+        "geometryRole": { "enum": ["COASTLINE", "STRUCTURE_CENTERLINES", "WATER_REGION", "LAND_REGION"] },
+        "coastSideFieldId": { "$ref": "#/$defs/qualified" },
+        "coastSide": { "enum": ["LAND_LEFT", "LAND_RIGHT", "INTERIOR_WATER", "INTERIOR_LAND", "NOT_APPLICABLE"] },
+        "signedDistance": { "$ref": "#/$defs/coastalSignedDistance" },
+        "nearshoreProfile": { "$ref": "#/$defs/coastalNearshoreProfile" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 0, "maximum": 1000 }
+      }
+    },
+    "sandyBeachPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "widthProfileKind", "minimumWidthBlocks", "maximumWidthBlocks",
+        "endpointTaperBlocks", "foreshoreShareMillionths", "minimumShoreSlopeDegreesMillionths",
+        "maximumShoreSlopeDegreesMillionths", "selectedShoreSlopeDegreesMillionths", "risePerBlockMillionths",
+        "nearshoreDistanceBlocks", "nearshoreTargetDepthBlocks", "minY", "maxY", "waterLevel",
+        "localWidthFieldId", "surfaceHeightFieldId", "bandFieldId", "semanticSandFieldId", "supportRadiusXZ"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "widthProfileKind": { "const": "ENDPOINT_TAPER" },
+        "minimumWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "maximumWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "endpointTaperBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "foreshoreShareMillionths": { "type": "integer", "minimum": 100000, "maximum": 900000 },
+        "minimumShoreSlopeDegreesMillionths": { "type": "integer", "minimum": 1, "maximum": 30000000 },
+        "maximumShoreSlopeDegreesMillionths": { "type": "integer", "minimum": 1, "maximum": 30000000 },
+        "selectedShoreSlopeDegreesMillionths": { "type": "integer", "minimum": 1, "maximum": 30000000 },
+        "risePerBlockMillionths": { "type": "integer", "minimum": 1, "maximum": 577350 },
+        "nearshoreDistanceBlocks": { "type": "integer", "minimum": 1, "maximum": 63 },
+        "nearshoreTargetDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "minY": { "type": "integer" }, "maxY": { "type": "integer" }, "waterLevel": { "type": "integer" },
+        "localWidthFieldId": { "$ref": "#/$defs/qualified" },
+        "surfaceHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "bandFieldId": { "$ref": "#/$defs/qualified" },
+        "semanticSandFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "harborBasinPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "bottomProfileKind", "minimumDepthBlocks", "maximumDepthBlocks",
+        "profileTransitionBlocks", "entranceEndpointIds", "entranceFirst", "entranceSecond",
+        "outwardUnitXMillionths", "outwardUnitZMillionths", "openingWidthMillionths",
+        "entranceCorridorLengthBlocks", "minY", "maxY", "waterLevel", "regionFieldId",
+        "waterFieldId", "depthFieldId", "bottomHeightFieldId", "supportRadiusXZ"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "bottomProfileKind": { "const": "EDGE_TO_CENTER_LINEAR" },
+        "minimumDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "maximumDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "profileTransitionBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "entranceEndpointIds": { "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": { "$ref": "#/$defs/slug" } },
+        "entranceFirst": { "$ref": "#/$defs/coastalBlockPoint" },
+        "entranceSecond": { "$ref": "#/$defs/coastalBlockPoint" },
+        "outwardUnitXMillionths": { "type": "integer", "minimum": -1000000, "maximum": 1000000 },
+        "outwardUnitZMillionths": { "type": "integer", "minimum": -1000000, "maximum": 1000000 },
+        "openingWidthMillionths": { "type": "integer", "minimum": 2000000, "maximum": 1413000000 },
+        "entranceCorridorLengthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "minY": { "type": "integer" }, "maxY": { "type": "integer" }, "waterLevel": { "type": "integer" },
+        "regionFieldId": { "$ref": "#/$defs/qualified" },
+        "waterFieldId": { "$ref": "#/$defs/qualified" },
+        "depthFieldId": { "$ref": "#/$defs/qualified" },
+        "bottomHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "breakwaterArmPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["armOrder", "armId", "startEndpointId", "endEndpointId", "openingEndpointId", "openingAtStart", "lengthMillionths"],
+      "properties": {
+        "armOrder": { "type": "integer", "minimum": 1, "maximum": 2 },
+        "armId": { "$ref": "#/$defs/slug" },
+        "startEndpointId": { "$ref": "#/$defs/slug" },
+        "endEndpointId": { "$ref": "#/$defs/slug" },
+        "openingEndpointId": { "$ref": "#/$defs/slug" },
+        "openingAtStart": { "type": "boolean" },
+        "lengthMillionths": { "type": "integer", "minimum": 1000000, "maximum": 4000000000 }
+      }
+    },
+    "breakwaterHarborPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "crestProfileKind", "foundationProfileKind",
+        "crestWidthBlocks", "crestAboveWaterBlocks", "outerDepthBlocks", "innerDepthBlocks",
+        "foundationSideSlopeRunPerRiseMillionths", "arms", "openingEndpointIds", "openingFirst",
+        "openingSecond", "requestedClearOpeningWidthBlocks", "actualClearOpeningWidthMillionths",
+        "openingMeasurement", "innerSide", "basinFeatureId", "enclosureRelationId", "minY", "maxY",
+        "waterLevel", "regionFieldId", "armIndexFieldId", "topHeightFieldId", "bottomHeightFieldId",
+        "supportRadiusXZ"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "crestProfileKind": { "const": "FLAT" },
+        "foundationProfileKind": { "const": "LINEAR_SIDE_SLOPE" },
+        "crestWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "crestAboveWaterBlocks": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "outerDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "innerDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "foundationSideSlopeRunPerRiseMillionths": { "type": "integer", "minimum": 250000, "maximum": 4000000 },
+        "arms": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/breakwaterArmPlan" } },
+        "openingEndpointIds": { "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": { "$ref": "#/$defs/slug" } },
+        "openingFirst": { "$ref": "#/$defs/coastalBlockPoint" },
+        "openingSecond": { "$ref": "#/$defs/coastalBlockPoint" },
+        "requestedClearOpeningWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 64 },
+        "actualClearOpeningWidthMillionths": { "type": "integer", "minimum": 2000000, "maximum": 1413000000 },
+        "openingMeasurement": { "const": "CLEAR_EDGE_TO_EDGE" },
+        "innerSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "basinFeatureId": { "$ref": "#/$defs/slug" },
+        "enclosureRelationId": { "$ref": "#/$defs/slug" },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "regionFieldId": { "$ref": "#/$defs/qualified" },
+        "armIndexFieldId": { "$ref": "#/$defs/qualified" },
+        "topHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "bottomHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "rockyCapeChannelDescriptor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["descriptorIndex", "descriptorId", "mouth", "inlandEnd", "widthBlocks", "lengthBlocks", "depthBlocks"],
+      "properties": {
+        "descriptorIndex": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "descriptorId": { "$ref": "#/$defs/slug" },
+        "mouth": { "$ref": "#/$defs/coastalBlockPoint" },
+        "inlandEnd": { "$ref": "#/$defs/coastalBlockPoint" },
+        "widthBlocks": { "type": "integer", "minimum": 2, "maximum": 8 },
+        "lengthBlocks": { "type": "integer", "minimum": 4, "maximum": 64 },
+        "depthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 }
+      }
+    },
+    "rockyCapeSeaStackDescriptor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["descriptorIndex", "descriptorId", "center", "radiusBlocks", "heightAboveSeaBlocks", "offshoreDistanceBlocks"],
+      "properties": {
+        "descriptorIndex": { "type": "integer", "minimum": 1025, "maximum": 1036 },
+        "descriptorId": { "$ref": "#/$defs/slug" },
+        "center": { "$ref": "#/$defs/coastalBlockPoint" },
+        "radiusBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "heightAboveSeaBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "offshoreDistanceBlocks": { "type": "integer", "minimum": 3, "maximum": 64 }
+      }
+    },
+    "rockyCapePlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "profileKind", "capeMode", "seawardSide", "cliffHeightBlocks",
+        "localReliefAboveSeaBlocks", "cliffBandWidthBlocks", "minimumRockExposureMillionths",
+        "maximumRockExposureMillionths", "selectedRockExposureMillionths", "exposurePatternSeed",
+        "minimumSeaStackCount", "maximumSeaStackCount", "seaStacks", "minimumChannelCount",
+        "maximumChannelCount", "channels", "minY", "maxY", "waterLevel", "regionFieldId",
+        "surfaceHeightFieldId", "rockExposureFieldId", "descriptorIndexFieldId", "supportRadiusXZ",
+        "coastlineTurningCount"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "profileKind": { "const": "LINEAR_CLIFF_TO_INTERIOR" },
+        "capeMode": { "const": "TWO_POINT_FIVE_D_ONLY" },
+        "seawardSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "cliffHeightBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "localReliefAboveSeaBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "cliffBandWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "minimumRockExposureMillionths": { "type": "integer", "minimum": 50000, "maximum": 1000000 },
+        "maximumRockExposureMillionths": { "type": "integer", "minimum": 50000, "maximum": 1000000 },
+        "selectedRockExposureMillionths": { "type": "integer", "minimum": 50000, "maximum": 1000000 },
+        "exposurePatternSeed": { "type": "integer" },
+        "minimumSeaStackCount": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "maximumSeaStackCount": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "seaStacks": { "type": "array", "minItems": 1, "maxItems": 12, "items": { "$ref": "#/$defs/rockyCapeSeaStackDescriptor" } },
+        "minimumChannelCount": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "maximumChannelCount": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "channels": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "$ref": "#/$defs/rockyCapeChannelDescriptor" } },
+        "minY": { "type": "integer" }, "maxY": { "type": "integer" }, "waterLevel": { "type": "integer" },
+        "regionFieldId": { "$ref": "#/$defs/qualified" },
+        "surfaceHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "rockExposureFieldId": { "$ref": "#/$defs/qualified" },
+        "descriptorIndexFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "coastlineTurningCount": { "type": "integer", "minimum": 3, "maximum": 4096 }
+      }
+    },
+    "coastalTransitionContributor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["featureId", "kind", "priority", "ownerIndex"],
+      "properties": {
+        "featureId": { "$ref": "#/$defs/slug" },
+        "kind": { "enum": ["SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE"] },
+        "priority": { "type": "integer", "minimum": -100, "maximum": 100 },
+        "ownerIndex": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "coastalTransitionInteraction": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relationId", "firstFeatureId", "secondFeatureId", "strength", "profile", "bandBlocks"],
+      "properties": {
+        "relationId": { "$ref": "#/$defs/slug" },
+        "firstFeatureId": { "$ref": "#/$defs/slug" },
+        "secondFeatureId": { "$ref": "#/$defs/slug" },
+        "strength": { "enum": ["HARD", "SOFT"] },
+        "profile": { "enum": ["PRIORITY_BLEND", "STRUCTURE_OVER_WATER"] },
+        "bandBlocks": { "type": "integer", "minimum": 0, "maximum": 32 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "profile": { "const": "PRIORITY_BLEND" } } },
+          "then": { "properties": { "bandBlocks": { "minimum": 1 } } }
+        },
+        {
+          "if": { "properties": { "profile": { "const": "STRUCTURE_OVER_WATER" } } },
+          "then": { "properties": { "bandBlocks": { "const": 0 } } }
+        }
+      ]
+    },
+    "coastalTransitionPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "planId", "moduleId", "moduleVersion", "mergeOperator", "hardCellPolicy",
+        "ambiguityPolicy", "contributors", "interactions", "inputFieldIds", "landWaterFieldId",
+        "surfaceHeightFieldId", "ownerIndexFieldId", "blendWeightFieldId", "conflictFieldId",
+        "supportRadiusXZ"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "planId": { "$ref": "#/$defs/slug" },
+        "moduleId": { "$ref": "#/$defs/qualified" },
+        "moduleVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "mergeOperator": { "const": "PRIORITY_BLEND" },
+        "hardCellPolicy": { "const": "PROTECT_EXACT" },
+        "ambiguityPolicy": { "const": "REJECT" },
+        "contributors": {
+          "type": "array", "minItems": 1, "maxItems": 64,
+          "items": { "$ref": "#/$defs/coastalTransitionContributor" }
+        },
+        "interactions": {
+          "type": "array", "maxItems": 128,
+          "items": { "$ref": "#/$defs/coastalTransitionInteraction" }
+        },
+        "inputFieldIds": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/qualified" } },
+        "landWaterFieldId": { "$ref": "#/$defs/qualified" },
+        "surfaceHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "ownerIndexFieldId": { "$ref": "#/$defs/qualified" },
+        "blendWeightFieldId": { "$ref": "#/$defs/qualified" },
+        "conflictFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 0, "maximum": 32 }
+      }
+    },
+    "meanderingRiverCenterlineSample": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sequence", "arcLengthMillionths", "xMillionths", "zMillionths", "bedYMillionths", "localHalfWidthBlocks"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0, "maximum": 2047 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "bedYMillionths": { "type": "integer" },
+        "localHalfWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "meanderingRiverPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "variant", "dischargeClass", "basinId", "waterBodyId", "reachId",
+        "sourceNodeId", "mouthNodeId", "centerline", "totalArcLengthMillionths", "sourceBedYMillionths",
+        "mouthBedYMillionths", "waterDepthMillionths", "minimumBankfullWidthBlocks", "maximumBankfullWidthBlocks",
+        "selectedBankfullWidthBlocks", "bankWidthBlocks", "floodplainWidthBlocks", "meanderAmplitudeBlocks",
+        "meanderWavelengthBlocks", "meanderCorridorHalfWidthBlocks", "minimumBedSlopeMillionths",
+        "selectedDischargeIndex", "minY", "maxY", "waterLevel", "width", "length",
+        "channelMaskFieldId", "bankMaskFieldId", "floodplainMaskFieldId", "meanderCorridorFieldId",
+        "localWidthFieldId", "dischargeIndexFieldId", "bedElevationFieldId", "waterSurfaceFieldId",
+        "waterDepthFieldId", "waterBodyIdFieldId", "supportRadiusXZ", "geometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "variant": { "enum": ["RIVER", "MEANDERING_RIVER"] },
+        "dischargeClass": { "enum": ["SMALL", "MEDIUM", "LARGE"] },
+        "basinId": { "$ref": "#/$defs/slug" },
+        "waterBodyId": { "$ref": "#/$defs/slug" },
+        "reachId": { "$ref": "#/$defs/slug" },
+        "sourceNodeId": { "$ref": "#/$defs/slug" },
+        "mouthNodeId": { "$ref": "#/$defs/slug" },
+        "centerline": {
+          "type": "array", "minItems": 2, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/meanderingRiverCenterlineSample" }
+        },
+        "totalArcLengthMillionths": { "type": "integer", "minimum": 1000000 },
+        "sourceBedYMillionths": { "type": "integer" },
+        "mouthBedYMillionths": { "type": "integer" },
+        "waterDepthMillionths": { "type": "integer", "minimum": 1000000, "maximum": 64000000 },
+        "minimumBankfullWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "maximumBankfullWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "selectedBankfullWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "bankWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "floodplainWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "meanderAmplitudeBlocks": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "meanderWavelengthBlocks": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "meanderCorridorHalfWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 192 },
+        "minimumBedSlopeMillionths": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "selectedDischargeIndex": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "channelMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "bankMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "floodplainMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "meanderCorridorFieldId": { "$ref": "#/$defs/qualified" },
+        "localWidthFieldId": { "$ref": "#/$defs/qualified" },
+        "dischargeIndexFieldId": { "$ref": "#/$defs/qualified" },
+        "bedElevationFieldId": { "$ref": "#/$defs/qualified" },
+        "waterSurfaceFieldId": { "$ref": "#/$defs/qualified" },
+        "waterDepthFieldId": { "$ref": "#/$defs/qualified" },
+        "waterBodyIdFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "lakeRingPoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "lakePlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "terminalPolicy", "spillSelection", "floorProfile",
+        "basinId", "waterBodyId", "outletNodeId", "inletNodeIds", "basinRing",
+        "waterSurfaceYMillionths", "rimMinimumYMillionths", "maximumDepthMillionths",
+        "minimumTargetDepthBlocks", "maximumTargetDepthBlocks", "selectedTargetDepthBlocks",
+        "shoreWidthBlocks", "spillEdgeStartIndex", "spillFirst", "spillSecond",
+        "outwardUnitXMillionths", "outwardUnitZMillionths", "spillwayWidthBlocks",
+        "spillwayCorridorLengthBlocks", "minY", "maxY", "waterLevel", "width", "length",
+        "basinMaskFieldId", "rimMaskFieldId", "spillwayMaskFieldId", "depthFieldId",
+        "floorHeightFieldId", "surfaceFieldId", "bedElevationFieldId", "waterSurfaceFieldId",
+        "waterDepthFieldId", "waterBodyIdFieldId", "supportRadiusXZ", "geometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "terminalPolicy": { "enum": ["OPEN_SPILL", "CLOSED"] },
+        "spillSelection": { "enum": ["DECLARED_EDGE", "LOWEST_RIM_SADDLE"] },
+        "floorProfile": { "enum": ["EDGE_TO_CENTER_LINEAR"] },
+        "basinId": { "$ref": "#/$defs/slug" },
+        "waterBodyId": { "$ref": "#/$defs/slug" },
+        "outletNodeId": { "$ref": "#/$defs/slug" },
+        "inletNodeIds": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/slug" } },
+        "basinRing": {
+          "type": "array", "minItems": 4, "maxItems": 1024,
+          "items": { "$ref": "#/$defs/lakeRingPoint" }
+        },
+        "waterSurfaceYMillionths": { "type": "integer" },
+        "rimMinimumYMillionths": { "type": "integer" },
+        "maximumDepthMillionths": { "type": "integer", "minimum": 1000000, "maximum": 64000000 },
+        "minimumTargetDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "maximumTargetDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "selectedTargetDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "shoreWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "spillEdgeStartIndex": { "type": "integer", "minimum": -1, "maximum": 1023 },
+        "spillFirst": { "anyOf": [ { "$ref": "#/$defs/lakeRingPoint" }, { "type": "null" } ] },
+        "spillSecond": { "anyOf": [ { "$ref": "#/$defs/lakeRingPoint" }, { "type": "null" } ] },
+        "outwardUnitXMillionths": { "type": "integer" },
+        "outwardUnitZMillionths": { "type": "integer" },
+        "spillwayWidthBlocks": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "spillwayCorridorLengthBlocks": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "basinMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "rimMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "spillwayMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "depthFieldId": { "$ref": "#/$defs/qualified" },
+        "floorHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "surfaceFieldId": { "$ref": "#/$defs/qualified" },
+        "bedElevationFieldId": { "$ref": "#/$defs/qualified" },
+        "waterSurfaceFieldId": { "$ref": "#/$defs/qualified" },
+        "waterDepthFieldId": { "$ref": "#/$defs/qualified" },
+        "waterBodyIdFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "canyonPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "riverFeatureId", "withinRelationId", "crossSection", "centerline",
+        "totalArcLengthMillionths", "sourceBedYMillionths", "mouthBedYMillionths",
+        "minimumFloorWidthBlocks", "maximumFloorWidthBlocks", "selectedFloorWidthBlocks",
+        "minimumRimWidthBlocks", "maximumRimWidthBlocks", "selectedRimWidthBlocks",
+        "minimumDepthBlocks", "maximumDepthBlocks", "selectedDepthBlocks",
+        "terraceCount", "terraceWidthBlocks", "riverBankfullWidthBlocks",
+        "minY", "maxY", "waterLevel", "width", "length",
+        "canyonMaskFieldId", "floorMaskFieldId", "rimMaskFieldId", "terraceMaskFieldId",
+        "surfaceHeightFieldId", "wallHeightFieldId", "bedElevationFieldId",
+        "supportRadiusXZ", "geometryChecksum", "riverGeometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "riverFeatureId": { "$ref": "#/$defs/slug" },
+        "withinRelationId": { "$ref": "#/$defs/slug" },
+        "crossSection": { "enum": ["V", "U", "TERRACED_V", "TERRACED_U"] },
+        "centerline": {
+          "type": "array", "minItems": 2, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/meanderingRiverCenterlineSample" }
+        },
+        "totalArcLengthMillionths": { "type": "integer", "minimum": 1000000 },
+        "sourceBedYMillionths": { "type": "integer" },
+        "mouthBedYMillionths": { "type": "integer" },
+        "minimumFloorWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 64 },
+        "maximumFloorWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 64 },
+        "selectedFloorWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 64 },
+        "minimumRimWidthBlocks": { "type": "integer", "minimum": 4, "maximum": 256 },
+        "maximumRimWidthBlocks": { "type": "integer", "minimum": 4, "maximum": 256 },
+        "selectedRimWidthBlocks": { "type": "integer", "minimum": 4, "maximum": 256 },
+        "minimumDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "maximumDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "selectedDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "terraceCount": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "terraceWidthBlocks": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "riverBankfullWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "canyonMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "floorMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "rimMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "terraceMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "surfaceHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "wallHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "bedElevationFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" },
+        "riverGeometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "waterfallPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "riverFeatureId", "onPathRelationId",
+        "lipXMillionths", "lipZMillionths", "baseXMillionths", "baseZMillionths",
+        "lipArcLengthMillionths", "baseArcLengthMillionths", "lipBedYMillionths", "baseBedYMillionths",
+        "minimumDropBlocks", "maximumDropBlocks", "selectedDropBlocks",
+        "lipWidthBlocks", "plungePoolRadiusBlocks", "plungePoolDepthBlocks", "behindFallClearanceBlocks",
+        "upstreamReachId", "downstreamReachId", "lipNodeId", "baseNodeId",
+        "upstreamCenterline", "downstreamCenterline",
+        "minY", "maxY", "waterLevel", "width", "length",
+        "lipMaskFieldId", "baseMaskFieldId", "plungePoolMaskFieldId",
+        "lipElevationFieldId", "baseElevationFieldId", "plungePoolFloorFieldId", "bedElevationFieldId",
+        "supportRadiusXZ", "geometryChecksum", "riverGeometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "riverFeatureId": { "$ref": "#/$defs/slug" },
+        "onPathRelationId": { "$ref": "#/$defs/slug" },
+        "lipXMillionths": { "type": "integer" },
+        "lipZMillionths": { "type": "integer" },
+        "baseXMillionths": { "type": "integer" },
+        "baseZMillionths": { "type": "integer" },
+        "lipArcLengthMillionths": { "type": "integer", "minimum": 1000000 },
+        "baseArcLengthMillionths": { "type": "integer", "minimum": 1000000 },
+        "lipBedYMillionths": { "type": "integer" },
+        "baseBedYMillionths": { "type": "integer" },
+        "minimumDropBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "maximumDropBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "selectedDropBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "lipWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "plungePoolRadiusBlocks": { "type": "integer", "minimum": 2, "maximum": 64 },
+        "plungePoolDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "behindFallClearanceBlocks": { "const": 0 },
+        "upstreamReachId": { "$ref": "#/$defs/slug" },
+        "downstreamReachId": { "$ref": "#/$defs/slug" },
+        "lipNodeId": { "$ref": "#/$defs/slug" },
+        "baseNodeId": { "$ref": "#/$defs/slug" },
+        "upstreamCenterline": {
+          "type": "array", "minItems": 2, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/meanderingRiverCenterlineSample" }
+        },
+        "downstreamCenterline": {
+          "type": "array", "minItems": 2, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/meanderingRiverCenterlineSample" }
+        },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "lipMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "baseMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "plungePoolMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "lipElevationFieldId": { "$ref": "#/$defs/qualified" },
+        "baseElevationFieldId": { "$ref": "#/$defs/qualified" },
+        "plungePoolFloorFieldId": { "$ref": "#/$defs/qualified" },
+        "bedElevationFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" },
+        "riverGeometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "deltaFanPoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "deltaBranch": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "branchId", "fromNodeId", "toNodeId", "path", "apexBedYMillionths",
+        "mouthBedYMillionths", "halfWidthBlocks", "dischargeShareMillionths"
+      ],
+      "properties": {
+        "branchId": { "$ref": "#/$defs/slug" },
+        "fromNodeId": { "$ref": "#/$defs/slug" },
+        "toNodeId": { "$ref": "#/$defs/slug" },
+        "path": { "type": "array", "minItems": 2, "maxItems": 16, "items": { "$ref": "#/$defs/deltaFanPoint" } },
+        "apexBedYMillionths": { "type": "integer" },
+        "mouthBedYMillionths": { "type": "integer" },
+        "halfWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "dischargeShareMillionths": { "type": "integer", "minimum": 1, "maximum": 1000000 }
+      }
+    },
+    "deltaSandbar": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sandbarId", "center", "radiusBlocks"],
+      "properties": {
+        "sandbarId": { "$ref": "#/$defs/slug" },
+        "center": { "$ref": "#/$defs/deltaFanPoint" },
+        "radiusBlocks": { "type": "integer", "minimum": 1, "maximum": 8 }
+      }
+    },
+    "deltaPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "trunkRiverFeatureId", "trunkReachId", "drainsToRelationId",
+        "emptiesIntoRelationId", "receivingSeaBoundary", "fanProfile", "apexNodeId", "apex", "fanRing",
+        "minimumDistributaryCount", "maximumDistributaryCount", "selectedDistributaryCount",
+        "minimumFanOpeningDegreesMillionths", "maximumFanOpeningDegreesMillionths", "selectedFanOpeningDegreesMillionths",
+        "minimumFanReliefBlocks", "maximumFanReliefBlocks", "selectedFanReliefBlocks",
+        "minimumSandbarCount", "maximumSandbarCount", "selectedSandbarCount",
+        "minimumShallowSeaDepthBlocks", "maximumShallowSeaDepthBlocks", "selectedShallowSeaDepthBlocks",
+        "shallowSeaBandBlocks", "branches", "sandbars", "minY", "maxY", "waterLevel", "width", "length",
+        "fanMaskFieldId", "channelMaskFieldId", "branchIndexFieldId", "fanSurfaceFieldId",
+        "sandbarMaskFieldId", "shallowSeaDepthFieldId", "dischargeShareFieldId", "supportRadiusXZ",
+        "estimatedRasterWorkUnits", "geometryChecksum", "riverGeometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "trunkRiverFeatureId": { "$ref": "#/$defs/slug" },
+        "trunkReachId": { "$ref": "#/$defs/slug" },
+        "drainsToRelationId": { "$ref": "#/$defs/slug" },
+        "emptiesIntoRelationId": { "$ref": "#/$defs/slug" },
+        "receivingSeaBoundary": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "fanProfile": { "const": "APEX_TO_SEA_LINEAR" },
+        "apexNodeId": { "$ref": "#/$defs/slug" },
+        "apex": { "$ref": "#/$defs/deltaFanPoint" },
+        "fanRing": { "type": "array", "minItems": 4, "maxItems": 1024, "items": { "$ref": "#/$defs/deltaFanPoint" } },
+        "minimumDistributaryCount": { "type": "integer", "minimum": 2, "maximum": 16 },
+        "maximumDistributaryCount": { "type": "integer", "minimum": 2, "maximum": 16 },
+        "selectedDistributaryCount": { "type": "integer", "minimum": 2, "maximum": 16 },
+        "minimumFanOpeningDegreesMillionths": { "type": "integer", "minimum": 10000000, "maximum": 170000000 },
+        "maximumFanOpeningDegreesMillionths": { "type": "integer", "minimum": 10000000, "maximum": 170000000 },
+        "selectedFanOpeningDegreesMillionths": { "type": "integer", "minimum": 10000000, "maximum": 170000000 },
+        "minimumFanReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "maximumFanReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "selectedFanReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "minimumSandbarCount": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "maximumSandbarCount": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "selectedSandbarCount": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "minimumShallowSeaDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "maximumShallowSeaDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "selectedShallowSeaDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "shallowSeaBandBlocks": { "type": "integer", "minimum": 2, "maximum": 64 },
+        "branches": { "type": "array", "minItems": 2, "maxItems": 16, "items": { "$ref": "#/$defs/deltaBranch" } },
+        "sandbars": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/deltaSandbar" } },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "fanMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "channelMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "branchIndexFieldId": { "$ref": "#/$defs/qualified" },
+        "fanSurfaceFieldId": { "$ref": "#/$defs/qualified" },
+        "sandbarMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "shallowSeaDepthFieldId": { "$ref": "#/$defs/qualified" },
+        "dischargeShareFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" },
+        "riverGeometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "tidalChannelPoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tidalChannelNode": {
+      "type": "object", "additionalProperties": false,
+      "required": ["nodeId", "point", "marine"],
+      "properties": {
+        "nodeId": { "$ref": "#/$defs/slug" },
+        "point": { "$ref": "#/$defs/tidalChannelPoint" },
+        "marine": { "type": "boolean" }
+      }
+    },
+    "tidalChannelEdge": {
+      "type": "object", "additionalProperties": false,
+      "required": ["edgeId", "pathId", "fromNodeId", "toNodeId", "path", "edgeKind", "halfWidthBlocks", "depthBlocks"],
+      "properties": {
+        "edgeId": { "$ref": "#/$defs/slug" },
+        "pathId": { "$ref": "#/$defs/slug" },
+        "fromNodeId": { "$ref": "#/$defs/slug" },
+        "toNodeId": { "$ref": "#/$defs/slug" },
+        "path": { "type": "array", "minItems": 2, "maxItems": 1024, "items": { "$ref": "#/$defs/tidalChannelPoint" } },
+        "edgeKind": { "const": "BIDIRECTIONAL" },
+        "halfWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "depthBlocks": { "type": "integer", "minimum": 1, "maximum": 8 }
+      }
+    },
+    "tidalWetlandChildPlanHook": {
+      "type": "object", "additionalProperties": false,
+      "required": ["wetlandFeatureId", "withinRelationId"],
+      "properties": {
+        "wetlandFeatureId": { "$ref": "#/$defs/slug" },
+        "withinRelationId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "tidalChannelPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "emptiesIntoRelationId", "receivingSeaBoundary", "edgeKind",
+        "wetlandChildPlanHook", "minimumWidthBlocks", "maximumWidthBlocks", "selectedWidthBlocks",
+        "selectedTidalRangeBlocks", "nodes", "edges", "minY", "maxY", "waterLevel", "width", "length",
+        "channelMaskFieldId", "branchIndexFieldId", "depthCorridorFieldId", "marineConnectionFieldId",
+        "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "emptiesIntoRelationId": { "$ref": "#/$defs/slug" },
+        "receivingSeaBoundary": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "edgeKind": { "const": "BIDIRECTIONAL" },
+        "wetlandChildPlanHook": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/tidalWetlandChildPlanHook" }]
+        },
+        "minimumWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 32 },
+        "maximumWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 32 },
+        "selectedWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 32 },
+        "selectedTidalRangeBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "nodes": { "type": "array", "minItems": 1, "maxItems": 256, "items": { "$ref": "#/$defs/tidalChannelNode" } },
+        "edges": { "type": "array", "minItems": 1, "maxItems": 128, "items": { "$ref": "#/$defs/tidalChannelEdge" } },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "channelMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "branchIndexFieldId": { "$ref": "#/$defs/qualified" },
+        "depthCorridorFieldId": { "$ref": "#/$defs/qualified" },
+        "marineConnectionFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "fixedRange": {
+      "type": "object", "additionalProperties": false,
+      "required": ["minimumMillionths", "maximumMillionths"],
+      "properties": { "minimumMillionths": { "type": "integer" }, "maximumMillionths": { "type": "integer" } }
+    },
+    "validationTarget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["targetId", "sourceConstraintId", "featureIds", "ruleId", "ruleVersion", "hardness", "weightMillionths", "metric", "expected", "toleranceMillionths", "requiredFields", "diagnosticLayerId"],
+      "properties": {
+        "targetId": { "$ref": "#/$defs/slug" }, "sourceConstraintId": { "$ref": "#/$defs/slug" },
+        "featureIds": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/slug" } },
+        "ruleId": { "$ref": "#/$defs/qualified" }, "ruleVersion": { "type": "integer", "minimum": 1 },
+        "hardness": { "enum": ["HARD", "SOFT"] }, "weightMillionths": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "metric": { "$ref": "#/$defs/qualified" }, "expected": { "$ref": "#/$defs/fixedRange" },
+        "toleranceMillionths": { "type": "integer", "minimum": 0 }, "requiredFields": { "$ref": "#/$defs/qualifiedArray" },
+        "diagnosticLayerId": { "$ref": "#/$defs/qualified" }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maximumFeatures", "maximumRelations", "maximumConstraints", "maximumGeometryPoints", "maximumModules", "maximumFields", "maximumHaloXZ", "maximumHaloY", "maximumResidentBytes", "maximumCpuWorkUnits", "maximumArtifactBytes"],
+      "properties": {
+        "maximumFeatures": { "type": "integer", "minimum": 1 }, "maximumRelations": { "type": "integer", "minimum": 0 },
+        "maximumConstraints": { "type": "integer", "minimum": 0 }, "maximumGeometryPoints": { "type": "integer", "minimum": 1 },
+        "maximumModules": { "type": "integer", "minimum": 1 }, "maximumFields": { "type": "integer", "minimum": 1 },
+        "maximumHaloXZ": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "maximumHaloY": { "type": "integer", "minimum": 0, "maximum": 512 },
+        "maximumResidentBytes": { "type": "integer", "minimum": 1 }, "maximumCpuWorkUnits": { "type": "integer", "minimum": 1 },
+        "maximumArtifactBytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "diagnosticReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": { "type": { "enum": ["FEATURE", "CONSTRAINT", "MODULE", "FIELD", "STAGE"] }, "id": { "$ref": "#/$defs/qualified" } }
+    },
+    "metricEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["metric", "expectedMinimumMillionths", "expectedMaximumMillionths", "actualMillionths", "toleranceMillionths"],
+      "properties": {
+        "metric": { "$ref": "#/$defs/qualified" }, "expectedMinimumMillionths": { "type": "integer" },
+        "expectedMaximumMillionths": { "type": "integer" }, "actualMillionths": { "type": "integer" },
+        "toleranceMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "diagnosticIssue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["issueId", "ruleId", "ruleVersion", "severity", "hardness", "references", "metricEvidence", "messageKey", "diagnosticLayerIds"],
+      "properties": {
+        "issueId": { "$ref": "#/$defs/slug" }, "ruleId": { "$ref": "#/$defs/qualified" },
+        "ruleVersion": { "type": "integer", "minimum": 1 }, "severity": { "enum": ["ERROR", "WARNING", "INFO"] },
+        "hardness": { "enum": ["HARD", "SOFT"] },
+        "references": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/diagnosticReference" } },
+        "metricEvidence": { "type": "array", "maxItems": 1, "items": { "$ref": "#/$defs/metricEvidence" } },
+        "messageKey": { "$ref": "#/$defs/qualified" }, "diagnosticLayerIds": { "$ref": "#/$defs/qualifiedArray" }
+      }
+    }
+  }
+}

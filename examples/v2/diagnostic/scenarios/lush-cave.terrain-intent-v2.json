@@ -1,0 +1,19 @@
+{
+  "intentVersion": 2,
+  "intentId": "lush-cave-v2",
+  "theme": "Diagnostic-only cave and lush cave contract",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "cave-network", "kind": "CAVE_NETWORK", "geometry": { "type": "VOLUME_GUIDE", "footprint": { "type": "POLYGON", "rings": [[[0.18, 0.16], [0.82, 0.18], [0.88, 0.8], [0.14, 0.82], [0.18, 0.16]]] }, "vertical": { "mode": "SURFACE_OFFSET", "min": -58, "max": -8 } }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "cave-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "west-entrance", "kind": "CAVE_ENTRANCE", "geometry": { "type": "POINT", "point": [0.2, 0.42] }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "cave-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "lush-chamber", "kind": "LUSH_CAVE", "geometry": { "type": "VOLUME_GUIDE", "footprint": { "type": "POLYGON", "rings": [[[0.38, 0.36], [0.64, 0.34], [0.67, 0.62], [0.36, 0.64], [0.38, 0.36]]] }, "vertical": { "mode": "SURFACE_OFFSET", "min": -44, "max": -18 } }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "cave-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [
+    { "id": "entrance-of-network", "kind": "ENTRANCE_OF", "from": "feature:west-entrance", "to": "feature:cave-network", "strength": "HARD" },
+    { "id": "lush-within-network", "kind": "WITHIN", "from": "feature:lush-chamber", "to": "feature:cave-network", "strength": "HARD" }
+  ],
+  "constraints": [{ "id": "network-connected", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:cave-network", "metric": "REACHABLE_VOLUME_SHARE_01", "range": { "min": 0.98, "max": 1 }, "tolerance": 0.01 }],
+  "environment": { "geologyPreset": "FRACTURED_LIMESTONE_LIKE", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "LUSH_SUBTERRANEAN" },
+  "mapReferences": [], "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "cave-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

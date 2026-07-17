@@ -1,0 +1,76 @@
+{
+  "planVersion": 1,
+  "fieldContractVersion": "geology-field-contract-v1",
+  "moduleId": "v2.environment.geology-foundation",
+  "moduleVersion": "0.1.0-v2-4-01",
+  "stageId": "generate.geology-foundation",
+  "priorReplacement": {
+    "bindingVersion": 1,
+    "sourcePriorKind": "UNIFORM_GEOLOGY_PRIOR",
+    "sourcePriorChecksum": "a516011407c20c6931961bb752cda6c1f73619af2a2faa51e2a3bfa2ae21d142",
+    "replacementMode": "TYPED_GEOLOGY_FIELDS",
+    "sourceHardnessMillionths": 500000,
+    "sourcePermeabilityMillionths": 500000
+  },
+  "namedSeed": -417537659265123569,
+  "seedNamespace": "terrain.v2.geology",
+  "width": 64,
+  "length": 48,
+  "provinces": [
+    {
+      "provinceId": "province-uniform-prior",
+      "provinceCode": 1,
+      "formationId": "formation.uniform-prior",
+      "formationCode": 1,
+      "hardnessMillionths": 500000,
+      "permeabilityMillionths": 500000
+    }
+  ],
+  "fields": [
+    {
+      "fieldId": "geology.formation-id",
+      "semantic": "FORMATION_ID",
+      "valueType": "U16",
+      "ownerModuleId": "v2.environment.geology-foundation",
+      "ownership": "SINGLE_OWNER",
+      "encodingVersion": "LFC_GRID_V1"
+    },
+    {
+      "fieldId": "geology.hardness",
+      "semantic": "HARDNESS",
+      "valueType": "U16",
+      "ownerModuleId": "v2.environment.geology-foundation",
+      "ownership": "SINGLE_OWNER",
+      "encodingVersion": "LFC_GRID_V1"
+    },
+    {
+      "fieldId": "geology.permeability",
+      "semantic": "PERMEABILITY",
+      "valueType": "U16",
+      "ownerModuleId": "v2.environment.geology-foundation",
+      "ownership": "SINGLE_OWNER",
+      "encodingVersion": "LFC_GRID_V1"
+    },
+    {
+      "fieldId": "geology.province-id",
+      "semantic": "PROVINCE_ID",
+      "valueType": "U16",
+      "ownerModuleId": "v2.environment.geology-foundation",
+      "ownership": "SINGLE_OWNER",
+      "encodingVersion": "LFC_GRID_V1"
+    }
+  ],
+  "budget": {
+    "budgetVersion": "geology-field-budget-v1",
+    "maximumProvinces": 256,
+    "maximumFields": 4,
+    "globalCellCount": 3072,
+    "estimatedCpuWorkUnits": 12288,
+    "estimatedRetainedBytes": 65536,
+    "maximumWindowSize": 128,
+    "maximumWorkingBytes": 67584,
+    "estimatedArtifactBytes": 32768,
+    "maximumSingleArtifactBytes": 8192
+  },
+  "canonicalChecksum": "8bc24842fd23808cc0498279e4f2cca8000d66e9adf6f73d34f1ad92a6ea01e5"
+}

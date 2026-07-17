@@ -1,0 +1,102 @@
+{
+  "intentVersion": 2,
+  "intentId": "tidal-channel-network-v2",
+  "theme": "A marine-connected bidirectional tidal channel network with a wetland child-plan hook",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "mangrove-wetland",
+      "kind": "MANGROVE_WETLAND",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.05, 0.1], [0.95, 0.1], [0.96, 1], [0.08, 1], [0.05, 0.1]]]
+      },
+      "parameters": {},
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "tidal-channel-example",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "tidal-channels",
+      "kind": "TIDAL_CHANNEL_NETWORK",
+      "geometry": {
+        "type": "MULTI_SPLINE",
+        "paths": [
+          {
+            "id": "main-tidal-channel",
+            "points": [[0.48, 1], [0.51, 0.68], [0.36, 0.2]]
+          },
+          {
+            "id": "east-branch",
+            "points": [[0.48, 1], [0.7, 0.52], [0.88, 0.34]]
+          },
+          {
+            "id": "west-branch",
+            "points": [[0.48, 1], [0.26, 0.47], [0.12, 0.31]]
+          }
+        ],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "widthBlocks": { "min": 5, "max": 16 },
+        "tidalRangeBlocks": 2,
+        "edgeKind": "BIDIRECTIONAL"
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "tidal-channel-example",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "channels-within-wetland",
+      "kind": "WITHIN",
+      "from": "feature:tidal-channels",
+      "to": "feature:mangrove-wetland",
+      "strength": "HARD"
+    },
+    {
+      "id": "tidal-empties-south",
+      "kind": "EMPTIES_INTO",
+      "from": "feature:tidal-channels",
+      "to": "boundary:SOUTH",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "south-receiving-sea",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": { "edge": "SOUTH", "classification": "SEA", "minimumShare01": 0.8 }
+    }
+  ],
+  "environment": {
+    "geologyPreset": "TIDAL_MUD_AND_SILT",
+    "climatePreset": "WARM_HUMID_MARITIME",
+    "ecologyPreset": "MANGROVE_ESTUARY"
+  },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "tidal-channel-example",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}
