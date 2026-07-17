@@ -20,6 +20,97 @@ designs/<request-id>/<job-uuid>/
 
 publisherは一時directoryへIntent、画像証跡、監査をwriteして厳格に読み戻し、job UUID directoryへatomic moveした後もdirectory identityを含めて再検証します。検証失敗時は公開directoryを除去します。`design-verify`は移送後にも同じ検査を行い、改変、欠損、未知file、job／request directory名の不一致、監査と画像証跡のrequest ID不一致に加え、evidenceのprovider／response／prompt versionとauditの不一致も拒否します。Design PackageがREADYでも地形生成やworld配置は自動実行しません。
 
+## V2-1 offline constraint field bundle
+
+V2-1のmanual constraint pathは、Release Packageとは別のoffline canonical input bundleを生成します。公開CLI／Paper、Release format 1、配置、Undoのartifactではありません。Release format 2へ収容する方法はV2-2以降で別途version化します。
+
+```text
+<constraint-bundle>/
+├── fields/
+│   ├── index.json
+│   ├── 000-desired-land-water.lfgrid
+│   ├── 000-actual-land-water.lfgrid
+│   ├── 000-residual-land-water.lfgrid
+│   └── ...
+└── previews/
+    ├── desired-land-water.png
+    ├── actual-land-water.png
+    ├── residual-land-water.png
+    ├── desired-height.png
+    ├── actual-height.png
+    ├── residual-height.png
+    ├── zone-label-map.png
+    └── constraint-errors.png
+```
+
+`fields/index.json`は`constraint-field-index-v2.schema.json`に従うstrict indexです。index version、request ID、source Request／Intent checksum、exclude-selfのcanonical index checksum、適用binding、label辞書、全field descriptorを保存します。各bindingはroleに応じたfield集合、semantic、value type、sampling、scale／offset、canonical artifact IDへ完全一致しなければなりません。index外field、共有／孤立field、未知label、改変checksum、future versionを拒否します。
+
+各descriptorはfield ID、semantic、value type、width／length、`RELEASE_LOCAL_XZ`座標、sampling、scale／offset、no-data、encoding version、artifact／semantic SHA-256、source provenanceを持ちます。1000×1000の値をJSONへ埋めず、[ADR 0011](adr/0011-compact-field-sidecar.md)の`LFC_GRID_V1`へ保存します。
+
+`LFC_GRID_V1`はbig-endian、非圧縮、paddingなしのrow-major形式です。`U8`／`U16`／`I32` payloadを`index = z * width + x`で並べ、header内のsemantic checksumと外部descriptorのfile全体artifact checksumで検証します。version 1はchunk、chunk index、chunk checksum、圧縮を持ちません。readerはfile全体を配列化せず、現行の1 sidecar 8 MiB、1 window working set 8 MiBというdefault hard limitの範囲でrow／windowを読みます。bundle全体のartifact ceilingは64 MiBです。
+
+V2-4-01のgeology field setは同じbinary layoutへsemantic code 12〜15を追加し、`GEOLOGY_PROVINCE_ID`、`GEOLOGY_FORMATION_ID`、`GEOLOGY_HARDNESS`、`GEOLOGY_PERMEABILITY`の4個を収容します。すべてU16／NEAREST／no-data 65535で、IDはscale 1,000,000、hardness／permeabilityはscale 1,000です。専用publisherは4 sidecarをsibling stagingへstreamし、descriptor集合、plan provenance、province→formation／scalar対応、artifact／semantic checksumをbounded windowで全域検査してからdirectoryをatomic publishします。これはstandalone field bundleであり、constraint field indexやRelease 2 capabilityへ暗黙追加しません。
+
+V2-4-02の`LithologyPlanV2`はJSONのstrict catalog／assignment contractであり、新しい`LFC_GRID_V1`、geology semantic code、bundle file、Release capabilityを追加しません。readerはsource geology checksumとprovince assignmentを検査し、既存province sidecarをbounded windowで走査する。Minecraft block stateとstrata payloadをcatalogへ埋め込まない。
+
+V2-4-04の`ClimatePlanV2`もstrict JSON descriptor contractです。このTaskでは4 climate fieldのsidecar、`LFC_GRID_V1` semantic code、bundle、Release capabilityを追加しません。coarse prior／final kernelとHydrology transition checksumだけをBlueprintへfreezeし、payload artifact化は後続Taskのcomplete-set契約まで保留します。
+
+publisherはbundle staging内でsidecar、sealed index、固定8 previewを書き、全checksumとstrict read-back、artifact／resident budgetを確認します。cancelの最終checkに成功した後のbundle `ATOMIC_MOVE`をcommit pointとします。move前のcancel／failureはstagingを削除してtargetを作らず、move後に届いたcancelを理由にcommitted targetを削除しません。既存targetの暗黙上書きと非atomic fallbackは行いません。
+
+## V2-2 offline tile schematic
+
+`V2-2-09`のoffline tileはRelease containerではなく、1個の`.schem`と`offline-tile-artifact-v2.schema.json`に従うmetadataである。metadataはtile ID、source Blueprint checksum、release-local origin／dimension／Y範囲、`SPONGE_X_Z_Y_V1` order、Minecraft `1.21.11`、DataVersion `4671`、Sponge version `3`、相対path、block／palette／byte数、artifact／semantic／canonical SHA-256を持つ。exampleは`examples/v2/offline-tile/offline-tile-artifact-v2.json`である。
+
+semantic checksumはtile boundsをversion headerへbindingし、global座標をX fastest、次にZ、最後にYで走査したcanonical block-state UTF-8列から計算する。palette IDやGZip byte列は意味checksumへ使わない。writerはfinal `TerrainBlockResolver`を二走査し、第1走査ではblock-state別countだけを保持して辞書順palette、general VarInt byte長、semantic checksumを決める。第2走査はblock Listを作らず直接NBT `Blocks.Data`へstreamし、checksum不一致ならresolverの非決定性として拒否する。
+
+paletteは1..16384、VarInt IDは0..16383、水平tileは各辺256以下、vertical spanは512以下、encoded Dataは40 MiB以下、圧縮artifactは64 MiB以下、palette retained estimateは16 MiB以下である。unknown／非canonical block state、future tuple、非zero offset、truncated VarInt、block count／dimension／checksum不一致、block entity／entity／biome、decode／path／cancel違反をstagingで拒否する。strict bounded read-backとWorldEdit 7.3.19 offline read-backが同じsemantic checksumを返したことをAcceptance testで固定している。`V2-2-11`ではこのstandalone tileを`surface-2_5d` Release 2 indexへ、metadataと対応Sponge v3 fileの組として収容した。
+
+## V2-2-10 Release format 2 core
+
+Release format 2はv1の`ReleasePublisher`／`ReleaseVerifier`とは別の`format.v2.release` packageである。`release-manifest-v2.schema.json`に従う唯一のcore fileは`manifest.json`で、version 2／manifest version 1、release ID、`requiredCapabilities[]`、`artifacts[]`、exclude-self canonical SHA-256を持つ。manifest自身はartifact indexへ入れず、non-manifest fileはindexへ完全列挙する。
+
+V2-2-10のcore-only containerは現在も空capability・空artifactだけである。`V2-2-11`は別の`surface-2_5d` capability dispatchを追加し、生成結果、tile、field、previewを別formatとして持ち運べるようにした。CLI／Paper／Release 1へは接続しない。
+
+## V2-2-11 `surface-2_5d` capability
+
+`surface-2_5d` manifestはこのcapabilityだけをrequired capabilityにし、`source/generation-request.json`、`source/terrain-intent.json`、`blueprint/world-blueprint.json`、`constraints/index.json`とindexが列挙する全`.lfgrid`、`validation/coastal-validation.json`、`previews/index.json`と固定11 PNG、`tiles/<tile-id>.json`と`tiles/<tile-id>.schem`を全て`artifacts[]`へ個別にindexする。artifact type/versionは`generation-request-v2`、`terrain-intent-v2`、`world-blueprint-v2`、`constraint-field-index-v2`、`constraint-field-grid-v1`、`coastal-validation-artifact-v2`、`coastal-preview-index-v2`、`coastal-preview-png-v1`、`offline-tile-artifact-v2`、`sponge-schematic-v3`のversion 1だけである。
+
+strict verifierはcoreのpath／checksum／ZIP／budget検査後、request→intent→Blueprint checksum、Intent map binding→field index、Blueprint→validation／preview／tile、field sidecar／preview PNG／Sponge read-back、tile coverageを確認する。validationがhard errorを含む、sidecar／preview／tileが欠損・余分・version不一致、semantic checksumが不一致なら拒否する。sourceのraw pathはmanifestに残らず、publisherはstaging self-verify後にatomic publishする。
+
+publisherは新規targetだけを使い、staging directoryのmanifestをSchema／canonical checksum／strict directory verifierで読み戻し、fsync後にatomic moveする。ZIPを要求した場合はdirectoryから辞書順・epoch timeのZIPを作り、bounded extractorで再検証してから別のatomic moveを行う。cancel／failureではstagingと未公開ZIPを削除し、ZIP要求中に失敗した場合は公開済みdirectoryも削除する。
+
+verifierはdirectory／ZIPのどちらでもnon-symbolic regular file、canonical relative path、case-insensitive unique path、strict artifact index、artifact byte length／SHA-256、unknown capability／artifact type/versionを検査する。core limitは最多257 file、1 artifact 64 MiB、directory／ZIP／展開各128 MiB、manifest 256 KiB、copy buffer 64 KiBである。ZIP directory entry、traversal、duplicate／case collision、index外file、checksum不一致、budget超過を拒否する。exampleは`examples/v2/release-core/release-manifest-v2.json`である。
+
+## V2-3-02 standalone hydrology routing bundle
+
+V2-3-02のglobal routing結果は、単独でもstrict read-backできるcanonical bundleです。`V2-3-14`では同じrouting index／fieldを`hydrology-plan` Release 2 capabilityの必須artifactとしても収容する。
+
+```text
+<routing-bundle>/
+├── index.json
+└── fields/
+    ├── flow-direction.lfgrid
+    └── flow-accumulation.lfgrid
+```
+
+`index.json`は`hydrology-routing-artifact-v2.schema.json`に従い、artifact／solver／direction encoding version、寸法、source HydrologyPlan／provisional surface／fixed-prior checksum、明示outlet、stable basin summary、2 field descriptor、resource usage、graph／routing／canonical SHA-256を持ちます。outletはglobal Z、X、ID順、basinは`basin-000001`からの連番です。同じcellまたはIDの重複、global boundary外の`BOUNDARY` outlet、basin area／outlet accumulation不一致を拒否します。JSON contract例は`examples/v2/hydrology/hydrology-routing-artifact-v2.json`です。例が参照するsidecarはsource treeへ同梱せず、solver testが実bundleを生成してstrict read-backします。
+
+flow directionは`LFC_GRID_V1` semantic code 10、U8、terminal 0、D8 1..8、no-data 255です。flow accumulationはsemantic code 11、I32、routable cell 1以上、no-data 0です。両方ともscale 1、offset 0、`RELEASE_LOCAL_XZ`、`NEAREST`で、source surface checksumをprovenanceへbindingします。readerはartifact／semantic checksumに加え、directionの範囲とD8 adjacency、downstream accumulationのstrict増加、terminalの宣言outlet一致、terminal accumulation合計とroutable cell数、basin areaをrow単位のbounded windowで検査します。
+
+indexは512 KiB以下のnon-symbolic regular file、bundleは上記3 regular fileと必要な`fields/` directoryだけを許可します。symlink、index外file／directory、byte count／checksum改変、future versionを拒否します。publisherはtargetのsibling staging directoryへ2 sidecarとsealed indexを書き、exact file setとrouting semanticsを読み戻します。最後のcancel check直後のdirectory `ATOMIC_MOVE`をcommit pointとし、move前のfailure／cancelではstagingを削除し、move後のlate cancelで公開済みbundleを削除しません。
+
+## V2-3-14 `hydrology-plan` capability
+
+`hydrology-plan` manifestは`requiredCapabilities[] = ["hydrology-plan","surface-2_5d"]`だけを許し、ADR 0013のsurface exact setに加えて次を`artifacts[]`へ個別indexする。
+
+- `hydrology/plan.json`（`hydrology-plan-v2`）
+- `hydrology/routing/index.json`（`hydrology-routing-artifact-v2`）とindex列挙の全`hydrology-field-grid-v1`
+- `hydrology/reconciliation-plan.json`／`hydrology/reconciliation-artifact.json`
+- `hydrology/validation.json`
+- `hydrology/previews/index.json`と固定12 PNG（`hydrology-preview-png-v1`）
+
+strict verifierはsurface payload照合後に、plan＝Blueprint内hydrology plan、routing graph／field＝plan checksumとBlueprint寸法、reconciliation＝Blueprint、validation／preview＝Blueprint寸法を検査する。`hydrology-plan`単独、unknown capability／type/version、missing／extra、graph checksum改変を拒否する。publisher／layout例は`examples/v2/release-hydrology/README.md`、Acceptanceは`ReleaseHydrologyPublisherVerifierV2Test`である。V2-3-14単体ではfeature lifecycleを変更せず、V2-3-15統合監査後にcapabilityと完成featureだけをoffline `SUPPORTED`とした。CLI／Paper applyは含まない。
+
 ## 正本
 
 持ち運び単位は1個の巨大schematicではなく、manifest、設計、preview、tile schematic、checksumをまとめたRelease Packageです。

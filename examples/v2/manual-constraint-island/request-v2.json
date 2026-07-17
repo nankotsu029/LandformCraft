@@ -1,0 +1,114 @@
+{
+  "requestVersion": 2,
+  "requestId": "manual-constraint-island",
+  "bounds": {
+    "width": 4,
+    "length": 4,
+    "minY": 0,
+    "maxY": 100,
+    "waterLevel": 50
+  },
+  "prompt": "Create an AI-free diagnostic island preview from exact constraint maps.",
+  "referenceImages": [],
+  "constraintMaps": [
+    {
+      "sourceId": "constraint-source:land-water",
+      "file": "maps/land-water-u8.png",
+      "expectedSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expectedWidth": 4,
+      "expectedLength": 4,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": { "x": 0, "z": 0, "width": 4, "length": 4 }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "labels": [
+          { "sample": 0, "label": "water" },
+          { "sample": 1, "label": "land" }
+        ],
+        "noData": { "mode": "FORBIDDEN" }
+      }
+    },
+    {
+      "sourceId": "constraint-source:height",
+      "file": "maps/height-u16.png",
+      "expectedSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "expectedWidth": 4,
+      "expectedLength": 4,
+      "decoderKind": "HEIGHT_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": { "x": 0, "z": 0, "width": 4, "length": 4 }
+      },
+      "encoding": {
+        "kind": "HEIGHT",
+        "encodingVersion": 1,
+        "sampleType": "U16",
+        "channel": "GRAY",
+        "valueMeaning": "BLOCKS_ABOVE_REQUEST_MIN_Y",
+        "valueScaleMillionths": 1000,
+        "valueOffsetMillionths": 0,
+        "validSampleRange": { "minimum": 0, "maximum": 50000 },
+        "noData": { "mode": "SENTINEL", "sample": 65535 }
+      }
+    },
+    {
+      "sourceId": "constraint-source:zones",
+      "file": "maps/zones-u16.png",
+      "expectedSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "expectedWidth": 4,
+      "expectedLength": 4,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": { "x": 0, "z": 0, "width": 4, "length": 4 }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U16",
+        "channel": "GRAY",
+        "labels": [
+          { "sample": 10, "label": "shore" },
+          { "sample": 20, "label": "upland" }
+        ],
+        "noData": { "mode": "SENTINEL", "sample": 0 }
+      }
+    }
+  ],
+  "generation": { "globalSeed": 827413, "tileSize": 32 },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  }
+}

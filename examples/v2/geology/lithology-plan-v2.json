@@ -1,0 +1,47 @@
+{
+  "planVersion": 1,
+  "assignmentContractVersion": "lithology-province-assignment-v1",
+  "sourceGeologyPlanChecksum": "8bc24842fd23808cc0498279e4f2cca8000d66e9adf6f73d34f1ad92a6ea01e5",
+  "catalog": {
+    "catalogVersion": 1,
+    "catalogId": "landformcraft.builtin-lithology",
+    "catalogContractVersion": "builtin-lithology-catalog-v1",
+    "entries": [
+      { "kind": "HARD_INTRUSIVE", "lithologyId": "lithology.hard-intrusive", "lithologyCode": 1, "hardnessMillionths": 500000, "permeabilityMillionths": 500000, "erosionResponse": "MODERATE" },
+      { "kind": "ANDESITIC_VOLCANIC", "lithologyId": "lithology.andesitic-volcanic", "lithologyCode": 2, "hardnessMillionths": 650000, "permeabilityMillionths": 350000, "erosionResponse": "RESISTANT" },
+      { "kind": "BASALTIC_FLOW", "lithologyId": "lithology.basaltic-flow", "lithologyCode": 3, "hardnessMillionths": 700000, "permeabilityMillionths": 150000, "erosionResponse": "RESISTANT" },
+      { "kind": "TUFF_ASH", "lithologyId": "lithology.tuff-ash", "lithologyCode": 4, "hardnessMillionths": 250000, "permeabilityMillionths": 650000, "erosionResponse": "HIGHLY_ERODIBLE" },
+      { "kind": "CARBONATE_LIKE", "lithologyId": "lithology.carbonate-like", "lithologyCode": 5, "hardnessMillionths": 400000, "permeabilityMillionths": 600000, "erosionResponse": "ERODIBLE" },
+      { "kind": "SANDSTONE_STRATA", "lithologyId": "lithology.sandstone-strata", "lithologyCode": 6, "hardnessMillionths": 350000, "permeabilityMillionths": 550000, "erosionResponse": "ERODIBLE" },
+      { "kind": "ALLUVIAL_GRAVEL", "lithologyId": "lithology.alluvial-gravel", "lithologyCode": 7, "hardnessMillionths": 150000, "permeabilityMillionths": 900000, "erosionResponse": "HIGHLY_ERODIBLE" },
+      { "kind": "SILT_CLAY", "lithologyId": "lithology.silt-clay", "lithologyCode": 8, "hardnessMillionths": 100000, "permeabilityMillionths": 800000, "erosionResponse": "HIGHLY_ERODIBLE" },
+      { "kind": "REEF_CARBONATE", "lithologyId": "lithology.reef-carbonate", "lithologyCode": 9, "hardnessMillionths": 450000, "permeabilityMillionths": 500000, "erosionResponse": "MODERATE" }
+    ],
+    "budget": {
+      "budgetVersion": "lithology-catalog-budget-v1",
+      "maximumEntries": 9,
+      "compactCodeBits": 8,
+      "maximumCanonicalBytes": 32768
+    },
+    "canonicalChecksum": "2394664555a2697336c5230701d221a3a478b45085f4f82f308b6228ce01eec7"
+  },
+  "provinceAssignments": [
+    {
+      "provinceId": "province-uniform-prior",
+      "provinceCode": 1,
+      "formationId": "formation.uniform-prior",
+      "formationCode": 1,
+      "lithologyId": "lithology.hard-intrusive",
+      "lithologyCode": 1
+    }
+  ],
+  "budget": {
+    "budgetVersion": "lithology-assignment-budget-v1",
+    "maximumAssignments": 256,
+    "compactCodeBits": 8,
+    "estimatedCpuWorkUnits": 10,
+    "estimatedRetainedBytes": 2304,
+    "maximumCanonicalBytes": 65536
+  },
+  "canonicalChecksum": "69382c8a3256a678884394546d56868961aca6a5f025913bdc894d2952f46d78"
+}

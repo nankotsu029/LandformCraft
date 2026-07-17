@@ -1,0 +1,14 @@
+{
+  "intentVersion": 2,
+  "intentId": "sky-islands-v2",
+  "theme": "Diagnostic-only sky island contract",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "sky-islands", "kind": "SKY_ISLAND_GROUP", "geometry": { "type": "VOLUME_GUIDE", "footprint": { "type": "POLYGON", "rings": [[[0.12, 0.12], [0.88, 0.1], [0.92, 0.84], [0.1, 0.86], [0.12, 0.12]]] }, "vertical": { "mode": "ABSOLUTE_Y", "min": 145, "max": 235 } }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "sky-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [],
+  "constraints": [{ "id": "island-count", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:sky-islands", "metric": "CONNECTED_SOLID_COMPONENT_COUNT", "range": { "min": 4, "max": 4 }, "tolerance": 0 }],
+  "environment": { "geologyPreset": "FRACTURED_GRANITIC", "climatePreset": "COOL_HIGH_ALTITUDE", "ecologyPreset": "WIND_EXPOSED_SKY_MEADOW" },
+  "mapReferences": [], "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "sky-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

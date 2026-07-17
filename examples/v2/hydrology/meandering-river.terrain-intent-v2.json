@@ -1,0 +1,51 @@
+{
+  "intentVersion": 2,
+  "intentId": "meandering-river-v2",
+  "theme": "EXPERIMENTAL single-reach meandering river fixture for V2-3-03",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "main-river",
+      "kind": "MEANDERING_RIVER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.50, 0.05], [0.42, 0.32], [0.58, 0.58], [0.50, 0.92]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "bankfullWidthBlocks": { "min": 8, "max": 16 },
+        "dischargeClass": "MEDIUM",
+        "minimumBedSlope01": 0.001,
+        "variant": "MEANDERING_RIVER"
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "river-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": {
+    "geologyPreset": "ALLUVIAL_SEDIMENT",
+    "climatePreset": "TEMPERATE_HUMID",
+    "ecologyPreset": "RIVER_CORRIDOR"
+  },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "river-fixture",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

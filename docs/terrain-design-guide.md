@@ -104,14 +104,15 @@ export OPENAI_API_KEY='...'
 
 最終Intentを人が確定してmanual importする方法が、API応答の揺らぎを除くうえでは最も再現性があります。ただし、現在のSchemaは曲線の制御点、pixel単位heightmap、正確な川筋、構造物座標を持たないため、「画像と同じ輪郭」や「block単位の完全一致」は保証できません。
 
-## 生成幅を増やすには
+## 生成幅を増やすv2計画
 
-拡張は可能ですが、1つのenum追加では足りません。安全性と再現性を維持するなら、次の順が現実的です。
+拡張は可能ですが、1つのenum追加では足りません。正式な依存順と進捗は [roadmap](roadmap.md#terrain-generation-v2)、詳細設計は [Implementation Roadmap v2](design-v2/implementation-roadmap.md) を正本とします。概要は次の順です。
 
-1. palette/vegetation descriptorを追加し、桜、針葉樹、マングローブ、砂漠、雪原を決定論的に配置する。
-2. raster constraint入力を追加し、正規化済みheight/zone/water mapをAIを介さずgeneratorへ渡す。
-3. waterfall/river graphを追加し、水源から河口まで標高が単調に下がる制約を検証する。
-4. cave maskと3D density fieldをtile/margin方式で追加し、洞窟とoverhangを扱う。
-5. biome書換え、地下・海中palette、custom asset ID参照をversion付きSchemaで追加する。
+1. v1互換を固定したv2 contract／diagnostic compiler／query adapterを追加する。V2-0 gateは完了済み。
+2. raster constraint入力を追加し、正規化済みheight／zone／land-water mapをAIを介さずfieldへcompileする。V2-1 gateは完了済み。
+3. beach＋breakwater＋rockycapeを2.5D vertical sliceとしてgenerator／validator／preview／Release 2 offline exportまで完成する。
+4. global hydrology、geology／climate／ecology、semantic materialを段階導入する。
+5. cave、overhang、arch、sky islandをAABB限定のsparse local volumeとして追加する。
+6. effect envelopeとsnapshot-allを備えたRelease 2配置を最後に有効化する。
 
-2は指定への一致度を最も直接改善します。3〜5はartifact、memory上限、WorldEdit export、snapshot見積、rollback、脅威分析へ影響するため、新しいSchema/generator versionとADRが必要です。これらは現在の実装済み機能や確定マイルストーンではありません。
+各Phaseには新しいSchema／generator version、artifact、memory上限、WorldEdit export、snapshot見積、rollback、脅威分析が必要です。現在あるv2コードはcompatibility spine、direct constraint field、4 coastal kind、Hydrology pipelineとstrictな`surface-2_5d`／`hydrology-plan` capabilityに加え、V2-4-01〜V2-4-04のtyped geology／lithology／strataとcoarse climate prior／final temperature・moistureまでです。V2-2／V2-3統合監査を通過したcoastal 4 kindとofflineのriver／lake／canyon／delta／tidal／fjordは`SUPPORTED`ですが、CLI／Paper配置を持ちません。environment、waterfall、mountain、volcanicは後続のwetness／snow／volume／material依存が残るため`EXPERIMENTAL`です。regional wetness／salinity／hydroperiod、snow、ecology／material、capeのoverhang／sea cave／full 3D stackとその他の専用地形も生成できません。次は`V2-4-05`です。V2-5〜V2-6は前提待ちです。

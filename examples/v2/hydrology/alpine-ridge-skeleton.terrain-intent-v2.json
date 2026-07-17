@@ -1,0 +1,42 @@
+{
+  "intentVersion": 2,
+  "intentId": "alpine-ridge-skeleton",
+  "theme": "Experimental alpine ridge skeleton for hydrology handoff",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    {
+      "id": "alpine-ridge",
+      "kind": "ALPINE_MOUNTAIN_RANGE",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.08, 0.78], [0.28, 0.58], [0.52, 0.44], [0.74, 0.26], [0.92, 0.12]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "peakCount": { "min": 4, "max": 6 },
+        "ridgeHalfWidthBlocks": { "min": 8, "max": 16 },
+        "maxReliefBlocks": { "min": 56, "max": 96 },
+        "spurCount": 4,
+        "ridgeSharpness01": 0.7
+      },
+      "priority": 0,
+      "provenance": { "source": "MANUAL", "sourceId": "alpine-ridge-skeleton", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [],
+  "constraints": [
+    {
+      "id": "ridge-continuity",
+      "strength": "HARD",
+      "kind": "METRIC_RANGE",
+      "subject": "feature:alpine-ridge",
+      "metric": "RIDGE_CONTINUITY_01",
+      "range": { "min": 0.95, "max": 1 },
+      "tolerance": 0
+    }
+  ],
+  "environment": { "climatePreset": "COLD_ALPINE" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "alpine-ridge-skeleton", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

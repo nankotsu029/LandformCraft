@@ -1,0 +1,83 @@
+{
+  "intentVersion": 2,
+  "intentId": "canyon-river-skeleton",
+  "theme": "EXPERIMENTAL canyon with shared MEANDERING_RIVER centerline for V2-3-05",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "main-canyon",
+      "kind": "CANYON",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.50, 0.05], [0.42, 0.35], [0.58, 0.65], [0.50, 0.92]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "floorWidthBlocks": { "min": 12, "max": 20 },
+        "rimWidthBlocks": { "min": 40, "max": 64 },
+        "depthBlocks": { "min": 24, "max": 40 },
+        "crossSection": "TERRACED_V",
+        "terraceCount": 2,
+        "terraceWidthBlocks": 2
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "canyon-example",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "canyon-river",
+      "kind": "MEANDERING_RIVER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.50, 0.05], [0.42, 0.35], [0.58, 0.65], [0.50, 0.92]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "bankfullWidthBlocks": { "min": 4, "max": 8 },
+        "dischargeClass": "SMALL",
+        "minimumBedSlope01": 0.001,
+        "variant": "RIVER"
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "canyon-example",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "river-in-canyon",
+      "kind": "WITHIN",
+      "from": "feature:canyon-river",
+      "to": "feature:main-canyon",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": {
+    "geologyPreset": "STRATIFIED_SEDIMENTARY_CANYON",
+    "climatePreset": "SEASONAL_SEMI_ARID",
+    "ecologyPreset": "RIPARIAN_CANYON"
+  },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "canyon-example",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

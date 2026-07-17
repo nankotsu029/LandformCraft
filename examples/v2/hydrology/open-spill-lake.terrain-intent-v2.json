@@ -1,0 +1,62 @@
+{
+  "intentVersion": 2,
+  "intentId": "open-spill-lake",
+  "theme": "Open spill lake diagnostic",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "basin-lake",
+      "kind": "LAKE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [0.25, 0.25],
+            [0.75, 0.25],
+            [0.75, 0.75],
+            [0.25, 0.75],
+            [0.25, 0.25]
+          ]
+        ]
+      },
+      "parameters": {
+        "targetDepthBlocks": { "min": 4, "max": 8 },
+        "shoreWidthBlocks": 2,
+        "terminalPolicy": "OPEN_SPILL",
+        "spillSelection": "DECLARED_EDGE",
+        "spillEdgeStartIndex": 0,
+        "spillwayWidthBlocks": 4,
+        "spillwayCorridorLengthBlocks": 6,
+        "floorProfile": "EDGE_TO_CENTER_LINEAR"
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "lake-example",
+        "confidence": 1.0,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": {
+    "geologyPreset": "ALLUVIAL_SEDIMENT",
+    "climatePreset": "TEMPERATE_HUMID",
+    "ecologyPreset": "LAKE_BASIN"
+  },
+  "structures": [],
+  "mapReferences": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "lake-example",
+    "confidence": 1.0,
+    "confirmationState": "CONFIRMED"
+  }
+}

@@ -77,6 +77,56 @@ AI出力は非信頼入力なので、湾／岬は各64、川16、湖64、海深
 
 Blueprint以降でAI応答を参照せずに生成できることが要件です。
 
+### V2-0 diagnostic contract
+
+V2はv1 recordへnullable fieldを追加せず、`model.v2`の別契約として並設します。`TerrainIntentVersionDispatcher`はv1の`schemaVersion: 1`とv2の`intentVersion: 2`をexact dispatchし、version欠落、両方の指定、future versionを拒否します。
+
+`TerrainIntentV2`の最小契約は、feature、POINT／MULTI_POINT／SPLINE／MULTI_SPLINE／POLYGON／VOLUME_GUIDE geometry、stable point／path／endpoint、relation、HARD／SOFT constraint、environment descriptor、canonical constraint artifact binding、structure request、provenanceです。正規化X/Zと小数contractはmillionthsの整数へ量子化します。自由形式parameter map、raw path、URL、base64 raster、Minecraft block state、任意codeは受理しません。最初のcoastal 5 kindだけが型付きparameterを持ち、`SANDY_BEACH`はspline進行方向に対する`landSide=LEFT|RIGHT`、`foreshoreShare01`、`endpointTaperBlocks`を必須とします。残りのscenario kindは空parameterと明示的なunsupported capability診断に限定します。
+
+`WorldBlueprintV2`はidentity、source request／intent checksum、compiler／generator version、bounds／coordinate space、tile policy、named seed規則、module／stage／field descriptor、field ownership／merge、feature plan、HydrologyPlan、regional feature plan、`hydrologyReconciliationPlan`、validation target、resource budget、diagnostic issue、canonical checksumをfreezeします。V2-0 compilerの出力は`DESCRIPTOR_ONLY`です。V2-1は`SIDECAR` descriptorを、V2-3-01はdescriptor-only Hydrology IRを追加しました。V2-3-02のrouting payloadはBlueprint JSONへ埋め込まず、HydrologyPlan checksumへbindingした別artifactとしてfreezeします。V2-3-03〜11はriver／lake／canyon／waterfall／delta／tidal／fjord／mountain／volcanicの`EXPERIMENTAL` execution planを、V2-3-12は固定3 passのscalar target／budgetを持つ`HydrologyReconciliationPlanV2`をBlueprintへsealします。TerrainPlan v1、schematic、Release、Paper配置は作りません。
+
+### V2-2-01〜03 coastal foundation／raster／beach contract
+
+`CoastalFeaturePlanV2`は`planVersion=1`で、4 coastal kindのfeature ID、kind、block millionths geometry、geometry role、coast-side field／値、signed-distance field／符号／最大距離、nearshore profile、support radiusをfreezeします。normalized X/Zのblock化は`normalizedMillionths × (dimension - 1)`であり、浮動小数を正本にしません。
+
+`v2.coast.foundation`はcompile-time built-in moduleで、`generate.coastal-raster` stage、XZ halo 64、actual land-water、coast-side、signed-distance、normal X/Z、nearshore profileに、beach local width、surface height、band、semantic sandを加えた10 fieldを宣言します。fieldは`DESCRIPTOR_ONLY`、ownerはこのmoduleだけ、mergeは`SINGLE_OWNER`です。`ResourceBudget`は従来のfeature／field／point／byte上限に`maximumHaloXZ`／`maximumHaloY`を加え、module宣言より小さいbudgetをplan作成前に拒否します。
+
+`SandyBeachPlanV2`は`planVersion=1`で、`ENDPOINT_TAPER`幅、foreshore share、shore slopeのmin／max／選択値とinteger rise、nearshore distance／depth、vertical bounds、4 field ID、support radiusをfreezeします。nearshore distanceはsupportの距離飽和と帯終端を区別するため1..63とし、supportはその外側1 blockまで含めます。`SandyBeachGeneratorV2`はplatform floatや全域dense fieldを使わず、global X/Zまたはbounded windowから同じraw field値を返します。Minecraft blockへのmaterial解決はまだ行いません。
+
+`CoastalRasterKernelV2`はCOASTLINE planをinteger Q12へ固定量子化し、signed distance／normal／linear nearshoreをblock millionthsでsampleします。core 256、halo 64、retained 8 MiB上限のwindowだけを保持し、1000角dense fieldを作りません。HARD land-waterはstrict `LFC_GRID_V1` windowから0／1だけを受理し、actual fieldへexact copyします。V2-2-12統合監査後は、このkernelを含む4 coastal featureのoffline経路を`SUPPORTED`としています。
+
+### V2-1 constraint map contract
+
+`GenerationRequestV2`はProviderへ渡す`referenceImages`と、AIを介さず数値decodeする`constraintMaps`を別collection／別recordとして定義します。constraint map sourceは`constraint-source:<slug>`、安全な相対path、期待source checksum／寸法、categoricalまたはheight decoder、pixel-center座標、quarter-turn／flip／crop、U8／U16 encoding、label allowlist、no-dataを所有します。role、HARD／SOFT、weight、tolerance、samplingは重複させず、freeze済み`TerrainIntentV2.ConstraintMapBinding`だけが所有します。
+
+heightの意味は`ABSOLUTE_BLOCK_Y`、`BLOCKS_ABOVE_REQUEST_MIN_Y`、`BLOCKS_RELATIVE_TO_WATER_LEVEL`のenumで必須化し、scale／offsetはmillionths整数です。categorical mapの未知sampleを近いlabelへfallbackせず、LAND／ZONE bindingは`NEAREST`だけを許可します。
+
+`WorldBlueprintV2.FieldDescriptor`はV2-0互換の`DESCRIPTOR_ONLY`に加え、`SIDECAR`時だけ`FieldArtifactDescriptorV2`を必須とします。sidecar descriptorはfield ID、semantic、value type、寸法、coordinate space、sampling、scale／offset、no-data、`LFC_GRID_V1`、artifact／semantic checksum、source provenanceを持ち、Blueprint側descriptorとの不一致をconstructorで拒否します。値配列はBlueprint JSONへ埋め込みません。
+
+`HydrologyPlanV2` version 1はbasin／node／reach／water body／fallのstable-ID graph、checksum付き`UNIFORM_GEOLOGY_PRIOR`／`CONSTANT_RUNOFF_PRIOR`、6 field binding、graph／CPU／resident budgetを保持します。通常compilerはrouting前のempty graphを保存します。minimal graphではendpoint、node reach index、basin source／outlet、water body／fall binding、cycle、source→outlet reachabilityをstrictに検査し、未知version／prior／checksumへfallbackしません。
+
+`GeologyPlanV2` version 1はV2-3 fixed prior checksumを`PriorReplacement`で明示参照し、named seed、emptyまたはuniform province、opaque formation ID、hardness／permeability、4個のU16 single-owner field、CPU／retained／window working／artifact budgetをfreezeします。field payloadは4個の`LFC_GRID_V1`へ保存し、全no-dataまたはprovince descriptorと完全一致するcellだけを専用bounded readerが受理します。
+
+`LithologyPlanV2` version 1はsource `GeologyPlanV2` checksum、`landformcraft.builtin-lithology` catalog contract、catalog／plan checksum、province assignment、resource budgetをfreezeします。catalogは9個のclosed semantic lithology entryと8-bit compact code、hardness、permeability、erosion responseだけを持つ。assignmentはprovince／formation IDとcode、scalarをcatalog entryへ完全一致で結合し、readerは既存province fieldをbounded windowで検査する。strata、Minecraft block state、feature responseは保持しない。
+
+`StrataPlanV2` version 1はsource geology／lithology checksum、provinceごとの`BOTTOM_TO_TOP` ordered layer、thickness、cardinal dip／optional foldのbounded subset、resource budget、およびV2-3 `UNIFORM_GEOLOGY_PRIOR`／`hydrology-reconcile-fixed-v1`を明示参照する`HydrologyGeologyInputHandoff`をfreezeします。surface-exposed derived hardness／permeabilityはprofile descriptorからinteger-onlyで再計算し、dense 3D strata配列や追加sidecarを正本にしません。Minecraft block stateとHydrology planのin-place変更は行いません。
+
+`HydrologyRoutingArtifactV2` version 1はsolver `hydrology-priority-flood-v1`、D8 encoding `hydrology-d8-terminal-v1`、source HydrologyPlan／provisional surface／fixed-prior checksum、global Z／X／ID順の明示outlet、`basin-000001`形式のsummary、2個のfield descriptor、resource usage、graph／routing／canonical checksumを保持します。directionはU8（terminal 0、D8 1..8、no-data 255）、accumulationはI32（no-data 0）で、`LFC_GRID_V1` sidecarに保存します。strict readerは全routable cellのdownstream accumulationが増加し、宣言terminalへ一度だけ到達し、outlet accumulationとbasin areaが一致することをbounded row scanで検証します。
+
+`HydrologyReconciliationPlanV2` version 1はsource HydrologyPlan checksum、`hydrology-reconcile-fixed-v1`、`kind-feature-constraint-v1`、固定3 pass、reach／lake／delta／tidal／fjord／waterfallのscalar variable／constraint、work／working-set／artifact budgetを保持します。`HydrologyReconciliationStateV2`はplanへbindingした観測値とhard lockだけを渡し、全域fieldを複製しません。`HydrologyReconciliationArtifactV2`はfinal value、actual delta／residual／correction count、stable failure reason、resource usage、source／final state／result／canonical checksumを保持します。strict codecは4 MiB document上限、duplicate／unknown／future field、checksum改変、symlinkを拒否します。
+
+`ConstraintFieldIndexV2`はbinding、content-addressed field descriptor、categorical source sample→canonical ID→label tableを保存します。1000×1000値はindexではなくsidecarだけに置きます。manual prepareはcanonical artifact IDを返し、frozen生成はTerrainIntentのartifact IDとsemantic checksumが一致しなければ公開前に拒否します。
+
+### V2-2-09 offline tile contract
+
+`OfflineTilePlanV2`はtile ID／index、release-local origin、width／length、inclusive minY／maxYを固定し、水平各辺256、vertical span 512、world bounds 1000×1000を超える値を拒否します。`OfflineTileArtifactV2`はsource Blueprint checksum、`RELEASE_LOCAL_XYZ`、`SPONGE_X_Z_Y_V1`、Minecraft／DataVersion／Sponge version、safe relative schematic path、block／palette／byte budget、artifact／semantic／canonical checksumを持つRelease外metadataです。
+
+### V2-2-10 Release format 2 core contract
+
+`ReleaseManifestV2`はformat version 2、manifest version 1、release ID、sorted／unique `requiredCapabilities[]`、path順のstrict `ReleaseArtifactDescriptorV2[]`、exclude-self canonical checksumを持ちます。descriptorはartifact ID／type／version、safe relative path、byte length、artifact SHA-256、semantic SHA-256を持ち、manifest自身をindexへ入れません。空capability coreは引き続き空indexだけを許可する。`V2-2-11`の`surface-2_5d` dispatchはrequest／intent／Blueprint、field index＋sidecar、validation artifact、preview index＋11 PNG、tile metadata＋Sponge v3のcomplete setだけを許可し、unknown capability／type／versionと欠損／余分なpayloadを拒否する。
+
+`CanonicalBlockStreamV2`はtile boundsをversion headerへ含め、X fastest→Z→Y順のcanonical block-stateを長さ付きUTF-8でhashします。`OfflineTileSchematicWriterV2`はfinal `TerrainBlockResolver`を二走査し、palette count以外のblock collectionを保持しません。`WorldEditOfflineTileReaderV2`はstrict bounded inspector後にWorldEdit 7.3.19で同じsemantic checksumを再計算します。これらはv1 `TerrainPlan`、`ManifestTile`、Release 1 recordへ追加しません。
+
 ### Phase 0で追加済みのrecord
 
 - `TerrainPlan`: 全体の2次元mapとfeature descriptor
@@ -185,6 +235,22 @@ JSON object order、locale、timezone、default charset、thread scheduling、un
 - [`generation-request.schema.json`](../schemas/generation-request.schema.json)（immutable IDは`/schemas/v1/...`）
 - [`terrain-intent.schema.json`](../schemas/terrain-intent.schema.json)（immutable IDは`/schemas/v1/...`）
 - [`world-blueprint.schema.json`](../schemas/world-blueprint.schema.json)（immutable IDは`/schemas/v1/...`）
+- [`generation-request-v2.schema.json`](../schemas/generation-request-v2.schema.json)（V2-1 reference／constraint source分離、immutable IDは`/schemas/v2/...`）
+- [`terrain-intent-v2.schema.json`](../schemas/terrain-intent-v2.schema.json)（V2-0 contract＋V2-2-01〜06 coastal feature profile＋V2-2-07 version付きtransition policy、immutable IDは`/schemas/v2/...`）
+- [`world-blueprint-v2.schema.json`](../schemas/world-blueprint-v2.schema.json)（V2-0 descriptor-only＋V2-1 SIDECAR＋V2-2 coastal＋V2-3 Hydrology＋V2-4 geology／climate plan binding、immutable IDは`/schemas/v2/...`）
+- [`hydrology-plan-v2.schema.json`](../schemas/hydrology-plan-v2.schema.json)（V2-3-01 graph／fixed prior／field／budget contract）
+- [`hydrology-routing-artifact-v2.schema.json`](../schemas/hydrology-routing-artifact-v2.schema.json)（V2-3-02 basin／outlet／routing field／resource／checksum index）
+- [`hydrology-reconciliation-plan-v2.schema.json`](../schemas/hydrology-reconciliation-plan-v2.schema.json)（V2-3-12 fixed pass／scan order／scalar target／budget contract）
+- [`hydrology-reconciliation-artifact-v2.schema.json`](../schemas/hydrology-reconciliation-artifact-v2.schema.json)（V2-3-12 final state／residual／failure reason／resource／checksum evidence）
+- [`geology-plan-v2.schema.json`](../schemas/geology-plan-v2.schema.json)（V2-4-01 prior replacement／province／4 field ownership／resource budget）
+- [`lithology-plan-v2.schema.json`](../schemas/lithology-plan-v2.schema.json)（V2-4-02 fixed catalog／province assignment／checksum／budget）
+- [`strata-plan-v2.schema.json`](../schemas/strata-plan-v2.schema.json)（V2-4-03 ordered strata／fold-tilt／derived scalars／hydrology handoff）
+- [`climate-plan-v2.schema.json`](../schemas/climate-plan-v2.schema.json)（V2-4-04 coarse prior／final temperature・moisture／Hydrology runoff-prior version handoff／budget）
+- [`constraint-field-index-v2.schema.json`](../schemas/constraint-field-index-v2.schema.json)（V2-1 binding／field artifact／label table index＋V2-3-02 routing sidecar semantic code）
+- [`coastal-preview-index-v2.schema.json`](../schemas/coastal-preview-index-v2.schema.json)（V2-2-08 fixed coastal diagnostic layer index）
+- [`offline-tile-artifact-v2.schema.json`](../schemas/offline-tile-artifact-v2.schema.json)（V2-2-09 standalone tile metadata。Release manifestではない）
+- [`release-manifest-v2.schema.json`](../schemas/release-manifest-v2.schema.json)（V2-2-10 empty-capability Release format 2 core index）
+- [`coastal-validation-artifact-v2.schema.json`](../schemas/coastal-validation-artifact-v2.schema.json)（V2-2-11 sealed coastal validation evidence）
 - [`export-manifest.schema.json`](../schemas/export-manifest.schema.json)（immutable IDは`/schemas/v1/...`）
 - [`placement-journal.schema.json`](../schemas/placement-journal.schema.json)（immutable IDは`/schemas/v1/...`）
 - [`design-audit.schema.json`](../schemas/design-audit.schema.json)（immutable IDは`/schemas/v1/...`）
@@ -193,4 +259,4 @@ JSON object order、locale、timezone、default charset、thread scheduling、un
 - [`required-assets.schema.json`](../schemas/required-assets.schema.json)（immutable IDは`/schemas/v1/...`）
 - [`structure-placements.schema.json`](../schemas/structure-placements.schema.json)（immutable IDは`/schemas/v1/...`）
 
-v1 schemaは`0.1.0-SNAPSHOT`のPhase 0〜6実装で相互整合を確定しました。最初の安定版公開後の破壊的変更は同じ`$id`を書き換えず、新しいschema versionとmigrationを追加します。
+v1 schemaは`0.1.0-SNAPSHOT`のPhase 0〜6実装で相互整合を確定しました。V2-0追加時にもv1 Schemaは変更していません。最初の安定版公開後の破壊的変更は同じ`$id`を書き換えず、新しいschema versionとmigrationを追加します。
