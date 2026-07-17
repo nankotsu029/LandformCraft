@@ -1,0 +1,16 @@
+{
+  "intentVersion": 2,
+  "intentId": "fjord-v2",
+  "theme": "Diagnostic-only fjord contract",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "main-fjord", "kind": "FJORD", "geometry": { "type": "SPLINE", "points": [[0.48, 0], [0.43, 0.22], [0.55, 0.48], [0.50, 0.82]], "interpolation": "CATMULL_ROM" }, "parameters": { "surfaceWidthBlocks": { "min": 32, "max": 32 }, "channelDepthBlocks": { "min": 8, "max": 16 }, "crossSection": "GLACIAL_U", "headBasinRadiusBlocks": 24 }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "fjord-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "fjord-walls", "kind": "GLACIAL_MOUNTAIN_RANGE", "geometry": { "type": "POLYGON", "rings": [[[0.1, 0.02], [0.9, 0.02], [0.86, 0.92], [0.16, 0.92], [0.1, 0.02]]] }, "parameters": { "peakCount": { "min": 3, "max": 5 }, "ridgeHalfWidthBlocks": { "min": 4, "max": 8 }, "maxReliefBlocks": { "min": 48, "max": 72 }, "spurCount": 2, "ridgeSharpness01": 0.6 }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "fjord-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [{ "id": "fjord-empties-north", "kind": "EMPTIES_INTO", "from": "feature:main-fjord", "to": "boundary:NORTH", "strength": "HARD" }, { "id": "walls-flank-fjord", "kind": "FLANKS", "from": "feature:fjord-walls", "to": "feature:main-fjord", "strength": "HARD" }],
+  "constraints": [{ "id": "north-is-sea", "strength": "HARD", "kind": "EDGE_CLASSIFICATION", "subject": "world", "parameters": { "edge": "NORTH", "classification": "SEA", "minimumShare01": 0.1 } }, { "id": "fjord-slenderness", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:main-fjord", "metric": "CENTERLINE_LENGTH_TO_MEAN_WIDTH", "range": { "min": 5, "max": 14 }, "tolerance": 0.2 }],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_MARITIME", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "fjord-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

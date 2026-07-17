@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/geology-plan-v2.schema.json",
+  "title": "LandformCraft V2-4 geology field foundation plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "fieldContractVersion", "moduleId", "moduleVersion", "stageId",
+    "priorReplacement", "namedSeed", "seedNamespace", "width", "length", "provinces",
+    "fields", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "fieldContractVersion": { "const": "geology-field-contract-v1" },
+    "moduleId": { "const": "v2.environment.geology-foundation" },
+    "moduleVersion": { "const": "0.1.0-v2-4-01" },
+    "stageId": { "const": "generate.geology-foundation" },
+    "priorReplacement": { "$ref": "#/$defs/priorReplacement" },
+    "namedSeed": { "type": "integer" },
+    "seedNamespace": { "const": "terrain.v2.geology" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "provinces": {
+      "type": "array", "maxItems": 256,
+      "items": { "$ref": "#/$defs/province" }
+    },
+    "fields": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": { "$ref": "#/$defs/fieldBinding" }
+    },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "priorReplacement": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourcePriorKind", "sourcePriorChecksum", "replacementMode",
+        "sourceHardnessMillionths", "sourcePermeabilityMillionths"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourcePriorKind": { "const": "UNIFORM_GEOLOGY_PRIOR" },
+        "sourcePriorChecksum": { "$ref": "#/$defs/checksum" },
+        "replacementMode": { "const": "TYPED_GEOLOGY_FIELDS" },
+        "sourceHardnessMillionths": { "const": 500000 },
+        "sourcePermeabilityMillionths": { "const": 500000 }
+      }
+    },
+    "province": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "provinceId", "provinceCode", "formationId", "formationCode",
+        "hardnessMillionths", "permeabilityMillionths"
+      ],
+      "properties": {
+        "provinceId": { "$ref": "#/$defs/slug" },
+        "provinceCode": { "type": "integer", "minimum": 1, "maximum": 65534 },
+        "formationId": { "$ref": "#/$defs/qualified" },
+        "formationCode": { "type": "integer", "minimum": 1, "maximum": 65534 },
+        "hardnessMillionths": {
+          "type": "integer", "minimum": 0, "maximum": 1000000, "multipleOf": 1000
+        },
+        "permeabilityMillionths": {
+          "type": "integer", "minimum": 0, "maximum": 1000000, "multipleOf": 1000
+        }
+      }
+    },
+    "fieldBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "semantic", "valueType", "ownerModuleId", "ownership", "encodingVersion"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "semantic": { "enum": ["PROVINCE_ID", "FORMATION_ID", "HARDNESS", "PERMEABILITY"] },
+        "valueType": { "const": "U16" },
+        "ownerModuleId": { "const": "v2.environment.geology-foundation" },
+        "ownership": { "const": "SINGLE_OWNER" },
+        "encodingVersion": { "const": "LFC_GRID_V1" }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumProvinces", "maximumFields", "globalCellCount",
+        "estimatedCpuWorkUnits", "estimatedRetainedBytes", "maximumWindowSize", "maximumWorkingBytes",
+        "estimatedArtifactBytes", "maximumSingleArtifactBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "geology-field-budget-v1" },
+        "maximumProvinces": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "maximumFields": { "const": 4 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "maximumWindowSize": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "estimatedArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "maximumSingleArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 8388608 }
+      }
+    }
+  }
+}

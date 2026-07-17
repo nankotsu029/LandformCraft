@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-preview-index-v2.schema.json",
+  "title": "LandformCraft V2 hydrology diagnostic preview index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["previewIndexVersion", "sourceBlueprintChecksum", "width", "length", "layers", "canonicalChecksum"],
+  "properties": {
+    "previewIndexVersion": {"const": 1},
+    "sourceBlueprintChecksum": {"$ref": "#/$defs/checksum"},
+    "width": {"type": "integer", "minimum": 1, "maximum": 1000},
+    "length": {"type": "integer", "minimum": 1, "maximum": 1000},
+    "layers": {"type": "array", "minItems": 12, "maxItems": 12, "items": {"$ref": "#/$defs/layer"}},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "layerId": {"enum": ["BASIN_ID", "FLOW_DIRECTION", "FLOW_ACCUMULATION", "REACH_GRAPH", "BED_ELEVATION", "WATER_SURFACE", "WATER_BODY", "LAKE_RIM_SPILL", "DELTA_DISTRIBUTARY", "FJORD_THALWEG", "WATERFALL_ENVELOPE", "CONSTRAINT_RESIDUAL"]},
+    "layer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["layerId", "layerVersion", "path", "semantic", "sha256", "byteLength", "width", "length", "paletteId"],
+      "properties": {
+        "layerId": {"$ref": "#/$defs/layerId"}, "layerVersion": {"const": 1},
+        "path": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}\\.png$"},
+        "semantic": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+        "sha256": {"$ref": "#/$defs/checksum"}, "byteLength": {"type": "integer", "minimum": 1, "maximum": 8388608},
+        "width": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "length": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "paletteId": {"const": "hydrology-diagnostic-palette-v1"}
+      }
+    }
+  }
+}

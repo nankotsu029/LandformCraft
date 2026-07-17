@@ -1,0 +1,15 @@
+{
+  "intentVersion": 2,
+  "intentId": "snowy-mountains-v2",
+  "theme": "Diagnostic-only snowy mountain contract",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "alpine-ridge", "kind": "ALPINE_MOUNTAIN_RANGE", "geometry": { "type": "SPLINE", "points": [[0.08, 0.7], [0.3, 0.48], [0.53, 0.38], [0.78, 0.2], [0.94, 0.12]], "interpolation": "CATMULL_ROM" }, "parameters": { "peakCount": { "min": 4, "max": 6 }, "ridgeHalfWidthBlocks": { "min": 10, "max": 18 }, "maxReliefBlocks": { "min": 64, "max": 96 }, "spurCount": 4, "ridgeSharpness01": 0.72 }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "snow-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "north-cirques", "kind": "GLACIAL_CIRQUE_FIELD", "geometry": { "type": "MULTI_POINT", "points": [{ "id": "west-cirque", "point": [0.28, 0.4] }, { "id": "east-cirque", "point": [0.72, 0.16] }] }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "snow-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [{ "id": "cirques-cut-ridge", "kind": "CARVES_FLANK_OF", "from": "feature:north-cirques", "to": "feature:alpine-ridge", "strength": "HARD" }],
+  "constraints": [{ "id": "ridge-continuity", "strength": "SOFT", "kind": "METRIC_RANGE", "subject": "feature:alpine-ridge", "metric": "RIDGE_CONTINUITY_01", "range": { "min": 0.85, "max": 1 }, "tolerance": 0, "weight": 0.9 }],
+  "environment": { "geologyPreset": "ALPINE_GRANITIC", "climatePreset": "COLD_ALPINE", "ecologyPreset": "ALPINE_TREELINE" },
+  "mapReferences": [], "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "snow-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

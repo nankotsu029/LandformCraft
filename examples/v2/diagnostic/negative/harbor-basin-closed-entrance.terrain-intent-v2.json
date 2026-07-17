@@ -1,0 +1,77 @@
+{
+  "intentVersion": 2,
+  "intentId": "harbor-closed-entrance",
+  "theme": "Negative fixture: harbor endpoints do not form one outer-ring opening edge",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "test-breakwater",
+      "kind": "BREAKWATER_HARBOR",
+      "geometry": {
+        "type": "MULTI_SPLINE",
+        "paths": [
+          {
+            "id": "west-arm",
+            "startEndpointId": "closed-west",
+            "endEndpointId": "unused-west",
+            "points": [[0.2, 0.2], [0.3, 0.5]]
+          },
+          {
+            "id": "east-arm",
+            "startEndpointId": "unused-east",
+            "endEndpointId": "closed-east",
+            "points": [[0.7, 0.5], [0.8, 0.7]]
+          }
+        ],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "crestWidthBlocks": 5,
+        "crestAboveWaterBlocks": 2,
+        "outerDepthBlocks": 12,
+        "crestProfile": "FLAT",
+        "foundationProfile": "LINEAR_SIDE_SLOPE",
+        "foundationSideSlopeRunPerRise": 1.5,
+        "opening": {
+          "betweenEndpointIds": ["closed-west", "closed-east"],
+          "widthBlocks": 24,
+          "measurement": "CLEAR_EDGE_TO_EDGE"
+        },
+        "innerSide": "NORTH"
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "negative-harbor", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "test-basin",
+      "kind": "HARBOR_BASIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.2, 0.2], [0.8, 0.2], [0.8, 0.7], [0.2, 0.7], [0.2, 0.2]]]
+      },
+      "parameters": {
+        "waterDepthBlocks": { "min": 8, "max": 10 },
+        "entranceEndpointIds": ["closed-west", "closed-east"],
+        "entranceCorridorLengthBlocks": 24,
+        "bottomProfile": "EDGE_TO_CENTER_LINEAR",
+        "profileTransitionBlocks": 20
+      },
+      "priority": 5,
+      "provenance": { "source": "MANUAL", "sourceId": "negative-harbor", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    { "id": "invalid-enclosure", "kind": "ENCLOSES", "from": "feature:test-breakwater", "to": "feature:test-basin", "strength": "HARD" }
+  ],
+  "constraints": [],
+  "environment": { "climatePreset": "TEMPERATE_MARITIME" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "negative-harbor", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

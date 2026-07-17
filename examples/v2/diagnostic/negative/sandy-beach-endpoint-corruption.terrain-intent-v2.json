@@ -1,0 +1,49 @@
+{
+  "intentVersion": 2,
+  "intentId": "sandy-beach-endpoint-corruption",
+  "theme": "Negative fixture: endpoint taper regions overlap on a short beach path",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "short-beach",
+      "kind": "SANDY_BEACH",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.49, 0.5], [0.51, 0.5]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "widthBlocks": { "min": 8, "max": 20 },
+        "shoreSlopeDegrees": { "min": 4, "max": 6 },
+        "nearshoreDepthBlocks": { "atDistance": 16, "target": 4 },
+        "foreshoreShare01": 0.5,
+        "endpointTaperBlocks": 16,
+        "landSide": "LEFT"
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "negative-sandy-beach-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": { "climatePreset": "TEMPERATE_MARITIME" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "negative-sandy-beach-fixture",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

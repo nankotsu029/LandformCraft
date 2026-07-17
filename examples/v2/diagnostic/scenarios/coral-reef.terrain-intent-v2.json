@@ -1,0 +1,20 @@
+{
+  "intentVersion": 2,
+  "intentId": "coral-reef-v2",
+  "theme": "Diagnostic-only coral reef contract",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "ring-reef", "kind": "CORAL_REEF", "geometry": { "type": "POLYGON", "rings": [[[0.12, 0.18], [0.82, 0.1], [0.94, 0.78], [0.24, 0.92], [0.12, 0.18]], [[0.3, 0.34], [0.7, 0.26], [0.76, 0.66], [0.38, 0.72], [0.3, 0.34]]] }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "coral-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "inner-lagoon", "kind": "LAGOON", "geometry": { "type": "POLYGON", "rings": [[[0.3, 0.34], [0.7, 0.26], [0.76, 0.66], [0.38, 0.72], [0.3, 0.34]]] }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "coral-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "reef-pass", "kind": "REEF_PASS", "geometry": { "type": "SPLINE", "points": [[0.72, 0.115], [0.7, 0.19], [0.67, 0.27]], "interpolation": "POLYLINE" }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "coral-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [
+    { "id": "lagoon-enclosed", "kind": "ENCLOSED_BY", "from": "feature:inner-lagoon", "to": "feature:ring-reef", "strength": "HARD" },
+    { "id": "pass-cuts-reef", "kind": "CARVES_THROUGH", "from": "feature:reef-pass", "to": "feature:ring-reef", "strength": "HARD" },
+    { "id": "pass-connects-lagoon", "kind": "CONNECTS_TO", "from": "feature:reef-pass", "to": "feature:inner-lagoon", "strength": "HARD" }
+  ],
+  "constraints": [{ "id": "lagoon-pass-count", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:inner-lagoon", "metric": "NAVIGABLE_MARINE_PASS_COUNT", "range": { "min": 1, "max": 2 }, "tolerance": 0 }],
+  "environment": { "geologyPreset": "CARBONATE_REEF_PLATFORM", "climatePreset": "WARM_TROPICAL_MARITIME", "ecologyPreset": "SHALLOW_CORAL_REEF" },
+  "mapReferences": [], "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "coral-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

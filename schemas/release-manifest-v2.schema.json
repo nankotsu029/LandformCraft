@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/release-manifest-v2.schema.json",
+  "title": "LandformCraft Release format 2 manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "releaseFormatVersion", "manifestVersion", "releaseId", "requiredCapabilities", "artifacts",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "releaseFormatVersion": {"const": 2},
+    "manifestVersion": {"const": 1},
+    "releaseId": {"$ref": "#/$defs/id"},
+    "requiredCapabilities": {
+      "type": "array", "minItems": 0, "maxItems": 32, "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "artifacts": {
+      "type": "array", "minItems": 0, "maxItems": 256,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "path": {
+      "type": "string", "minLength": 1, "maxLength": 512,
+      "pattern": "^(?:[a-z0-9][a-z0-9._-]{0,127}/)*[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "artifactId", "artifactType", "artifactVersion", "path", "byteLength", "artifactChecksum",
+        "semanticChecksum"
+      ],
+      "properties": {
+        "artifactId": {"$ref": "#/$defs/id"},
+        "artifactType": {"$ref": "#/$defs/id"},
+        "artifactVersion": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "path": {"$ref": "#/$defs/path"},
+        "byteLength": {"type": "integer", "minimum": 1, "maximum": 67108864},
+        "artifactChecksum": {"$ref": "#/$defs/checksum"},
+        "semanticChecksum": {"$ref": "#/$defs/checksum"}
+      }
+    }
+  }
+}

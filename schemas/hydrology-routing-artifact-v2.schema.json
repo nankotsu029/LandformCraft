@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-routing-artifact-v2.schema.json",
+  "title": "LandformCraft V2-3-02 global hydrology routing artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactVersion", "solverVersion", "directionEncodingVersion", "width", "length",
+    "sourceHydrologyPlanChecksum", "sourceSurfaceChecksum", "fixedPriorChecksum",
+    "outlets", "basins", "fields", "resources", "graphChecksum", "routingChecksum",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "artifactVersion": { "const": 1 },
+    "solverVersion": { "const": "hydrology-priority-flood-v1" },
+    "directionEncodingVersion": { "const": "hydrology-d8-terminal-v1" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "sourceHydrologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "sourceSurfaceChecksum": { "$ref": "#/$defs/checksum" },
+    "fixedPriorChecksum": { "$ref": "#/$defs/checksum" },
+    "outlets": {
+      "type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true,
+      "items": { "$ref": "#/$defs/outlet" }
+    },
+    "basins": {
+      "type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true,
+      "items": { "$ref": "#/$defs/basin" }
+    },
+    "fields": {
+      "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+      "items": {
+        "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/constraint-field-index-v2.schema.json#/$defs/fieldArtifact"
+      },
+      "allOf": [
+        {
+          "contains": {
+            "properties": {
+              "definition": {
+                "properties": {
+                  "semantic": { "const": "HYDROLOGY_FLOW_DIRECTION" }
+                },
+                "required": ["semantic"]
+              }
+            },
+            "required": ["definition"]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "definition": {
+                "properties": {
+                  "semantic": { "const": "HYDROLOGY_FLOW_ACCUMULATION" }
+                },
+                "required": ["semantic"]
+              }
+            },
+            "required": ["definition"]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "resources": { "$ref": "#/$defs/resources" },
+    "graphChecksum": { "$ref": "#/$defs/checksum" },
+    "routingChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "outlet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outletId", "x", "z", "kind"],
+      "properties": {
+        "outletId": { "$ref": "#/$defs/slug" },
+        "x": { "type": "integer", "minimum": 0, "maximum": 999 },
+        "z": { "type": "integer", "minimum": 0, "maximum": 999 },
+        "kind": { "enum": ["BOUNDARY", "HARD"] }
+      }
+    },
+    "basin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basinId", "numericId", "outletId", "outletCellId", "outletElevationMillionths",
+        "areaCells", "outletAccumulation"
+      ],
+      "properties": {
+        "basinId": { "type": "string", "pattern": "^basin-[0-9]{6}$" },
+        "numericId": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "outletId": { "$ref": "#/$defs/slug" },
+        "outletCellId": { "type": "integer", "minimum": 0, "maximum": 999999 },
+        "outletElevationMillionths": {
+          "type": "integer", "minimum": -512000000, "maximum": 1024000000
+        },
+        "areaCells": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "outletAccumulation": { "type": "integer", "minimum": 1, "maximum": 1000000 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "globalCellCount", "routableCellCount", "cpuWorkUnits",
+        "maximumCpuWorkUnits", "peakWorkingBytes", "maximumWorkingBytes",
+        "retainedResultBytes", "maximumRetainedResultBytes", "fieldArtifactBytes",
+        "maximumFieldArtifactBytes", "maximumHeapCells"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "hydrology-routing-budget-v1" },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "routableCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "cpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 100000000 },
+        "maximumCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 100000000 },
+        "peakWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 536870912 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 536870912 },
+        "retainedResultBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+        "maximumRetainedResultBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+        "fieldArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+        "maximumFieldArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+        "maximumHeapCells": { "type": "integer", "minimum": 1, "maximum": 1000000 }
+      }
+    }
+  }
+}

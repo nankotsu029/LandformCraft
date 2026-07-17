@@ -1,0 +1,22 @@
+{
+  "intentVersion": 2,
+  "intentId": "delta-v2",
+  "theme": "Diagnostic-only river delta contract",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "main-river", "kind": "MEANDERING_RIVER", "geometry": { "type": "SPLINE", "points": [[0.5, 0.02], [0.44, 0.3], [0.54, 0.54], [0.5, 0.68]], "interpolation": "CATMULL_ROM" }, "parameters": { "bankfullWidthBlocks": { "min": 14, "max": 24 }, "dischargeClass": "LARGE", "minimumBedSlope01": 0.0005, "variant": "MEANDERING_RIVER" }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "delta-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "river-delta", "kind": "DELTA", "geometry": { "type": "POLYGON", "rings": [[[0.22, 0.58], [0.78, 0.58], [0.94, 1], [0.06, 1], [0.22, 0.58]]] }, "parameters": { "distributaryCount": { "min": 4, "max": 8 }, "fanOpeningDegrees": { "min": 55, "max": 115 }, "fanReliefBlocks": { "min": 2, "max": 14 }, "sandbarCount": { "min": 5, "max": 9 }, "shallowSeaDepthBlocks": { "min": 2, "max": 6 }, "fanProfile": "APEX_TO_SEA_LINEAR" }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "delta-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [
+    { "id": "river-drains-to-delta", "kind": "DRAINS_TO", "from": "feature:main-river", "to": "feature:river-delta", "strength": "HARD" },
+    { "id": "delta-empties-south", "kind": "EMPTIES_INTO", "from": "feature:river-delta", "to": "boundary:SOUTH", "strength": "HARD" }
+  ],
+  "constraints": [
+    { "id": "delta-branches", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:river-delta", "metric": "ACTIVE_DISTRIBUTARY_COUNT", "range": { "min": 4, "max": 8 }, "tolerance": 0 },
+    { "id": "delta-low-relief", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:river-delta", "metric": "ELEVATION_RANGE_BLOCKS", "range": { "min": 2, "max": 14 }, "tolerance": 1 },
+    { "id": "south-receiving-sea", "strength": "HARD", "kind": "EDGE_CLASSIFICATION", "subject": "world", "parameters": { "edge": "SOUTH", "classification": "SEA", "minimumShare01": 0.8 } }
+  ],
+  "environment": { "geologyPreset": "ALLUVIAL_SEDIMENT", "climatePreset": "WARM_HUMID", "ecologyPreset": "DELTA_MARSH" },
+  "mapReferences": [], "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "delta-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

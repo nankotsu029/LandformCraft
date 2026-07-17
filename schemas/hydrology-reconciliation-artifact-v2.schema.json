@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-reconciliation-artifact-v2.schema.json",
+  "title": "LandformCraft V2-3-12 bounded hydrology reconciliation result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactVersion", "algorithmVersion", "scanOrderVersion", "sourceBlueprintChecksum",
+    "sourcePlanChecksum", "sourceStateChecksum", "status", "iterationsExecuted",
+    "finalValues", "residuals", "resources", "finalStateChecksum", "resultChecksum",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "artifactVersion": { "const": 1 },
+    "algorithmVersion": { "const": "hydrology-reconcile-fixed-v1" },
+    "scanOrderVersion": { "const": "kind-feature-constraint-v1" },
+    "sourceBlueprintChecksum": { "$ref": "#/$defs/checksum" },
+    "sourcePlanChecksum": { "$ref": "#/$defs/checksum" },
+    "sourceStateChecksum": { "$ref": "#/$defs/checksum" },
+    "status": { "enum": ["SATISFIED", "FAILED"] },
+    "iterationsExecuted": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "finalValues": {
+      "type": "array", "maxItems": 8192,
+      "items": { "$ref": "#/$defs/finalValue" }
+    },
+    "residuals": {
+      "type": "array", "maxItems": 8192,
+      "items": { "$ref": "#/$defs/residual" }
+    },
+    "resources": { "$ref": "#/$defs/resources" },
+    "finalStateChecksum": { "$ref": "#/$defs/checksum" },
+    "resultChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "fixedValue": { "type": "integer", "minimum": -512000000, "maximum": 1024000000 },
+    "fixedDelta": { "type": "integer", "minimum": -1536000000, "maximum": 1536000000 },
+    "constraintKind": {
+      "enum": [
+        "REACH_BED", "LAKE_SPILL", "DELTA_MOUTH", "TIDAL_CONNECTION",
+        "FJORD_CONNECTION", "WATERFALL_LIP_BASE"
+      ]
+    },
+    "finalValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variableId", "valueMillionths", "hardLocked"],
+      "properties": {
+        "variableId": { "$ref": "#/$defs/qualified" },
+        "valueMillionths": { "$ref": "#/$defs/fixedValue" },
+        "hardLocked": { "type": "boolean" }
+      }
+    },
+    "residual": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "constraintId", "kind", "featureId", "leftVariableId", "rightVariableId",
+        "minimumDeltaMillionths", "maximumDeltaMillionths", "actualDeltaMillionths",
+        "residualMillionths", "satisfied", "correctionCount", "failureReason"
+      ],
+      "properties": {
+        "constraintId": { "$ref": "#/$defs/qualified" },
+        "kind": { "$ref": "#/$defs/constraintKind" },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "leftVariableId": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/qualified" }]
+        },
+        "rightVariableId": { "$ref": "#/$defs/qualified" },
+        "minimumDeltaMillionths": { "$ref": "#/$defs/fixedDelta" },
+        "maximumDeltaMillionths": { "$ref": "#/$defs/fixedDelta" },
+        "actualDeltaMillionths": { "$ref": "#/$defs/fixedDelta" },
+        "residualMillionths": { "type": "integer", "minimum": 0, "maximum": 3072000000 },
+        "satisfied": { "type": "boolean" },
+        "correctionCount": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "failureReason": {
+          "enum": [
+            "NONE", "HARD_CONFLICT", "ADJUSTMENT_LIMIT", "UNRECOVERABLE_CONNECTION",
+            "NON_CONVERGENCE"
+          ]
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceVersion", "variableCount", "constraintCount", "iterationsExecuted",
+        "workUnits", "maximumWorkUnits", "peakWorkingBytes", "maximumWorkingBytes",
+        "estimatedArtifactBytes", "maximumArtifactBytes"
+      ],
+      "properties": {
+        "resourceVersion": { "const": "hydrology-reconciliation-resource-v1" },
+        "variableCount": { "type": "integer", "minimum": 0, "maximum": 8192 },
+        "constraintCount": { "type": "integer", "minimum": 0, "maximum": 8192 },
+        "iterationsExecuted": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "workUnits": { "type": "integer", "minimum": 0, "maximum": 100000000 },
+        "maximumWorkUnits": { "type": "integer", "minimum": 1, "maximum": 100000000 },
+        "peakWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 268435456 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 268435456 },
+        "estimatedArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 4194304 },
+        "maximumArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 4194304 }
+      }
+    }
+  }
+}
