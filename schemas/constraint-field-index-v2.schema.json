@@ -1,0 +1,322 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/constraint-field-index-v2.schema.json",
+  "title": "LandformCraft V2-1 constraint field index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "indexVersion", "requestId", "sourceRequestChecksum", "sourceIntentChecksum",
+    "canonicalChecksum", "bindings", "fields"
+  ],
+  "properties": {
+    "indexVersion": { "const": 1 },
+    "requestId": { "$ref": "#/$defs/slug" },
+    "sourceRequestChecksum": { "$ref": "#/$defs/checksum" },
+    "sourceIntentChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" },
+    "bindings": {
+      "type": "array", "minItems": 1, "maxItems": 3,
+      "items": { "$ref": "#/$defs/binding" }
+    },
+    "fields": {
+      "type": "array", "minItems": 1, "maxItems": 7,
+      "items": { "$ref": "#/$defs/fieldArtifact" }
+    }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "sourceId": {
+      "type": "string",
+      "pattern": "^constraint-source:[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingId", "sourceId", "role", "strength", "sampling", "toleranceBlocks",
+        "weightMillionths", "canonicalArtifactId", "canonicalFieldId", "fieldIds", "labels"
+      ],
+      "properties": {
+        "bindingId": { "$ref": "#/$defs/slug" },
+        "sourceId": { "$ref": "#/$defs/sourceId" },
+        "role": { "enum": ["LAND_WATER_MASK", "HEIGHT_GUIDE", "ZONE_LABEL_MAP"] },
+        "strength": { "enum": ["HARD", "SOFT"] },
+        "sampling": { "enum": ["NEAREST", "BILINEAR_FIXED"] },
+        "toleranceBlocks": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "weightMillionths": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "canonicalArtifactId": {
+          "type": "string",
+          "pattern": "^constraint:[a-z0-9][a-z0-9._-]{0,63}:sha256-[0-9a-f]{64}$"
+        },
+        "canonicalFieldId": { "$ref": "#/$defs/qualified" },
+        "fieldIds": {
+          "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/qualified" }
+        },
+        "labels": {
+          "type": "array", "maxItems": 4096,
+          "items": { "$ref": "#/$defs/labelEntry" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "strength": { "const": "HARD" } } },
+          "then": { "properties": { "weightMillionths": { "const": 0 } } },
+          "else": { "properties": { "weightMillionths": { "minimum": 1 } } }
+        },
+        {
+          "if": { "properties": { "role": { "const": "HEIGHT_GUIDE" } } },
+          "then": { "properties": { "labels": { "maxItems": 0 } } },
+          "else": { "properties": { "labels": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "role": { "const": "LAND_WATER_MASK" } } },
+          "then": {
+            "properties": {
+              "sampling": { "const": "NEAREST" },
+              "canonicalArtifactId": {
+                "type": "string",
+                "pattern": "^constraint:land-water:sha256-[0-9a-f]{64}$"
+              },
+              "fieldIds": { "minItems": 3, "maxItems": 3 },
+              "labels": { "minItems": 2, "maxItems": 2 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "role": { "const": "HEIGHT_GUIDE" } } },
+          "then": {
+            "properties": {
+              "canonicalArtifactId": {
+                "type": "string",
+                "pattern": "^constraint:height-guide:sha256-[0-9a-f]{64}$"
+              },
+              "fieldIds": { "minItems": 3, "maxItems": 3 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "role": { "const": "ZONE_LABEL_MAP" } } },
+          "then": {
+            "properties": {
+              "sampling": { "const": "NEAREST" },
+              "canonicalArtifactId": {
+                "type": "string",
+                "pattern": "^constraint:zone-label-map:sha256-[0-9a-f]{64}$"
+              },
+              "fieldIds": { "minItems": 1, "maxItems": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "labelEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sourceSample", "canonicalValue", "label"],
+      "properties": {
+        "sourceSample": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "canonicalValue": { "type": "integer", "minimum": 0, "maximum": 65534 },
+        "label": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "fieldArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relativePath", "definition", "encodingVersion", "artifactChecksum", "semanticChecksum", "provenance"
+      ],
+      "properties": {
+        "relativePath": {
+          "type": "string",
+          "pattern": "^(?:[a-z0-9][a-z0-9._-]{0,63}/){0,7}[a-z0-9][a-z0-9._-]{0,63}\\.lfgrid$"
+        },
+        "definition": { "$ref": "#/$defs/definition" },
+        "encodingVersion": { "const": "LFC_GRID_V1" },
+        "artifactChecksum": { "$ref": "#/$defs/checksum" },
+        "semanticChecksum": { "$ref": "#/$defs/checksum" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fieldId", "semantic", "valueType", "width", "length", "coordinateSpace", "sampling",
+        "scaleMillionths", "offsetMillionths", "hasNoData", "noDataRaw"
+      ],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "semantic": {
+          "enum": [
+            "ZONE_LABEL_MAP", "DESIRED_LAND_WATER", "ACTUAL_LAND_WATER", "RESIDUAL_LAND_WATER",
+            "DESIRED_HEIGHT", "ACTUAL_HEIGHT", "RESIDUAL_HEIGHT",
+            "HYDROLOGY_FLOW_DIRECTION", "HYDROLOGY_FLOW_ACCUMULATION"
+          ]
+        },
+        "valueType": { "enum": ["U8", "U16", "I32"] },
+        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "coordinateSpace": { "const": "RELEASE_LOCAL_XZ" },
+        "sampling": { "enum": ["NEAREST", "BILINEAR_FIXED"] },
+        "scaleMillionths": {
+          "type": "integer", "minimum": -1000000000, "maximum": 1000000000,
+          "not": { "const": 0 }
+        },
+        "offsetMillionths": {
+          "type": "integer", "minimum": -4000000000000, "maximum": 4000000000000
+        },
+        "hasNoData": { "type": "boolean" },
+        "noDataRaw": { "type": "integer" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "hasNoData": { "const": false } } },
+          "then": { "properties": { "noDataRaw": { "const": 0 } } }
+        },
+        {
+          "if": { "properties": { "valueType": { "const": "U8" } } },
+          "then": { "properties": { "noDataRaw": { "minimum": 0, "maximum": 255 } } }
+        },
+        {
+          "if": { "properties": { "valueType": { "const": "U16" } } },
+          "then": { "properties": { "noDataRaw": { "minimum": 0, "maximum": 65535 } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "semantic": {
+                "enum": [
+                  "LAND_WATER_MASK", "ZONE_LABEL_MAP", "DESIRED_LAND_WATER",
+                  "ACTUAL_LAND_WATER", "RESIDUAL_LAND_WATER",
+                  "HYDROLOGY_FLOW_DIRECTION", "HYDROLOGY_FLOW_ACCUMULATION"
+                ]
+              }
+            }
+          },
+          "then": { "properties": { "sampling": { "const": "NEAREST" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "semantic": { "enum": ["DESIRED_LAND_WATER", "ACTUAL_LAND_WATER"] }
+            }
+          },
+          "then": {
+            "properties": {
+              "valueType": { "const": "U8" },
+              "sampling": { "const": "NEAREST" },
+              "scaleMillionths": { "const": 1000000 },
+              "offsetMillionths": { "const": 0 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "semantic": { "const": "RESIDUAL_LAND_WATER" } } },
+          "then": {
+            "properties": {
+              "valueType": { "const": "I32" },
+              "sampling": { "const": "NEAREST" },
+              "scaleMillionths": { "const": 1 },
+              "offsetMillionths": { "const": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "semantic": { "enum": ["DESIRED_HEIGHT", "ACTUAL_HEIGHT", "RESIDUAL_HEIGHT"] }
+            }
+          },
+          "then": {
+            "properties": {
+              "valueType": { "const": "I32" },
+              "scaleMillionths": { "const": 1 },
+              "offsetMillionths": { "const": 0 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "semantic": { "const": "ZONE_LABEL_MAP" } } },
+          "then": {
+            "properties": {
+              "valueType": { "const": "U16" },
+              "sampling": { "const": "NEAREST" },
+              "scaleMillionths": { "const": 1000000 },
+              "offsetMillionths": { "const": 0 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "semantic": { "const": "HYDROLOGY_FLOW_DIRECTION" } } },
+          "then": {
+            "properties": {
+              "valueType": { "const": "U8" },
+              "sampling": { "const": "NEAREST" },
+              "scaleMillionths": { "const": 1 },
+              "offsetMillionths": { "const": 0 },
+              "hasNoData": { "const": true },
+              "noDataRaw": { "const": 255 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "semantic": { "const": "HYDROLOGY_FLOW_ACCUMULATION" } } },
+          "then": {
+            "properties": {
+              "valueType": { "const": "I32" },
+              "sampling": { "const": "NEAREST" },
+              "scaleMillionths": { "const": 1 },
+              "offsetMillionths": { "const": 0 },
+              "hasNoData": { "const": true },
+              "noDataRaw": { "const": 0 }
+            }
+          }
+        }
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceKind", "sourceId", "sourceChecksum", "decoderId", "decoderVersion", "transformId"],
+      "properties": {
+        "sourceKind": { "enum": ["MANUAL", "CONSTRAINT_MAP", "DERIVED"] },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^(?:constraint-source|manual-source|derived-source):[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "sourceChecksum": { "$ref": "#/$defs/checksum" },
+        "decoderId": { "$ref": "#/$defs/qualified" },
+        "decoderVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "transformId": { "$ref": "#/$defs/qualified" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "sourceKind": { "const": "CONSTRAINT_MAP" } } },
+          "then": { "properties": { "sourceId": { "$ref": "#/$defs/sourceId" } } }
+        },
+        {
+          "if": { "properties": { "sourceKind": { "const": "MANUAL" } } },
+          "then": {
+            "properties": {
+              "sourceId": {
+                "type": "string", "pattern": "^manual-source:[a-z0-9][a-z0-9._-]{0,63}$"
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "sourceKind": { "const": "DERIVED" } } },
+          "then": {
+            "properties": {
+              "sourceId": {
+                "type": "string", "pattern": "^derived-source:[a-z0-9][a-z0-9._-]{0,63}$"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

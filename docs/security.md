@@ -64,6 +64,69 @@ Provider payloadはraw fileではなく、向きを補正してcanonical ARGBへ
 
 同じrequest内のhard link aliasはfile keyで拒否します。request root外で事前に作られたhard linkを単独で渡した場合に元inodeの所在をportableに判定することはできないため、request rootは信頼された管理領域とし、一般ユーザーが任意のhard linkを作成できない権限で運用します。
 
+### V2-1 numeric constraint map
+
+V2-1のdirect constraint mapはoffline専用の別経路です。AI向け`ReferenceImageProcessor`のARGB／EXIF正規化を再利用せず、filesystemの安全原則だけを共有し、`SecureConstraintMapSourceLoader`と`NumericPngDecoder`で数値sampleを保持します。受理する入力は、宣言と一致するnon-interlaced grayscale PNGのU8またはU16、single frameだけです。RGB、alpha、palette、bit depth違い、APNG、未知critical chunk、chunk順／CRC不正、truncated／trailing data、拡張子とmagicの不一致を拒否します。ICC、EXIF、text、gamma、filenameを数値意味へ利用しません。
+
+Requestが指定するbudgetは上限を狭めることだけができ、次のtrusted ceilingを拡張できません。
+
+| 対象 | trusted ceiling |
+|---|---:|
+| map数 | 32 |
+| source 1枚 | 8 MiB |
+| source合計 | 32 MiB |
+| 1辺 | 4096 pixel |
+| 縦横比 | 32:1 |
+| 1枚 | 4,000,000 pixel |
+| Request合計 | 16,000,000 pixel |
+| decoded sample 1枚 | 8 MiB |
+| decoded sample合計 | 32 MiB |
+| decoder working set | 32 MiB |
+| canonical bundle artifact | 64 MiB |
+| constraint stage resident | 96 MiB |
+
+sourceは全件についてpath、symlink、regular file、file identity、size、合計byteをpreflightし、`retained total + largest source + 64 KiB read buffer`がresident admissionを通るまで1 byteも読みません。各fileは`NOFOLLOW_LINKS`でopenし、read前後のsize、mtime、file keyを比較します。同一Request内で同じfile identityを別pathから参照するhardlink aliasを拒否します。request root外で作られた単独hardlinkの所在をportableに検出できない点はPhase 5画像と同じ運用境界です。
+
+decode前にheader寸法、aspect、pixel、sample byteを検査し、working setは保持済みsource、`MemoryCacheImageInputStream`のsource copy、ImageIO raster、compact sample copy、固定overheadを含めて admissionします。Request宣言のSHA-256、寸法、sample type、label辞書、no-data、height意味と一致しない入力はcanonical化しません。hard constraintのno-data、未知label、future encoding、checksum不一致、hard同士の競合も公開前に拒否します。
+
+canonical fieldとindexはstaging内で全fileのartifact／semantic checksum、strict Schema、descriptor、label辞書、source Request／Intent checksumをread-backします。cancelの最終観測点はbundleのatomic move直前です。`ATOMIC_MOVE`成功をcommit pointとし、その後に届いたcancelを理由に公開済みbundleを削除しません。move前のcancel／failureではstagingだけを削除し、canonical targetを作りません。atomic moveを提供しないfilesystemでは失敗します。
+
+### V2-2 offline tile schematic
+
+V2-2 tile exportは既存v1 writer／Release verifierを変更せず、V2専用pathへ隔離する。targetはplan由来のcanonical filename、non-symbolic directory、新規fileだけを許可する。writerは全block Listを持たず、許可済みcoastal block stateのcount、辞書順palette、固定digestだけを保持する。二走査間でstateまたはsemantic checksumが変われば公開しない。palette 16384、Data 40 MiB、artifact 64 MiB、decompressed read-back 48 MiB、NBT depth 16、tag 20000をhard ceilingとする。
+
+staging read-backはSponge version／DataVersion、dimension、zero offset、連続palette ID、canonical allowlist、VarInt entry数、block entity／entity／biome不在、semantic checksumを検証する。最後のcancel観測後の`.schem` atomic moveをcommit pointとし、cancel／failure／unknown state／truncated dataではtargetやtemporaryを残さない。WorldEdit adapterはmetadata pathをroot内へnormalizeし、symlink、byte長、artifact checksumを検査した同じimmutable bytesをbounded inspectorとWorldEdit 7.3.19へ渡す。Release 2／Paperへの信頼昇格はまだ行わない。
+
+### V2-2-10 Release format 2 core
+
+Release format 2 coreはv1 Release reader／writerを共有しない。manifestは256 KiB以下のnon-symbolic regular fileで、strict Schema、duplicate JSON key拒否、unknown property拒否、canonical exclude-self checksumを通る必要がある。directoryは最多257 regular file、case-insensitive duplicateなし、総量128 MiB以下、artifact単体64 MiB以下に制限し、`manifest.json`以外の全fileを`artifacts[]`へexactに対応させる。
+
+ZIPはnon-symbolic regular `.zip`だけを受け付け、圧縮／展開とも128 MiB以下、最多257 entry、64 KiBのbounded copy bufferで処理する。directory entry、absolute path、backslash、`..`、duplicate／case collision、index外fileを拒否し、stagingへだけ展開してstrict directory verifierへ渡す。V2-2-10 core-only releaseは`requiredCapabilities[]`と`artifacts[]`が空でなければならない。未知capability、unknown type/versionは拒否する。
+
+### V2-2-11 `surface-2_5d` payload
+
+`surface-2_5d`は空coreと異なるstrict dispatchである。manifestの全non-manifest fileをindexし、field indexが列挙しない`.lfgrid`、preview indexが列挙しないPNG、tile metadataに対応しない`.schem`を拒否する。readerはrequest／intent／Blueprint、field、validation、preview、tileのschema versionとcanonical／semantic checksumを相互に照合し、hard validation error、tile overlap／hole、future capability/type/versionを拒否する。
+
+publisherはraw source artifactをportable manifestへ記録せず、non-symbolic sourceをstagingへcopyし、staged directoryとZIPをstrict read-backしてからatomic moveする。copy中のsource fingerprint変化、publish前cancel／failureはtargetを公開しない。ZIP側でもdirectoryと同じsemantic verifierを再実行するため、manifestだけを書換えてchecksumを再計算してもfield／preview／tileの相互bindingを偽装できない。
+
+publisherはstaging self-verify、disk budget確認、fsync、atomic moveを必須とし、non-atomic fallbackを使わない。cancelはpublish前・staging verify中・atomic move直前に観測し、commit前のcancel／failureではtargetを残さない。Release 2 Paper apply、effect envelope、world mutationは未実装であり、このoffline coreをworld変更の権限として扱わない。
+
+### V2-3-14 `hydrology-plan` payload
+
+`hydrology-plan`は`surface-2_5d`を必須依存とする別dispatchである。`requiredCapabilities`からsurfaceを外すこと、plan／routing／reconciliation／validation／previewの欠損、routing graph checksum改変、未知type/version、index外fileを拒否する。surface単独Releaseのstrict verifyは維持する。このoffline capabilityをworld変更の権限として扱わない。
+
+### V2-3-02 hydrology routing bundle
+
+Hydrology routingはtrustedなBlueprintから導出したprovisional surfaceでも、範囲、overflow、blocked cell、outlet、resource budgetを再検査する。outletを地形からfallback推測せず、`HARD` outletがblocked、またはroutable componentに宣言outletがない場合は公開前に失敗する。1000×1000を上限に、CPU／working／retained／field artifactをpreflightし、全域working setはdense voxelではなく2D primitive fieldだけに限定する。bounded executorは最大8 worker、queue最大worker数で、cancel／interrupt時に所有executorをshutdownする。
+
+routing bundleのindexは512 KiB以下で、`index.json`と2個の`LFC_GRID_V1`以外のfile／directory、symlinkを拒否する。strict readerはartifact／semantic／graph／routing checksumだけでなく、未知D8 code、global bounds外direction、downstream accumulation非増加、未宣言terminal、basin coverage不一致もrow windowで検査する。publisherはsibling stagingをself-verifyし、atomic move直前を最後のcancel観測点とする。standalone bundleだけではRelease capabilityやworld mutationの権限を与えない。同じstrict形式をV2-3-15でoffline `SUPPORTED`とした`hydrology-plan` capabilityへ収容する場合も、surface依存とcomplete artifact setの検証を省略しない。
+
+V2-4-01 geology bundleは4個のU16 `LFC_GRID_V1`以外のfile、symlink、未知／重複semantic、plan checksumと異なるprovenance、future encoding、artifact／semantic checksum改変を拒否する。cellは4 fieldすべてno-data、または既知province codeに対応するformation／hardness／permeabilityの完全一致だけを受理する。window寸法と4個の`int[]`、writer 64 KiB strict read-back、retained descriptor、CPU、単体／合計artifact byteをallocation前にbudget検査する。stagingの全域read-backと最後のcancel check後だけatomic publishし、standalone bundleをRelease capabilityやfeature supportの根拠にしない。
+
+V2-4-02 lithology catalogはcompile-time built-inのclosed listだけを受理する。unknown／future ID、compact code範囲外、任意class、external preset、path、catalog／plan checksum不一致、source geology checksumまたはprovince／formation／scalar不一致はstrictに拒否する。catalog canonical bytesとplan canonical bytesはbudgetで上限化し、既存sidecarのreaderはbounded windowだけでassignmentを検査する。
+
+V2-4-04 climate planはclosed built-in preset、integer-only kernel、4 fieldのphase／single owner、source `HydrologyPlan`／fixed prior／generator versionとreplacement prior checksumの完全一致だけを受理する。preset欠落、unknown／future contract、version／checksum mismatchをfallbackせず拒否し、1000角でもcoarse gridとbounded windowのCPU／retained／working／canonical byteをallocation前に検査する。descriptor-only fieldをRelease capabilityやworld mutationの権限として扱わない。
+
 ## World保護
 
 - default permissionはoperatorのみ

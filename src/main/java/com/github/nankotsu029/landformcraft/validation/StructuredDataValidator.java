@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class StructuredDataValidator {
     private static final String SCHEMA_ID_PREFIX =
             "https://github.com/nankotsu029/LandformCraft/schemas/v1/";
+    private static final String V2_SCHEMA_ID_PREFIX =
+            "https://github.com/nankotsu029/LandformCraft/schemas/v2/";
     private static final List<String> BUNDLED_SCHEMAS = List.of(
             "generation-request.schema.json",
             "terrain-intent.schema.json",
@@ -35,7 +37,26 @@ public final class StructuredDataValidator {
             "generation-job.schema.json",
             "image-input-evidence.schema.json",
             "required-assets.schema.json",
-            "structure-placements.schema.json"
+            "structure-placements.schema.json",
+            "constraint-field-index-v2.schema.json",
+            "coastal-preview-index-v2.schema.json",
+            "coastal-validation-artifact-v2.schema.json",
+            "hydrology-preview-index-v2.schema.json",
+            "hydrology-validation-artifact-v2.schema.json",
+            "offline-tile-artifact-v2.schema.json",
+            "release-manifest-v2.schema.json",
+            "generation-request-v2.schema.json",
+            "terrain-intent-v2.schema.json",
+            "geology-plan-v2.schema.json",
+            "lithology-plan-v2.schema.json",
+            "strata-plan-v2.schema.json",
+            "climate-plan-v2.schema.json",
+            "water-condition-plan-v2.schema.json",
+            "hydrology-plan-v2.schema.json",
+            "hydrology-routing-artifact-v2.schema.json",
+            "hydrology-reconciliation-plan-v2.schema.json",
+            "hydrology-reconciliation-artifact-v2.schema.json",
+            "world-blueprint-v2.schema.json"
     );
 
     private final SchemaRegistry registry;
@@ -44,7 +65,7 @@ public final class StructuredDataValidator {
     public StructuredDataValidator() {
         Map<String, String> bundled = new LinkedHashMap<>();
         for (String schemaFile : BUNDLED_SCHEMAS) {
-            bundled.put(SCHEMA_ID_PREFIX + schemaFile, readSchemaResource(schemaFile));
+            bundled.put(schemaId(schemaFile), readSchemaResource(schemaFile));
         }
         this.registry = SchemaRegistry.withDefaultDialect(
                 SpecificationVersion.DRAFT_2020_12,
@@ -53,10 +74,18 @@ public final class StructuredDataValidator {
     }
 
     public void validate(String schemaFile, String documentName, JsonNode document) {
-        List<String> violations = schema(schemaFile).validate(document).stream()
-                .sorted(Comparator.comparing(error -> error.getInstanceLocation().toString()))
-                .map(StructuredDataValidator::describe)
-                .toList();
+        List<String> violations;
+        try {
+            violations = schema(schemaFile).validate(document).stream()
+                    .sorted(Comparator.comparing(error -> error.getInstanceLocation().toString()))
+                    .map(StructuredDataValidator::describe)
+                    .toList();
+        } catch (NumberFormatException exception) {
+            // Keep extreme JSON numbers on the normal untrusted-input rejection path even when
+            // the schema engine cannot construct its internal finite decimal representation.
+            throw new StructuredDataValidationException(
+                    documentName, List.of("/: numeric value is outside the supported finite range"));
+        }
         if (!violations.isEmpty()) {
             throw new StructuredDataValidationException(documentName, violations);
         }
@@ -70,7 +99,11 @@ public final class StructuredDataValidator {
         if (!BUNDLED_SCHEMAS.contains(schemaFile)) {
             throw new IllegalArgumentException("unknown bundled schema: " + schemaFile);
         }
-        return registry.getSchema(SchemaLocation.of(SCHEMA_ID_PREFIX + schemaFile));
+        return registry.getSchema(SchemaLocation.of(schemaId(schemaFile)));
+    }
+
+    private static String schemaId(String schemaFile) {
+        return (schemaFile.endsWith("-v2.schema.json") ? V2_SCHEMA_ID_PREFIX : SCHEMA_ID_PREFIX) + schemaFile;
     }
 
     private static String describe(Error error) {

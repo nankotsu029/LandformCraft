@@ -1,0 +1,48 @@
+{
+  "algorithmVersion": "hydrology-reconcile-fixed-v1",
+  "artifactVersion": 1,
+  "canonicalChecksum": "8eea629af802dcb720d0c7d882e64cada81cdde0087069e354042df954888a8b",
+  "finalStateChecksum": "7b0651bc726ffad57d4b7e719a74d2e6b556ca4357fd5672a8649c4a92d25593",
+  "finalValues": [
+    {
+      "hardLocked": true,
+      "valueMillionths": 0,
+      "variableId": "delta.example.mouth.0000"
+    }
+  ],
+  "iterationsExecuted": 3,
+  "residuals": [
+    {
+      "actualDeltaMillionths": 0,
+      "constraintId": "reconcile.delta.delta-example.mouth.0000",
+      "correctionCount": 0,
+      "failureReason": "UNRECOVERABLE_CONNECTION",
+      "featureId": "delta-example",
+      "kind": "DELTA_MOUTH",
+      "leftVariableId": null,
+      "maximumDeltaMillionths": 1,
+      "minimumDeltaMillionths": 1,
+      "residualMillionths": 1,
+      "rightVariableId": "delta.example.mouth.0000",
+      "satisfied": false
+    }
+  ],
+  "resources": {
+    "constraintCount": 1,
+    "estimatedArtifactBytes": 5760,
+    "iterationsExecuted": 3,
+    "maximumArtifactBytes": 4194304,
+    "maximumWorkUnits": 100000000,
+    "maximumWorkingBytes": 268435456,
+    "peakWorkingBytes": 9088,
+    "resourceVersion": "hydrology-reconciliation-resource-v1",
+    "variableCount": 1,
+    "workUnits": 5
+  },
+  "resultChecksum": "2bdf3389f5d078984dbeb6fbd18f18d38bda3caa1ee3b22f10677376b75b549f",
+  "scanOrderVersion": "kind-feature-constraint-v1",
+  "sourceBlueprintChecksum": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "sourcePlanChecksum": "abd7d2afcf62af9dc281cb1cccb611024dc759b2bc12cec37cbeac0536024105",
+  "sourceStateChecksum": "7b0651bc726ffad57d4b7e719a74d2e6b556ca4357fd5672a8649c4a92d25593",
+  "status": "FAILED"
+}

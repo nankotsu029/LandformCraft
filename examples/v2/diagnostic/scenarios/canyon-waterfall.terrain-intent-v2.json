@@ -1,0 +1,57 @@
+{
+  "intentVersion": 2,
+  "intentId": "canyon-falls-v2",
+  "theme": "Diagnostic canyon with waterfall lip, base, and plunge pool 2.5D skeleton",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    {
+      "id": "main-canyon",
+      "kind": "CANYON",
+      "geometry": { "type": "SPLINE", "points": [[0.18, 0.05], [0.34, 0.34], [0.56, 0.58], [0.8, 0.95]], "interpolation": "CATMULL_ROM" },
+      "parameters": {
+        "floorWidthBlocks": { "min": 14, "max": 30 },
+        "rimWidthBlocks": { "min": 70, "max": 130 },
+        "depthBlocks": { "min": 42, "max": 92 },
+        "crossSection": "TERRACED_V",
+        "terraceCount": 2,
+        "terraceWidthBlocks": 3
+      },
+      "priority": 0,
+      "provenance": { "source": "MANUAL", "sourceId": "canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "canyon-river",
+      "kind": "MEANDERING_RIVER",
+      "geometry": { "type": "SPLINE", "points": [[0.18, 0.05], [0.34, 0.34], [0.56, 0.58], [0.8, 0.95]], "interpolation": "CATMULL_ROM" },
+      "parameters": {
+        "bankfullWidthBlocks": { "min": 6, "max": 10 },
+        "dischargeClass": "SMALL",
+        "minimumBedSlope01": 0.001,
+        "variant": "RIVER"
+      },
+      "priority": 0,
+      "provenance": { "source": "MANUAL", "sourceId": "canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "main-fall",
+      "kind": "WATERFALL",
+      "geometry": { "type": "POINT", "point": [0.48, 0.49] },
+      "parameters": {
+        "dropBlocks": { "min": 24, "max": 42 },
+        "lipWidthBlocks": 9,
+        "plungePoolRadiusBlocks": 16,
+        "behindFallClearanceBlocks": 0
+      },
+      "priority": 0,
+      "provenance": { "source": "MANUAL", "sourceId": "canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    { "id": "river-in-canyon", "kind": "WITHIN", "from": "feature:canyon-river", "to": "feature:main-canyon", "strength": "HARD" },
+    { "id": "fall-on-river", "kind": "ON_PATH_OF", "from": "feature:main-fall", "to": "feature:canyon-river", "strength": "HARD" }
+  ],
+  "constraints": [{ "id": "fall-drop", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:main-fall", "metric": "WATERFALL_DROP_BLOCKS", "range": { "min": 24, "max": 42 }, "tolerance": 1 }],
+  "environment": { "geologyPreset": "STRATIFIED_SEDIMENTARY_CANYON", "climatePreset": "SEASONAL_SEMI_ARID", "ecologyPreset": "RIPARIAN_CANYON" },
+  "mapReferences": [], "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

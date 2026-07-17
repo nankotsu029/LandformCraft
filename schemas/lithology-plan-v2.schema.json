@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/lithology-plan-v2.schema.json",
+  "title": "LandformCraft V2-4 built-in lithology catalog and province assignment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "assignmentContractVersion", "sourceGeologyPlanChecksum", "catalog",
+    "provinceAssignments", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "assignmentContractVersion": { "const": "lithology-province-assignment-v1" },
+    "sourceGeologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "catalog": { "$ref": "#/$defs/catalog" },
+    "provinceAssignments": {
+      "type": "array", "maxItems": 256,
+      "items": { "$ref": "#/$defs/assignment" }
+    },
+    "budget": { "$ref": "#/$defs/assignmentBudget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "kind": {
+      "enum": [
+        "HARD_INTRUSIVE", "ANDESITIC_VOLCANIC", "BASALTIC_FLOW", "TUFF_ASH", "CARBONATE_LIKE",
+        "SANDSTONE_STRATA", "ALLUVIAL_GRAVEL", "SILT_CLAY", "REEF_CARBONATE"
+      ]
+    },
+    "erosionResponse": { "enum": ["RESISTANT", "MODERATE", "ERODIBLE", "HIGHLY_ERODIBLE"] },
+    "entry": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "kind", "lithologyId", "lithologyCode", "hardnessMillionths", "permeabilityMillionths",
+        "erosionResponse"
+      ],
+      "properties": {
+        "kind": { "$ref": "#/$defs/kind" },
+        "lithologyId": { "$ref": "#/$defs/qualified" },
+        "lithologyCode": { "type": "integer", "minimum": 1, "maximum": 255 },
+        "hardnessMillionths": { "type": "integer", "minimum": 0, "maximum": 1000000, "multipleOf": 1000 },
+        "permeabilityMillionths": { "type": "integer", "minimum": 0, "maximum": 1000000, "multipleOf": 1000 },
+        "erosionResponse": { "$ref": "#/$defs/erosionResponse" }
+      }
+    },
+    "catalogBudget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["budgetVersion", "maximumEntries", "compactCodeBits", "maximumCanonicalBytes"],
+      "properties": {
+        "budgetVersion": { "const": "lithology-catalog-budget-v1" },
+        "maximumEntries": { "const": 9 },
+        "compactCodeBits": { "const": 8 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1024, "maximum": 32768 }
+      }
+    },
+    "catalog": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "catalogVersion", "catalogId", "catalogContractVersion", "entries", "budget", "canonicalChecksum"
+      ],
+      "properties": {
+        "catalogVersion": { "const": 1 },
+        "catalogId": { "const": "landformcraft.builtin-lithology" },
+        "catalogContractVersion": { "const": "builtin-lithology-catalog-v1" },
+        "entries": { "type": "array", "minItems": 9, "maxItems": 9, "items": { "$ref": "#/$defs/entry" } },
+        "budget": { "$ref": "#/$defs/catalogBudget" },
+        "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "assignment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provinceId", "provinceCode", "formationId", "formationCode", "lithologyId", "lithologyCode"],
+      "properties": {
+        "provinceId": { "$ref": "#/$defs/slug" },
+        "provinceCode": { "type": "integer", "minimum": 1, "maximum": 65534 },
+        "formationId": { "$ref": "#/$defs/qualified" },
+        "formationCode": { "type": "integer", "minimum": 1, "maximum": 65534 },
+        "lithologyId": { "$ref": "#/$defs/qualified" },
+        "lithologyCode": { "type": "integer", "minimum": 1, "maximum": 255 }
+      }
+    },
+    "assignmentBudget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumAssignments", "compactCodeBits", "estimatedCpuWorkUnits",
+        "estimatedRetainedBytes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "lithology-assignment-budget-v1" },
+        "maximumAssignments": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "compactCodeBits": { "const": 8 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1024, "maximum": 65536 }
+      }
+    }
+  }
+}

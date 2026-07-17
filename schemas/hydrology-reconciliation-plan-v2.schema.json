@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-reconciliation-plan-v2.schema.json",
+  "title": "LandformCraft V2-3-12 bounded hydrology reconciliation plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "algorithmVersion", "scanOrderVersion", "moduleId", "moduleVersion",
+    "stageId", "sourceHydrologyPlanChecksum", "maximumIterations", "variables",
+    "constraints", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "algorithmVersion": { "const": "hydrology-reconcile-fixed-v1" },
+    "scanOrderVersion": { "const": "kind-feature-constraint-v1" },
+    "moduleId": { "const": "v2.hydrology.reconcile" },
+    "moduleVersion": { "const": "0.1.0-v2-3-12" },
+    "stageId": { "const": "reconcile.hydrology" },
+    "sourceHydrologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "maximumIterations": { "const": 3 },
+    "variables": {
+      "type": "array", "maxItems": 8192,
+      "items": { "$ref": "#/$defs/variable" }
+    },
+    "constraints": {
+      "type": "array", "maxItems": 8192,
+      "items": { "$ref": "#/$defs/constraint" }
+    },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "fixedValue": { "type": "integer", "minimum": -512000000, "maximum": 1024000000 },
+    "fixedDelta": { "type": "integer", "minimum": -1536000000, "maximum": 1536000000 },
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variableId", "featureId", "kind", "baselineValueMillionths",
+        "minimumValueMillionths", "maximumValueMillionths"
+      ],
+      "properties": {
+        "variableId": { "$ref": "#/$defs/qualified" },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "kind": {
+          "enum": [
+            "REACH_BED", "LAKE_SURFACE", "LAKE_SPILL", "MARINE_CONNECTION",
+            "WATERFALL_LIP", "WATERFALL_BASE"
+          ]
+        },
+        "baselineValueMillionths": { "$ref": "#/$defs/fixedValue" },
+        "minimumValueMillionths": { "$ref": "#/$defs/fixedValue" },
+        "maximumValueMillionths": { "$ref": "#/$defs/fixedValue" }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "constraintId", "kind", "featureId", "leftVariableId", "rightVariableId",
+        "minimumDeltaMillionths", "maximumDeltaMillionths", "correctionPolicy",
+        "maximumAdjustmentMillionths"
+      ],
+      "properties": {
+        "constraintId": { "$ref": "#/$defs/qualified" },
+        "kind": {
+          "enum": [
+            "REACH_BED", "LAKE_SPILL", "DELTA_MOUTH", "TIDAL_CONNECTION",
+            "FJORD_CONNECTION", "WATERFALL_LIP_BASE"
+          ]
+        },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "leftVariableId": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/qualified" }]
+        },
+        "rightVariableId": { "$ref": "#/$defs/qualified" },
+        "minimumDeltaMillionths": { "$ref": "#/$defs/fixedDelta" },
+        "maximumDeltaMillionths": { "$ref": "#/$defs/fixedDelta" },
+        "correctionPolicy": { "enum": ["ADJUST_RIGHT", "VERIFY_ONLY"] },
+        "maximumAdjustmentMillionths": {
+          "type": "integer", "minimum": 0, "maximum": 512000000
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumIterations", "variableCount", "constraintCount",
+        "estimatedWorkUnits", "maximumWorkUnits", "estimatedWorkingBytes",
+        "maximumWorkingBytes", "estimatedArtifactBytes", "maximumArtifactBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "hydrology-reconciliation-budget-v1" },
+        "maximumIterations": { "const": 3 },
+        "variableCount": { "type": "integer", "minimum": 0, "maximum": 8192 },
+        "constraintCount": { "type": "integer", "minimum": 0, "maximum": 8192 },
+        "estimatedWorkUnits": { "type": "integer", "minimum": 0, "maximum": 100000000 },
+        "maximumWorkUnits": { "type": "integer", "minimum": 1, "maximum": 100000000 },
+        "estimatedWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 268435456 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 268435456 },
+        "estimatedArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 4194304 },
+        "maximumArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 4194304 }
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "intentVersion": 2,
+  "intentId": "manual-constraint-island",
+  "theme": "AI-free manual island constraint preview",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [],
+  "relations": [],
+  "constraints": [],
+  "environment": { "climatePreset": "TEMPERATE_MARITIME" },
+  "mapReferences": [
+    {
+      "id": "height-binding",
+      "sourceId": "constraint-source:height",
+      "role": "HEIGHT_GUIDE",
+      "artifactId": "constraint:height-guide:sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "strength": "SOFT",
+      "sampling": "BILINEAR_FIXED",
+      "toleranceBlocks": 2,
+      "weight": 0.8
+    },
+    {
+      "id": "land-water-binding",
+      "sourceId": "constraint-source:land-water",
+      "role": "LAND_WATER_MASK",
+      "artifactId": "constraint:land-water:sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "strength": "HARD",
+      "sampling": "NEAREST",
+      "toleranceBlocks": 0
+    },
+    {
+      "id": "zone-binding",
+      "sourceId": "constraint-source:zones",
+      "role": "ZONE_LABEL_MAP",
+      "artifactId": "constraint:zone-label-map:sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "strength": "HARD",
+      "sampling": "NEAREST",
+      "toleranceBlocks": 0
+    }
+  ],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "manual-constraint-fixture",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

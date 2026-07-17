@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/generation-request-v2.schema.json",
+  "title": "LandformCraft GenerationRequest v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestVersion", "requestId", "bounds", "prompt", "referenceImages",
+    "constraintMaps", "generation", "constraintMapBudget"
+  ],
+  "properties": {
+    "requestVersion": { "const": 2 },
+    "requestId": { "$ref": "#/$defs/slug" },
+    "bounds": { "$ref": "#/$defs/bounds" },
+    "prompt": { "type": "string", "minLength": 1, "maxLength": 20000, "pattern": "\\S" },
+    "referenceImages": {
+      "type": "array", "maxItems": 16,
+      "items": { "$ref": "#/$defs/referenceImage" }
+    },
+    "constraintMaps": {
+      "type": "array", "maxItems": 32,
+      "items": { "$ref": "#/$defs/constraintMapSource" }
+    },
+    "generation": { "$ref": "#/$defs/generation" },
+    "constraintMapBudget": { "$ref": "#/$defs/budget" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "safePath": {
+      "type": "string", "minLength": 1, "maxLength": 512,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+    },
+    "constraintMapPath": {
+      "type": "string", "minLength": 1, "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//)[A-Za-z0-9._/-]+$"
+    },
+    "bounds": {
+      "type": "object", "additionalProperties": false,
+      "required": ["width", "length", "minY", "maxY", "waterLevel"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "minY": { "$ref": "#/$defs/fixedYBlock" },
+        "maxY": { "$ref": "#/$defs/fixedYBlock" },
+        "waterLevel": { "$ref": "#/$defs/fixedYBlock" }
+      }
+    },
+    "referenceImage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "file", "role"],
+      "properties": {
+        "id": { "$ref": "#/$defs/slug" },
+        "file": { "$ref": "#/$defs/safePath" },
+        "role": {
+          "enum": ["MOOD_REFERENCE", "TOP_DOWN_SKETCH", "MATERIAL_REFERENCE", "STRUCTURE_REFERENCE"]
+        }
+      }
+    },
+    "constraintMapSource": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": [
+            "sourceId", "file", "expectedSha256", "expectedWidth", "expectedLength",
+            "decoderKind", "coordinateMapping", "encoding"
+          ],
+          "properties": {
+            "sourceId": { "$ref": "#/$defs/sourceId" },
+            "file": { "$ref": "#/$defs/constraintMapPath" },
+            "expectedSha256": { "$ref": "#/$defs/checksum" },
+            "expectedWidth": { "$ref": "#/$defs/sourceDimension" },
+            "expectedLength": { "$ref": "#/$defs/sourceDimension" },
+            "decoderKind": { "const": "CATEGORICAL_RASTER" },
+            "coordinateMapping": { "$ref": "#/$defs/coordinateMapping" },
+            "encoding": { "$ref": "#/$defs/categoricalEncoding" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": [
+            "sourceId", "file", "expectedSha256", "expectedWidth", "expectedLength",
+            "decoderKind", "coordinateMapping", "encoding"
+          ],
+          "properties": {
+            "sourceId": { "$ref": "#/$defs/sourceId" },
+            "file": { "$ref": "#/$defs/constraintMapPath" },
+            "expectedSha256": { "$ref": "#/$defs/checksum" },
+            "expectedWidth": { "$ref": "#/$defs/sourceDimension" },
+            "expectedLength": { "$ref": "#/$defs/sourceDimension" },
+            "decoderKind": { "const": "HEIGHT_RASTER" },
+            "coordinateMapping": { "$ref": "#/$defs/coordinateMapping" },
+            "encoding": { "$ref": "#/$defs/heightEncoding" }
+          }
+        }
+      ]
+    },
+    "sourceId": {
+      "type": "string", "pattern": "^constraint-source:[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "sourceDimension": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "coordinateMapping": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "origin", "xAxis", "zAxis", "pixelReference", "aspectMismatchPolicy",
+        "rotation", "flipX", "flipZ", "crop"
+      ],
+      "properties": {
+        "origin": { "const": "NORTH_WEST" },
+        "xAxis": { "const": "EAST" },
+        "zAxis": { "const": "SOUTH" },
+        "pixelReference": { "const": "PIXEL_CENTER" },
+        "aspectMismatchPolicy": { "const": "REJECT" },
+        "rotation": { "enum": ["DEGREES_0", "DEGREES_90", "DEGREES_180", "DEGREES_270"] },
+        "flipX": { "type": "boolean" },
+        "flipZ": { "type": "boolean" },
+        "crop": { "$ref": "#/$defs/crop" }
+      }
+    },
+    "crop": {
+      "type": "object", "additionalProperties": false,
+      "required": ["x", "z", "width", "length"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "maximum": 4095 },
+        "z": { "type": "integer", "minimum": 0, "maximum": 4095 },
+        "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 4096 }
+      }
+    },
+    "categoricalEncoding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "encodingVersion", "sampleType", "channel", "labels", "noData"],
+      "properties": {
+        "kind": { "const": "CATEGORICAL" },
+        "encodingVersion": { "const": 1 },
+        "sampleType": { "$ref": "#/$defs/sampleType" },
+        "channel": { "const": "GRAY" },
+        "labels": {
+          "type": "array", "minItems": 1, "maxItems": 4096,
+          "items": { "$ref": "#/$defs/label" }
+        },
+        "noData": { "$ref": "#/$defs/noData" }
+      }
+    },
+    "heightEncoding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "kind", "encodingVersion", "sampleType", "channel", "valueMeaning", "valueScaleMillionths",
+        "valueOffsetMillionths", "validSampleRange", "noData"
+      ],
+      "properties": {
+        "kind": { "const": "HEIGHT" },
+        "encodingVersion": { "const": 1 },
+        "sampleType": { "$ref": "#/$defs/sampleType" },
+        "channel": { "const": "GRAY" },
+        "valueMeaning": {
+          "enum": [
+            "ABSOLUTE_BLOCK_Y", "BLOCKS_ABOVE_REQUEST_MIN_Y", "BLOCKS_RELATIVE_TO_WATER_LEVEL"
+          ]
+        },
+        "valueScaleMillionths": {
+          "type": "integer",
+          "anyOf": [
+            { "minimum": -9223372036854775808, "maximum": -1 },
+            { "minimum": 1, "maximum": 9223372036854775807 }
+          ]
+        },
+        "valueOffsetMillionths": { "$ref": "#/$defs/javaLong" },
+        "validSampleRange": { "$ref": "#/$defs/sampleRange" },
+        "noData": { "$ref": "#/$defs/noData" }
+      }
+    },
+    "sampleType": { "enum": ["U8", "U16"] },
+    "javaInt": {
+      "type": "integer", "minimum": -2147483648, "maximum": 2147483647
+    },
+    "fixedYBlock": {
+      "type": "integer", "minimum": -2147, "maximum": 2147
+    },
+    "javaLong": {
+      "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807
+    },
+    "label": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sample", "label"],
+      "properties": {
+        "sample": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "label": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "sampleRange": {
+      "type": "object", "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "maximum": { "type": "integer", "minimum": 0, "maximum": 65535 }
+      }
+    },
+    "noData": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["mode"],
+          "properties": { "mode": { "const": "FORBIDDEN" } }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["mode", "sample"],
+          "properties": {
+            "mode": { "const": "SENTINEL" },
+            "sample": { "type": "integer", "minimum": 0, "maximum": 65535 }
+          }
+        }
+      ]
+    },
+    "generation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["globalSeed", "tileSize"],
+      "properties": {
+        "globalSeed": { "$ref": "#/$defs/javaLong" },
+        "tileSize": { "enum": [32, 64, 128, 256] }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "maximumMapCount", "maximumTotalSourceBytes", "maximumDecodedBytes", "maximumPixels",
+        "maximumArtifactBytes", "maximumResidentBytes"
+      ],
+      "properties": {
+        "maximumMapCount": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "maximumTotalSourceBytes": { "type": "integer", "minimum": 1, "maximum": 33554432 },
+        "maximumDecodedBytes": { "type": "integer", "minimum": 1, "maximum": 33554432 },
+        "maximumPixels": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+        "maximumArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+        "maximumResidentBytes": { "type": "integer", "minimum": 1, "maximum": 100663296 }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "intentVersion": 2,
+  "intentId": "fjord-glacial-u",
+  "theme": "Experimental glacial U-profile marine fjord",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "fjord", "kind": "FJORD", "geometry": { "type": "SPLINE", "points": [[0.5, 0], [0.46, 0.3], [0.52, 0.65], [0.5, 0.95]], "interpolation": "POLYLINE" }, "parameters": { "surfaceWidthBlocks": { "min": 16, "max": 24 }, "channelDepthBlocks": { "min": 8, "max": 16 }, "crossSection": "GLACIAL_U", "headBasinRadiusBlocks": 24 }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "fjord-glacial-u", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "walls", "kind": "GLACIAL_MOUNTAIN_RANGE", "geometry": { "type": "POLYGON", "rings": [[[0.1, 0.01], [0.9, 0.01], [0.9, 0.99], [0.1, 0.99], [0.1, 0.01]]] }, "parameters": { "peakCount": { "min": 3, "max": 3 }, "ridgeHalfWidthBlocks": { "min": 4, "max": 6 }, "maxReliefBlocks": { "min": 48, "max": 64 }, "spurCount": 0, "ridgeSharpness01": 0.55 }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "fjord-glacial-u", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [
+    { "id": "fjord-empties-north", "kind": "EMPTIES_INTO", "from": "feature:fjord", "to": "boundary:NORTH", "strength": "HARD" },
+    { "id": "walls-flank-fjord", "kind": "FLANKS", "from": "feature:walls", "to": "feature:fjord", "strength": "HARD" }
+  ],
+  "constraints": [
+    { "id": "north-sea", "strength": "HARD", "kind": "EDGE_CLASSIFICATION", "subject": "world", "parameters": { "edge": "NORTH", "classification": "SEA", "minimumShare01": 0.1 } },
+    { "id": "fjord-slenderness", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:fjord", "metric": "CENTERLINE_LENGTH_TO_MEAN_WIDTH", "range": { "min": 5, "max": 14 }, "tolerance": 0.2 }
+  ],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_MARITIME", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "fjord-glacial-u", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

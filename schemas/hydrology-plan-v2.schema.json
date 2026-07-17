@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-plan-v2.schema.json",
+  "title": "LandformCraft HydrologyPlan v2 phase-3 contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "graphContractVersion", "moduleId", "moduleVersion", "fixedPriors",
+    "basins", "nodes", "reaches", "waterBodies", "fallPlans", "fields", "budget",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "graphContractVersion": { "const": "hydrology-graph-v1" },
+    "moduleId": { "$ref": "#/$defs/qualified" },
+    "moduleVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "fixedPriors": { "$ref": "#/$defs/fixedPriors" },
+    "basins": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/basin" } },
+    "nodes": { "type": "array", "maxItems": 4096, "items": { "$ref": "#/$defs/node" } },
+    "reaches": { "type": "array", "maxItems": 8192, "items": { "$ref": "#/$defs/reach" } },
+    "waterBodies": { "type": "array", "maxItems": 1024, "items": { "$ref": "#/$defs/waterBody" } },
+    "fallPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/fallPlan" } },
+    "fields": { "type": "array", "minItems": 6, "maxItems": 32, "items": { "$ref": "#/$defs/fieldBinding" } },
+    "budget": { "$ref": "#/$defs/graphWorkBudget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "slugArray": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/slug" }
+    },
+    "fixedPriors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "priorVersion", "geologyPrior", "uniformHardnessMillionths",
+        "uniformPermeabilityMillionths", "runoffPrior", "constantRunoffMillionths",
+        "priorChecksum"
+      ],
+      "properties": {
+        "priorVersion": { "const": 1 },
+        "geologyPrior": { "const": "UNIFORM_GEOLOGY_PRIOR" },
+        "uniformHardnessMillionths": { "const": 500000 },
+        "uniformPermeabilityMillionths": { "const": 500000 },
+        "runoffPrior": { "const": "CONSTANT_RUNOFF_PRIOR" },
+        "constantRunoffMillionths": { "const": 1000000 },
+        "priorChecksum": { "const": "a516011407c20c6931961bb752cda6c1f73619af2a2faa51e2a3bfa2ae21d142" }
+      }
+    },
+    "basin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basinId", "outletNodeId", "sourceNodeIds", "areaBlocksSquared",
+        "runoffClass", "terminalType", "waterBodyId"
+      ],
+      "properties": {
+        "basinId": { "$ref": "#/$defs/slug" },
+        "outletNodeId": { "$ref": "#/$defs/slug" },
+        "sourceNodeIds": {
+          "type": "array", "minItems": 1, "maxItems": 1024, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/slug" }
+        },
+        "areaBlocksSquared": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "runoffClass": { "const": "FIXED_PRIOR" },
+        "terminalType": { "enum": ["SEA", "LAKE", "CLOSED"] },
+        "waterBodyId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nodeId", "basinId", "kind", "xMillionths", "zMillionths", "bedYMillionths",
+        "waterSurfaceYMillionths", "incomingReachIds", "outgoingReachIds"
+      ],
+      "properties": {
+        "nodeId": { "$ref": "#/$defs/slug" },
+        "basinId": { "$ref": "#/$defs/slug" },
+        "kind": {
+          "enum": [
+            "SOURCE", "CONFLUENCE", "BIFURCATION", "LAKE_INLET", "LAKE_OUTLET",
+            "WATERFALL_LIP", "WATERFALL_BASE", "MOUTH", "SPRING", "TIDAL_BOUNDARY"
+          ]
+        },
+        "xMillionths": { "type": "integer", "minimum": 0, "maximum": 999000000 },
+        "zMillionths": { "type": "integer", "minimum": 0, "maximum": 999000000 },
+        "bedYMillionths": { "type": "integer", "minimum": -512000000, "maximum": 1024000000 },
+        "waterSurfaceYMillionths": { "type": "integer", "minimum": -512000000, "maximum": 1024000000 },
+        "incomingReachIds": { "$ref": "#/$defs/slugArray" },
+        "outgoingReachIds": { "$ref": "#/$defs/slugArray" }
+      }
+    },
+    "reach": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reachId", "basinId", "kind", "fromNodeId", "toNodeId", "waterBodyId",
+        "rasterSupportRadiusXZ"
+      ],
+      "properties": {
+        "reachId": { "$ref": "#/$defs/slug" },
+        "basinId": { "$ref": "#/$defs/slug" },
+        "kind": { "enum": ["RIVER", "DISTRIBUTARY", "SPILLWAY", "MARINE_CHANNEL", "TIDAL_CHANNEL"] },
+        "fromNodeId": { "$ref": "#/$defs/slug" },
+        "toNodeId": { "$ref": "#/$defs/slug" },
+        "waterBodyId": { "$ref": "#/$defs/slug" },
+        "rasterSupportRadiusXZ": { "type": "integer", "minimum": 0, "maximum": 256 }
+      }
+    },
+    "waterBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "waterBodyId", "kind", "basinId", "nodeIds", "minimumSurfaceYMillionths",
+        "maximumSurfaceYMillionths"
+      ],
+      "properties": {
+        "waterBodyId": { "$ref": "#/$defs/slug" },
+        "kind": { "enum": ["RIVER", "LAKE", "SEA", "CLOSED_BASIN"] },
+        "basinId": { "$ref": "#/$defs/slug" },
+        "nodeIds": {
+          "type": "array", "minItems": 1, "maxItems": 4096, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/slug" }
+        },
+        "minimumSurfaceYMillionths": { "type": "integer", "minimum": -512000000, "maximum": 1024000000 },
+        "maximumSurfaceYMillionths": { "type": "integer", "minimum": -512000000, "maximum": 1024000000 }
+      }
+    },
+    "fallPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fallId", "basinId", "waterBodyId", "lipNodeId", "baseNodeId", "upstreamReachId",
+        "downstreamReachId", "dropMillionths"
+      ],
+      "properties": {
+        "fallId": { "$ref": "#/$defs/slug" },
+        "basinId": { "$ref": "#/$defs/slug" },
+        "waterBodyId": { "$ref": "#/$defs/slug" },
+        "lipNodeId": { "$ref": "#/$defs/slug" },
+        "baseNodeId": { "$ref": "#/$defs/slug" },
+        "upstreamReachId": { "$ref": "#/$defs/slug" },
+        "downstreamReachId": { "$ref": "#/$defs/slug" },
+        "dropMillionths": { "type": "integer", "minimum": 1000000, "maximum": 512000000 }
+      }
+    },
+    "fieldBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fieldId", "semantic", "valueType", "ownerModuleId", "ownership"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "semantic": {
+          "enum": [
+            "WATER_BODY_ID", "FLOW_DIRECTION", "FLOW_ACCUMULATION", "BED_ELEVATION",
+            "WATER_SURFACE", "WATER_DEPTH"
+          ]
+        },
+        "valueType": { "enum": ["U8", "I32"] },
+        "ownerModuleId": { "$ref": "#/$defs/qualified" },
+        "ownership": { "const": "SINGLE_OWNER" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "semantic": { "const": "FLOW_DIRECTION" } } },
+          "then": { "properties": { "valueType": { "const": "U8" } } },
+          "else": { "properties": { "valueType": { "const": "I32" } } }
+        }
+      ]
+    },
+    "graphWorkBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumBasins", "maximumNodes", "maximumReaches", "maximumWaterBodies",
+        "maximumFallPlans", "maximumFields", "globalCellCount", "estimatedCpuWorkUnits",
+        "estimatedResidentBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "hydrology-budget-v1" },
+        "maximumBasins": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "maximumNodes": { "type": "integer", "minimum": 0, "maximum": 4096 },
+        "maximumReaches": { "type": "integer", "minimum": 0, "maximum": 8192 },
+        "maximumWaterBodies": { "type": "integer", "minimum": 0, "maximum": 1024 },
+        "maximumFallPlans": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "maximumFields": { "type": "integer", "minimum": 6, "maximum": 32 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 100000000 },
+        "estimatedResidentBytes": { "type": "integer", "minimum": 1, "maximum": 536870912 }
+      }
+    }
+  }
+}
