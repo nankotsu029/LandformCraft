@@ -36,3 +36,6 @@ logs/
 # Java heap dumps
 *.hprof
 java_pid*.hprof
+
+# Java heap dumps
+*.hprof
