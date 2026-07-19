@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/foundation-escarpment-plateau-validation-artifact-v2.schema.json",
+  "title": "LandformCraft V2-10-06 escarpment/plateau validation artifact",
+  "description": "Strict, version-frozen v2 contract for the V2-10-06 escarpment/plateau validation artifact. Validation evidence only; it never authorizes generation or world mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "contractVersion", "escarpmentFeatureId", "plateauFeatureId",
+    "metrics", "issues", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "contractVersion": { "const": "foundation-escarpment-plateau-validation-artifact-v1" },
+    "escarpmentFeatureId": { "$ref": "#/$defs/slug" },
+    "plateauFeatureId": { "$ref": "#/$defs/slug" },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "issues": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "longScarpOwnerOk", "capFloorTalusOk", "transitionOk", "materialHandoffOk",
+        "wholeTileOk", "budgetOk", "exportOk", "dryLandModifiersSeparated"
+      ],
+      "properties": {
+        "longScarpOwnerOk": { "type": "boolean" },
+        "capFloorTalusOk": { "type": "boolean" },
+        "transitionOk": { "type": "boolean" },
+        "materialHandoffOk": { "type": "boolean" },
+        "wholeTileOk": { "type": "boolean" },
+        "budgetOk": { "type": "boolean" },
+        "exportOk": { "type": "boolean" },
+        "dryLandModifiersSeparated": { "type": "boolean" }
+      }
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleId", "message"],
+      "properties": {
+        "ruleId": { "$ref": "#/$defs/slug" },
+        "message": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    }
+  }
+}

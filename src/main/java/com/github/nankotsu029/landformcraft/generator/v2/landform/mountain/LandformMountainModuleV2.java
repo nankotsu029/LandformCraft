@@ -6,7 +6,7 @@ import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
 import java.util.List;
 
-/** Built-in EXPERIMENTAL 2.5D mountain ridge skeleton module. */
+/** Built-in supported offline mountain ridge and V2-4 environment module. */
 public final class LandformMountainModuleV2 {
     public static final String MODULE_ID = "v2.landform.mountain";
     public static final String MODULE_VERSION = "0.1.0-v2-3-10";
@@ -29,7 +29,7 @@ public final class LandformMountainModuleV2 {
     private final ModuleDescriptorV2 descriptor = new ModuleDescriptorV2(
             MODULE_ID,
             MODULE_VERSION,
-            ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+            ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
             List.of(TerrainIntentV2.FeatureKind.ALPINE_MOUNTAIN_RANGE, TerrainIntentV2.FeatureKind.GLACIAL_MOUNTAIN_RANGE),
             List.of(CoastalTransitionModuleV2.LAND_WATER_FIELD_ID),
             PROVIDED,

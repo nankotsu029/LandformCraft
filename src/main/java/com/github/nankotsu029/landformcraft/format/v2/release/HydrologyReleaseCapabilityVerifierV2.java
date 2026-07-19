@@ -61,7 +61,7 @@ final class HydrologyReleaseCapabilityVerifierV2 {
         index.requireNoUnexpectedArtifacts();
     }
 
-    private void verifyHydrologyPayload(
+    void verifyHydrologyPayload(
             Path root,
             ReleaseCapabilityArtifactIndexV2 index,
             WorldBlueprintV2 blueprint,

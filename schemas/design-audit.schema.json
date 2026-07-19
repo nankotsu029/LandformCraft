@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/design-audit.schema.json",
   "title": "LandformCraft DesignAudit",
+  "description": "Strict, frozen v1 contract for the DesignAudit. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
   "required": [

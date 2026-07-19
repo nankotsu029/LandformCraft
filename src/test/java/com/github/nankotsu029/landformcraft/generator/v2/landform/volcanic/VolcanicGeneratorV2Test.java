@@ -304,7 +304,7 @@ class VolcanicGeneratorV2Test {
                             new TerrainIntentV2.Point2(600_000, 600_000),
                             new TerrainIntentV2.Point2(400_000, 600_000),
                             new TerrainIntentV2.Point2(400_000, 400_000)))),
-                    new TerrainIntentV2.NoParameters(),
+                    defaultMangroveParameters(),
                     0,
                     TerrainIntentV2.Provenance.confirmedManual("volcanic-test"));
             features.add(fake);
@@ -340,6 +340,12 @@ class VolcanicGeneratorV2Test {
                 .orElseThrow();
         return new VolcanicPlanCompilerV2().compile(
                 feature, intent, new WorldBlueprintV2.Bounds(width, length, -64, 255, 63), "a".repeat(64));
+    }
+
+    private static TerrainIntentV2.MangroveWetlandParameters defaultMangroveParameters() {
+        return new TerrainIntentV2.MangroveWetlandParameters(
+                new TerrainIntentV2.IntRange(2, 3),
+                new TerrainIntentV2.FixedRange(200_000, 400_000));
     }
 
     private record Fixture(TerrainIntentV2 intent, VolcanicPlanV2 plan) {

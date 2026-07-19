@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/image-input-evidence.schema.json",
   "title": "LandformCraft ImageInputEvidence",
+  "description": "Strict, frozen v1 contract for the ImageInputEvidence. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
   "required": [

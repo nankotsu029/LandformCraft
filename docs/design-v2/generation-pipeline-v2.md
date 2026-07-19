@@ -1,6 +1,6 @@
 # Generation Pipeline v2
 
-> Status: 多段地形pipeline全体は設計提案。V2-0〜V2-3のPhase gateとV2-4-01〜03のgeology／lithology／strataに加え、V2-4-04のcoarse climate prior、final temperature／moisture、Hydrology prior version handoffを完了した。environmentは`EXPERIMENTAL`で、現行 `TerrainGenerator`、Release 1、配置の挙動は変更していない。次は`V2-4-05`である。
+> Status: 多段地形pipeline全体は段階実装中。V2-0〜V2-4のPhase gateを完了し、geology／lithology／strata、coarse climate prior／final fields、regional water／snow、semantic material／Minecraft palette、mangrove／coral、sparse ecology、volcanic／canyon feature material、独立environment validator／preview、Release 2 `environment-fields`をoffline `SUPPORTED`へ統合した。V2-5ではSDF／CSG／index／cache／TerrainQuery／局所volume feature／waterfall volume／post-volume local environment／volume validators／5-layer preview／offline 3D read-back／Release 2 `sparse-volume`を追加し、`V2-5-18`のPhase gate（[Volume監査](audits/v2-5-phase-gate.md)）でoffline `SUPPORTED`へ昇格した。現行 `TerrainGenerator`、Release 1、公開CLI／Paper配置の挙動は変更していない。Track Aの次は`V2-6-01`である。
 
 ## 1. 設計方針
 
@@ -33,6 +33,30 @@ moduleは`generate.coastal-raster` stage、XZ halo 64、feature named seed、次
 | `coastal.beach.semantic-sand` | `BEACH_SEMANTIC_SAND` | `U8` | land側砂帯=1、それ以外=0 |
 
 `planVersion=1`と`geometryVersion=1`をstrictに読み、spline control-line自己交差、範囲外point、unsupported coastal relation、field／point／halo budget超過をcanonical Blueprint公開前に拒否する。
+
+### 1.2 V2-9-01 surface foundation contract（EXPERIMENTAL）
+
+`V2-9-01`はPLAIN／hill／mountain／valley／river／wetlandが共有する2.5D field・ownership・transition・seed契約を`SurfaceFoundationPlanV2`（`surface-foundation-field-contract-v1`）へ固定する。fieldは`foundation.surface-class`／`elevation`／`residual`／`owner-index`／`transition-weight`の5つで、mergeは`PRIORITY_BLEND`、ambiguityは`REJECT`、transition bandは0..32である。compileは`ScaleAdmissionV2`（`V2-8-01`）を通し、個別形状generator・kind `SUPPORTED`・WorldBlueprint埋込・Paper・LARGE enableは含まない。
+
+`V2-9-02`は`PLAIN`（polygon＋microrelief＋groundwater handoff）と`HILL_RANGE`（spline ridge／saddle＋plain transition）のEXPERIMENTAL vertical sliceを追加する。`FoundationPlainHillSliceCompilerV2`が両plan・foundation merge・validation／preview index・sealed exportを閉じる。`BACKSHORE_PLAINS`はlegacy diagnosticのまま残し、alias写像のみを提供する。catalogは`EXPERIMENTAL`で、`SUPPORTED`昇格とWorldBlueprint埋込はV2-9-14以降とする。
+
+`V2-9-03`は`MOUNTAIN_RANGE`（ridge／peak／saddle／spur／pass／foothill derived components）と`VALLEY`（V／U cross-section＋floor／shoulder＋fjord／river connection role）のEXPERIMENTAL vertical sliceを追加する。`FoundationMountainValleySliceCompilerV2`が両plan・foundation merge・validation／preview・sealed exportを閉じる。ALPINE／GLACIAL／FJORD specialized outputは変更せず、`SUPPORTED`昇格とWorldBlueprint埋込はV2-9-14以降とする。
+
+`V2-9-04`はpublic `RIVER`（`MEANDERING_RIVER`とは別FeatureKind）のEXPERIMENTAL vertical sliceを追加する。`RiverPlanV2`はsource→mouth reach graphとbank／bed／discharge／floodplain handoffを持ち、`FoundationRiverSliceCompilerV2`がvalidation／preview／sealed exportを閉じる。legacy meander pathは不変である。
+
+`V2-9-05`は`FLOODPLAIN`／`MARSH`のEXPERIMENTAL hydrologic surface sliceを追加する。独立field ownership（`foundation.floodplain.*`／`foundation.marsh.*`）でriver adjacency・groundwater／hydroperiod・wetness・open-water fluid／solid ownershipを閉じ、`FoundationFloodplainMarshSliceCompilerV2`がvalidation／preview／sealed exportを行う。surface mergeはfloodplain+marsh、`MANGROVE_WETLAND`は未変更である。
+
+`V2-9-06`は`ROCKY_COAST`／`SEA_CLIFF`のEXPERIMENTAL coast／cliff foundation sliceを追加する。`RockyCoastPlanV2`／`SeaCliffPlanV2`と`FoundationRockyCoastCliffSliceCompilerV2`がrock shelf／exposure／channel／talus handoff、cliff face／talus／notch、coast transition、および`hostSupportAabb`経由のsea-cave／overhang host handoffを閉じる。surface mergeはcoast+cliff、`ROCKY_CAPE`と既存volume compilerは未変更である。
+
+`V2-9-07`は`SINGLE_ISLAND`／`ARCHIPELAGO`／`VOLCANIC_CONE`のEXPERIMENTAL island／cone foundation sliceを追加する。各planとslice compilerがisland mass／shore／drainage／apron、group spacing／dominance／saddle、cone／crater／radial drainageを閉じる。`VolcanicIslandConeAdapterV2`はlegacy volcanic paramsからsuggested foundation paramsだけを返す。既存`VOLCANIC_ARCHIPELAGO` checksum／hook／moduleは未変更である。
+
+`V2-9-08`は`OCEAN_BASIN`／`CONTINENTAL_SHELF`／`CONTINENTAL_SLOPE`のEXPERIMENTAL bathymetry foundation sliceを追加する。depth／slope／coast-distance／ownership／fluid-column-hintを2.5D fieldとしてsampleし、`FoundationBathymetryTransectCompilerV2`がcoast→basin monotone断面とwhole／tile depth checksum、streaming underwater column exportを閉じる。dense 3D water配列は使わない。catalog未登録・`SUPPORTED`ではない。
+
+`V2-9-09`は`SUBMARINE_CANYON`のEXPERIMENTAL foundation vertical sliceを追加する。shelf head／slope crossing／basin outletのHARD relationに束縛されたSPLINE centerlineを、host bathymetry depth＋additional carveで2.5D corridor carveし、whole／tile checksumとstreaming underwater column exportを閉じる。surface `CANYON`とは別kindであり、catalog未登録・`SUPPORTED`ではない。
+
+`V2-9-10`は`CAVE_ENTRANCE`のEXPERIMENTAL surface-volume connectorを追加する。POINT opening＋approach capsuleを、HARD `ENTRANCE_OF`でfrozen `CaveNetworkPlanV2`（featureId＋canonicalChecksum）へ、HARD `SUPPORTED_BY`で`MOUNTAIN_RANGE`／`VALLEY`へ束縛し、ordered `CARVE_SOLID`とroof／flood／owner／reachability validation、seamless query／export checksumを閉じる。in-network ENTRANCE nodeとは別概念であり、catalog未登録・`SUPPORTED`ではない。
+
+`V2-9-11`は`UNDERGROUND_RIVER`のEXPERIMENTAL flooded-volume connectionを追加する。cave graph上のsource→outlet reachをBFSで解決し、channel `CARVE_SOLID`の後に単一owner `ADD_FLUID`（host underground lakeの`fluidBodyId`）を置く。`FLOODED_CAVE`はIntent hook kind＋plan-level `FloodedCaveFluidRegionHook`として静的fluid regionを表す。dynamic fluid simulationは行わず、whole／tile／scene export checksumでcave→river→lake sceneを検証する。catalog未登録・`SUPPORTED`ではない。
 
 `V2-2-02`の`CoastalRasterKernelV2`はblock millionthsをQ12へround-half-away-from-zeroで変換し、polylineまたは16分割のinteger Catmull-Rom/Bezierでflattenする。cell中心の最近傍segmentからsigned distanceとnormalを整数演算で求め、最大距離でclampする。whole samplingもtile samplingもrelease-local global X/Zを使い、checksumはkernel version／field／寸法とrow-major raw valueをSHA-256へ送る。
 
@@ -209,6 +233,8 @@ feature AABBと解析的SDF/CSGを使い、必要箇所だけ3D化する。
 - waterfall water column / underground lake
 
 base heightfieldを残し、tileと交差するvolumeだけをbounded chunkへ評価する。詳細は [volumetric-terrain.md](volumetric-terrain.md) を参照する。
+
+`V2-5-01`〜`V2-5-14`でSDF／CSG／AABB index／tile cache／TerrainQuery volume／局所volume feature／waterfall volume／post-volume local environmentを追加した。volume validators／previewは後続Taskである。
 
 ### Stage 10: Ecology、material、micro detail
 

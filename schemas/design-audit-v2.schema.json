@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/design-audit-v2.schema.json",
+  "title": "LandformCraft DesignAuditV2",
+  "description": "Strict, version-frozen v2 contract for the DesignAuditV2. Rejects unknown fields, versions and encodings instead of falling back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "jobId", "requestId", "pathKind", "providerId", "modelId", "promptVersion",
+    "responseId", "usage", "attempts", "requestChecksum", "intentChecksum",
+    "negotiatedCapabilities", "capabilityCatalogVersion", "startedAt", "completedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "jobId": { "type": "string", "format": "uuid" },
+    "requestId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "pathKind": {
+      "enum": [
+        "OPENAI", "ANTHROPIC", "IMPORT", "FIXTURE", "MANUAL_CONSTRAINT", "REFERENCE_IMAGE_DRAFT"
+      ]
+    },
+    "providerId": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "modelId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "\\S" },
+    "promptVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "responseId": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" },
+    "usage": { "$ref": "#/$defs/usage" },
+    "attempts": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "requestChecksum": { "$ref": "#/$defs/checksum" },
+    "intentChecksum": { "$ref": "#/$defs/checksum" },
+    "negotiatedCapabilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "capabilityCatalogVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "capability": {
+      "enum": [
+        "TERRAIN_INTENT_V2_STRUCTURED",
+        "MANUAL_CONSTRAINT_BUNDLE",
+        "REFERENCE_IMAGE_SOFT_DRAFT"
+      ]
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputTokens", "outputTokens", "totalTokens"],
+      "properties": {
+        "inputTokens": { "type": "integer", "minimum": 0 },
+        "outputTokens": { "type": "integer", "minimum": 0 },
+        "totalTokens": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

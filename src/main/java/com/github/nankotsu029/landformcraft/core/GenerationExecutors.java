@@ -139,6 +139,40 @@ public final class GenerationExecutors implements AutoCloseable {
     }
 
     /**
+     * Bounded executor load snapshot for operational metrics (V2-6-13). Does not expose task
+     * payloads, paths, or secrets.
+     */
+    public ExecutorLoadSnapshotV2 snapshotLoad() {
+        synchronized (lifecycleLock) {
+            return new ExecutorLoadSnapshotV2(
+                    generationExecutor.getActiveCount(),
+                    generationExecutor.getQueue().size(),
+                    generationExecutor.getQueue().remainingCapacity()
+                            + generationExecutor.getQueue().size(),
+                    ioPermits.availablePermits(),
+                    inFlight.size(),
+                    closed.get());
+        }
+    }
+
+    /** Fixed-label executor load view used by {@code core.v2.operations}. */
+    public record ExecutorLoadSnapshotV2(
+            int generationActiveTasks,
+            int generationQueueDepth,
+            int generationQueueCapacity,
+            int ioAvailablePermits,
+            int inFlightTasks,
+            boolean closed
+    ) {
+        public ExecutorLoadSnapshotV2 {
+            if (generationActiveTasks < 0 || generationQueueDepth < 0 || generationQueueCapacity < 0
+                    || ioAvailablePermits < 0 || inFlightTasks < 0) {
+                throw new IllegalArgumentException("executor load counts must be >= 0");
+            }
+        }
+    }
+
+    /**
      * Closes admission, cancels every accepted task, and waits for both pools within one shared deadline.
      * Generation loops and blocking clients must cooperate with cancellation, interruption, and transport timeouts.
      *

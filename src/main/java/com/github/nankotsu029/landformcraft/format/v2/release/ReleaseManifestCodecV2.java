@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.nankotsu029.landformcraft.format.v2.CanonicalJsonV2;
 import com.github.nankotsu029.landformcraft.model.v2.ReleaseManifestV2;
+import com.github.nankotsu029.landformcraft.validation.StructuredDataValidationException;
 import com.github.nankotsu029.landformcraft.validation.StructuredDataValidator;
 
 import java.io.IOException;
@@ -25,7 +26,8 @@ import java.util.Objects;
 /** Strict canonical JSON codec for the Release format 2 manifest and artifact index. */
 public final class ReleaseManifestCodecV2 {
     public static final String SCHEMA = "release-manifest-v2.schema.json";
-    public static final long MAXIMUM_MANIFEST_BYTES = 256L * 1024L;
+    public static final long MAXIMUM_MANIFEST_BYTES =
+            ReleaseArtifactLimitsCatalogV2.MAXIMUM_MANIFEST_BYTES;
 
     private final ObjectMapper mapper = new ObjectMapper(
             JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build())
@@ -111,12 +113,14 @@ public final class ReleaseManifestCodecV2 {
         try {
             validator.validate(SCHEMA, documentName, tree);
             ReleaseManifestV2 manifest = mapper.treeToValue(tree, ReleaseManifestV2.class);
+            ReleaseCrossVersionReaderPolicyV2.requireSupportedVersions(
+                    manifest.releaseFormatVersion(), manifest.manifestVersion());
             if (manifest.hasPendingCanonicalChecksum()
                     || !canonicalChecksum(manifest).equals(manifest.canonicalChecksum())) {
                 throw new IOException("Release format 2 manifest canonical checksum mismatch: " + documentName);
             }
             return manifest;
-        } catch (IllegalArgumentException exception) {
+        } catch (IllegalArgumentException | StructuredDataValidationException exception) {
             throw new IOException("invalid Release format 2 manifest: " + documentName, exception);
         }
     }

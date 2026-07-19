@@ -2,9 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/world-blueprint-v2.schema.json",
   "title": "LandformCraft WorldBlueprint v2 compiled contract",
+  "description": "Strict, version-frozen v2 contract for the WorldBlueprint v2 compiled contract. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["identity", "space", "determinism", "modules", "stages", "fields", "fieldOwnership", "featurePlans", "coastalFeaturePlans", "sandyBeachPlans", "harborBasinPlans", "breakwaterHarborPlans", "rockyCapePlans", "coastalTransitionPlans", "meanderingRiverPlans", "lakePlans", "canyonPlans", "waterfallPlans", "deltaPlans", "tidalChannelPlans", "fjordPlans", "mountainPlans", "volcanicPlans", "geologyPlan", "lithologyPlan", "strataPlan", "climatePlan", "waterConditionPlan", "hydrologyPlan", "hydrologyReconciliationPlan", "validationTargets", "budgets", "diagnosticIssues", "canonicalChecksum"],
+  "required": ["identity", "space", "determinism", "modules", "stages", "fields", "fieldOwnership", "featurePlans", "coastalFeaturePlans", "sandyBeachPlans", "harborBasinPlans", "breakwaterHarborPlans", "rockyCapePlans", "coastalTransitionPlans", "meanderingRiverPlans", "lakePlans", "canyonPlans", "waterfallPlans", "deltaPlans", "tidalChannelPlans", "mangroveWetlandPlans", "coralReefPlans", "fjordPlans", "mountainPlans", "volcanicPlans", "geologyPlan", "lithologyPlan", "strataPlan", "climatePlan", "waterConditionPlan", "hydrologyPlan", "hydrologyReconciliationPlan", "validationTargets", "budgets", "diagnosticIssues", "canonicalChecksum"],
   "properties": {
     "identity": { "$ref": "#/$defs/identity" },
     "space": { "$ref": "#/$defs/space" },
@@ -26,6 +27,8 @@
     "waterfallPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/waterfallPlan" } },
     "deltaPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/deltaPlan" } },
     "tidalChannelPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/tidalChannelPlan" } },
+    "mangroveWetlandPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/mangroveWetlandPlan" } },
+    "coralReefPlans": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/coralReefPlan" } },
     "fjordPlans": { "type": "array", "maxItems": 256, "items": true },
     "mountainPlans": { "type": "array", "maxItems": 256, "items": true },
     "volcanicPlans": { "type": "array", "maxItems": 256, "items": true },
@@ -49,12 +52,17 @@
     "slugArray": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/slug" } },
     "featureKind": {
       "enum": [
-        "SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "BACKSHORE_PLAINS",
+        "SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "ROCKY_COAST", "BACKSHORE_PLAINS",
+        "PLAIN", "HILL_RANGE", "MOUNTAIN_RANGE", "VALLEY", "RIVER", "FLOODPLAIN", "MARSH",
         "FJORD", "GLACIAL_MOUNTAIN_RANGE", "MEANDERING_RIVER", "LAKE", "DELTA", "VOLCANIC_ARCHIPELAGO",
-        "VOLCANIC_CALDERA", "LAVA_FLOW_FIELD", "CANYON", "BEDROCK_RIVER", "WATERFALL",
+        "VOLCANIC_CALDERA", "LAVA_FLOW_FIELD", "SINGLE_ISLAND", "ARCHIPELAGO", "VOLCANIC_CONE",
+        "OCEAN_BASIN", "ABYSSAL_PLAIN", "SEAMOUNT", "CONTINENTAL_SHELF", "CONTINENTAL_SLOPE", "SUBMARINE_CANYON",
+        "CANYON", "BEDROCK_RIVER", "WATERFALL",
         "MANGROVE_WETLAND", "TIDAL_CHANNEL_NETWORK", "ALPINE_MOUNTAIN_RANGE", "GLACIAL_CIRQUE_FIELD",
-        "CORAL_REEF", "LAGOON", "REEF_PASS", "CAVE_NETWORK", "CAVE_ENTRANCE", "LUSH_CAVE",
-        "SEA_CLIFF", "OVERHANG", "SKY_ISLAND_GROUP"
+        "CORAL_REEF", "LAGOON", "REEF_PASS", "CAVE_NETWORK", "CAVE_ENTRANCE", "UNDERGROUND_RIVER", "FLOODED_CAVE", "LUSH_CAVE",
+        "SEA_CLIFF", "OVERHANG", "SKY_ISLAND_GROUP",
+        "VALLEY_GLACIER", "ICE_CAP", "ICE_SHEET",
+        "MORAINE_FIELD", "OUTWASH_PLAIN", "ESCARPMENT", "PLATEAU", "SINKHOLE", "KARST_SPRING", "LAVA_TUBE", "SPRING", "OXBOW_LAKE"
       ]
     },
     "identity": {
@@ -172,6 +180,11 @@
             "HYDROLOGY_DELTA_SHALLOW_SEA_DEPTH", "HYDROLOGY_DELTA_DISCHARGE_SHARE",
             "HYDROLOGY_TIDAL_CHANNEL_MASK", "HYDROLOGY_TIDAL_BRANCH_INDEX",
             "HYDROLOGY_TIDAL_DEPTH_CORRIDOR", "HYDROLOGY_TIDAL_MARINE_CONNECTION",
+            "LANDFORM_MANGROVE_WETLAND_MASK", "LANDFORM_MANGROVE_SURFACE_HEIGHT",
+            "LANDFORM_MANGROVE_OPEN_WATER_GAP", "LANDFORM_MANGROVE_SUBSTRATE_CLASS",
+            "LANDFORM_MANGROVE_MICRO_RELIEF",
+            "LANDFORM_REEF_MASK", "LANDFORM_REEF_CREST_DEPTH", "LANDFORM_REEF_LAGOON_DEPTH",
+            "LANDFORM_REEF_PASS_CORRIDOR", "LANDFORM_REEF_MARINE_CONNECTION",
             "LANDFORM_FJORD_CHANNEL_MASK", "LANDFORM_FJORD_FLOOR_MASK",
             "LANDFORM_FJORD_SIDEWALL_MASK", "LANDFORM_FJORD_THALWEG_DEPTH",
             "LANDFORM_FJORD_SIDEWALL_RELIEF",
@@ -1072,6 +1085,154 @@
         "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 128 },
         "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
         "geometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "mangroveRingVertex": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "mangroveRing": {
+      "type": "object", "additionalProperties": false,
+      "required": ["vertices"],
+      "properties": {
+        "vertices": {
+          "type": "array", "minItems": 4, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/mangroveRingVertex" }
+        }
+      }
+    },
+    "mangroveTidalNetworkPlanHook": {
+      "type": "object", "additionalProperties": false,
+      "required": ["tidalFeatureId", "withinRelationId"],
+      "properties": {
+        "tidalFeatureId": { "$ref": "#/$defs/slug" },
+        "withinRelationId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "mangroveWetlandPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "rings", "tidalNetworkHook",
+        "minimumMicroReliefBlocks", "selectedMicroReliefBlocks", "maximumMicroReliefBlocks",
+        "minimumWaterloggedShareMillionths", "selectedWaterloggedShareMillionths", "maximumWaterloggedShareMillionths",
+        "minY", "maxY", "waterLevel", "width", "length",
+        "wetlandMaskFieldId", "surfaceHeightFieldId", "openWaterGapFieldId",
+        "substrateClassFieldId", "microReliefFieldId",
+        "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "rings": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/mangroveRing" } },
+        "tidalNetworkHook": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/mangroveTidalNetworkPlanHook" }]
+        },
+        "minimumMicroReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "selectedMicroReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "maximumMicroReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "minimumWaterloggedShareMillionths": { "type": "integer", "minimum": 100000, "maximum": 900000 },
+        "selectedWaterloggedShareMillionths": { "type": "integer", "minimum": 100000, "maximum": 900000 },
+        "maximumWaterloggedShareMillionths": { "type": "integer", "minimum": 100000, "maximum": 900000 },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "wetlandMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "surfaceHeightFieldId": { "$ref": "#/$defs/qualified" },
+        "openWaterGapFieldId": { "$ref": "#/$defs/qualified" },
+        "substrateClassFieldId": { "$ref": "#/$defs/qualified" },
+        "microReliefFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "coralReefPlan": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planVersion", "featureId", "rings", "minimumCrestDepthBlocks", "selectedCrestDepthBlocks", "maximumCrestDepthBlocks",
+        "minimumReefWidthBlocks", "selectedReefWidthBlocks", "maximumReefWidthBlocks",
+        "minimumOuterSlopeDegrees", "selectedOuterSlopeDegrees", "maximumOuterSlopeDegrees",
+        "lagoonPlanHook", "passHooks", "minimumLagoonDepthBlocks", "selectedLagoonDepthBlocks", "maximumLagoonDepthBlocks",
+        "minY", "maxY", "waterLevel", "width", "length",
+        "reefMaskFieldId", "crestDepthFieldId", "lagoonDepthFieldId", "passCorridorFieldId", "marineConnectionFieldId",
+        "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum"
+      ],
+      "properties": {
+        "planVersion": { "const": 1 },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "rings": { "type": "array", "minItems": 2, "maxItems": 64, "items": { "$ref": "#/$defs/mangroveRing" } },
+        "minimumCrestDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "selectedCrestDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "maximumCrestDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "minimumReefWidthBlocks": { "type": "integer", "minimum": 18, "maximum": 46 },
+        "selectedReefWidthBlocks": { "type": "integer", "minimum": 18, "maximum": 46 },
+        "maximumReefWidthBlocks": { "type": "integer", "minimum": 18, "maximum": 46 },
+        "minimumOuterSlopeDegrees": { "type": "integer", "minimum": 18, "maximum": 42 },
+        "selectedOuterSlopeDegrees": { "type": "integer", "minimum": 18, "maximum": 42 },
+        "maximumOuterSlopeDegrees": { "type": "integer", "minimum": 18, "maximum": 42 },
+        "lagoonPlanHook": { "$ref": "#/$defs/coralReefLagoonPlanHook" },
+        "passHooks": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/coralReefPassPlanHook" } },
+        "minimumLagoonDepthBlocks": { "type": "integer", "minimum": 5, "maximum": 14 },
+        "selectedLagoonDepthBlocks": { "type": "integer", "minimum": 5, "maximum": 14 },
+        "maximumLagoonDepthBlocks": { "type": "integer", "minimum": 5, "maximum": 14 },
+        "minY": { "type": "integer" },
+        "maxY": { "type": "integer" },
+        "waterLevel": { "type": "integer" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+        "reefMaskFieldId": { "$ref": "#/$defs/qualified" },
+        "crestDepthFieldId": { "$ref": "#/$defs/qualified" },
+        "lagoonDepthFieldId": { "$ref": "#/$defs/qualified" },
+        "passCorridorFieldId": { "$ref": "#/$defs/qualified" },
+        "marineConnectionFieldId": { "$ref": "#/$defs/qualified" },
+        "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "coralReefLagoonPlanHook": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lagoonFeatureId", "enclosedByRelationId"],
+      "properties": {
+        "lagoonFeatureId": { "$ref": "#/$defs/slug" },
+        "enclosedByRelationId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "coralReefPassPlanHook": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "passFeatureId", "carvesThroughRelationId", "connectsToRelationId", "centerline",
+        "minimumWidthBlocks", "selectedWidthBlocks", "maximumWidthBlocks",
+        "minimumDepthBlocks", "selectedDepthBlocks", "maximumDepthBlocks"
+      ],
+      "properties": {
+        "passFeatureId": { "$ref": "#/$defs/slug" },
+        "carvesThroughRelationId": { "$ref": "#/$defs/slug" },
+        "connectsToRelationId": { "$ref": "#/$defs/slug" },
+        "centerline": {
+          "type": "array", "minItems": 2, "maxItems": 4096,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["xMillionths", "zMillionths", "arcLengthMillionths"],
+            "properties": {
+              "xMillionths": { "type": "integer", "minimum": 0 },
+              "zMillionths": { "type": "integer", "minimum": 0 },
+              "arcLengthMillionths": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "minimumWidthBlocks": { "type": "integer", "minimum": 10, "maximum": 14 },
+        "selectedWidthBlocks": { "type": "integer", "minimum": 10, "maximum": 14 },
+        "maximumWidthBlocks": { "type": "integer", "minimum": 10, "maximum": 14 },
+        "minimumDepthBlocks": { "type": "integer", "minimum": 4, "maximum": 7 },
+        "selectedDepthBlocks": { "type": "integer", "minimum": 4, "maximum": 7 },
+        "maximumDepthBlocks": { "type": "integer", "minimum": 4, "maximum": 7 }
       }
     },
     "fixedRange": {

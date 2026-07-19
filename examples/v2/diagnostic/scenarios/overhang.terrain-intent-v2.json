@@ -4,7 +4,7 @@
   "theme": "Diagnostic-only overhang contract",
   "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
   "features": [
-    { "id": "host-cliff", "kind": "SEA_CLIFF", "geometry": { "type": "SPLINE", "points": [[0.18, 0.52], [0.45, 0.46], [0.78, 0.55]], "interpolation": "CATMULL_ROM" }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "overhang-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "host-cliff", "kind": "SEA_CLIFF", "geometry": { "type": "SPLINE", "points": [[0.18, 0.52], [0.45, 0.46], [0.78, 0.55]], "interpolation": "CATMULL_ROM" }, "parameters": { "cliffHeightBlocks": { "min": 24, "max": 40 }, "talusWidthBlocks": { "min": 4, "max": 8 }, "notchDepthBlocks": { "min": 2, "max": 4 }, "seawardSide": "WEST", "supportHalfExtentXZBlocks": { "min": 16, "max": 24 }, "coastTransitionBandBlocks": 8 }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "overhang-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
     { "id": "main-overhang", "kind": "OVERHANG", "geometry": { "type": "VOLUME_GUIDE", "footprint": { "type": "POLYGON", "rings": [[[0.34, 0.44], [0.65, 0.45], [0.68, 0.6], [0.31, 0.59], [0.34, 0.44]]] }, "vertical": { "mode": "SURFACE_OFFSET", "min": -24, "max": 8 } }, "parameters": {}, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "overhang-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
   ],
   "relations": [{ "id": "overhang-supported", "kind": "SUPPORTED_BY", "from": "feature:main-overhang", "to": "feature:host-cliff", "strength": "HARD" }],

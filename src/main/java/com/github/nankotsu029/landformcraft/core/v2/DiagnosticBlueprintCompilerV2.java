@@ -48,6 +48,14 @@ import com.github.nankotsu029.landformcraft.generator.v2.landform.fjord.FjordGen
 import com.github.nankotsu029.landformcraft.generator.v2.landform.fjord.FjordGeneratorV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.fjord.FjordPlanCompilerV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.fjord.LandformFjordModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.mangrove.LandformMangroveModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.mangrove.MangroveGenerationException;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.mangrove.MangroveGeneratorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.mangrove.MangrovePlanCompilerV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.reef.CoralReefGenerationException;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.reef.CoralReefGeneratorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.reef.CoralReefPlanCompilerV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.reef.LandformCoralReefModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.mountain.LandformMountainModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.mountain.MountainGenerationException;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.mountain.MountainGeneratorV2;
@@ -62,6 +70,8 @@ import com.github.nankotsu029.landformcraft.model.v2.CanyonPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.DiagnosticIssueV2;
 import com.github.nankotsu029.landformcraft.model.v2.DeltaPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.FjordPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.CoralReefPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.MangroveWetlandPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.TidalChannelPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.LakePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.MeanderingRiverPlanV2;
@@ -108,6 +118,8 @@ public final class DiagnosticBlueprintCompilerV2 {
     private final DeltaPlanCompilerV2 deltaCompiler = new DeltaPlanCompilerV2();
     private final TidalChannelPlanCompilerV2 tidalCompiler = new TidalChannelPlanCompilerV2();
     private final FjordPlanCompilerV2 fjordCompiler = new FjordPlanCompilerV2();
+    private final MangrovePlanCompilerV2 mangroveCompiler = new MangrovePlanCompilerV2();
+    private final CoralReefPlanCompilerV2 coralReefCompiler = new CoralReefPlanCompilerV2();
     private final MountainPlanCompilerV2 mountainCompiler = new MountainPlanCompilerV2();
     private final VolcanicPlanCompilerV2 volcanicCompiler = new VolcanicPlanCompilerV2();
     private final HarborBasinPlanCompilerV2 harborBasinCompiler = new HarborBasinPlanCompilerV2();
@@ -167,6 +179,8 @@ public final class DiagnosticBlueprintCompilerV2 {
         List<WaterfallPlanV2> waterfallPlans = new ArrayList<>();
         List<DeltaPlanV2> deltaPlans = new ArrayList<>();
         List<TidalChannelPlanV2> tidalChannelPlans = new ArrayList<>();
+        List<MangroveWetlandPlanV2> mangroveWetlandPlans = new ArrayList<>();
+        List<CoralReefPlanV2> coralReefPlans = new ArrayList<>();
         List<FjordPlanV2> fjordPlans = new ArrayList<>();
         List<MountainPlanV2> mountainPlans = new ArrayList<>();
         List<VolcanicPlanV2> volcanicPlans = new ArrayList<>();
@@ -379,6 +393,24 @@ public final class DiagnosticBlueprintCompilerV2 {
             }
         }
         for (TerrainIntentV2.Feature feature : intent.features()) {
+            if (feature.kind() != TerrainIntentV2.FeatureKind.MANGROVE_WETLAND) continue;
+            try {
+                mangroveWetlandPlans.add(mangroveCompiler.compile(
+                        feature, intent, blueprintBounds, codec.geometryChecksum(feature.geometry())));
+            } catch (MangroveGenerationException exception) {
+                throw new DiagnosticCompilationException(exception.ruleId(), exception.getMessage());
+            }
+        }
+        for (TerrainIntentV2.Feature feature : intent.features()) {
+            if (feature.kind() != TerrainIntentV2.FeatureKind.CORAL_REEF) continue;
+            try {
+                coralReefPlans.add(coralReefCompiler.compile(
+                        feature, intent, blueprintBounds, codec.geometryChecksum(feature.geometry())));
+            } catch (CoralReefGenerationException exception) {
+                throw new DiagnosticCompilationException(exception.ruleId(), exception.getMessage());
+            }
+        }
+        for (TerrainIntentV2.Feature feature : intent.features()) {
             if (feature.kind() != TerrainIntentV2.FeatureKind.FJORD) continue;
             try {
                 fjordPlans.add(fjordCompiler.compile(feature, intent, blueprintBounds,
@@ -412,6 +444,10 @@ public final class DiagnosticBlueprintCompilerV2 {
                 strataPlan.budget(), climatePlan.budget(), waterConditionPlan.budget(), deltaPlans);
         preflightTidalPlans(request, hydrologyPlan.budget(), geologyPlan.budget(), lithologyPlan.budget(),
                 strataPlan.budget(), climatePlan.budget(), waterConditionPlan.budget(), tidalChannelPlans);
+        preflightMangrovePlans(request, hydrologyPlan.budget(), geologyPlan.budget(), lithologyPlan.budget(),
+                strataPlan.budget(), climatePlan.budget(), waterConditionPlan.budget(), mangroveWetlandPlans);
+        preflightCoralReefPlans(request, hydrologyPlan.budget(), geologyPlan.budget(), lithologyPlan.budget(),
+                strataPlan.budget(), climatePlan.budget(), waterConditionPlan.budget(), coralReefPlans);
         preflightFjordPlans(request, hydrologyPlan.budget(), geologyPlan.budget(), lithologyPlan.budget(),
                 strataPlan.budget(), climatePlan.budget(), waterConditionPlan.budget(), fjordPlans);
         preflightMountainPlans(request, hydrologyPlan.budget(), geologyPlan.budget(), lithologyPlan.budget(),
@@ -426,6 +462,8 @@ public final class DiagnosticBlueprintCompilerV2 {
                     lakePlans,
                     deltaPlans,
                     tidalChannelPlans,
+                    mangroveWetlandPlans,
+                    coralReefPlans,
                     fjordPlans,
                     waterfallPlans,
                     request.budget().maximumCpuWorkUnits(),
@@ -438,7 +476,7 @@ public final class DiagnosticBlueprintCompilerV2 {
         targets.addAll(coastalValidationTargets(
                 sandyBeachPlans, harborBasinPlans, breakwaterHarborPlans, rockyCapePlans, coastalTransitionPlans));
         targets.addAll(hydrologyValidationTargets(
-                meanderingRiverPlans, lakePlans, deltaPlans, tidalChannelPlans, fjordPlans,
+                meanderingRiverPlans, lakePlans, deltaPlans, tidalChannelPlans, mangroveWetlandPlans, fjordPlans,
                 waterfallPlans, mountainPlans, volcanicPlans, hydrologyReconciliationPlan));
         plans = plans.stream().map(plan -> new WorldBlueprintV2.FeaturePlan(
                 plan.featureId(), plan.kind(), plan.priority(), plan.moduleId(), plan.moduleVersion(),
@@ -482,7 +520,7 @@ public final class DiagnosticBlueprintCompilerV2 {
                 modules, stages, fields, ownership, plans, coastalPlans, sandyBeachPlans,
                 harborBasinPlans, breakwaterHarborPlans, rockyCapePlans, coastalTransitionPlans,
                 meanderingRiverPlans, lakePlans, canyonPlans, waterfallPlans,
-                deltaPlans, tidalChannelPlans, fjordPlans, mountainPlans, volcanicPlans, geologyPlan, lithologyPlan,
+                deltaPlans, tidalChannelPlans, mangroveWetlandPlans, coralReefPlans, fjordPlans, mountainPlans, volcanicPlans, geologyPlan, lithologyPlan,
                 strataPlan,
                 climatePlan,
                 waterConditionPlan,
@@ -591,6 +629,70 @@ public final class DiagnosticBlueprintCompilerV2 {
             }
         } catch (ArithmeticException exception) {
             throw new DiagnosticCompilationException("v2.tidal-budget", "tidal budget arithmetic overflow");
+        }
+    }
+
+    private static void preflightMangrovePlans(
+            DiagnosticCompileRequestV2 request,
+            HydrologyPlanV2.GraphWorkBudget hydrologyBudget,
+            GeologyPlanV2.ResourceBudget geologyBudget,
+            LithologyPlanV2.ResourceBudget lithologyBudget,
+            StrataPlanV2.ResourceBudget strataBudget,
+            ClimatePlanV2.ResourceBudget climateBudget,
+            WaterConditionPlanV2.ResourceBudget waterConditionBudget,
+            List<MangroveWetlandPlanV2> mangroveWetlandPlans
+    ) {
+        try {
+            long cpu = 0L;
+            long resident = 0L;
+            for (MangroveWetlandPlanV2 plan : mangroveWetlandPlans) {
+                cpu = Math.addExact(cpu, plan.estimatedRasterWorkUnits());
+                resident = Math.addExact(resident, MangroveGeneratorV2.estimateWindowRetainedBytes(
+                        Math.min(plan.width(), request.tileSize() + 2 * plan.supportRadiusXZ()),
+                        Math.min(plan.length(), request.tileSize() + 2 * plan.supportRadiusXZ())));
+            }
+            if (Math.addExact(priorStageCpuWorkUnits(
+                    hydrologyBudget, geologyBudget, lithologyBudget, strataBudget, climateBudget, waterConditionBudget), cpu)
+                    > request.budget().maximumCpuWorkUnits()
+                    || Math.addExact(priorStageResidentBytes(
+                    hydrologyBudget, geologyBudget, lithologyBudget, strataBudget, climateBudget, waterConditionBudget), resident)
+                    > request.budget().maximumResidentBytes()) {
+                throw new DiagnosticCompilationException("v2.mangrove-budget", "mangrove CPU or resident-memory budget exceeded");
+            }
+        } catch (ArithmeticException exception) {
+            throw new DiagnosticCompilationException("v2.mangrove-budget", "mangrove budget arithmetic overflow");
+        }
+    }
+
+    private static void preflightCoralReefPlans(
+            DiagnosticCompileRequestV2 request,
+            HydrologyPlanV2.GraphWorkBudget hydrologyBudget,
+            GeologyPlanV2.ResourceBudget geologyBudget,
+            LithologyPlanV2.ResourceBudget lithologyBudget,
+            StrataPlanV2.ResourceBudget strataBudget,
+            ClimatePlanV2.ResourceBudget climateBudget,
+            WaterConditionPlanV2.ResourceBudget waterConditionBudget,
+            List<CoralReefPlanV2> coralReefPlans
+    ) {
+        try {
+            long cpu = 0L;
+            long resident = 0L;
+            for (CoralReefPlanV2 plan : coralReefPlans) {
+                cpu = Math.addExact(cpu, plan.estimatedRasterWorkUnits());
+                resident = Math.addExact(resident, CoralReefGeneratorV2.estimateWindowRetainedBytes(
+                        Math.min(plan.width(), request.tileSize() + 2 * plan.supportRadiusXZ()),
+                        Math.min(plan.length(), request.tileSize() + 2 * plan.supportRadiusXZ())));
+            }
+            if (Math.addExact(priorStageCpuWorkUnits(
+                    hydrologyBudget, geologyBudget, lithologyBudget, strataBudget, climateBudget, waterConditionBudget), cpu)
+                    > request.budget().maximumCpuWorkUnits()
+                    || Math.addExact(priorStageResidentBytes(
+                    hydrologyBudget, geologyBudget, lithologyBudget, strataBudget, climateBudget, waterConditionBudget), resident)
+                    > request.budget().maximumResidentBytes()) {
+                throw new DiagnosticCompilationException("v2.reef-budget", "coral reef CPU or resident-memory budget exceeded");
+            }
+        } catch (ArithmeticException exception) {
+            throw new DiagnosticCompilationException("v2.reef-budget", "coral reef budget arithmetic overflow");
         }
     }
 
@@ -1147,6 +1249,36 @@ public final class DiagnosticBlueprintCompilerV2 {
                 hydrologyField(request, HydrologyTidalModuleV2.MARINE_CONNECTION_FIELD_ID,
                         WorldBlueprintV2.FieldSemantic.HYDROLOGY_TIDAL_MARINE_CONNECTION,
                         WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, LandformMangroveModuleV2.WETLAND_MASK_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_MANGROVE_WETLAND_MASK,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, LandformMangroveModuleV2.SURFACE_HEIGHT_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_MANGROVE_SURFACE_HEIGHT,
+                        WorldBlueprintV2.FieldValueType.I32),
+                hydrologyField(request, LandformMangroveModuleV2.OPEN_WATER_GAP_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_MANGROVE_OPEN_WATER_GAP,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, LandformMangroveModuleV2.SUBSTRATE_CLASS_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_MANGROVE_SUBSTRATE_CLASS,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, LandformMangroveModuleV2.MICRO_RELIEF_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_MANGROVE_MICRO_RELIEF,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, LandformCoralReefModuleV2.REEF_MASK_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_REEF_MASK,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, LandformCoralReefModuleV2.CREST_DEPTH_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_REEF_CREST_DEPTH,
+                        WorldBlueprintV2.FieldValueType.I32),
+                hydrologyField(request, LandformCoralReefModuleV2.LAGOON_DEPTH_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_REEF_LAGOON_DEPTH,
+                        WorldBlueprintV2.FieldValueType.I32),
+                hydrologyField(request, LandformCoralReefModuleV2.PASS_CORRIDOR_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_REEF_PASS_CORRIDOR,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, LandformCoralReefModuleV2.MARINE_CONNECTION_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.LANDFORM_REEF_MARINE_CONNECTION,
+                        WorldBlueprintV2.FieldValueType.U8),
                 hydrologyField(request, LandformFjordModuleV2.CHANNEL_MASK_FIELD_ID,
                         WorldBlueprintV2.FieldSemantic.LANDFORM_FJORD_CHANNEL_MASK,
                         WorldBlueprintV2.FieldValueType.U8),
@@ -1335,6 +1467,7 @@ public final class DiagnosticBlueprintCompilerV2 {
             List<LakePlanV2> lakes,
             List<DeltaPlanV2> deltas,
             List<TidalChannelPlanV2> tidals,
+            List<MangroveWetlandPlanV2> mangroves,
             List<FjordPlanV2> fjords,
             List<WaterfallPlanV2> waterfalls,
             List<MountainPlanV2> mountains,

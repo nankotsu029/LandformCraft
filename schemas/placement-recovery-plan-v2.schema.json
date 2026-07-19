@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-recovery-plan-v2.schema.json",
+  "title": "LandformCraft V2-6-10 Release 2 operation-bound recovery plan",
+  "description": "Strict, version-frozen v2 contract for the V2-6-10 Release 2 operation-bound recovery plan. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "recoveryContractVersion", "placementId", "operationId", "worldId", "actor",
+    "classification", "sourcePlacementPlanChecksum", "sourceEnvelopePlanChecksum",
+    "sourceReservationChecksum", "sourceSnapshotPlanChecksum", "sourceJournalChecksum",
+    "sourceJournalState", "baselineChecksum", "observedWorldChecksum",
+    "expectedAppliedStreamChecksum", "confirmationAction", "confirmationHash",
+    "confirmationCreatedAt", "confirmationExpiresAt", "retentionTransition", "createdAt",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "recoveryContractVersion": {"const": "release-2-placement-recovery-plan-v1"},
+    "placementId": {"type": "string", "format": "uuid"},
+    "operationId": {"type": "string", "format": "uuid"},
+    "worldId": {"type": "string", "format": "uuid"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {"enum": ["PLAYER", "CONSOLE", "SYSTEM"]},
+        "id": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "classification": {"enum": ["SAFE_TO_ROLLBACK", "SAFE_TO_ACCEPT"]},
+    "sourcePlacementPlanChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceEnvelopePlanChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceReservationChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceSnapshotPlanChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceJournalChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceJournalState": {
+      "enum": [
+        "APPLYING", "SETTLING", "VERIFYING", "ROLLING_BACK", "UNDOING", "RECOVERY_REQUIRED"
+      ]
+    },
+    "baselineChecksum": {"$ref": "#/$defs/checksum"},
+    "observedWorldChecksum": {"$ref": "#/$defs/checksum"},
+    "expectedAppliedStreamChecksum": {"$ref": "#/$defs/checksumOrEmpty"},
+    "confirmationAction": {"enum": ["RECOVERY_ROLLBACK", "RECOVERY_ACCEPT"]},
+    "confirmationHash": {"$ref": "#/$defs/checksum"},
+    "confirmationCreatedAt": {"type": "string", "format": "date-time"},
+    "confirmationExpiresAt": {"type": "string", "format": "date-time"},
+    "retentionTransition": {"const": "KEEP_SNAPSHOTS_FOR_CLEANUP"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "checksumOrEmpty": {"type": "string", "pattern": "^(|[0-9a-f]{64})$"}
+  }
+}

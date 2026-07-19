@@ -1,8 +1,10 @@
 package com.github.nankotsu029.landformcraft.generator.v2.hydrology.reconcile;
 
+import com.github.nankotsu029.landformcraft.model.v2.CoralReefPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.DeltaPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.FjordPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.LakePlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.MangroveWetlandPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.MeanderingRiverPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.TidalChannelPlanV2;
@@ -25,6 +27,8 @@ public final class HydrologyReconciliationPlanCompilerV2 {
             List<LakePlanV2> lakePlans,
             List<DeltaPlanV2> deltaPlans,
             List<TidalChannelPlanV2> tidalPlans,
+            List<MangroveWetlandPlanV2> mangrovePlans,
+            List<CoralReefPlanV2> coralReefPlans,
             List<FjordPlanV2> fjordPlans,
             List<WaterfallPlanV2> waterfallPlans,
             long maximumWorkUnits,
@@ -38,6 +42,8 @@ public final class HydrologyReconciliationPlanCompilerV2 {
             compileLakes(lakePlans, variables, constraints);
             compileDeltaConnections(deltaPlans, variables, constraints);
             compileTidalConnections(tidalPlans, variables, constraints);
+            compileMangroveLinks(mangrovePlans, variables, constraints);
+            compileReefLinks(coralReefPlans, variables, constraints);
             compileFjordConnections(fjordPlans, variables, constraints);
             compileWaterfalls(waterfallPlans, variables, constraints);
 
@@ -185,6 +191,42 @@ public final class HydrologyReconciliationPlanCompilerV2 {
             constraints.add(connectionConstraint(
                     "reconcile.tidal." + plan.featureId() + ".marine-connection",
                     HydrologyReconciliationPlanV2.ConstraintKind.TIDAL_CONNECTION,
+                    plan.featureId(), variable));
+        }
+    }
+
+    private static void compileMangroveLinks(
+            List<MangroveWetlandPlanV2> plans,
+            List<HydrologyReconciliationPlanV2.VariableDescriptor> variables,
+            List<HydrologyReconciliationPlanV2.Constraint> constraints
+    ) {
+        for (MangroveWetlandPlanV2 plan : plans) {
+            if (plan.tidalNetworkHook() == null) {
+                continue;
+            }
+            String variable = "mangrove." + plan.featureId() + ".tidal-link";
+            variables.add(connection(variable, plan.featureId()));
+            constraints.add(connectionConstraint(
+                    "reconcile.mangrove." + plan.featureId() + ".tidal-link",
+                    HydrologyReconciliationPlanV2.ConstraintKind.MANGROVE_TIDAL_LINK,
+                    plan.featureId(), variable));
+        }
+    }
+
+    private static void compileReefLinks(
+            List<CoralReefPlanV2> plans,
+            List<HydrologyReconciliationPlanV2.VariableDescriptor> variables,
+            List<HydrologyReconciliationPlanV2.Constraint> constraints
+    ) {
+        for (CoralReefPlanV2 plan : plans) {
+            if (plan.passHooks().isEmpty()) {
+                continue;
+            }
+            String variable = "reef." + plan.featureId() + ".lagoon-pass";
+            variables.add(connection(variable, plan.featureId()));
+            constraints.add(connectionConstraint(
+                    "reconcile.reef." + plan.featureId() + ".lagoon-pass",
+                    HydrologyReconciliationPlanV2.ConstraintKind.REEF_LAGOON_PASS,
                     plan.featureId(), variable));
         }
     }

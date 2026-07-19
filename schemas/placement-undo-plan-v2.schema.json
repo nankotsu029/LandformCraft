@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-undo-plan-v2.schema.json",
+  "title": "LandformCraft V2-6-09 Release 2 operation-bound Undo plan",
+  "description": "Strict, version-frozen v2 contract for the V2-6-09 Release 2 operation-bound Undo plan. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "undoContractVersion", "placementId", "operationId", "worldId", "actor",
+    "sourcePlacementPlanChecksum", "sourceEnvelopePlanChecksum", "sourceApplyReservationChecksum",
+    "undoReservationChecksum", "sourceSnapshotPlanChecksum", "sourceVerifyEvidenceChecksum",
+    "sourceAppliedJournalChecksum", "sourceApplyCompleteJournalChecksum",
+    "expectedAppliedStreamChecksum", "confirmationAction", "confirmationHash",
+    "confirmationCreatedAt", "confirmationExpiresAt", "retentionTransition", "createdAt",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "undoContractVersion": {"const": "release-2-placement-undo-plan-v1"},
+    "placementId": {"type": "string", "format": "uuid"},
+    "operationId": {"type": "string", "format": "uuid"},
+    "worldId": {"type": "string", "format": "uuid"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {"enum": ["PLAYER", "CONSOLE", "SYSTEM"]},
+        "id": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "sourcePlacementPlanChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceEnvelopePlanChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceApplyReservationChecksum": {"$ref": "#/$defs/checksum"},
+    "undoReservationChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceSnapshotPlanChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceVerifyEvidenceChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceAppliedJournalChecksum": {"$ref": "#/$defs/checksum"},
+    "sourceApplyCompleteJournalChecksum": {"$ref": "#/$defs/checksum"},
+    "expectedAppliedStreamChecksum": {"$ref": "#/$defs/checksum"},
+    "confirmationAction": {"const": "UNDO"},
+    "confirmationHash": {"$ref": "#/$defs/checksum"},
+    "confirmationCreatedAt": {"type": "string", "format": "date-time"},
+    "confirmationExpiresAt": {"type": "string", "format": "date-time"},
+    "retentionTransition": {"const": "KEEP_SNAPSHOTS_FOR_CLEANUP"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

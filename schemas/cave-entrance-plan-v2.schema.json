@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/cave-entrance-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-10 cave-entrance foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-10 cave-entrance foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "surfaceHostFeatureId", "surfaceHostKind", "surfaceHostRelationId",
+    "caveNetworkFeatureId", "caveEntranceRelationId", "targetEntranceNodeId",
+    "hostCaveCanonicalChecksum", "surfaceHostGeometryChecksum",
+    "openingXMillionths", "openingZMillionths", "surfaceYBlocks", "openingYBlocks",
+    "approach", "selectedSurfaceOffsetBlocks", "selectedMinimumOpeningBlocks",
+    "selectedApproachLengthBlocks", "selectedRoofClearanceBlocks", "aabb", "orderedCarveOps",
+    "sdfPlanBinding", "csgPlanBinding",
+    "openingMaskFieldId", "approachMaskFieldId", "ownershipFieldId", "reachabilityFieldId",
+    "roofClearanceFieldId", "supportRadiusXZ", "estimatedWorkUnits",
+    "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "surfaceHostFeatureId": { "$ref": "#/$defs/slug" },
+    "surfaceHostKind": { "enum": ["MOUNTAIN_RANGE", "VALLEY"] },
+    "surfaceHostRelationId": { "$ref": "#/$defs/slug" },
+    "caveNetworkFeatureId": { "$ref": "#/$defs/qualified" },
+    "caveEntranceRelationId": { "$ref": "#/$defs/slug" },
+    "targetEntranceNodeId": { "$ref": "#/$defs/qualified" },
+    "hostCaveCanonicalChecksum": { "$ref": "#/$defs/checksum" },
+    "surfaceHostGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "openingXMillionths": { "type": "integer" },
+    "openingZMillionths": { "type": "integer" },
+    "surfaceYBlocks": { "type": "integer" },
+    "openingYBlocks": { "type": "integer" },
+    "approach": { "$ref": "#/$defs/approachCapsule" },
+    "selectedSurfaceOffsetBlocks": { "type": "integer", "minimum": -64, "maximum": -1 },
+    "selectedMinimumOpeningBlocks": { "type": "integer", "minimum": 2, "maximum": 16 },
+    "selectedApproachLengthBlocks": { "type": "integer", "minimum": 2, "maximum": 32 },
+    "selectedRoofClearanceBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "aabb": { "$ref": "#/$defs/aabb" },
+    "orderedCarveOps": {
+      "type": "array", "minItems": 1, "maxItems": 8,
+      "items": { "$ref": "#/$defs/orderedCarveOp" }
+    },
+    "sdfPlanBinding": { "$ref": "#/$defs/sdfBinding" },
+    "csgPlanBinding": { "$ref": "#/$defs/csgBinding" },
+    "openingMaskFieldId": { "const": "foundation.cave-entrance.opening-mask" },
+    "approachMaskFieldId": { "const": "foundation.cave-entrance.approach-mask" },
+    "ownershipFieldId": { "const": "foundation.cave-entrance.ownership" },
+    "reachabilityFieldId": { "const": "foundation.cave-entrance.reachability" },
+    "roofClearanceFieldId": { "const": "foundation.cave-entrance.roof-clearance" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "approachCapsule": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "startXMillionths", "startYMillionths", "startZMillionths",
+        "endXMillionths", "endYMillionths", "endZMillionths", "radiusMillionths"
+      ],
+      "properties": {
+        "startXMillionths": { "type": "integer" },
+        "startYMillionths": { "type": "integer" },
+        "startZMillionths": { "type": "integer" },
+        "endXMillionths": { "type": "integer" },
+        "endYMillionths": { "type": "integer" },
+        "endZMillionths": { "type": "integer" },
+        "radiusMillionths": { "type": "integer", "minimum": 1000000, "maximum": 16000000 }
+      }
+    },
+    "aabb": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": { "type": "integer" },
+        "minYMillionths": { "type": "integer" },
+        "minZMillionths": { "type": "integer" },
+        "maxXMillionths": { "type": "integer" },
+        "maxYMillionths": { "type": "integer" },
+        "maxZMillionths": { "type": "integer" }
+      }
+    },
+    "orderedCarveOp": {
+      "type": "object", "additionalProperties": false,
+      "required": ["opId", "ordinal", "operationKind", "primitiveId"],
+      "properties": {
+        "opId": { "$ref": "#/$defs/qualified" },
+        "ordinal": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "operationKind": { "const": "CARVE_SOLID" },
+        "primitiveId": { "$ref": "#/$defs/qualified" }
+      }
+    },
+    "sdfBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceArtifactChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "cave-entrance-sdf-binding-v1" }
+      }
+    },
+    "csgBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceArtifactChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "cave-entrance-csg-binding-v1" }
+      }
+    }
+  }
+}

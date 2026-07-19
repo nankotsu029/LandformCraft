@@ -1,0 +1,88 @@
+{
+  "intentVersion": 2,
+  "intentId": "moraine-field-positive-v2",
+  "theme": "V2-10-02 MORAINE_FIELD deposition with valley glacier parent stub",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "host-valley",
+      "kind": "VALLEY",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.2, 0.15], [0.5, 0.5], [0.8, 0.85]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "crossSection": "U_PROFILE",
+        "floorHalfWidthBlocks": { "min": 18, "max": 22 },
+        "shoulderWidthBlocks": { "min": 12, "max": 16 },
+        "maxDepthBlocks": { "min": 8, "max": 12 },
+        "mountainTransitionBandBlocks": 8,
+        "connectionRole": "NONE"
+      },
+      "priority": 20,
+      "provenance": { "source": "MANUAL", "sourceId": "moraine-field-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "valley-ice",
+      "kind": "VALLEY_GLACIER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.25, 0.2], [0.5, 0.5], [0.75, 0.8]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "thicknessBlocks": { "min": 8, "max": 12 },
+        "halfWidthBlocks": { "min": 6, "max": 8 },
+        "flowAzimuthDegrees": 135,
+        "climatePreset": "COLD_ALPINE",
+        "meltwaterHandoffFeatureIdHint": ""
+      },
+      "priority": 35,
+      "provenance": { "source": "MANUAL", "sourceId": "moraine-field-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "terminal-moraine",
+      "kind": "MORAINE_FIELD",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.68, 0.72], [0.92, 0.72], [0.92, 0.92], [0.68, 0.92], [0.68, 0.72]]]
+      },
+      "parameters": {
+        "ridgeCount": { "min": 2, "max": 4 },
+        "ridgeHalfWidthBlocks": { "min": 3, "max": 5 },
+        "sedimentThicknessBlocks": { "min": 2, "max": 4 },
+        "flowAzimuthDegrees": 135
+      },
+      "priority": 30,
+      "provenance": { "source": "MANUAL", "sourceId": "moraine-field-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "ice-supported-by-valley",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:valley-ice",
+      "to": "feature:host-valley",
+      "strength": "HARD"
+    },
+    {
+      "id": "moraine-originates-at-ice",
+      "kind": "ORIGINATES_AT",
+      "from": "feature:terminal-moraine",
+      "to": "feature:valley-ice",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_ALPINE", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "moraine-field-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

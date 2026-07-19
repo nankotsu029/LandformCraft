@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/underground-river-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-11 underground-river foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-11 underground-river foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "hostCaveFeatureId", "hostCaveCanonicalChecksum",
+    "hostLakeFeatureId", "hostLakeCanonicalChecksum",
+    "caveEntranceFeatureId", "caveEntranceCanonicalChecksum",
+    "sourceNodeId", "outletNodeId", "fluidBodyId", "floodedCaveHook", "reaches",
+    "selectedChannelRadiusBlocks", "selectedFluidDepthBlocks", "selectedAirPocketBlocks",
+    "aabb", "orderedOps", "sdfPlanBinding", "csgPlanBinding",
+    "channelMaskFieldId", "fluidMaskFieldId", "ownershipFieldId", "reachabilityFieldId",
+    "airPocketFieldId", "supportRadiusXZ", "estimatedWorkUnits",
+    "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "hostCaveFeatureId": { "$ref": "#/$defs/qualified" },
+    "hostCaveCanonicalChecksum": { "$ref": "#/$defs/checksum" },
+    "hostLakeFeatureId": { "$ref": "#/$defs/qualified" },
+    "hostLakeCanonicalChecksum": { "$ref": "#/$defs/checksum" },
+    "caveEntranceFeatureId": {
+      "type": "string",
+      "anyOf": [{ "const": "" }, { "$ref": "#/$defs/slug" }]
+    },
+    "caveEntranceCanonicalChecksum": {
+      "type": "string",
+      "anyOf": [{ "const": "" }, { "$ref": "#/$defs/checksum" }]
+    },
+    "sourceNodeId": { "$ref": "#/$defs/qualified" },
+    "outletNodeId": { "$ref": "#/$defs/qualified" },
+    "fluidBodyId": { "$ref": "#/$defs/qualified" },
+    "floodedCaveHook": { "$ref": "#/$defs/floodedCaveHook" },
+    "reaches": {
+      "type": "array", "minItems": 1, "maxItems": 32,
+      "items": { "$ref": "#/$defs/reachSample" }
+    },
+    "selectedChannelRadiusBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+    "selectedFluidDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "selectedAirPocketBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+    "aabb": { "$ref": "#/$defs/aabb" },
+    "orderedOps": {
+      "type": "array", "minItems": 2, "maxItems": 32,
+      "items": { "$ref": "#/$defs/orderedVolumeOp" }
+    },
+    "sdfPlanBinding": { "$ref": "#/$defs/sdfBinding" },
+    "csgPlanBinding": { "$ref": "#/$defs/csgBinding" },
+    "channelMaskFieldId": { "const": "foundation.underground-river.channel-mask" },
+    "fluidMaskFieldId": { "const": "foundation.underground-river.fluid-mask" },
+    "ownershipFieldId": { "const": "foundation.underground-river.ownership" },
+    "reachabilityFieldId": { "const": "foundation.underground-river.reachability" },
+    "airPocketFieldId": { "const": "foundation.underground-river.air-pocket" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "aabb": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": { "type": "integer" },
+        "minYMillionths": { "type": "integer" },
+        "minZMillionths": { "type": "integer" },
+        "maxXMillionths": { "type": "integer" },
+        "maxYMillionths": { "type": "integer" },
+        "maxZMillionths": { "type": "integer" }
+      }
+    },
+    "floodedCaveHook": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hookKind", "fluidBodyId", "waterSurfaceYBlocks", "regionAabb"],
+      "properties": {
+        "hookKind": { "const": "FLOODED_CAVE" },
+        "fluidBodyId": { "$ref": "#/$defs/qualified" },
+        "waterSurfaceYBlocks": { "type": "integer", "minimum": -512, "maximum": 512 },
+        "regionAabb": { "$ref": "#/$defs/aabb" }
+      }
+    },
+    "reachSample": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "reachId", "ordinal", "fromNodeId", "toNodeId",
+        "bedYMillionths", "centerXMillionths", "centerZMillionths"
+      ],
+      "properties": {
+        "reachId": { "$ref": "#/$defs/qualified" },
+        "ordinal": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "fromNodeId": { "$ref": "#/$defs/qualified" },
+        "toNodeId": { "$ref": "#/$defs/qualified" },
+        "bedYMillionths": { "type": "integer" },
+        "centerXMillionths": { "type": "integer" },
+        "centerZMillionths": { "type": "integer" }
+      }
+    },
+    "orderedVolumeOp": {
+      "type": "object", "additionalProperties": false,
+      "required": ["opId", "ordinal", "operationKind", "primitiveId", "fluidBodyId"],
+      "properties": {
+        "opId": { "$ref": "#/$defs/qualified" },
+        "ordinal": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "operationKind": { "enum": ["CARVE_SOLID", "ADD_FLUID"] },
+        "primitiveId": { "$ref": "#/$defs/qualified" },
+        "fluidBodyId": {
+          "type": "string",
+          "anyOf": [{ "const": "" }, { "$ref": "#/$defs/qualified" }]
+        }
+      }
+    },
+    "sdfBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceArtifactChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "underground-river-sdf-binding-v1" }
+      }
+    },
+    "csgBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceArtifactChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "underground-river-csg-binding-v1" }
+      }
+    }
+  }
+}

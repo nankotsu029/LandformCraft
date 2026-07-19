@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/lava-tube-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-07 lava-tube foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-07 lava-tube foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "volcanicConeFeatureId", "coneGeometryChecksum", "coneRelationId",
+    "provenanceFeatureId", "provenanceKind", "provenanceGeometryChecksum", "provenanceRelationId",
+    "centerline", "selectedTubeRadiusBlocks", "selectedRoofClearanceBlocks", "selectedSupportRadiusBlocks",
+    "entranceNodeId", "materialProfileId", "aabb", "orderedCarveOps",
+    "sdfPlanBinding", "csgPlanBinding",
+    "tubeMaskFieldId", "roofClearanceFieldId", "supportFieldId", "ownershipFieldId",
+    "continuityFieldId", "materialHandoffFieldId",
+    "supportRadiusXZ", "estimatedWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "volcanicConeFeatureId": { "$ref": "#/$defs/slug" },
+    "coneGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "coneRelationId": { "$ref": "#/$defs/slug" },
+    "provenanceFeatureId": { "$ref": "#/$defs/slug" },
+    "provenanceKind": { "enum": ["CALDERA", "LAVA_FLOW"] },
+    "provenanceGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "provenanceRelationId": { "$ref": "#/$defs/slug" },
+    "centerline": {
+      "type": "array", "minItems": 2, "maxItems": 32,
+      "items": { "$ref": "#/$defs/tubeSample" }
+    },
+    "selectedTubeRadiusBlocks": { "type": "integer", "minimum": 2, "maximum": 8 },
+    "selectedRoofClearanceBlocks": { "type": "integer", "minimum": 2, "maximum": 16 },
+    "selectedSupportRadiusBlocks": { "type": "integer", "minimum": 2, "maximum": 16 },
+    "entranceNodeId": { "$ref": "#/$defs/qualified" },
+    "materialProfileId": { "const": "volcanic-basalt-tube-profile" },
+    "aabb": { "$ref": "#/$defs/aabb" },
+    "orderedCarveOps": {
+      "type": "array", "minItems": 1, "maxItems": 4,
+      "items": { "$ref": "#/$defs/orderedCarveOp" }
+    },
+    "sdfPlanBinding": { "$ref": "#/$defs/sdfBinding" },
+    "csgPlanBinding": { "$ref": "#/$defs/csgBinding" },
+    "tubeMaskFieldId": { "const": "foundation.lava-tube.tube-mask" },
+    "roofClearanceFieldId": { "const": "foundation.lava-tube.roof-clearance" },
+    "supportFieldId": { "const": "foundation.lava-tube.support" },
+    "ownershipFieldId": { "const": "foundation.lava-tube.ownership" },
+    "continuityFieldId": { "const": "foundation.lava-tube.continuity" },
+    "materialHandoffFieldId": { "const": "foundation.lava-tube.material-handoff" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 2, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "tubeSample": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ordinal", "xMillionths", "yMillionths", "zMillionths", "radiusMillionths"],
+      "properties": {
+        "ordinal": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "xMillionths": { "type": "integer" },
+        "yMillionths": { "type": "integer" },
+        "zMillionths": { "type": "integer" },
+        "radiusMillionths": { "type": "integer", "minimum": 2000000, "maximum": 8000000 }
+      }
+    },
+    "aabb": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": { "type": "integer" },
+        "minYMillionths": { "type": "integer" },
+        "minZMillionths": { "type": "integer" },
+        "maxXMillionths": { "type": "integer" },
+        "maxYMillionths": { "type": "integer" },
+        "maxZMillionths": { "type": "integer" }
+      }
+    },
+    "orderedCarveOp": {
+      "type": "object", "additionalProperties": false,
+      "required": ["opId", "ordinal", "operationKind", "primitiveId"],
+      "properties": {
+        "opId": { "$ref": "#/$defs/qualified" },
+        "ordinal": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "operationKind": { "const": "CARVE_SOLID" },
+        "primitiveId": { "$ref": "#/$defs/qualified" }
+      }
+    },
+    "sdfBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceArtifactChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "lava-tube-sdf-binding-v1" }
+      }
+    },
+    "csgBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceArtifactChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "lava-tube-csg-binding-v1" }
+      }
+    }
+  }
+}

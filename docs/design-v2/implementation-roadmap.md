@@ -1,20 +1,33 @@
 # Implementation Roadmap v2
 
-> Status: v2の詳細設計とgate。進捗状態の正本は [docs/roadmap.md](../roadmap.md) である。V2-0／V2-1／V2-2／V2-3のPhase gateと`V2-4-01`〜`V2-4-05`が完了し、次は`V2-4-06`、V2-5〜V2-6は前提待ちである。
+> Status: v2の詳細設計とgate。V2-0〜V2-6、Track D `V2-9`、Track E `V2-10`は完了済みである（V2-6は`V2-6-19` Phase gateまで完了、`V2-6-16`／`17`無効化、[V2-6 Phase gate audit](audits/v2-6-phase-gate.md)）。Track Aの次は`V2-11-01`（Paper capability promotion）。Track B `V2-7-02`、Track C `V2-8-02`も並行可能。進捗の正本は [docs/roadmap.md](../roadmap.md) とする。
 
 ## 1. Roadmapの読み方
 
-このroadmapはV2-0〜V2-6の依存順と親Phase gateを示す。日付や完了を約束せず、各Phaseは前Phaseのgateを満たすまでsupportedとしない。実行単位は [Task Index](task-index.md)、運用規則は [Task Execution Guide](task-execution-guide.md) を正本とする。現行Beta hardeningのFAWE smoke、500×500実world計測、release checklist未完了を消さない。V2-2 gateは [監査](audits/v2-2-phase-gate.md)、V2-3 gateは [Hydrology監査](audits/v2-3-phase-gate.md) により完了した。`V2-4-01`〜`V2-4-03`のgeology／lithology／strataと、`V2-4-04`のclimate prior／final field／Hydrology handoff、`V2-4-05`のwetness／salinity／hydroperiodはAcceptanceを通過し、現在の次Taskは`V2-4-06`である。
+このroadmapはV2-0〜V2-10の依存関係と親Phase gateを示す。日付や完了を約束せず、各Phaseは前提gateを満たすまで能力をsupportedとしない。実行単位は [Task Index](task-index.md)、運用規則は [Task Execution Guide](task-execution-guide.md)、モデル割当は [Model Assignment](model-assignment.md) を正本とする。現行Beta hardeningのrelease checklist未完了を消さない。`V2-6-16`／`V2-6-17`は無効化済み。V2-2 gateは [監査](audits/v2-2-phase-gate.md)、V2-3 gateは [Hydrology監査](audits/v2-3-phase-gate.md)、V2-4 gateは [Environment監査](audits/v2-4-phase-gate.md)、V2-5 gateは [Volume監査](audits/v2-5-phase-gate.md) により完了した。地形拡張の事実調査は [Gap監査](../audits/terrain-feature-gap-audit-2026-07-18.md) を参照する。
 
 ```text
+Track A（コア地形）:
 V2-0 Compatibility spine
   → V2-1 Constraint maps / compiled fields
   → V2-2 Coastal 2.5D vertical slice
   → V2-3 Hydrology / regional landforms
   → V2-4 Geology / climate / ecology
   → V2-5 Sparse local volume
-  → V2-6 Release 2 placement / hardening / catalog expansion
+  → V2-6 Release 2 placement / hardening / capability catalog
+  → V2-9 Terrain foundation expansion
+  → V2-10 Deferred terrain families
+
+Track B（画像忠実性、前提はV2-1のみ）:
+V2-7 Image fidelity: 抽出core → secure envelope → draft artifact/preview
+  → 明示昇格 → height/zone抽出 → 多入力競合解決 / Phase gate
+
+Track C（スケール、Task単位で前提宣言）:
+V2-8 Scale-up: scale契約 → 寸法policy統一 → LARGE予算 → coarse計画/hydrology
+  → streaming/resume/部分再生成 → preview pyramid → export分割 → LARGE gate
 ```
+
+Track間は依存を明示したTaskだけが待ち、それ以外は並行実行できる。同一ファイルの同時編集は禁止し、共有領域（`format.v2.release`等）を変更するTaskは直列にする。
 
 ## 2. 共通Definition of Done
 
@@ -109,7 +122,13 @@ security／corruption testはmalformed PNG、format／sample mismatch、unknown 
 | V2-3 | 15 | Hydrology IR/solve→river/lake/canyon/waterfall/delta/tidal/fjord/mountain/volcano→reconcile→diagnostic/capability | `V2-3-15` |
 | V2-4 | 15 | geology→lithology/strata→climate/water/snow→material/palette→mangrove/coral/ecology→diagnostic/capability | `V2-4-15` |
 | V2-5 | 18 | SDF→CSG→AABB/cache/query→volume feature単位→post-environment→diagnostic/export/capability | `V2-5-18` |
-| V2-6 | 19 | placement contract→envelope/reservation/snapshot/containment→apply/verify/rollback/Undo/Recovery→hardening→smoke/measurement/catalog | `V2-6-19` |
+| V2-6 | 21 | placement contract→envelope/reservation/snapshot/containment→apply/verify/rollback/Undo/Recovery→hardening→strict source/lifecycle→smoke/catalog→RC audit | `V2-6-19` |
+| V2-7 | 7 | 抽出core→secure envelope→draft/preview→明示昇格→height/zone抽出→競合解決/gate | `V2-7-07` |
+| V2-8 | 8 | scale契約→寸法policy統一→LARGE予算→coarse計画→streaming/resume→preview pyramid→export分割→gate | `V2-8-08` |
+| V2-9 | 14 | foundation contract→surface/coast/island/marine→surface-volume→macro/river graph→gate | `V2-9-14` |
+| V2-10 | 11 | glacial→karst→advanced marine/river contract→dry land/volume/island→SPRING/OXBOW slices→gate | `V2-10-09` |
+
+V2-7の設計正本は [image-constraint-maps.md](image-constraint-maps.md) と [ADR 0017](../adr/0017-deterministic-image-mask-extraction.md)、V2-8の設計正本は [scale-and-streaming.md](scale-and-streaming.md) と [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md) である。
 
 ## 6. V2-2: Coastal 2.5D vertical slice
 
@@ -121,29 +140,41 @@ Phase gateはAzure Coast統合fixtureでbeach width、harbor depth/opening、cap
 
 `V2-3-01`〜`V2-3-15`は完了した。Hydrology IR／fixed priorとglobal basin/routing solverに加え、RIVER／MEANDERING_RIVER、独立LAKE、CANYON＋shared river skeleton、WATERFALL 2.5D lip／base／plunge、DELTA distributary DAG／fan／sandbar／shallow sea、TIDAL_CHANNEL_NETWORK bidirectional marine graph、FJORD glacial U／sidewall／marine outlet、ALPINE／GLACIAL mountain ridge skeleton、VOLCANIC_ARCHIPELAGO island／caldera／radial skeleton、固定3 passのbounded reconciliation、独立validator／preview、Release 2 `hydrology-plan`（`surface-2_5d`依存）を持つ。統合監査により、offlineでfull completionしたriver／lake／canyon／delta／tidal／fjordと`hydrology-plan`を`SUPPORTED`とした。
 
-Phase gateはsource-mouth reachability、bed monotonicity、confluence flow、lake spill、delta branch、fjord marine/U profile、waterfall graph、graph/field budget、tile/thread/candidate決定性、`hydrology-plan` strict capabilityを統合した`V2-3-15`が閉じた。waterfall volume、mountain environment、volcanic materialを要するkindは`EXPERIMENTAL`のままである。V2-4 priorへの切替はgenerator/capability version変更として扱う。
+Phase gateはsource-mouth reachability、bed monotonicity、confluence flow、lake spill、delta branch、fjord marine/U profile、waterfall graph、graph/field budget、tile/thread/candidate決定性、`hydrology-plan` strict capabilityを統合した`V2-3-15`が閉じた。その時点でdeferしたmountain environmentとvolcanic materialはV2-4 gateで、waterfall volumeはV2-5 gateで完成した。V2-4 priorへの切替はgenerator/capability version変更として扱う。
 
 ## 8. V2-4: Geology, climate, ecology, semantic material
 
-`V2-4-01`から`V2-4-15`までを順に実行する。`V2-4-01`〜`V2-4-03`はtyped geology plan、fixed lithology catalog、ordered strata profile／derived scalarを、`V2-4-04`はcoarse climate prior、final temperature／moisture、Hydrology runoff-prior version transitionを、`V2-4-05`はregional wetness／salinity／hydroperiodを`EXPERIMENTAL`で完了した。`V2-4-06`以降でsnow、semantic material、Minecraft palette、mangrove shaping、coral bathymetry、ecology、volcanic/canyon materialを分離する。
+`V2-4-01`から`V2-4-15`までを完了した。`V2-4-01`〜`V2-4-03`はtyped geology plan、fixed lithology catalog、ordered strata profile／derived scalarを、`V2-4-04`はcoarse climate prior、final temperature／moisture、Hydrology runoff-prior version transitionを、`V2-4-05`はregional wetness／salinity／hydroperiodを、`V2-4-06`はsnow potential／cover fieldを、`V2-4-07`はgeology／strata／water-condition／snowを閉じたcatalogとfixed-order ruleで結合するMinecraft非依存のsemantic material profileを、`V2-4-08`はsemantic class→Minecraft 1.21.11 block stateの閉じたpalette adapter（ADR 0018）を、`V2-4-09`は`MANGROVE_WETLAND` regional shapingとStage 6 `MANGROVE_TIDAL_LINK`を、`V2-4-10`は`CORAL_REEF` regional bathymetryとStage 6 `REEF_LAGOON_PASS`を、`V2-4-11`はsparse ecology placement（habitat／assemblage／density-spacing）を、`V2-4-12`はvolcanic／canyon feature material overlayを、`V2-4-13`は独立environment validator／10-layer diagnostic previewを、`V2-4-14`はRelease 2 `environment-fields` capabilityを実装した。`V2-4-15`は5 scenario、決定性／resource／cancel、tampering、v1／Release 1／V2-2／V2-3回帰を統合監査し、対象featureと`environment-fields`をoffline `SUPPORTED`へ昇格した。
 
-`MANGROVE_WETLAND`と`CORAL_REEF`のregional shapingはStage 5、固定回数reconciliationはStage 6、environment/ecology/materialはStage 8/10の責務を保つ。Phase gateはsnow/mangrove/coral/volcanic/canyon metric、palette read-back、descriptor/memory budget、`environment-fields` strict capabilityを統合した`V2-4-15`だけが閉じる。
+`MANGROVE_WETLAND`と`CORAL_REEF`のregional shapingはStage 5、固定回数reconciliationはStage 6、environment/ecology/materialはStage 8/10の責務を保つ。Phase gateはsnow/mangrove/coral/volcanic/canyon metric、palette read-back、descriptor/memory budget、`environment-fields` strict capabilityを統合した`V2-4-15`が閉じた。V2-5はSDF／CSG／AABB index／tile cache／TerrainQuery volume／局所volume feature／waterfall volume／post-volume local environment／volume validators／5-layer preview／offline 3D read-back／`sparse-volume` capabilityまで完了し、`V2-5-18`でPhase gateを閉じた。
 
 ## 9. V2-5: Sparse local volumetric terrain
 
-`V2-5-01`から`V2-5-18`までを順に実行する。SDF、ordered CSG、AABB index、3D tile cache、TerrainQuery volume対応を別Taskで固定してから、cave、lush cave、underground lake、sea cave、overhang、natural arch、sky island、waterfall volumeを1 featureずつ追加する。
+`V2-5-01`から`V2-5-18`まで完了した。SDF、ordered CSG、AABB index、3D tile cache、TerrainQuery volume対応を別Taskで固定してから、cave、lush cave、underground lake、sea cave、overhang、natural arch、sky island、waterfall volumeを追加した。
 
-Phase gateはconnectivity、roof/support/clearance、fluid continuity、post-volume environment、3D whole/tile/XYZ seam、dense allocation禁止、general VarInt/palette、offline read-back、`sparse-volume` strict capabilityを統合した`V2-5-18`だけが閉じる。Paper applyはこのgate完了後まで開始しない。
+Phase gateはconnectivity、roof/support/clearance、fluid continuity、post-volume environment、3D whole/tile/XYZ seam、dense allocation禁止、general VarInt/palette、offline read-back、`sparse-volume` strict capabilityを統合した`V2-5-18`だけが閉じる。`V2-5-18`は2026-07-18に完了し、volume infrastructure・7 volume feature・waterfall volume・local environment・validator/preview・offline export・`sparse-volume`と、deferredだった`WATERFALL` kind／moduleをoffline `SUPPORTED`へ昇格した（[Volume監査](audits/v2-5-phase-gate.md)）。VOLUME_GUIDE intent kindはdiagnostic-onlyのままである。Paper applyはこのgate完了後のV2-6で開始する。
 
 ## 10. V2-6: Placement, hardening, and supported catalog
 
-`V2-6-01`から`V2-6-19`までを順に実行する。placement contract、effect envelope、region/disk reservation、snapshot-all、fluid/gravity containment、apply orchestration、settle/full verify、rollback、Undo、Recoveryはそれぞれ別Taskである。Provider/manual/image統合、Release hardening、operations、WorldEdit/FAWE smoke、500/1000実world計測、catalog、RC auditも分離する。
+`V2-6-01`は完了した。Release 2 placement plan／journal契約（ADR 0020）をv1 journalと分離して固定し、target／capability／tile order／envelope参照／reservation-confirmation binding／operation IDとformat 2 journal statesをchecksum-boundなimmutable契約にした。`V2-6-02`はmutation／effect envelope（ADR 0021）を追加し、per-tile mutation AABBとphysics-policy based union effect envelope、overflow-safe bounds、disk／volume admission、plan bindingを固定した。`V2-6-03`はregion／disk reservationとactor-bound one-time confirmation（ADR 0022）を、`V2-6-04`はsnapshot-all（world gateway read契約、canonical envelope順のsnapshot file／sealed index、staging→strict read-back→atomic publish、`SNAPSHOT_COMPLETE`＝apply-ready、失敗時canonical partialなし）を、`V2-6-05`はfluid／gravity／neighbor containment preflight（ADR 0023、閉じたphysics catalog、`CONTAINED` evidenceのみseal）を固定した。`V2-6-06`はfeature-neutral canonical streamのbounded apply transaction（ADR 0024）、strict prerequisite chain、明示solid→air carve→fluid／overlay順、Paper scheduler／WorldEdit close receipt、late completion reconciliation、atomic `APPLYING`／canonical tile prefix checkpointを実装した。
+
+`V2-6-08`から`V2-6-19`までは完了した。rollback、Undo、Recoveryはそれぞれ別Taskで実装済みである。`V2-6-11`〜`V2-6-15`は完了（WE／FAWE smoke evidenceあり）、`V2-6-19`はRC auditとしてV2-6 Phase gateを閉じた。次のTrack A Taskは`V2-11-01`（capability promotion）。
 
 WorldEdit/FAWE smokeと実world計測は指定環境がなければ`BLOCKED_EXTERNAL`であり、mockやoffline testで完了扱いにしない。500角／1000角は各計測Taskが成功した寸法だけをsupported catalogへ載せる。Phase gateは全必須Task、v1回帰、security/performance evidence、supported catalogを監査する`V2-6-19`だけが閉じる。Beta hardeningの未完項目は別trackとして残す。
 
 ### V2-3〜V2-5 capability共通gate
 
 `hydrology-plan`、`environment-fields`、`sparse-volume` はそれぞれ専用Taskでのみ有効化する。直前PhaseのRelease 2を引き続きstrict verifyし、capability artifactの欠損／追加／version改ざん、未知capabilityをdirectory/ZIP双方で拒否する。予約名だけをmanifestへ出さない。
+
+## 10a. V2-9: Terrain foundation expansion
+
+V2-9は`V2-6-01`／`V2-6-02`のplacement契約と`V2-8-01`の`ScaleProfileV2`／admissionを先頭contractの前提とし、`V2-6-19` Phase gateと`V2-8-02`寸法統一の完了は待たない。`PLAIN`／`HILL_RANGE`、`MOUNTAIN_RANGE`／`VALLEY`、一般`RIVER`、`FLOODPLAIN`／`MARSH`、`ROCKY_COAST`／`SEA_CLIFF`、island/cone、ocean basin/shelf/slope/submarine canyon、`CAVE_ENTRANCE`／`UNDERGROUND_RIVER`、macro land-water topology、river graph roleを共通contractとvertical sliceへ分割する。
+
+各sliceはoffline compile/generate/validation/preview/exportを閉じるが、PaperはV2-6のcanonical surface/solid/air/fluid streamを利用しFeature別adapterを作らない。`LAGOON`／`REEF_PASS`／caldera／lava flowのchild限定状態、volume plan-levelとpublic Intentの差を能力別catalogで維持する。Phase gateは`V2-9-14`だけが閉じる。
+
+## 10b. V2-10: Deferred terrain families
+
+V2-10はV2-9 gate後に、glacial ice/deposition、karst drainage graph、additional marine、advanced river/lake、escarpment/dry land、lava tube、advanced island/reefを段階化する。profile、component、presetをFeatureKindへ昇格させず、独立ownershipとvalidatorを証明できるvertical sliceだけを実装対象にする。Phase gateは`V2-10-09`だけが閉じる（deps: 01〜08＋10＋11）。`V2-10-01`〜`V2-10-04`でglacial／karst／additional-marineのEXPERIMENTAL slicesを閉じ、`V2-10-05`でadvanced river／lakeのcontract分割をfreezeし（first slices `SPRING`→`V2-10-10`、`OXBOW_LAKE`→`V2-10-11`、他5種deferred）、`V2-10-06`で`ESCARPMENT`／`PLATEAU` sliceとdry-land modifier contractを閉じ、`V2-10-07`で`LAVA_TUBE` swept-tunnel sliceを閉じ、`V2-10-08`で`BARRIER_ISLAND`／`ATOLL` COMPOSITE_PRESETとadvanced island/reef catalog contractを閉じ、`V2-10-10`でsurface `SPRING` graph-node sliceを閉じ、`V2-10-11`で`OXBOW_LAKE` reach-cutoff basin sliceを閉じ、Task数を11へ拡張した。`V2-10-09`のPhase gate（`DeferredTerrainPhaseGateV2Test`＋full suite、[V2-10 Phase gate audit](audits/v2-10-phase-gate.md)）で全11 Taskを完了し、completed sliceのoffline plan-level generate／validationを`SUPPORTED`（previewはpreview index証拠のあるsliceのみ`SUPPORTED`、`MORAINE_FIELD`／`OUTWASH_PLAIN`は`EXPERIMENTAL`のまま）、intent／standalone／exportを`PARTIAL`、Paper以降を`UNSUPPORTED`とした。preset／profile／graph role／deferred候補は昇格していない。
 
 ## 11. Scenario coverage matrix
 
@@ -230,4 +261,4 @@ TerrainIntentV2の最小record/Schema
 + v1 checksum不変test
 ```
 
-V2-0ではAzure Coastの5 featureをmodule／field diagnosticまでcompileし、残り10 scenarioもfallbackせずround-tripする。v1出力はquery adapterを含むgolden testで固定した。V2-1ではprecision mapをAI referenceから分離し、numeric decodeからfield sidecar、constraint reconciliation、diagnostic previewまでを縦に完成した。`V2-2-01`〜`V2-2-12`でcoastal foundationからoffline Release／Phase gateまでを完了した。`V2-3-01`〜`V2-3-14`でstrict Hydrology graph IR、global routing、regional feature skeleton、固定3 pass reconciliation、独立validator／preview、Release 2 `hydrology-plan`を追加した。`V2-3-15`で9 scenario、決定性／resource／cancel、tampering、v1／V2-2回帰を統合監査し、完成featureとcapabilityをofflineで`SUPPORTED`とした。`V2-4-01`でtyped geology field core、`V2-4-02`でversion/checksum固定lithology catalog、`V2-4-03`でstrata／derived scalar、`V2-4-04`でcoarse climate prior／final field／Hydrology runoff-prior handoffを追加したが、V2-4 Phase gateは未完了である。次は`V2-4-05`である。
+V2-0ではAzure Coastの5 featureをmodule／field diagnosticまでcompileし、残り10 scenarioもfallbackせずround-tripする。v1出力はquery adapterを含むgolden testで固定した。V2-1ではprecision mapをAI referenceから分離し、numeric decodeからfield sidecar、constraint reconciliation、diagnostic previewまでを縦に完成した。`V2-2-01`〜`V2-5-18`で各offline Phase gateを閉じた。`V2-6-01`〜`V2-6-13`でplacement safety、rollback／Undo／Recovery、provider path、cross-capability hardening、運用metricsを固定した。Track Aの次は`BLOCKED_EXTERNAL`の`V2-6-14`である。V2-9／V2-10は各Phase gateまで完了した（[V2-9 audit](audits/v2-9-phase-gate.md)、[V2-10 audit](audits/v2-10-phase-gate.md)）。

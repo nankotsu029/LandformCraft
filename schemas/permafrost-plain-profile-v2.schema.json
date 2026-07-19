@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/permafrost-plain-profile-v2.schema.json",
+  "title": "LandformCraft V2-10-02 permafrost plain environment profile",
+  "description": "Strict, version-frozen v2 contract for the V2-10-02 permafrost plain environment profile. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "profileId", "contractVersion", "plainFeatureId", "plainPlanChecksum",
+    "climatePreset", "climateBindingChecksum", "activeLayerDepthBlocks", "iceContent01Millionths",
+    "supportRadiusXZ", "estimatedWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "profileId": { "$ref": "#/$defs/slug" },
+    "contractVersion": { "const": "permafrost-plain-profile-contract-v1" },
+    "plainFeatureId": { "$ref": "#/$defs/slug" },
+    "plainPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "climatePreset": { "enum": ["COLD_ALPINE", "COLD_MARITIME", "COOL_HIGH_ALTITUDE"] },
+    "climateBindingChecksum": { "$ref": "#/$defs/checksum" },
+    "activeLayerDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "iceContent01Millionths": { "type": "integer", "minimum": 100000, "maximum": 900000 },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

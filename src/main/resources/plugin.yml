@@ -42,6 +42,12 @@ permissions:
       landformcraft.undo.plan: true
       landformcraft.undo.execute: true
       landformcraft.recovery: true
+      landformcraft.r2.plan: true
+      landformcraft.r2.confirm: true
+      landformcraft.r2.execute: true
+      landformcraft.r2.status: true
+      landformcraft.r2.undo: true
+      landformcraft.r2.recovery: true
       landformcraft.asset.read: true
       landformcraft.asset.manage: true
       landformcraft.cleanup: true
@@ -116,6 +122,24 @@ permissions:
     default: op
   landformcraft.recovery:
     description: Diagnoses and explicitly resolves RECOVERY_REQUIRED placements.
+    default: op
+  landformcraft.r2.plan:
+    description: Strictly verifies and plans an explicit Release 2 placement.
+    default: op
+  landformcraft.r2.confirm:
+    description: Consumes a bound Release 2 confirmation and snapshots all effect envelopes.
+    default: op
+  landformcraft.r2.execute:
+    description: Applies, settles, fully verifies, and rolls back a confirmed Release 2 placement.
+    default: op
+  landformcraft.r2.status:
+    description: Reads strict Release 2 placement journal status.
+    default: op
+  landformcraft.r2.undo:
+    description: Prepares or executes operation-bound Release 2 Undo.
+    default: op
+  landformcraft.r2.recovery:
+    description: Diagnoses and explicitly resolves ambiguous Release 2 placement state.
     default: op
   landformcraft.asset.read:
     description: Validates and reads restricted custom assets.

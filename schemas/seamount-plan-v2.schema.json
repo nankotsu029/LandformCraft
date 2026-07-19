@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/seamount-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-04 seamount foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-04 seamount foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "basinFeatureId", "basinGeometryChecksum", "basinRelationId",
+    "centerXMillionths", "centerZMillionths",
+    "selectedBaseRadiusBlocks", "selectedReliefBlocks", "selectedSummitDepthBlocksBelowSea",
+    "width", "length", "minY", "maxY", "waterLevel",
+    "reliefFieldId", "ownershipFieldId", "slopeFieldId", "fluidColumnHintFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "basinFeatureId": { "$ref": "#/$defs/slug" },
+    "basinGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "basinRelationId": { "$ref": "#/$defs/slug" },
+    "centerXMillionths": { "type": "integer", "minimum": 0 },
+    "centerZMillionths": { "type": "integer", "minimum": 0 },
+    "selectedBaseRadiusBlocks": { "type": "integer", "minimum": 4, "maximum": 64 },
+    "selectedReliefBlocks": { "type": "integer", "minimum": 4, "maximum": 64 },
+    "selectedSummitDepthBlocksBelowSea": { "type": "integer", "minimum": 8, "maximum": 240 },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "reliefFieldId": { "const": "foundation.seamount.relief" },
+    "ownershipFieldId": { "const": "foundation.seamount.ownership" },
+    "slopeFieldId": { "const": "foundation.seamount.slope" },
+    "fluidColumnHintFieldId": { "const": "foundation.seamount.fluid-column-hint" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

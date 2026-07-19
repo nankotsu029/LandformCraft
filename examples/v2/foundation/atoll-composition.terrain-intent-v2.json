@@ -1,0 +1,20 @@
+{
+  "intentVersion": 2,
+  "intentId": "atoll-composition-v2",
+  "theme": "V2-10-08 ATOLL COMPOSITE_PRESET (CORAL_REEF + LAGOON + REEF_PASS)",
+  "coordinateSystem": { "horizontal": "NORMALIZED_XZ", "origin": "NORTH_WEST", "xAxis": "EAST", "zAxis": "SOUTH", "vertical": "BLOCK_Y_OR_SURFACE_OFFSET" },
+  "features": [
+    { "id": "atoll-reef", "kind": "CORAL_REEF", "geometry": { "type": "POLYGON", "rings": [[[0.12, 0.18], [0.82, 0.1], [0.94, 0.78], [0.24, 0.92], [0.12, 0.18]], [[0.3, 0.34], [0.7, 0.26], [0.76, 0.66], [0.38, 0.72], [0.3, 0.34]]] }, "parameters": { "reefCrestDepthBlocks": { "min": 1, "max": 4 }, "reefWidthBlocks": { "min": 18, "max": 46 }, "outerSlopeDegrees": { "min": 18, "max": 42 } }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "atoll-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "atoll-lagoon", "kind": "LAGOON", "geometry": { "type": "POLYGON", "rings": [[[0.3, 0.34], [0.7, 0.26], [0.76, 0.66], [0.38, 0.72], [0.3, 0.34]]] }, "parameters": { "depthBlocks": { "min": 5, "max": 14 } }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "atoll-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } },
+    { "id": "atoll-pass", "kind": "REEF_PASS", "geometry": { "type": "SPLINE", "points": [[0.72, 0.115], [0.7, 0.19], [0.67, 0.27]], "interpolation": "POLYLINE" }, "parameters": { "widthBlocks": { "min": 10, "max": 14 }, "waterDepthBlocks": { "min": 4, "max": 7 } }, "priority": 0, "provenance": { "source": "MANUAL", "sourceId": "atoll-fixture", "confidence": 1, "confirmationState": "CONFIRMED" } }
+  ],
+  "relations": [
+    { "id": "atoll-lagoon-enclosed", "kind": "ENCLOSED_BY", "from": "feature:atoll-lagoon", "to": "feature:atoll-reef", "strength": "HARD" },
+    { "id": "atoll-pass-cuts-reef", "kind": "CARVES_THROUGH", "from": "feature:atoll-pass", "to": "feature:atoll-reef", "strength": "HARD" },
+    { "id": "atoll-pass-connects-lagoon", "kind": "CONNECTS_TO", "from": "feature:atoll-pass", "to": "feature:atoll-lagoon", "strength": "HARD" }
+  ],
+  "constraints": [{ "id": "atoll-lagoon-pass-count", "strength": "HARD", "kind": "METRIC_RANGE", "subject": "feature:atoll-lagoon", "metric": "NAVIGABLE_MARINE_PASS_COUNT", "range": { "min": 1, "max": 2 }, "tolerance": 0 }],
+  "environment": { "geologyPreset": "CARBONATE_REEF_PLATFORM", "climatePreset": "WARM_TROPICAL_MARITIME", "ecologyPreset": "SHALLOW_CORAL_REEF" },
+  "mapReferences": [], "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "atoll-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

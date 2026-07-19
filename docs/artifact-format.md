@@ -65,6 +65,20 @@ semantic checksumはtile boundsをversion headerへbindingし、global座標をX
 
 paletteは1..16384、VarInt IDは0..16383、水平tileは各辺256以下、vertical spanは512以下、encoded Dataは40 MiB以下、圧縮artifactは64 MiB以下、palette retained estimateは16 MiB以下である。unknown／非canonical block state、future tuple、非zero offset、truncated VarInt、block count／dimension／checksum不一致、block entity／entity／biome、decode／path／cancel違反をstagingで拒否する。strict bounded read-backとWorldEdit 7.3.19 offline read-backが同じsemantic checksumを返したことをAcceptance testで固定している。`V2-2-11`ではこのstandalone tileを`surface-2_5d` Release 2 indexへ、metadataと対応Sponge v3 fileの組として収容した。
 
+### V2-5-16 volume 3D offline read-back
+
+`V2-5-16`はこのoffline tile pathをvolume合成へ拡張する。writer／inspector／WorldEdit reader（`OfflineTileSchematicWriterV2`／`SpongeV3TileInspectorV2`／`WorldEditOfflineTileReaderV2`）はversion header以来`minY..maxY`全域をX fastest／Z／Yで走査する汎用3D exporterであり、意味・format・checksum・budgetを変更しない。新規は`format.v2.tile.VolumeTileBlockResolverV2`のみで、`terrain-query-volume-v1` kernelのvolume合成`TerrainQuery`（V2-5-05）をcanonical block stateへ橋渡しする。air cavity→`minecraft:air`、fluid(WATER)→`minecraft:water`、independent solid→semantic material（`EnvironmentBlockStateCatalogV2` allowlist経由）で、NONE material solidと非water fluidを拒否し、v1 adapterと分離する。
+
+cave（carve→air）、floating solid（sky island／overhang topology）、fluid pool、air を含むvolume tileがexport→strict inspector read-back→WorldEdit 7.3.19 read-backでresolver semantic checksumと全XYZ一致すること、whole／tile分割・thread／order・locale／timezone不変、palette 127/128 VarInt境界を跨ぐ3D read-back、truncated／corrupt byte／checksum改変拒否を`OfflineVolumeTileReadBackV2Test`／`WorldEditOfflineVolumeTileReaderV2Test`で固定した。exampleは`examples/v2/volume/offline-volume-tile-artifact-v2.json`である。出力Sponge v3は一般仕様features（Version 3、DataVersion 4671、Offset `[0,0,0]`、general VarInt palette、proprietary tag無し）だけを使うためoffline FAWE readerでも同じfileが読める。running-server FAWE smokeはV2-6の実機Taskとして分離し、ここでは有効化しない。Paper applyと`sparse-volume` Release capability（`V2-5-17`）は対象外である。
+
+V2-6-20の`VerifiedReleaseCanonicalBlockSourceV2`は既存Release format 2とSponge v3を変更せず、`ReleaseCoreVerifierV2.openVerified`のcloseable view上でplacement用final streamを再構築する。surface／hydrology／environment prefixは`tiles/`、`sparse-volume` prefixは`volume/tiles/`のvolume-composed tileを正本とし、cursorごとにbyte length／artifact checksum／metadata semantic checksumを再検査して1 tileだけをbounded decodeする。ZIP stagingはsource closeで削除し、directory rootは削除しない。新artifact type／Schema／example formatは追加しない。
+
+## V2-4-08 Minecraft palette plan
+
+`V2-4-08`のMinecraft paletteはRelease containerではなく、`minecraft-palette-plan-v2.schema.json`に従うstandalone planである。`MinecraftPalettePlanV2`はsealed `MaterialProfilePlanV2` checksumへbindingし、Minecraft `1.21.11`／DataVersion `4671`／`minecraft-palette-resolver-v1`と、6 semantic class × SURFACE／CEILING／FLOORの閉じた18 mappingを持つ。exampleは`examples/v2/minecraft/minecraft-palette-plan-v2.json`である。
+
+`format.v2.minecraft.MinecraftPaletteResolverV2`はcompact codeをcanonical block-state文字列へ解決し、fallbackしない。offline writer／inspectorの共有allowlistは`EnvironmentBlockStateCatalogV2`（coastal setのstrict超集合）であり、palette ID 127／128のVarInt境界を含む。v1 `MinecraftBlockPalette`とRelease format 1は変更しない。
+
 ## V2-2-10 Release format 2 core
 
 Release format 2はv1の`ReleasePublisher`／`ReleaseVerifier`とは別の`format.v2.release` packageである。`release-manifest-v2.schema.json`に従う唯一のcore fileは`manifest.json`で、version 2／manifest version 1、release ID、`requiredCapabilities[]`、`artifacts[]`、exclude-self canonical SHA-256を持つ。manifest自身はartifact indexへ入れず、non-manifest fileはindexへ完全列挙する。
@@ -110,6 +124,36 @@ indexは512 KiB以下のnon-symbolic regular file、bundleは上記3 regular fil
 - `hydrology/previews/index.json`と固定12 PNG（`hydrology-preview-png-v1`）
 
 strict verifierはsurface payload照合後に、plan＝Blueprint内hydrology plan、routing graph／field＝plan checksumとBlueprint寸法、reconciliation＝Blueprint、validation／preview＝Blueprint寸法を検査する。`hydrology-plan`単独、unknown capability／type/version、missing／extra、graph checksum改変を拒否する。publisher／layout例は`examples/v2/release-hydrology/README.md`、Acceptanceは`ReleaseHydrologyPublisherVerifierV2Test`である。V2-3-14単体ではfeature lifecycleを変更せず、V2-3-15統合監査後にcapabilityと完成featureだけをoffline `SUPPORTED`とした。CLI／Paper applyは含まない。
+
+## V2-4-14 `environment-fields` capability
+
+`environment-fields` manifestは`requiredCapabilities[] = ["environment-fields","hydrology-plan","surface-2_5d"]`だけを許し、ADR 0013／0014のsurface／hydrology exact setに加えて次を`artifacts[]`へ個別indexする（ADR 0019）。
+
+- `environment/geology-plan.json`／`lithology-plan.json`／`strata-plan.json`／`climate-plan.json`／`water-condition-plan.json`（Blueprint内planと一致）
+- `environment/snow-plan.json`（`snow-plan-v2`、climate checksum binding）
+- `environment/material-profile-plan.json`／`minecraft-palette-plan.json`／`ecology-plan.json`／`feature-material-profile-plan.json`
+- `environment/validation.json`
+- `environment/previews/index.json`と固定10 PNG（`environment-preview-png-v1`）
+
+strict verifierはsurface→hydrology→environmentの順で照合し、palette／material／snow／ecologyのchecksum binding、validation hard-pass、preview寸法を検査する。`environment-fields`単独、unknown capability／type/version、missing／extra、palette checksum改変を拒否する。publisher／layout例は`examples/v2/release-environment/README.md`、Acceptanceは`ReleaseEnvironmentPublisherVerifierV2Test`である。`V2-4-15`統合監査を通過したためcapabilityと対象featureのoffline lifecycleは`SUPPORTED`であるが、CLI／Paper applyは含まない。
+
+## V2-5-17 `sparse-volume` capability
+
+`sparse-volume` manifestは`requiredCapabilities[] = ["environment-fields","hydrology-plan","sparse-volume","surface-2_5d"]`（natural order）だけを許し、`environment-fields` exact setに加えて次を`artifacts[]`へ個別indexする。
+
+- `volume/sdf-primitive-plan.json`（`volume-sdf-primitive-plan-v2`）
+- `volume/csg-plan.json`（`volume-csg-plan-v2`、SDF checksum binding）
+- `volume/aabb-index-plan.json`（`volume-aabb-index-plan-v2`、CSG checksum binding）
+- `volume/validation.json`（`volume-validation-artifact-v2`、`sourcePlanChecksum`＝CSG checksum、hard-pass）
+- `volume/tiles/<id>.json`／`volume/tiles/<id>.schem`（3D volume tile。`volume-offline-tile-artifact-v2`／`volume-sponge-schematic-v3`。schemaは`offline-tile-artifact-v2` / Sponge v3を共有するが、surface tile集合の`ofType`集計と混ざらない専用artifact type）
+
+strict verifierはsurface→hydrology→environment→volumeの順で照合し、CSG→SDF／AABB→CSGのplan checksum binding、validation hard-pass、volume tileのstrict Sponge v3 read-back（semantic checksum一致）と`sourceBlueprintChecksum` binding、tile ID／schematic path canonicalを検査する。`sparse-volume`が依存capabilityを欠く、unknown capability／type/version、missing／extra、plan／tile checksum改変を拒否する。既存の`surface-2_5d`／`hydrology-plan`／`environment-fields` releaseは変更なくstrict verifyできる（回帰）。publisher／layout例は`examples/v2/release-sparse-volume/README.md`、Acceptanceは`ReleaseSparseVolumePublisherVerifierV2Test`である。`sparse-volume`と対象volume featureは、V2-5親Phase統合監査（`V2-5-18`、2026-07-18完了）でoffline `SUPPORTED`へ昇格した。CLI／Paper applyは含まない。
+
+## V2-6-12 Release 2 cross-capability hardening
+
+`ReleaseCapabilityDependencyMatrixV2`（ADR 0030）が Release format 2 の valid capability prefix 正本である。許容集合は core 空集合、`surface-2_5d`、`hydrology-plan`＋`surface-2_5d`、`environment-fields`＋hydrology＋surface、`sparse-volume`＋environment の5個だけである。`ReleaseArtifactCatalogV2`と`PlacementPlanV2`は同じ matrix を参照する。`ReleaseCrossVersionReaderPolicyV2`は format 2／manifest 1 以外を forward-read しない。`ReleaseArtifactLimitsCatalogV2`が core／payload-adjacent ceiling を集約する。
+
+`ReleasePlacementEligibilityVerifierV2`は directory／ZIP の strict verify、sealed canonical checksum、valid prefix を placement 前に要求し、plan の Release binding／capability 一致を検査する。`ReleasePlacementInputContractV2`は surface／hydrology／environment／sparse-volume の共通 overlay ordinal stream を定義し、foundation／bathymetry host kind も Feature 別 placement type なしで同じ stream へ bind する契約を固定する。Acceptance は`ReleaseCrossCapabilityHardeningV2Test`／matrix／placement-input contract test。Release format 1 allowlist は共有せず緩めない。world mutation・新 artifact type・format 3 は含まない。
 
 ## 正本
 

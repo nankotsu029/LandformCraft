@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "jobId": "550e8400-e29b-41d4-a716-446655440000",
+  "requestId": "plain-hill-design-v2",
+  "pathKind": "IMPORT",
+  "providerId": "imported-json-v2",
+  "modelId": "manual-json-v2",
+  "promptVersion": "terrain-intent-v2-structured-guards",
+  "responseId": "import-0123456789abcdef01234567",
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "totalTokens": 0
+  },
+  "attempts": 1,
+  "requestChecksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "intentChecksum": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "negotiatedCapabilities": ["TERRAIN_INTENT_V2_STRUCTURED"],
+  "capabilityCatalogVersion": "provider-capability-catalog-v1",
+  "startedAt": "2026-07-19T00:00:00Z",
+  "completedAt": "2026-07-19T00:00:01Z"
+}

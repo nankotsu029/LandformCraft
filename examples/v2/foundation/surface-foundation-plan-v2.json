@@ -1,0 +1,78 @@
+{
+  "ambiguityPolicy": "REJECT",
+  "budget": {
+    "budgetVersion": "surface-foundation-budget-v1",
+    "estimatedArtifactBytes": 73728,
+    "estimatedCpuWorkUnits": 15360,
+    "estimatedRetainedBytes": 65536,
+    "globalCellCount": 3072,
+    "haloBlocks": 16,
+    "maximumCanonicalBytes": 65536,
+    "maximumFields": 5,
+    "maximumInteractions": 256,
+    "maximumOwners": 64,
+    "maximumSingleArtifactBytes": 40960,
+    "maximumWindowSize": 64,
+    "maximumWorkingBytes": 614400,
+    "supportRadiusXZ": 0
+  },
+  "canonicalChecksum": "b5cdcaad837e0b08e883180de97fcea4e16825f1708a8e23676b5a63d0d77410",
+  "fieldContractVersion": "surface-foundation-field-contract-v1",
+  "fields": [
+    {
+      "encodingVersion": "LFC_GRID_V1",
+      "fieldId": "foundation.elevation",
+      "ownerModuleId": "v2.foundation.surface",
+      "ownership": "SINGLE_OWNER",
+      "semantic": "ELEVATION",
+      "valueType": "U16"
+    },
+    {
+      "encodingVersion": "LFC_GRID_V1",
+      "fieldId": "foundation.owner-index",
+      "ownerModuleId": "v2.foundation.surface",
+      "ownership": "SINGLE_OWNER",
+      "semantic": "OWNER_INDEX",
+      "valueType": "U16"
+    },
+    {
+      "encodingVersion": "LFC_GRID_V1",
+      "fieldId": "foundation.residual",
+      "ownerModuleId": "v2.foundation.surface",
+      "ownership": "SINGLE_OWNER",
+      "semantic": "RESIDUAL",
+      "valueType": "U16"
+    },
+    {
+      "encodingVersion": "LFC_GRID_V1",
+      "fieldId": "foundation.surface-class",
+      "ownerModuleId": "v2.foundation.surface",
+      "ownership": "SINGLE_OWNER",
+      "semantic": "SURFACE_CLASS",
+      "valueType": "U16"
+    },
+    {
+      "encodingVersion": "LFC_GRID_V1",
+      "fieldId": "foundation.transition-weight",
+      "ownerModuleId": "v2.foundation.surface",
+      "ownership": "SINGLE_OWNER",
+      "semantic": "TRANSITION_WEIGHT",
+      "valueType": "U16"
+    }
+  ],
+  "haloBlocks": 16,
+  "interactions": [],
+  "length": 48,
+  "mergeOperator": "PRIORITY_BLEND",
+  "moduleId": "v2.foundation.surface",
+  "moduleVersion": "0.1.0-v2-9-01",
+  "namedSeed": 7123528748156179564,
+  "owners": [],
+  "planVersion": 1,
+  "scaleClassId": "small",
+  "seedNamespace": "terrain.v2.foundation",
+  "stageId": "compile.surface-foundation",
+  "supportRadiusXZ": 0,
+  "tileSizeBlocks": 128,
+  "width": 64
+}

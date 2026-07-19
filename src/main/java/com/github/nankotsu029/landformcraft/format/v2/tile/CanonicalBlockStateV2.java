@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /** Canonical, NBT-free block-state string boundary used by the V2 tile format. */
-final class CanonicalBlockStateV2 {
+public final class CanonicalBlockStateV2 {
     private static final Pattern IDENTIFIER = Pattern.compile("minecraft:[a-z0-9_./-]+");
     private static final Pattern PROPERTY_NAME = Pattern.compile("[a-z0-9_]+");
     private static final Pattern PROPERTY_VALUE = Pattern.compile("[a-z0-9_-]+");
@@ -14,7 +14,7 @@ final class CanonicalBlockStateV2 {
     private CanonicalBlockStateV2() {
     }
 
-    static String requireCanonical(String value) {
+    public static String requireCanonical(String value) {
         if (value == null || value.isBlank() || value.length() > 512
                 || value.indexOf('{') >= 0 || value.indexOf('}') >= 0) {
             throw new IllegalArgumentException("V2 tile block state is blank, oversized, or contains NBT");

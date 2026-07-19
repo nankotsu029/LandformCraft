@@ -2,16 +2,24 @@ package com.github.nankotsu029.landformcraft.core.v2;
 
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
+import com.github.nankotsu029.landformcraft.generator.v2.climate.ClimateFieldModulesV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalFoundationModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.environment.water.WaterConditionFieldModulesV2;
+import com.github.nankotsu029.landformcraft.generator.v2.geology.GeologyFoundationModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.HydrologyIrModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.delta.HydrologyDeltaModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.lake.HydrologyLakeModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.reconcile.HydrologyReconciliationModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.river.HydrologyRiverModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.tidal.HydrologyTidalModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.hydrology.waterfall.HydrologyWaterfallModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.canyon.LandformCanyonModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.fjord.LandformFjordModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.mangrove.LandformMangroveModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.mountain.LandformMountainModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.reef.LandformCoralReefModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.volcanic.LandformVolcanicModuleV2;
 import com.github.nankotsu029.landformcraft.model.GenerationBounds;
 import com.github.nankotsu029.landformcraft.model.v2.DiagnosticIssueV2;
 import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
@@ -43,13 +51,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DiagnosticBlueprintCompilerV2Test {
     private static final Path COASTAL = Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json");
     private static final Path DELTA = Path.of("examples/v2/diagnostic/scenarios/delta.terrain-intent-v2.json");
-    private static final Set<TerrainIntentV2.FeatureKind> SUPPORTED_HYDROLOGY_KINDS = Set.of(
+    private static final Set<TerrainIntentV2.FeatureKind> SUPPORTED_OFFLINE_KINDS = Set.of(
             TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
             TerrainIntentV2.FeatureKind.LAKE,
             TerrainIntentV2.FeatureKind.CANYON,
+            TerrainIntentV2.FeatureKind.WATERFALL,
             TerrainIntentV2.FeatureKind.DELTA,
             TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK,
-            TerrainIntentV2.FeatureKind.FJORD);
+            TerrainIntentV2.FeatureKind.FJORD,
+            TerrainIntentV2.FeatureKind.ALPINE_MOUNTAIN_RANGE,
+            TerrainIntentV2.FeatureKind.GLACIAL_MOUNTAIN_RANGE,
+            TerrainIntentV2.FeatureKind.MANGROVE_WETLAND,
+            TerrainIntentV2.FeatureKind.CORAL_REEF,
+            TerrainIntentV2.FeatureKind.VOLCANIC_ARCHIPELAGO);
     private final LandformV2DataCodec codec = new LandformV2DataCodec();
 
     @Test
@@ -105,9 +119,18 @@ class DiagnosticBlueprintCompilerV2Test {
                         CoastalTransitionModuleV2.MODULE_ID,
                         CoastalValidationPreviewModuleV2.MODULE_ID,
                         HydrologyIrModuleV2.MODULE_ID,
+                        GeologyFoundationModuleV2.MODULE_ID,
+                        ClimateFieldModulesV2.PRIOR_MODULE_ID,
+                        ClimateFieldModulesV2.FINAL_MODULE_ID,
+                        WaterConditionFieldModulesV2.MODULE_ID,
                         HydrologyRiverModuleV2.MODULE_ID,
                         HydrologyLakeModuleV2.MODULE_ID,
                         LandformCanyonModuleV2.MODULE_ID,
+                        HydrologyWaterfallModuleV2.MODULE_ID,
+                        LandformMountainModuleV2.MODULE_ID,
+                        LandformMangroveModuleV2.MODULE_ID,
+                        LandformCoralReefModuleV2.MODULE_ID,
+                        LandformVolcanicModuleV2.MODULE_ID,
                         HydrologyDeltaModuleV2.MODULE_ID,
                         HydrologyTidalModuleV2.MODULE_ID,
                         LandformFjordModuleV2.MODULE_ID,
@@ -137,7 +160,7 @@ class DiagnosticBlueprintCompilerV2Test {
     }
 
     @Test
-    void scenarioLifecycleMatchesTheCompletedV2_3Subset() throws IOException {
+    void scenarioLifecycleMatchesTheCompletedOfflineSubset() throws IOException {
         BuiltInLandformModuleCatalogV2 catalog = new BuiltInLandformModuleCatalogV2();
         List<Path> fixtures;
         try (var files = Files.list(Path.of("examples/v2/diagnostic/scenarios"))) {
@@ -151,7 +174,7 @@ class DiagnosticBlueprintCompilerV2Test {
             assertEquals(intent.features().size(), blueprint.diagnosticIssues().stream()
                     .filter(issue -> issue.ruleId().equals("v2.unsupported-capability")).count(), fixture.toString());
             for (TerrainIntentV2.Feature feature : intent.features()) {
-                ModuleDescriptorV2.LifecycleStatus expected = SUPPORTED_HYDROLOGY_KINDS.contains(feature.kind())
+                ModuleDescriptorV2.LifecycleStatus expected = SUPPORTED_OFFLINE_KINDS.contains(feature.kind())
                         ? ModuleDescriptorV2.LifecycleStatus.SUPPORTED
                         : ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL;
                 assertEquals(expected, catalog.requireFor(feature.kind()).lifecycleStatus(),
@@ -210,6 +233,8 @@ class DiagnosticBlueprintCompilerV2Test {
                 reversed(blueprint.waterfallPlans()),
                 reversed(blueprint.deltaPlans()),
                 reversed(blueprint.tidalChannelPlans()),
+                reversed(blueprint.mangroveWetlandPlans()),
+                reversed(blueprint.coralReefPlans()),
                 reversed(blueprint.fjordPlans()),
                 reversed(blueprint.mountainPlans()),
                 reversed(blueprint.volcanicPlans()),
@@ -250,6 +275,8 @@ class DiagnosticBlueprintCompilerV2Test {
                 blueprint.waterfallPlans(),
                 blueprint.deltaPlans(),
                 blueprint.tidalChannelPlans(),
+                blueprint.mangroveWetlandPlans(),
+                blueprint.coralReefPlans(),
                 blueprint.fjordPlans(),
                 blueprint.mountainPlans(),
                 blueprint.volcanicPlans(),

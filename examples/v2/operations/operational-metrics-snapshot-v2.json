@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "operational-metrics-snapshot-v1",
+  "capturedAt": "2026-07-19T00:00:00Z",
+  "samples": [
+    { "label": "GENERATION_QUEUE_DEPTH", "unit": "COUNT", "value": 0 },
+    { "label": "GENERATION_ACTIVE_TASKS", "unit": "COUNT", "value": 0 },
+    { "label": "GENERATION_QUEUE_CAPACITY", "unit": "COUNT", "value": 8 },
+    { "label": "IO_AVAILABLE_PERMITS", "unit": "COUNT", "value": 2 },
+    { "label": "IN_FLIGHT_TASKS", "unit": "COUNT", "value": 0 },
+    { "label": "DISK_USABLE_BYTES", "unit": "BYTES", "value": 1073741824 },
+    { "label": "MEMORY_HEAP_USED_BYTES", "unit": "BYTES", "value": 67108864 },
+    { "label": "MEMORY_HEAP_MAX_BYTES", "unit": "BYTES", "value": 536870912 },
+    { "label": "PLACEMENT_STAGE_PLANNED", "unit": "COUNT", "value": 1 },
+    { "label": "PLACEMENT_STAGE_APPLYING", "unit": "COUNT", "value": 0 },
+    { "label": "PLACEMENT_STAGE_SETTLING", "unit": "COUNT", "value": 0 },
+    { "label": "PLACEMENT_STAGE_VERIFYING", "unit": "COUNT", "value": 0 },
+    { "label": "PLACEMENT_STAGE_RECOVERY_REQUIRED", "unit": "COUNT", "value": 0 },
+    { "label": "PLACEMENT_STAGE_TERMINAL", "unit": "COUNT", "value": 0 },
+    { "label": "SETTLE_TICKS_OBSERVED", "unit": "TICKS", "value": 0 },
+    { "label": "VERIFY_SCANNED_BLOCKS", "unit": "COUNT", "value": 0 },
+    { "label": "RUNNING_GENERATION_JOBS", "unit": "COUNT", "value": 0 }
+  ],
+  "canonicalChecksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

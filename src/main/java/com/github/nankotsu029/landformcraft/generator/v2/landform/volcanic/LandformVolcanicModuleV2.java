@@ -6,7 +6,7 @@ import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
 import java.util.List;
 
-/** Built-in EXPERIMENTAL 2.5D volcanic archipelago skeleton module. */
+/** Built-in supported offline volcanic archipelago and V2-4 material module. */
 public final class LandformVolcanicModuleV2 {
     public static final String MODULE_ID = "v2.landform.volcanic";
     public static final String MODULE_VERSION = "0.1.0-v2-3-11";
@@ -25,7 +25,7 @@ public final class LandformVolcanicModuleV2 {
     private final ModuleDescriptorV2 descriptor = new ModuleDescriptorV2(
             MODULE_ID,
             MODULE_VERSION,
-            ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+            ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
             List.of(TerrainIntentV2.FeatureKind.VOLCANIC_ARCHIPELAGO),
             List.of(CoastalTransitionModuleV2.LAND_WATER_FIELD_ID),
             PROVIDED,

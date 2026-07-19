@@ -1,20 +1,26 @@
 # v2 Task Index
 
-> Status: V2-0／V2-1／V2-2／V2-3は完了し、各Phase gateを閉じた。`V2-4-01`〜`V2-4-05`を完了し、次の未完了Taskは`V2-4-06`である。V2-5〜V2-6は前提待ちである。この文書はTask ScopeとAcceptance gateの正本であり、進捗状態の正本は [docs/roadmap.md](../roadmap.md) である。
+> Status: V2-0〜V2-6は各Phase gateまで完了（V2-6は19/21、`V2-6-16`／`V2-6-17`は無効化済み、[V2-6 Phase gate audit](audits/v2-6-phase-gate.md)）。Track Aの次は`V2-11-04`（500×500再実測、P1。`V2-11-01`〜`V2-11-03`は2026-07-20完了）。2026-07-20の全体再監査を受け、V2-11へ`V2-11-02`〜`V2-11-06`（dimension guard、docs／Schema同期、500／1000再実測、実測寸法昇格）を、新Phase V2-12（V2正式経路化とv1完全移行、`V2-12-01`〜`V2-12-07`）を追加した。Track B（V2-7）とTrack C（V2-8）は各1 Task完了。Track D（V2-9）とTrack E（V2-10）は全Task完了。この文書はTask ScopeとAcceptance gateの正本であり、進捗状態の正本は [docs/roadmap.md](../roadmap.md)、モデル割当は [model-assignment.md](model-assignment.md) である。
 
 ## 1. 読み方
 
 各Taskは [Task Execution Guide](task-execution-guide.md) を継承し、記載されたTaskだけを1回の作業で閉じる。`主変更` は主対象であり、Acceptanceに必要なtest、Schema、example、ADR、docsの同期を禁止しない。`D/M/S` は決定性、memory、securityの追加条件である。すべてのTaskでv1 Schema、generator `3.0.0-phase6`、Release format 1、placement、Undoを凍結する。
 
-| Phase | Task数 | 最初 | 親Phaseを閉じるTask |
-|---|---:|---|---|
-| V2-2 Coastal 2.5D | 12 | `V2-2-01` | `V2-2-12` |
-| V2-3 Hydrology | 15 | `V2-3-01` | `V2-3-15` |
-| V2-4 Environment | 15 | `V2-4-01` | `V2-4-15` |
-| V2-5 Sparse volume | 18 | `V2-5-01` | `V2-5-18` |
-| V2-6 Placement | 19 | `V2-6-01` | `V2-6-19` |
+| Track | Phase | Task数 | 最初 | 親Phaseを閉じるTask |
+|---|---|---:|---|---|
+| A | V2-2 Coastal 2.5D | 12 | `V2-2-01` | `V2-2-12` |
+| A | V2-3 Hydrology | 15 | `V2-3-01` | `V2-3-15` |
+| A | V2-4 Environment | 15 | `V2-4-01` | `V2-4-15` |
+| A | V2-5 Sparse volume | 18 | `V2-5-01` | `V2-5-18` |
+| A | V2-6 Placement | 21 | `V2-6-01` | `V2-6-19` |
+| A | V2-11 Capability promotion | 6 | `V2-11-04` | — |
+| A | V2-12 V2 production path／v1 migration | 7 | `V2-12-01` | `V2-12-07` |
+| B | V2-7 Image fidelity | 7 | `V2-7-01` | `V2-7-07` |
+| C | V2-8 Scale-up | 8 | `V2-8-01` | `V2-8-08` |
+| D | V2-9 Terrain foundation | 14 | `V2-9-01` | `V2-9-14` |
+| E | V2-10 Deferred terrain families | 11 | `V2-10-01` | `V2-10-09` |
 
-合計79 Taskである。Task追加時は既存IDを振り直さず、該当Phaseへ新しい未使用IDを追加する。
+合計133 Taskである。Task追加時は既存IDを振り直さず、該当Phaseへ新しい未使用IDを追加する。Track間は依存を明示したTaskだけが待ち、それ以外は並行実行できる。ただし同一ファイルを複数エージェントが同時編集してはならず、`format.v2.release`等の共有領域を変更するTaskは直列にする。
 
 ## 2. V2-2 Coastal 2.5D vertical slice
 
@@ -366,6 +372,9 @@
 
 ### V2-4-06 Snow and snowline
 
+- **状態:** 完了。`SnowPlanV2`、`SnowFieldModulesV2`、`SnowFieldSamplerV2`、`SnowValidatorV2`を実装し、temperature/moisture/slope/exposureに基づく`SNOW_POTENTIAL`、`SNOW_COVER`の2 fieldを追加した。warm peak、steep face等でのsnow reductionとbudget検査、deterministic checksum生成をテストで確認した。Minecraft blockへの解決やice volumeは含めず、semantic fieldの段階で停止している。次は`V2-4-07`である。
+
+
 - **目的／前提:** height、temperature、moisture、slopeに基づくsnow coverを実装する。前提は`V2-4-04`とmountain skeleton。
 - **Scope／成果物:** snow potential／cover field、snowline transition、slope/wind exposure rule、alpine scenario validator hookを実装する。
 - **非Scope:** ice glacier volume、Minecraft snow block adapter、general ecology。
@@ -374,6 +383,8 @@
 - **Gate／docs／次／停止:** snowline metricがfield入力で説明可能かつdeterministicなら完了し、geology-climate／taxonomy／roadmapを更新して`V2-4-07`へ進める。Minecraft block解決が必要ならsemantic fieldで止める。
 
 ### V2-4-07 Semantic material profile
+
+- **状態:** 完了。`model.v2.material.MaterialProfilePlanV2`へ、geology／lithology／strata、water-condition wetness、snow coverをchecksumで直接結合する`GeologyBinding`／`WaterConditionBinding`／`SnowBinding`と、version固定の閉じたcatalog（`landformcraft.builtin-material-profile`、6 semantic class: `HOST_ROCK_EXPOSED`／`HOST_ROCK_WET`／`SEDIMENT_EXPOSED`／`SEDIMENT_WET`／`SNOW_COVERED_ROCK`／`SNOW_COVERED_SEDIMENT`）を実装した。3段の`ResolutionRule`（`BASE_SUBSTRATE_FROM_LITHOLOGY`→`WETNESS_OVERRIDE`→`SNOW_OVERRIDE`）はexplicitな`RuleMergeOperator`と`applicableAspects`（`SURFACE`／`CEILING`／`FLOOR`のsurface/ceiling/floor hook）を持つ固定順で、last-write-winsやarbitrary expressionを受理しない。`generator.v2.material.MaterialProfileResolverV2`は`StrataExposureResolverV2`のhost lithology／erosion responseからrock／sedimentを導出し、wetness／snow coverしきい値をinteger-onlyで適用する。`core.v2.MaterialProfilePlanCompilerV2`はcatalog／rule／kernel／budgetを組み立ててchecksumをfreezeする。wet-rock／sediment／snow profile、surface対ceiling／floorでのsnow上書き差、unknown province／semantic ID拒否、whole／tile／thread／locale／timezone不変、catalog/rule/cache budgetを`MaterialProfilePlanV2Test`／`MaterialProfileResolverV2Test`／`MaterialProfilePlanCompilerV2Test`で検証した。Minecraft palette、volcanic/canyon固有rule、volume-local materialは対象外である。次は`V2-4-08`である。
 
 - **目的／前提:** geology/environment/surface classからMinecraft非依存のmaterial profileを解決する。前提は`V2-4-03`〜`V2-4-06`。
 - **Scope／成果物:** substrate/rock/sediment/wetness/snow/cover semantic IDs、ordered resolution rules、profile checksum、surface/ceiling/floor hookを実装する。
@@ -384,6 +395,8 @@
 
 ### V2-4-08 Minecraft palette adapter
 
+- **状態:** 完了。`MinecraftPalettePlanV2`／`MinecraftPalettePlanCompilerV2`／`MinecraftPaletteResolverV2`／`EnvironmentBlockStateCatalogV2`を実装し、6 semantic class × SURFACE／CEILING／FLOORの閉じた18 mappingをMinecraft 1.21.11／DataVersion 4671／`minecraft-palette-resolver-v1`へ凍結した。material-profile checksum binding、unknown ID／future resolver／NBT拒否、palette 127／128 VarInt境界、offline Sponge write→inspect→WorldEdit 7.3.19 read-backのcanonical block checksum一致、thread／locale／timezone決定性を検証した（ADR 0018）。Paper apply、biome、v1 palette変更は含まない。次は`V2-4-09`である。
+
 - **目的／前提:** semantic materialをversion固定Minecraft 1.21.11 block stateへ隔離解決する。前提は`V2-4-07`とoffline schematic基盤。
 - **Scope／成果物:** semantic profile→palette mapping、resolver version/checksum、fallback禁止、Sponge writer/read-back連携を実装する。
 - **非Scope:** Paper apply、biome書換え、feature shaping、v1 palette変更。
@@ -392,6 +405,8 @@
 - **Gate／docs／次／停止:** offline Sponge read-backとcanonical block checksumが一致しv1 palette回帰不変なら完了し、artifact／geology-climate／roadmapを更新して`V2-4-09`へ進める。WorldEdit内部APIが必要なら停止する。
 
 ### V2-4-09 Mangrove regional shaping
+
+- **状態:** 完了。`MangroveWetlandPlanV2`／`MangrovePlanCompilerV2`／`MangroveGeneratorV2`／`LandformMangroveModuleV2`（`EXPERIMENTAL`）を実装し、wetland polygon、microRelief／waterloggedShare parameters、tidal channel open-water protection、`SEDIMENT_WET` substrate marker、5 descriptor field、Diagnostic Blueprint配線を追加した。Stage 6へ`MANGROVE_TIDAL_LINK`を追加し、reconciliation scan orderを`kind-feature-constraint-v2`へ更新した。relief／open-water／marine connection、filled channel／dry wetland／hard mask、whole／tile／thread／locale／timezone、budgetを検証した。tree/root／ecology／new tidal solverは含まない。次は`V2-4-10`である。
 
 - **目的／前提:** `MANGROVE_WETLAND`の低relief、microtopography、open-water gapをregional stageで実装する。前提はtidal graph、`V2-4-05`。
 - **Scope／成果物:** wetland polygon、bounded elevation shaping、channel/open-water protection、mud/silt semantic substrate、Stage 6 reconciliation hookを実装する。
@@ -402,6 +417,8 @@
 
 ### V2-4-10 Coral reef bathymetry
 
+- **状態:** 完了。`CoralReefPlanV2`／`CoralReefPlanCompilerV2`／`CoralReefGeneratorV2`／`LandformCoralReefModuleV2`（`EXPERIMENTAL`）を実装し、reef ring、crest／outer slope profile、lagoon depth、`REEF_PASS` corridor carve、marine connection、5 descriptor field、Diagnostic Blueprint配線を追加した。Stage 6へ`REEF_LAGOON_PASS`を追加し、reconciliation scan orderを`kind-feature-constraint-v3`へ更新した。crest／lagoon／pass count、sealed lagoon／deep reef／broken pass／hard conflict、whole／tile／thread／locale／timezone、budgetを検証した。coral object／ecology placement、volume reef、Paper fluidは含まない。次は`V2-4-11`である。
+
 - **目的／前提:** `CORAL_REEF` crest、outer slope、lagoon bathymetry、`REEF_PASS`をregional stageで実装する。前提はcoast/hydrology、`V2-4-04`。
 - **Scope／成果物:** reef ring、crest/depth profile、lagoon、pass carve、marine connectivity、Stage 6 reconciliation hookを実装する。
 - **非Scope:** coral object placement、full ecology、volume reef、Paper fluid。
@@ -410,6 +427,8 @@
 - **Gate／docs／次／停止:** bathymetryとmarine hard targetsが通りcorruptionを検出すれば完了し、taxonomy／geology-climate／hydrology／roadmapを更新して`V2-4-11`へ進める。coral habitatを形状ownerへ混ぜる必要があれば停止する。
 
 ### V2-4-11 Ecology placement
+
+- **状態:** 完了。`EcologyPlanV2`／`EcologyPlanCompilerV2`／`EcologyPlacementResolverV2`（`EXPERIMENTAL`）を実装し、habitat U16 field、閉じたassemblage catalog、stable cell/feature seed、density／spacing lattice selector、mangrove canopy／root・coral colony・alpine shrub／meadow descriptors、strict Schema／example／codecを追加した。dry mangrove／deep-cold coral／unsupported root、whole／tile／seam／thread／candidate順不変、descriptor budget、unknown preset／external script拒否を検証した。cave ecology、entity／block entity、Paper placement、dense object grid、WorldBlueprint配線は含まない。次は`V2-4-12`である。
 
 - **目的／前提:** habitat/assemblageとsparse deterministic placement基盤を実装する。前提は`V2-4-04`〜`V2-4-10`。
 - **Scope／成果物:** habitat field、assemblage catalog、stable cell/feature seed、density/spacing selector、mangrove/root・coral・alpine vegetationのbounded descriptorsを実装する。
@@ -420,6 +439,8 @@
 
 ### V2-4-12 Volcanic and canyon material integration
 
+- **状態:** 完了。`FeatureMaterialProfilePlanV2`／`FeatureMaterialProfilePlanCompilerV2`／`FeatureMaterialProfileResolverV2`（`EXPERIMENTAL`）を実装し、volcanic basalt／tuff／ash zones、canyon strata／talus／floor sediment、fixed-order overlay／conflict rules（canyon wins）、strict Schema／example／codecを追加した。shape generator未変更でのvolcanic field checksum回帰、unknown lithology拒否、whole／tile／thread／locale不変、budgetを検証した。lava tube、cave、Minecraft palette変更、WorldBlueprint配線は含まない。
+
 - **目的／前提:** 既存2.5D volcanic/canyonへsemantic geology/material ruleを接続する。前提は`V2-4-03`、`V2-4-07`、V2-3 skeletons。
 - **Scope／成果物:** volcanic basalt/tuff/ash zones、canyon strata exposure/talus/sediment、feature-specific profile overlayとcross-feature conflict rulesを実装する。
 - **非Scope:** 新形状generator、lava tube、cave、Minecraft palette変更。
@@ -428,6 +449,8 @@
 - **Gate／docs／次／停止:** shape checksumを不必要に変えずsemantic metricsとmaterial read-backが通れば完了し、taxonomy／geology-climate／roadmapを更新して`V2-4-13`へ進める。shape修正が大規模なら原因Taskを再openする。
 
 ### V2-4-13 Environment validators and previews
+
+- **状態:** 完了。`EnvironmentValidatorV2`はgenerator-private配列に依存せず、公開`EnvironmentFieldSamplerV2`／`EnvironmentCellSnapshotV2`だけを測定する。wrong snowline／mangrove salinity／reef depth／root support／material exposureをHARD metric／structured issueへ変換し、habitat／volcanic／canyon／strataのsummary reductionも固定した。`EnvironmentDiagnosticPreviewRendererV2`はtemperature／moisture／wetness／salinity／hydroperiod／snow-cover／habitat／material-profile／feature-material／constraint-errorの10固定PNGを1枚ずつrenderし、strict `environment-preview-index-v2.schema.json`／checksum／directory entry read-back後にatomic publishする。`environment-validation-artifact-v2.schema.json`とexample、corruption／tile／locale決定性、path／byte budget、cancel cleanupを検証した。Release capabilityとgenerator redesignは含まない。
 
 - **目的／前提:** geology/climate/ecology/materialを独立検証し可視化する。前提は`V2-4-01`〜`V2-4-12`。
 - **Scope／成果物:** lithology/strata、temperature/moisture/wetness/salinity/hydroperiod/snow、habitat/ecology/material、mangrove/coral/volcanic/canyon metric validatorとpreview layersを実装する。
@@ -438,6 +461,8 @@
 
 ### V2-4-14 Release 2 `environment-fields` capability
 
+- **状態:** 完了。`environment-fields`を`hydrology-plan`＋`surface-2_5d`依存のRelease 2 capabilityとして有効化し（ADR 0019）、geology／lithology／strata／climate／water／snow／material／palette／ecology／feature-material／validation／固定10 previewのexact artifact setとchecksum bindingをdirectory／ZIP双方でstrict verifyした。prior surface／hydrology回帰、missing／extra／future capability／version、`environment-fields`単独、palette checksum改変、cancel cleanupを確認した。`snow-plan-v2` Schemaと`examples/v2/release-environment/`を追加した。featureの`SUPPORTED`昇格とPaper applyは含まない。次は`V2-4-15`である。
+
 - **目的／前提:** environment plans/fields/palette/ecologyをRelease 2へstrict追加する。前提は`V2-4-13`とV2-3 Release capability。
 - **Scope／成果物:** `environment-fields`必須artifact/version、hydrology prior binding、palette checksum、directory／ZIP publisher/verifierを実装する。
 - **非Scope:** sparse-volume、Paper placement、feature lifecycle最終昇格。
@@ -446,6 +471,8 @@
 - **Gate／docs／次／停止:** 直前capability setsとenvironment releaseを全てstrict verifyしfallbackなしなら完了し、artifact／migration／roadmapを更新して`V2-4-15`へ進める。HydrologyPlanを暗黙変換する必要があれば停止する。
 
 ### V2-4-15 Environment integration and Phase gate audit
+
+- **状態:** 完了。5 scenarioのstrict compileとsnow／material／palette／ecology／feature-material planを統合し、scenario／module／stage順、1／4 thread、locale／timezone、1000角stage peak／sparse descriptor budgetを固定した。全V2-4 positive／corruption／tampering／cancel、v1／Release 1／V2-2／V2-3回帰、clean test／buildを通過し、geology／climate／water／snow infrastructure、ALPINE／GLACIAL mountain、MANGROVE_WETLAND、CORAL_REEF、VOLCANIC_ARCHIPELAGO、`environment-fields`をoffline `SUPPORTED`へ昇格した。監査は [V2-4 Phase gate audit](audits/v2-4-phase-gate.md)。次は`V2-5-01`である。
 
 - **目的／前提:** V2-4全Taskを統合しPhase gateを閉じる。前提は`V2-4-01`〜`V2-4-14`。
 - **Scope／成果物:** snowy mountains、mangrove wetland、coral reef、volcanic material、canyon strata、environment ReleaseのPhase auditを実行する。
@@ -458,6 +485,8 @@
 
 ### V2-5-01 Fixed-point SDF primitives
 
+- **状態:** 完了。`model.v2.volume`／`generator.v2.volume.sdf`へ`volume-sdf-primitive-contract-v1`とinteger-only kernel（`volume-sdf-fixed-v1`／`volume-sdf-q-v1`）を実装し、sphere／ellipsoid／capsule／plane／rounded box／swept splineのsigned distance、conservative AABB、Schema／example、boundary／symmetry／translation／overflow、order／locale／thread決定性、zero radius／future kernel拒否を検証した。CSG／index／cache／feature generatorは含まない。次は`V2-5-02`である。
+
 - **目的／前提:** 局所volumeの解析的signed distance primitiveを決定論的に実装する。前提はV2-4 gate完了。
 - **Scope／成果物:** sphere/ellipsoid/capsule/plane/rounded box/swept splineのfixed-point distance、quantization/version、bounds estimateを実装する。
 - **非Scope:** CSG、AABB index、voxel cache、feature generator。
@@ -466,6 +495,8 @@
 - **Gate／docs／次／停止:** supported runtimeでgolden distance/sign/checksumが一致しconservative boundsを返せれば完了し、volumetric／pipeline／roadmapを更新して`V2-5-02`へ進める。platform-dependent float branchが正本になるなら停止する。
 
 ### V2-5-02 Ordered CSG
+
+- **状態:** 完了。`VolumeCsgPlanV2`／`VolumeCsgEvaluatorV2`へ`volume-csg-contract-v1`と`volume-csg-ordered-v1`を実装し、`ADD_SOLID`／`CARVE_SOLID`／`ADD_FLUID`、intersection mask、SDF plan binding、明示ordinal、stable operator IDをfreezeした。add→carve差、CARVEのfluid非所有、ambiguous order／unknown dependency／self-cycle／budget拒否、thread決定性、Schema／example round-tripを検証した。AABB index以降は含まない。次は`V2-5-03`である。
 
 - **目的／前提:** volume add/carve/fluid operationを明示順序で合成する。前提は`V2-5-01`。
 - **Scope／成果物:** `ADD_SOLID`、`CARVE_SOLID`、`ADD_FLUID`、mask/intersectionのordered plan、stable operator ID、conflict validationを実装する。
@@ -476,6 +507,7 @@
 
 ### V2-5-03 AABB spatial index
 
+- **状態:** 完了。`VolumeAabbIndexPlanV2`／`generator.v2.volume.index`へ`volume-aabb-index-contract-v1`とkernel `volume-aabb-index-v1`を実装し、CSG plan checksum binding、operatorごとのconservative AABB（intersection maskは交差AABB、空ならprimaryへfallback）、stable bulk build、XZ/Y halo query、candidateのoperator ordinal昇順、Schema／exampleをfreezeした。brute-force oracle一致、input順／thread不変、overflow／future kernel／checksum拒否を`VolumeAabbIndexV2Test`で検証した。voxel cache／feature generatorは含まない。次は`V2-5-04`である。
 - **目的／前提:** tileと交差するvolume operationだけをboundedに検索する。前提は`V2-5-02`。
 - **Scope／成果物:** conservative AABB、stable bulk build、XZ/Y halo query、overlap candidate canonical order、index artifactを実装する。
 - **非Scope:** voxel evaluation、cache、feature generation。
@@ -485,6 +517,7 @@
 
 ### V2-5-04 3D tile cache
 
+- **状態:** 完了。`VolumeTileCachePlanV2`／`generator.v2.volume.cache`へ`volume-tile-cache-contract-v1`とkernel `volume-tile-cache-v1`を実装し、chunk key、XYZ halo、bounded LRU、solid／fluid column intervals、`retained + concurrency×peak + cache` admission、1000×1000×512 dense allocation detector、cancel-safe fillをfreezeした。hit／evict／edge Y、cache有無の同checksum、thread／locale決定性、oversized chunk／support拒否、Schema／exampleを`VolumeTileCacheV2Test`で検証した。TerrainQuery／feature generatorは含まない。次は`V2-5-05`である。
 - **目的／前提:** 交差volumeを3D halo付きtile-local chunkへ有界評価する。前提は`V2-5-03`。
 - **Scope／成果物:** chunk key、XYZ halo、bounded LRU/explicit lifecycle、solid/fluid interval cache、cancel-safe allocation/admissionを実装する。
 - **非Scope:** TerrainQuery公開、feature generator、global dense voxel field。
@@ -494,6 +527,7 @@
 
 ### V2-5-05 TerrainQuery volume support
 
+- **状態:** 完了。`TerrainQuery.queryKernelVersion()`と`generator.v2.volume.query.VolumeTerrainQueryV2`／`VolumeTerrainCompositionKernelV2`へ`terrain-query-volume-v1`を実装し、base heightfield＋ordered CSG composition、`solidIntervals`／`fluidIntervals`／`surfaceBelow`／`ceilingAbove`、base-only pass-throughをfreezeした。add／carve／fluid、XYZ seam／whole／tile／thread／locale決定性、interval budget／owner conflict／oob拒否、`V1TerrainAdapterTest`／`V1CompatibilityGoldenTest`回帰を`VolumeTerrainQueryV2Test`で検証した。feature generator／Paperは含まない。次は`V2-5-06`である。
 - **目的／前提:** common `TerrainQuery`／`TerrainBlockResolver`へsparse solid/fluid volumeを統合する。前提は`V2-5-04`。
 - **Scope／成果物:** `solidIntervals`、`fluidIntervals`、ceiling/surface query、base heightfield＋ordered CSG composition、structure/validator/export共通APIを実装する。
 - **非Scope:** feature-specific volumes、Paper placement、v1 adapter意味変更。
@@ -503,6 +537,7 @@
 
 ### V2-5-06 Cave network
 
+- **状態:** 完了。`CaveNetworkPlanV2`／`generator.v2.volume.cave`へ`cave-network-contract-v1`とkernel `cave-network-v1`を実装し、stable graph、entrance reachability、SDF／ordered CARVE_SOLID、minimum roof、AABB、Schema／exampleをfreezeした。connectivity／isolated／thin roof／breakthrough、thread／locale決定性を`CaveNetworkGeneratorV2Test`で検証した。lush／lake／sea caveは含まない。次は`V2-5-07`である。
 - **目的／前提:** `CAVE_NETWORK` tunnel/chamber graphを局所carveへcompileする。前提は`V2-5-05`。
 - **Scope／成果物:** stable tunnel graph、chamber/tunnel SDF、entrance relation、minimum roof、AABB plan、`EXPERIMENTAL` cave generatorを実装する。
 - **非Scope:** lush ecology、underground lake、sea cave、material finishing。
@@ -512,6 +547,7 @@
 
 ### V2-5-07 Lush cave
 
+- **状態:** 完了。`LushCavePlanV2`／`generator.v2.volume.cave.lush`へ`lush-cave-contract-v1`とkernel `lush-cave-v1`を実装し、host `CAVE_NETWORK`へのHARD `WITHIN`／`REACHABLE_FROM`、lush chamber carve、wet floor／wall／ceiling、`LUSH_SUBTERRANEAN` ecology hooks、Schema／exampleをfreezeした。orphan／too-dry／unreachable／containment／thin roof／breakthrough、thread／locale決定性を`LushCaveGeneratorV2Test`で検証した。full ecology／lake／lightingは含まない。次は`V2-5-08`である。
 - **目的／前提:** `LUSH_CAVE` chamberと局所湿潤conditionをcave network内に実装する。前提は`V2-5-06`とV2-4 environment/material。
 - **Scope／成果物:** lush chamber carve、`WITHIN`／`REACHABLE_FROM` relation、local wet floor/wall/ceiling classification、ecology hooksを実装する。
 - **非Scope:** full ecology placement（post-volume Task）、underground lake、lighting engine。
@@ -521,6 +557,7 @@
 
 ### V2-5-08 Underground lake
 
+- **状態:** 完了。`UndergroundLakePlanV2`／`generator.v2.volume.water`へ`underground-lake-contract-v1`とkernel `underground-lake-v1`を実装し、host caveへのHARD `WITHIN`／`REACHABLE_FROM`、basin `CARVE_SOLID`→単一`ADD_FLUID`、rim／air cavity／contained fluid、offline CSG read-back、Schema／exampleをfreezeした。orphan／unreachable／leak／double fluid／carve-as-fluid、thread／locale決定性を`UndergroundLakeGeneratorV2Test`で検証した。sea／Paper／lush materialは含まない。次は`V2-5-09`である。
 - **目的／前提:** `UNDERGROUND_LAKE` basin carveと明示fluid bodyを実装する。前提は`V2-5-06`とordered CSG。
 - **Scope／成果物:** chamber basin、single water surface、rim/containment、`ADD_FLUID` ownership、cave connectionを実装する。
 - **非Scope:** sea connection、Paper fluid physics、lush material。
@@ -530,6 +567,7 @@
 
 ### V2-5-09 Sea cave
 
+- **状態:** 完了。`SeaCavePlanV2`／`generator.v2.volume.seacave`へ`sea-cave-contract-v1`とkernel `sea-cave-v1`を実装し、cliff `CARVES_FLANK_OF`、marine `EMPTIES_INTO`、capsule carve＋静的`ADD_FLUID`、sea opening／fluid continuity／roof、Schema／exampleをfreezeした。landlocked／unsupported／leaking inland／land-water conflict、thread／locale決定性を`SeaCaveGeneratorV2Test`で検証した。dynamic tide／Paperは含まない。次は`V2-5-10`である。
 - **目的／前提:** `SEA_CAVE` carve、marine opening、bounded fluid connectionを実装する。前提は`V2-5-06`、`V2-5-08`、coast/hydrology fields。
 - **Scope／成果物:** cliff-hosted entrance、marine boundary relation、tidal/static water subset、roof/support constraintsを実装する。
 - **非Scope:** dynamic tide、wave erosion、Paper placement containment。
@@ -539,6 +577,7 @@
 
 ### V2-5-10 Overhang
 
+- **状態:** 完了。`OverhangPlanV2`／`generator.v2.volume.overhang`へ`overhang-contract-v1`とkernel `overhang-v1`を実装し、host cliff `SUPPORTS_FROM`、seaward `ADD_SOLID` lobe＋underside `CARVE_SOLID` recess、support／roof／projection／clearance／seaward opening、Schema／exampleをfreezeした。floating slab／thin roof／blocked corridor／short projection、thread／locale決定性を`OverhangGeneratorV2Test`で検証した。natural arch／Paper gravityは含まない。次は`V2-5-11`である。
 - **目的／前提:** `OVERHANG`をhost cliffへのsolid add＋recess carveで実装する。前提は`V2-5-05`とrock/cliff surface。
 - **Scope／成果物:** support relation、roof slab、seaward clearance、recess operation、host AABB bindingを実装する。
 - **非Scope:** natural arch、sea cave、Paper gravity/physics。
@@ -548,6 +587,7 @@
 
 ### V2-5-11 Natural arch
 
+- **状態:** 完了。`NaturalArchPlanV2`／`generator.v2.volume.arch`へ`natural-arch-contract-v1`とkernel `natural-arch-v1`を実装し、two-pier `ADD_SOLID`＋through `CARVE_SOLID`、pier／crown／span／clearance、Schema／exampleをfreezeした。one-pier／thin crown／closed opening／short span、thread／locale決定性を`NaturalArchGeneratorV2Test`で検証した。bridge asset／sky island／materialは含まない。次は`V2-5-12`である。
 - **目的／前提:** `NATURAL_ARCH`のpiers、crown、through carveを実装する。前提は`V2-5-02`、`V2-5-05`。
 - **Scope／成果物:** two-support solid plan、ordered opening carve、minimum pier/crown、clearance corridorを実装する。
 - **非Scope:** bridge structure asset、sky island、material finishing。
@@ -557,6 +597,7 @@
 
 ### V2-5-12 Sky island group
 
+- **状態:** 完了。`SkyIslandGroupPlanV2`／`generator.v2.volume.skyisland`へ`sky-island-group-contract-v1`とkernel `sky-island-group-v1`を実装し、ordered multipoint `ADD_SOLID`＋underside `CARVE_SOLID`、ground clearance／gap／top-edge-underside、Schema／exampleをfreezeした。merged／touching ground／out-of-Y／dense fill、thread／locale／component-order決定性を`SkyIslandGroupGeneratorV2Test`で検証した。ecology／material／Paperは含まない。次は`V2-5-13`である。
 - **目的／前提:** `SKY_ISLAND_GROUP`の独立solid componentsとunderside carveを実装する。前提は`V2-5-05`。
 - **Scope／成果物:** stable multipoint/group plan、solid lobes、top/edge/underside classes、ground clearance、inter-island gap、support-free allowed policyを実装する。
 - **非Scope:** ecology/material finishing、Paper apply、unbounded floating world。
@@ -565,6 +606,8 @@
 - **Gate／docs／次／停止:** group hard metricsとcorruption fixtureが通りbounded descriptorsのみなら完了し、taxonomy／volumetric／roadmapを更新して`V2-5-13`へ進める。global sky voxel layerが必要なら停止する。
 
 ### V2-5-13 Waterfall volume integration
+
+- **状態:** 完了。`WaterfallVolumePlanV2`と`generator.v2.volume.waterfall`へfalling column／behind-fall／plunge-poolの静的volume overlayを実装し、V2-3 fall geometry checksumへ`BOUND_TO_FALL`で結合した。column shaft `CARVE_SOLID`→`ADD_FLUID`、behind carve、pool fluid continuity、Schema／exampleを追加し、offset column／missing behind／missing pool／graph checksum mismatch拒否とthread／locale決定性を`WaterfallVolumeGeneratorV2Test`で検証した。dynamic fluid／Paper settle／new waterfall graph／`SUPPORTED`は対象外で、V2-5親Phase gateは未完了である。次は`V2-5-14`である。
 
 - **目的／前提:** V2-3 waterfallへfalling water columnとbehind-fall clearanceを接続する。前提は`V2-3-06`、`V2-5-05`、`V2-5-08`。
 - **Scope／成果物:** fall column `ADD_FLUID` plan、air/rock clearance、plunge pool continuity、fall node checksum bindingを実装する。
@@ -575,6 +618,8 @@
 
 ### V2-5-14 Post-volume environment and material
 
+- **状態:** 完了。`VolumeLocalEnvironmentPlanV2`と`generator.v2.environment.local`へ、volume確定後のsurface class／wetness／drip／shade、lush moss／root／pool、cave／sea-cave wet rock、sky-island top／edge／underside profile、sparse placementsを実装した。Schema／exampleを追加し、moss on dry ceiling／root without support／wrong underside／unknown profile拒否とthread／locale決定性を`VolumeLocalEnvironmentResolverV2Test`で検証した。new volume shapes／lighting／Paper／`SUPPORTED`は対象外で、V2-5親Phase gateは未完了である。次は`V2-5-15`である。
+
 - **目的／前提:** volume確定後のfloor/wall/ceiling/top/edge/undersideへlocal environment/material/ecologyを適用する。前提は`V2-5-06`〜`V2-5-13`とV2-4 material/ecology。
 - **Scope／成果物:** local wetness/drip/shade/surface class、lush moss/root/pool、cave/sea-cave wet rock、sky-island top/edge/underside profile、sparse placementsを実装する。
 - **非Scope:** new volume shapes、lighting engine、Paper biome/entity。
@@ -583,6 +628,8 @@
 - **Gate／docs／次／停止:** final resolverでsemantic conditionsとplacementsがstableかつbudget内なら完了し、geology-climate／volumetric／roadmapを更新して`V2-5-15`へ進める。regional fieldを再生成する必要があれば停止する。
 
 ### V2-5-15 Volume validators and previews
+
+- **状態:** 完了。`validation.v2.volume`と`preview.v2`へ、descriptor-only `VolumeValidatorV2`（`volume-validator-v1`）とstrict 5-layer `VolumeDiagnosticPreviewRendererV2`（`volume-diagnostic-palette-v1`）を実装した。isolated cave／thin roof／fluid leak／floating overhang／broken arch／merged sky island／fall discontinuity検出、Schema／example、atomic publish／strict read-back／cancel／budgetを`VolumeValidatorV2Test`／`VolumeDiagnosticPreviewRendererV2Test`で検証した。dense validation grid／schematic／Release／`SUPPORTED`は対象外で、V2-5親Phase gateは未完了である。次は`V2-5-16`である。
 
 - **目的／前提:** volume topology、support、fluid、environmentを独立検証し可視化する。前提は`V2-5-06`〜`V2-5-14`。
 - **Scope／成果物:** connectivity/roof/support/clearance/component/fluid/material validators、AABB/operator/slice/solid-fluid/surface-class previewsとindex metadataを実装する。
@@ -593,6 +640,8 @@
 
 ### V2-5-16 Offline 3D schematic read-back
 
+- **状態:** 完了。writer／inspector／WorldEdit reader（`OfflineTileSchematicWriterV2`／`SpongeV3TileInspectorV2`／`WorldEditOfflineTileReaderV2`）は既に`minY..maxY`全域をX-fast／Z／Yで走査する汎用3D exporterで意味・format・checksum・budgetを凍結したまま、新規`format.v2.tile.VolumeTileBlockResolverV2`のみを追加した（`terrain-query-volume-v1`合成`TerrainQuery`→canonical block state、air/fluid/independent solid、`EnvironmentBlockStateCatalogV2` allowlist、v1 adapter分離、NONE solid／非water fluid拒否）。cave／floating solid／fluid／air volume tileがexport→strict inspector→WorldEdit 7.3.19 read-backでresolver semantic checksumと全XYZ一致、whole／tile・thread／order・locale／timezone不変、palette 127/128 VarInt境界3D read-back、truncated／corrupt／checksum改変拒否を`OfflineVolumeTileReadBackV2Test`／`WorldEditOfflineVolumeTileReaderV2Test`で検証し、`examples/v2/volume/offline-volume-tile-artifact-v2.json`を追加した。出力Sponge v3は一般仕様features（Version 3／DataVersion 4671／Offset `[0,0,0]`／general VarInt／proprietary tag無し）のみでoffline FAWE readerでも読める。v1 golden／V2-2 export回帰不変。Paper apply、running-server FAWE smoke、`sparse-volume` Release capabilityは対象外で、V2-5親Phase gateは未完了である。次は`V2-5-17`である。
+
 - **目的／前提:** volumeを含むtile block streamをSponge v3へ出しoffline read-backする。前提は`V2-5-14`、V2-2 schematic基盤。
 - **Scope／成果物:** air cavity／fluid／independent solidのstable XYZ export、general VarInt、tile boundary palette、WorldEdit 7.3.19とFAWE-compatible offline inspector testを実装する。
 - **非Scope:** Paper apply、FAWE server smoke、Release capability。
@@ -602,6 +651,8 @@
 
 ### V2-5-17 Release 2 `sparse-volume` capability
 
+- **状態:** 完了。`format.v2.release`へ`sparse-volume` capabilityを`environment-fields`＋`hydrology-plan`＋`surface-2_5d`依存で追加した。`ReleaseArtifactCatalogV2`にcapability list（natural order）、6 artifact type、dispatch、依存規則を登録し、`SparseVolumeReleaseCapabilityVerifierV2`／`ReleaseSparseVolumePublisherV2`／`ReleaseSparseVolumeVerifierV2`／`SparseVolumeReleaseSourceV2`／`ReleaseSparseVolumeArtifactsV2`を実装した。`volume/`配下へSDF primitive／ordered CSG／AABB index／volume validation／3D volume tile（`volume-offline-tile-artifact-v2`／`volume-sponge-schematic-v3`専用type）を収容し、CSG→SDF／AABB→CSG checksum binding、validation `sourcePlanChecksum`＝CSG＋hard-pass、volume tile strict Sponge v3 read-backと`sourceBlueprintChecksum` bindingをstrict verifyする。missing/extra/version/binding/tile checksum改変／future capability／依存downgrade拒否、directory／ZIP parity、cancel、prior capability（surface/hydrology/environment）回帰を`ReleaseSparseVolumePublisherVerifierV2Test`＋共有fixture `EnvironmentReleaseFixtureV2`で検証した。exampleは`examples/v2/release-sparse-volume/README.md`。format core意味は不変で、`SUPPORTED`昇格は`V2-5-18`まで保留。次は`V2-5-18`である。
+
 - **目的／前提:** VolumePlan／index／validation／3D tileをRelease 2へstrict追加する。前提は`V2-5-15`〜`V2-5-16`とV2-4 Release capability。
 - **Scope／成果物:** `sparse-volume`必須artifact/version、AABB/operator/palette/block checksum binding、directory／ZIP publisher/verifierを実装する。
 - **非Scope:** Paper placement、feature lifecycle最終昇格。
@@ -610,6 +661,8 @@
 - **Gate／docs／次／停止:** 全過去capability setとsparse-volume releaseをstrict verifyしfallbackなしなら完了し、artifact／migration／roadmapを更新して`V2-5-18`へ進める。format core意味変更が必要なら停止する。
 
 ### V2-5-18 Volume integration and Phase gate audit
+
+- **状態:** 完了（2026-07-18）。`VolumePhaseGateV2Test`で9 volume compiler lifecycle、`sparse-volume` capability依存順、13 volume plan exampleのstrict read安定性（正逆順／1・4 thread／locale／timezone）、共有sceneのwhole／tile dispatch／window限定query stream一致（3D whole/tile/XYZ seam）、dense allocation拒否と1000角streaming admissionを固定し、full clean suiteでv1 golden／Release 1／V2-2〜V2-4回帰とclean buildを通過した。volume infrastructure・7 volume feature・waterfall volume・local environment・validator/preview・offline export・`sparse-volume`をoffline `SUPPORTED`へ、deferredだった`WATERFALL` kind／moduleも`SUPPORTED`へ昇格した。VOLUME_GUIDE intent kindはdiagnostic-only、child-plan kindは`EXPERIMENTAL`、Paper apply／実機smokeは非Scopeのまま。証拠は [V2-5 Phase gate audit](audits/v2-5-phase-gate.md)。次は`V2-6-01`である。
 
 - **目的／前提:** V2-5全Taskを統合しPhase gateを閉じる。前提は`V2-5-01`〜`V2-5-17`。
 - **Scope／成果物:** cave/lush/underground lake/sea cave、overhang、arch、sky island、waterfall volume、post-environment、offline export、Release capabilityのPhase auditを実行する。
@@ -622,6 +675,8 @@
 
 ### V2-6-01 Release 2 placement contract
 
+- **状態:** 完了（2026-07-18）。`model.v2.placement`へ`PlacementPlanV2`／`PlacementJournalV2`とformat 2 journal statesを追加し、Release／target／capability／tile order／envelope参照／reservation-confirmation binding／operation IDをchecksum-boundなimmutable契約として固定した（ADR 0020）。`PlacementPlanCompilerV2`は`PLANNED`＋`PENDING`だけをsealする。Schema／example、strict round-trip、unknown state／version／capability、target mismatch、path／checksum／future拒否、locale／timezone／thread決定性、journal entry budget、v1 journal codec不変を確認した。envelope算出、reservation、snapshot、apply、Undo／Recoveryは含まない。
+
 - **目的／前提:** verified Release 2をworld mutationから分離するplacement plan／journal契約を固定する。前提はV2-5 gate完了。
 - **Scope／成果物:** target/bounds/anchor、capability set、tile/order、mutation/effect envelope参照、reservation/confirmation binding、operation ID、format 2 journal statesのstrict contractを実装する。
 - **非Scope:** envelope算出、reservation、snapshot、apply、Undo/Recovery。
@@ -630,6 +685,8 @@
 - **Gate／docs／次／停止:** Release/target/capabilityへchecksum-boundしたimmutable planがstrict読取できれば完了し、ADR／migration／roadmapを更新して`V2-6-02`へ進める。v1 journal再解釈が必要なら停止する。
 
 ### V2-6-02 Mutation and effect envelope
+
+- **状態:** 完了（2026-07-18）。`PlacementEnvelopePlanV2`／`PlacementEnvelopeCompilerV2`でper-tile mutation AABB、version固定physics policy（FLUID／GRAVITY／NEIGHBOR）、union effect envelope、overflow-safe world bounds、disk／volume admission、checksum provenance、plan envelope-ref bindingを実装した（ADR 0021）。solid／air／fluid／gravity／neighbor fixture、independent oracle under-approx検出、tile／order／thread／locale／timezone決定性、world border／budget／unknown physics拒否を確認した。reservation／snapshot／apply／settleは含まない。
 
 - **目的／前提:** final resolverとphysics-sensitive contentからmutation/effect envelopeを保守的に算出する。前提は`V2-6-01`。
 - **Scope／成果物:** per-tile mutation AABB、union effect envelope、fluid/gravity/neighbor support radius、overflow-safe world bounds、envelope checksum/provenanceを実装する。
@@ -640,6 +697,8 @@
 
 ### V2-6-03 Region/disk reservation and bound confirmation
 
+- **状態:** 完了（2026-07-18）。`PlacementReservationPlanV2`／`PlacementSafetyStateV2`と`FilePlacementSafetyStoreV2`／`PlacementConfirmationBinderV2`／`PlacementReservationConfirmCompilerV2`でatomic multi-region／disk reservation、overlap拒否、actor-bound one-time expiry confirmation、`CONFIRMATION_ISSUED` journal、失敗時全解放を実装した（ADR 0022）。overlap／race／expiry／replay／disk shortage／restart、actor／checksum mismatch、v1 reservation回帰を確認した。snapshot／apply／settle、v1 reservation意味変更は含まない。
+
 - **目的／前提:** 全region/diskを先に予約しconfirmationをrelease/target/envelope/reservationへ結合する。前提は`V2-6-02`。
 - **Scope／成果物:** atomic multi-region reservation、disk estimate/reservation、overlap拒否、actor-bound one-time expiry confirmation、late completion-safe state transitionを実装する。
 - **非Scope:** snapshot、apply、settle、v1 reservation意味変更。
@@ -648,6 +707,8 @@
 - **Gate／docs／次／停止:** confirm前に全予約が成功しbinding改変/replayを拒否、失敗時全解放なら完了し、placement／admin／roadmapを更新して`V2-6-04`へ進める。partial reservationを安全にrollbackできなければ停止する。
 
 ### V2-6-04 Snapshot-all
+
+- **状態:** 完了（2026-07-18）。`core.v2.placement.snapshot`へ`PlacementWorldGatewayV2`（`release-2-placement-world-gateway-v1`、canonical X→Z→Y read stream／apply分離）、`PlacementSnapshotFileCodecV2`（`release-2-placement-snapshot-file-v1`、palette＋VarInt、2回走査stream hash一致によるworld drift／TOCTOU拒否）、`PlacementSnapshotAllCompilerV2`（staging→全file strict read-back→sealed index read-back→atomic publish）を実装し、`PlacementSnapshotPlanV2`（`release-2-placement-snapshot-v1`）でplan／envelope／reservation／confirmationへchecksum bindingした。journalは`SNAPSHOTTING`＝全tile PENDING、`SNAPSHOT_COMPLETE`（apply-ready）＝全tile SNAPSHOTTED＋bytes>0を契約で強制し、disk leaseを上限とするhard byte cap、事前admission、disk shortage、palette budget、cancel／crash cleanup（canonical partialなし）、`cleanupAbandoned`／`loadPublished` restart経路、tamper（byte／truncation／index checksum／extra file）拒否、thread／repeat決定性、apply gateway未呼出を`PlacementSnapshotAllCompilerV2Test`で検証した。block apply、settle、rollback execution、Undo UXは対象外で、V2-6親Phase gateは未完了である。
 
 - **目的／前提:** 最初のapply前に全effect envelopeをsnapshotしてstrict verifyする。前提は`V2-6-03`。
 - **Scope／成果物:** canonical envelope order、snapshot artifact/index/checksum、disk budget、all-before-any-apply state invariant、cancel/shutdown cleanupを実装する。
@@ -658,6 +719,8 @@
 
 ### V2-6-05 Fluid and gravity containment preflight
 
+- **状態:** 完了（2026-07-18）。`format.v2.minecraft.PlacementBlockPhysicsCatalogV2`（閉じたSOLID／AIR／FLUID／GRAVITY／NEIGHBOR／UNSUPPORTED分類）と`PlacementContainmentPolicyV2`／`PlacementContainmentEvidenceV2`、`core.v2.placement.safety.PlacementContainmentPreflightV2`でapply前containmentを実装した（ADR 0023）。`SNAPSHOT_COMPLETE`後にpost-apply predicted worldをcanonical X→Z→Y順で走査し、fluid closure／boundary seal、gravity support、neighbor radius、physics-class宣言、unsupported／unknown denylistを検査し、`CONTAINED` evidenceだけをplan／envelope／snapshotへchecksum bindingしてsealする。contained／uncontained water／lava／sand／gravel／neighbor、classification order／locale／timezone／thread不変、scan／cache budget、envelope gap、journal state拒否を`PlacementContainmentPreflightV2Test`で検証した。apply、settle simulation、事後rollback代替は対象外で、V2-6親Phase gateは未完了である。
+
 - **目的／前提:** apply前にfluid/gravity/neighbor updateがeffect envelope外へ出ないことを判定する。前提は`V2-6-02`と`V2-6-04`。
 - **Scope／成果物:** content classifier、support/closure rules、boundary seals、unsupported-state denylist、containment evidenceとhard rejectionを実装する。
 - **非Scope:** apply、settle simulation、事後rollbackによる代替。
@@ -667,33 +730,41 @@
 
 ### V2-6-06 Release 2 apply transaction orchestration
 
+- **状態:** 完了（2026-07-18）。`core.v2.placement.apply.PlacementApplyTransactionServiceV2`をbounded executor／queue／slice admission付きで実装し、Release、unbound→envelope-bound→confirmed plan checksum chain、reservation ownership、consumed confirmation、published snapshot、containment evidence、canonical source bindingを最初のscheduler submission前にstrict再検証する。feature-neutralな`PlacementCanonicalBlockSourceV2`をcanonical X→Z→Y exact coverageでpreflightし、閉じたphysics catalog／effect-envelope宣言／fingerprintを検査後、tile-index順、明示`SOLID(10) → AIR_CARVE(20) → FLUID(30)`、overlay ordinal昇順でbounded slice適用する（ADR 0024）。`PaperPlacementWorldGatewayV2`／`WorldEditBlockMutationAccessV2`はscheduler main-thread executionとresource close receiptを返し、observer timeout／cancelは受理済みoperationを取消さない。journalはatomic `APPLYING` publish後にcanonical `APPLIED` tile prefixだけをcheckpointし、submission後のfailure／cancel／shutdown／source driftは`RECOVERY_REQUIRED`とする。surface／cave／sky solid／waterfall／underground fluid、cross-tile fluid、tile登録正逆／1・4 thread／locale／timezone、late completion、queue／block／overlay budget、main-thread／close receipt、confirm／envelope／checksum mismatch、journal symlink／prefix、v1回帰をtestした。settle／full verify、rollback、Undo／Recovery、public command接続、production `SUPPORTED`は対象外で、V2-6親Phase gateは未完了である。
+- **Schema／example:** persisted shapeは追加しない。既存`placement-journal-v2.schema.json`が`APPLYING`／`APPLIED`／`RECOVERY_REQUIRED`を既にversion 1で固定しており、canonical `APPLIED` prefixはJava record invariantとして強制する。`examples/v2/placement/README.md`へinternal canonical stream例とV2-6-07までterminal成功へ進めない境界を追記した。
 - **目的／前提:** validate→reserve→confirm→snapshot-all→applyの順序を破れないapplication serviceを実装する。前提は`V2-6-01`〜`V2-6-05`。
-- **Scope／成果物:** operation state machine、canonical tile apply、solids/air→fluid-sensitive pass、gateway completion/close tracking、scheduler dispatch contract、failed future propagationを実装する。
+- **Scope／成果物:** operation state machine、canonical tile apply、surface／volumeのsolid→air carve→fluid pass、child-plan／volume-overlayのexplicit ordinal、cross-tile river／volume継続、gateway completion/close tracking、scheduler dispatch contract、failed future propagationを実装する。FeatureKindごとのPaper adapterは作らず、Release 2のcanonical surface／solid／air／fluid block streamだけを入力にする。
 - **非Scope:** settle/full verify、rollback完成、Undo/Recovery、production `SUPPORTED` enable。
 - **主変更:** `core.v2.placement` application service、Paper/worldedit v2 gateway、journal transitions、tests／architecture docs。
-- **必須test／D/M/S:** illegal order/late completion/timeout/cancel/shutdown/tile failure/main-thread assertion、tile/order不変、bounded scheduler slices/queue/admission、confirm/envelope/checksum mismatch拒否、v1 service回帰。
-- **Gate／docs／次／停止:** apply開始前invariantが強制され受理済みoperationを観測timeoutだけで取消扱いにしなければ完了し、architecture／placement／roadmapを更新して`V2-6-07`へ進める。rollback設計不能なmutationを実行する必要があれば停止する。
+- **必須test／D/M/S:** illegal order/late completion/timeout/cancel/shutdown/tile failure/main-thread assertion、surface-only／cave carve／sky solid／waterfall overlay／underground fluid、tile正逆／thread不変、bounded scheduler slices/queue/admission、confirm/envelope/checksum mismatch拒否、v1 service回帰。
+- **Gate／docs／次／停止:** apply開始前invariantが強制され、preview/exportと同じcanonical streamをFeature別分岐なしで適用し、受理済みoperationを観測timeoutだけで取消扱いにしなければ完了する。新しいFeatureごとに個別配置ロジックまたはsnapshot外mutationが必要なら停止する。
 
 ### V2-6-07 Bounded settle and full verify
 
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-6／P0。
+- **Schema／example:** `placement-settle-verify-policy-v2.schema.json`／`placement-verify-evidence-v2.schema.json`とexamplesを追加。journalの`SETTLING`／`VERIFYING`／terminal `APPLIED`（tiles `VERIFIED`）は既存version 1で固定。
 - **目的／前提:** apply後にbounded multi-tick settleしeffect envelope全体をexact verifyする。前提は`V2-6-06`。
-- **Scope／成果物:** settle policy、scheduler-sliced full scan、canonical expected resolver、late update reconciliation、metric/journal evidenceを実装する。
+- **Scope／成果物:** settle policy、scheduler-sliced full scan、canonical expected resolver、late update reconciliation、surface foundation／marine underwater column／surface-volume entrance／underground fluid／overlay continuity metric、journal evidenceを実装する。
 - **非Scope:** sampled verify、rollback実行、Undo、performance support declaration。
 - **主変更:** `core.v2.placement.verify`、Paper gateway、verify policy Schema、tests／operations docs。
-- **必須test／D/M/S:** delayed update/timeout/mismatch/server shutdown/tile checkpoint false-positive、scan order/thread不変、slice/timeout/queue budget、effect外 update/unknown settle policy拒否。
+- **必須test／D/M/S:** delayed update/timeout/mismatch/server shutdown/tile checkpoint false-positive、solid/air/fluid順、tile seam river/volume連続性、scan order/thread不変、slice/timeout/queue budget、effect外 update/unknown settle policy拒否。
 - **Gate／docs／次／停止:** settle後effect envelope全体のexact block-state streamを比較しfailureをcanonical分類できれば完了し、placement／operations／roadmapを更新して`V2-6-08`へ進める。sample verifyへ弱める必要があれば停止する。
+- **状態:** 完了（2026-07-18）。`PlacementSettleVerifyPolicyV2`／`PlacementSettleVerifyServiceV2`／`PlacementExpectedBlockResolverV2`／`PlacementVerifyEvidenceV2`（ADR 0025）で`SETTLING → VERIFYING →` terminal `APPLIED`を実装。effect envelope全体のexact X→Z→Y比較、continuity metrics、out-of-envelope／timeout／mismatch／cancel／shutdown／slice・queue budgetの`RECOVERY_REQUIRED`分類、tile checkpoint alone非成功を`PlacementSettleVerifyServiceV2Test`で検証。rollback／Undo／Recovery／public command／`SUPPORTED`は含まない。
 
 ### V2-6-08 Rollback
 
+- **状態／Phase／優先度:** 完了（2026-07-19）／V2-6／P0。
+- **状態:** 完了。`core.v2.placement.rollback.PlacementRollbackServiceV2`（ADR 0026）が`RECOVERY_REQUIRED` journal（全tile `SNAPSHOTTED`／`APPLIED`）だけを入力に、mutation前のstrict preflight（binding、reservation ownership、`loadPublished`再検証、全snapshot fileのstrict decode＋sealed index checksum照合、union envelope被覆完全性）→逆canonical tile-index順のbounded `PlacementRestoreSliceV2` restore（receiptでscheduler受理・main-thread・resource close証明、`ROLLING_BACK`のcanonical `RESTORED` suffix checkpoint）→bounded rollback settle（envelope外update拒否）→union effect envelope全体のsnapshot baselineとのexact stream verify→terminal `ROLLED_BACK`＋reservation lease解放を実装した。missing／tampered snapshotとcoverage gapはmutationゼロで拒否し、restore失敗／receipt不正／late completion／shutdown／cancel／budget超過は`PlacementRollbackFailureCodeV2`で分類して`RECOVERY_REQUIRED`へ戻す。published snapshotは削除しない。apply・settle・verify各failure pointからの復元、逆順restore orderのthread／repeat不変、bounded slice、v1 rollback回帰を`PlacementRollbackServiceV2Test`で検証した。user Undo、startup Recovery、snapshot外変更対応は含まない。persisted shapeは追加せず、既存`placement-journal-v2.schema.json`のstate／tile enumで表現する。
 - **目的／前提:** Release 2 placement失敗時にsnapshot済みenvelopeを逆順復元しfull verifyする。前提は`V2-6-04`、`V2-6-06`、`V2-6-07`。
 - **Scope／成果物:** reverse-order restore、close/completion tracking、rollback settle/verify、partial failure classification、reservation/journal finalizationを実装する。
 - **非Scope:** user Undo、startup Recovery、snapshot外変更対応。
 - **主変更:** `core.v2.placement.rollback`、world gateway、journal states、tests／operations docs。
-- **必須test／D/M/S:** failure at every apply/settle/verify point、rollback failure/late completion/shutdown、restore order不変、bounded slices/disk lifetime、missing/tampered snapshot拒否、v1 rollback回帰。
+- **必須test／D/M/S:** surface/solid/air/fluid/child/overlayの各apply・settle・verify failure point、rollback failure/late completion/shutdown、effect envelope全体のreverse restore order不変、bounded slices/disk lifetime、missing/tampered snapshot拒否、v1 rollback回帰。
 - **Gate／docs／次／停止:** fault injection全点で復元または明示RECOVERY_REQUIREDとなり成功を偽らなければ完了し、placement／operations／roadmapを更新して`V2-6-09`へ進める。snapshot外副作用をrollback対象とする必要があれば停止する。
 
 ### V2-6-09 Undo
 
+- **状態:** 完了。`PlacementUndoPrepareCompilerV2`／`PlacementUndoServiceV2`／`PlacementUndoApplicationServiceV2`／`PaperPlacementUndoServiceV2`、sealed `PlacementUndoPlanV2`（ADR 0027）、world-drift preflight（force禁止）、逆順restore＋baseline full verify、`UNDONE`＋snapshot保持、Paper `isRelease2Path`識別、v1 Undo不変を確認した。startup Recoveryは`V2-6-10`。
 - **目的／前提:** 完了済みRelease 2 operationをconfirmation付きで安全にUndoする。前提は`V2-6-08`。
 - **Scope／成果物:** operation-bound Undo plan/confirm、current-world preflight、snapshot restore、settle/full verify、journal retention transitionを実装する。
 - **非Scope:** v1 Undo変更、startup Recovery、force overwrite。
@@ -703,15 +774,17 @@
 
 ### V2-6-10 Recovery
 
+- **状態:** 完了（2026-07-19）。`core.v2.recovery`の`PlacementRecoveryServiceV2`が、永続journal／published snapshot／worldの3証拠を読み取り専用で保守的分類（`NO_WORLD_MUTATION`／`SAFE_TO_ROLLBACK`／`SAFE_TO_ACCEPT`／`ALREADY_TERMINAL`／`MANUAL_INTERVENTION_REQUIRED`）し、snapshot strict再検証・durable lease・manifest checksum／capability／overlay ordinal照合・union effect envelope全体のbounded exact world scanなしにworld actionを提示しない。actor-bound一回用confirmation（`RECOVERY_ROLLBACK`／`RECOVERY_ACCEPT`）付きsealed `PlacementRecoveryPlanV2`（Schema／example／codec）、中断journalのVERIFIED→APPLIED／RESTORED→SNAPSHOTTED決定論的late reconciliation→V2-6-08 rollback委譲、full exact scan再一致時のみのaccept（terminal `APPLIED`）、terminal限定dry-run bound cleanup retentionを実装し、`PaperPlacementRecoveryServiceV2.isRelease2Path()`でv1 recoveryと分離した（ADR 0028）。各persisted state／missing・tamper／lease欠損／replay・actor・expiry／drift／budget／cleanupを`PlacementRecoveryServiceV2Test`で検証した。自動acceptとv1 recovery意味変更は行っていない。
 - **目的／前提:** restart後のRelease 2 operationを保守的にdiagnose/rollback/acceptできるようにする。前提は`V2-6-08`〜`V2-6-09`。
-- **Scope／成果物:** journal/artifact/world evidence classification、late operation reconciliation、recovery plan、confirmation-bound rollback/accept、cleanup retentionを実装する。
+- **Scope／成果物:** journal/artifact/world evidence classification、manifest capability/tile/child/overlay ordinalとの照合、late operation reconciliation、deterministic resume可否判定、recovery plan、confirmation-bound rollback/accept、cleanup retentionを実装する。
 - **非Scope:** 自動accept、v1 recovery意味変更、external backup integration。
 - **主変更:** `core.v2.recovery`、journal/recovery Schema、Paper admin path、tests／operations docs。
-- **必須test／D/M/S:** each persisted state/restart/missing artifact/tamper/late scheduler/disk full、stable classification、bounded scan/retention budget、ambiguous stateはmanual-required、v1 recovery回帰。
+- **必須test／D/M/S:** each persisted state/restart/missing artifact/tamper/late scheduler/disk full、surface/volume/fluid途中状態、tile/child/overlay順のstable classification、bounded scan/retention budget、ambiguous stateはmanual-required、v1 recovery回帰。
 - **Gate／docs／次／停止:** ambiguityを成功へ分類せず全stateに安全なoperator actionを示せれば完了し、operations／admin／roadmapを更新して`V2-6-11`へ進める。一意な証拠がない状態を自動修復する必要があれば停止する。
 
 ### V2-6-11 Provider, manual, and image capability integration
 
+- **状態:** 完了（2026-07-19）。`ai.spi.v2`（capability catalog／negotiator、versioned provider SPI）、OpenAI／Anthropic／import／fixture adapters、`TerrainDesignApplicationServiceV2`（manual constraint binding＋reference-image soft draft）、Design Package v2 publisher／Schema／example、ADR 0029を実装した。no-fallback、provider間canonical Intent一致、soft draft HARD昇格拒否、path／secret拒否、v1 default不変をcontract testで確認。CLI／Paper既定`design`はv1のまま。次は`V2-6-12`。
 - **目的／前提:** OpenAI／Anthropic/manual/import/image pathsからv2 capabilityを明示選択し同じcanonical compileへ接続する。前提はV2-2〜5 supported contractsとRelease 2。
 - **Scope／成果物:** provider capability negotiation、v2 structured intent/import、manual/constraint bundle binding、reference image→soft draft/confirmation boundary、no-fallback dispatchを実装する。
 - **非Scope:** new AI model feature、Web UI、画像からhard geometryの暗黙生成、Paper apply internals。
@@ -721,8 +794,9 @@
 
 ### V2-6-12 Release 2 cross-capability hardening
 
+- **状態:** 完了（2026-07-19）。`ReleaseCapabilityDependencyMatrixV2`をvalid prefix正本とし、Catalog／PlacementPlanが参照。cross-version reader policy、artifact limits catalog、placement eligibility verifier、shared placement input contract（foundation／bathymetry→canonical overlay stream）、ADR 0030を実装。全5 prefixのdirectory／ZIP eligibilityとtamper corpusを`ReleaseCrossCapabilityHardeningV2Test`で確認。Release 1 allowlistは未共有・未緩和。次は`V2-6-13`。
 - **目的／前提:** Release 2 directory/ZIPと全capability組合せのstrict security回帰を閉じる。前提はV2-2〜5 capabilitiesと`V2-6-01`。
-- **Scope／成果物:** capability dependency matrix、cross-version reader policy、all artifact limits、tamper corpus、placement eligibility verifierを実装する。
+- **Scope／成果物:** capability dependency matrix、cross-version reader policy、surface／hydrology／environment／sparse-volumeの共通placement input contract、all artifact limits、tamper corpus、placement eligibility verifierを実装する。将来foundation/bathymetryも新しいFeature別placement typeではなく既存canonical streamへ収容できることをcontract testで固定する。
 - **非Scope:** world mutation、new artifact type、Release format 3。
 - **主変更:** `format.v2.release` verifier、security tests/corpus、artifact-format／security／migration docs。
 - **必須test／D/M/S:** every valid capability prefix、unknown/missing/extra/duplicate/version/checksum/path/ZIP bomb、order/charset/locale不変、entry/expand/decode/disk budget、Release 1 strict regression。
@@ -730,6 +804,7 @@
 
 ### V2-6-13 Operational metrics, diagnostics, and retention
 
+- **状態:** 完了（2026-07-19）。`core.v2.operations`へclosed-label metrics、redacted diagnostics、audit JSONL correlation、actor-bound Release 2 retention（dry-run／confirm／audit）、Schema／example、ADR 0031、Paper `/lfc ops metrics|diagnose`を実装。自動削除default・telemetry SaaS・Web UIは含まない。次は`V2-6-14`。
 - **目的／前提:** Release 2 generation/placement/recoveryの運用証拠と保持policyを完成する。前提は`V2-6-06`〜`V2-6-12`。
 - **Scope／成果物:** stage/queue/memory/disk/settle/verify metrics、redacted admin diagnostics、audit correlation、snapshot/release retention dry-run/confirm cleanupを実装する。
 - **非Scope:** external telemetry SaaS、Web UI、自動削除default。
@@ -739,7 +814,8 @@
 
 ### V2-6-14 WorldEdit 7.3.19 smoke
 
-- **目的／前提:** 今回buildのRelease 2 end-to-end placementをWorldEdit 7.3.19実機でsmokeする。前提は`V2-6-01`〜`V2-6-13`。
+- **状態:** 完了（2026-07-19）。WorldEdit 7.3.19単独profileで`/lfc r2 plan→confirm→execute→undo`を`APPLIED`／`UNDONE`まで実機実行。[evidence](audits/v2-6-14-worldedit-smoke-evidence.md)。次は`V2-6-15`。
+- **目的／前提:** 今回buildのRelease 2 end-to-end placementをWorldEdit 7.3.19実機でsmokeする。前提は`V2-6-01`〜`V2-6-13`および`V2-6-20`／`V2-6-21`。
 - **Scope／成果物:** isolated server/worldでgenerate→Release verify→plan→confirm→snapshot-all→apply→settle→full verify→Undo、logs/versions/checksums/cleanup evidenceを記録する。
 - **非Scope:** FAWE、500/1000 performance claim、Beta hardening既存項目の自動完了。
 - **主変更:** smoke scripts/fixtures、audit evidence、development/release checklist/roadmap。production変更はsmoke defectの小規模修正だけ。
@@ -748,52 +824,663 @@
 
 ### V2-6-15 FAWE standalone smoke
 
+- **状態:** 完了（2026-07-19）。FAWE 2.15.2単独profile（`runFaweServer`／`run-fawe`）で`/lfc r2 plan→confirm→execute→undo`を`APPLIED`／`UNDONE`まで実機実行。[evidence](audits/v2-6-15-fawe-smoke-evidence.md)。`V2-6-16`／`V2-6-17`は無効化のため次は`V2-6-18`。
 - **目的／前提:** version固定FAWE単独profileでRelease 2 placement smokeを実行する。前提は`V2-6-14`。
 - **Scope／成果物:** dependency lock/ADRへFAWE buildを記録し、WorldEdit plugin併用なしで同じend-to-end/Undo/recovery smoke evidenceを取得する。
 - **非Scope:** 過去FAWE smoke流用、500/1000 claim、FAWE private API採用。
 - **主変更:** FAWE smoke profile/scripts、ADR、audit、development/release checklist/roadmap。
 - **必須test／D/M/S:** gateway close/async completion/main-thread boundary、same canonical expected checksum、measured queue/memory/disk、no secret/server artifacts commit、failure/recovery smoke。
-- **Gate／docs／次／停止:** 今回buildと明記versionの独立実機evidenceが揃えば完了し`V2-6-16`へ進める。環境不足は`BLOCKED_EXTERNAL`、private API必須やsemantic差は停止してadapter Taskを追加する。
+- **Gate／docs／次／停止:** 今回buildと明記versionの独立実機evidenceが揃えば完了し、当初は`V2-6-16`へ進める想定だった。`V2-6-16`／`V2-6-17`無効化後は`V2-6-18`へ進める。環境不足は`BLOCKED_EXTERNAL`、private API必須やsemantic差は停止してadapter Taskを追加する。
 
 ### V2-6-16 500×500 real-world measurement
 
-- **目的／前提:** 500×500 Release 2をsupported placement候補として実測する。前提は`V2-6-14`〜`V2-6-15`。
-- **Scope／成果物:** representative capability fixtureのgenerate/export/apply/settle/full verify/Undo、peak memory/disk/time/scheduler slices、failure cleanup evidenceを取得する。
+- **状態:** 無効化（CANCELLED、2026-07-19）。IDは振り直さない。典型開発ホスト（例: 8 GiB RAM）ではeffect envelope全走査のcontainment／settle／full verifyが許容壁時計を超え、Acceptanceの完全E2E（apply→settle→full verify→Undo）を閉じられないことが判明した。500角 Paper placementをcatalog候補／`SUPPORTED`へしない。再実測が必要なら新Task IDを追加する（本IDは復活させない）。再実測は`V2-11-04`として登録済み（2026-07-20）。
+- **目的／前提（凍結）:** 500×500 Release 2をsupported placement候補として実測する。前提は`V2-6-14`〜`V2-6-15`。
+- **Scope／成果物（凍結）:** representative capability fixtureのgenerate/export/apply/settle/full verify/Undo、peak memory/disk/time/scheduler slices、failure cleanup evidence。
 - **非Scope:** 1000×1000、上限の自動引上げ、offline測定による代用。
-- **主変更:** measurement protocol/results、config support gate、performance/operations/release checklist/roadmap。
-- **必須test／D/M/S:** repeated seed checksum、tile order equivalence、declared admission vs measured peak、disk reservation/retention、no artifact/secret commit、post-Undo exact world verify。
-- **Gate／docs／次／停止:** 対応WorldEdit/FAWE環境で成功し安全marginを根拠化できた時だけ500角placementをcatalog候補にし`V2-6-17`へ進める。環境なし/上限超過は`BLOCKED_EXTERNAL`または未対応として停止する。
+- **Gate／docs／次／停止:** 本Taskは実行しない。次のTrack A Taskは`V2-6-18`。500角は未測定のまま`UNSUPPORTED`／明示hard limit対象とする。
 
 ### V2-6-17 1000×1000 real-world measurement
 
-- **目的／前提:** 1000×1000 Release 2 placementを別Taskとして実測する。前提は`V2-6-16`。
-- **Scope／成果物:** 1000角のgenerate/export/apply/settle/full verify/Undo、peak memory/disk/time/scheduler behavior、failure/recovery evidenceを取得する。
+- **状態:** 無効化（CANCELLED、2026-07-19）。IDは振り直さない。前提`V2-6-16`が無効化され、かつ1000角実測はさらに重いためTrack Aの必須経路から外す。1000角 Paper placementをcatalog候補／`SUPPORTED`へしない。再実測が必要なら新Task IDを追加する。再実測は`V2-11-05`として登録済み（2026-07-20）。
+- **目的／前提（凍結）:** 1000×1000 Release 2 placementを別Taskとして実測する。前提は`V2-6-16`。
+- **Scope／成果物（凍結）:** 1000角のgenerate/export/apply/settle/full verify/Undo、peak memory/disk/time/scheduler、failure/recovery evidence。
 - **非Scope:** 500角結果の外挿、測定なしのsupport宣言、Web UI。
-- **主変更:** measurement results、config dimension gate、performance/operations/release checklist/roadmap。
-- **必須test／D/M/S:** repeat checksum/tile order/thread、admission vs measured peak、disk/snapshot/envelope/full scan、server responsiveness evidence、post-Undo exact verify。
-- **Gate／docs／次／停止:** 実測が全gateと安全marginを満たした場合だけ1000角placementをcatalog候補にする。実測を完遂したが上限を満たさない場合は、1000角をunsupportedとして500以下のhard limitと証拠を固定すればTaskを完了できる。環境不足は`BLOCKED_EXTERNAL`、原因修正を同Taskへ抱える場合は停止する。いずれも確定後だけ`V2-6-18`へ進める。
+- **Gate／docs／次／停止:** 本Taskは実行しない。次のTrack A Taskは`V2-6-18`。1000角は未測定のまま`UNSUPPORTED`／明示hard limit対象とする。
 
 ### V2-6-18 Final supported catalog
 
-- **目的／前提:** feature/capability/dimension/provider/runtimeのsupported matrixを証拠から固定する。前提は`V2-6-11`〜`V2-6-17`。1000角失敗は明示上限を保てばTaskを続行できるが、未測定をsupportedにしない。
-- **Scope／成果物:** lifecycle catalog、required capability/runtime/version、placement dimension limit、preset availability、unsupported/deferred diagnostics、README/user docsを整合する。
-- **非Scope:** 新feature追加、gate waiver、Web UI、Beta hardening未完項目の削除。
+- **状態:** 完了（2026-07-19）／V2-6／P0。`FeatureSupportCatalogV2`（contract `feature-support-catalog-v1`）、`BuiltInFeatureSupportCatalogV2`（71 entry）、`FeatureSupportCatalogConsistencyVerifierV2`、Schema／sealed example、false-promotion corpusを追加した。placement hard limitはsmoke実測の**64×64**。Paper能力列と500／1000は`SUPPORTED`にしない。次は`V2-6-19`。
+- **目的／前提:** feature/capability/dimension/provider/runtimeのsupported matrixを証拠から固定する。前提は`V2-6-11`〜`V2-6-15`および`V2-6-20`／`V2-6-21`。`V2-6-16`／`V2-6-17`は無効化済みのため未測定寸法（500／1000 Paper apply）を`SUPPORTED`にしないことと、smoke規模以下の明示hard limitをcatalogへ固定することが必須である。
+- **Scope／成果物:** `primaryRole`／`allowedUsages[]`と13能力（intent、offline generate、validation、preview、export、standalone、child、overlay、paper apply、post-apply validation、snapshot、rollback、restart recovery）のversion付きcatalog、required capability/runtime/version、placement dimension limit、preset availability、unsupported/deferred diagnostics、README/user docs、taxonomy-code consistency verifierを整合する。legacy `lifecycleStatus`は互換表示に限定する。
+- **非Scope:** 新feature追加、gate waiver、Web UI、Beta hardening未完項目の削除、無効化した500／1000実測の再実施。
 - **主変更:** built-in descriptor/catalog data、capability matrix docs/Schema、README/user/provider/limitations/roadmap。
-- **必須test／D/M/S:** every `SUPPORTED` entryのcontract/generator/validator/preview/fixture/budget/release/smoke evidence link、unknown/deprecated selection拒否、catalog order/checksum、catalog size/parse budget、future capability拒否。
-- **Gate／docs／次／停止:** evidence欠損entryを`EXPERIMENTAL`へ残し実測済み上限だけ設定できれば完了し`V2-6-19`へ進める。手動主張しかないentryやBeta項目削除が必要なら停止する。
+- **必須test／D/M/S:** 全entryの必須13能力、role/usage整合、enum/binding/generator/validator/preview/export/evidence link照合、child-onlyのstandalone昇格拒否、plan-level volumeとpublic Intentの分離、Paper evidenceなし昇格拒否、未測定寸法のfalse-promotion拒否、unknown/deprecated selection、catalog order/checksum、catalog size/parse budget、future capability拒否。
+- **Gate／docs／次／停止:** evidence欠損能力を`EXPERIMENTAL`または`UNSUPPORTED`へ残し、実測済み上限（WE／FAWE smoke規模）だけ設定し、generator未実装kindとV2-6未完能力を`SUPPORTED`へできない自動検査が通れば完了する。手動主張だけ、単一statusへの再集約、Beta項目削除が必要なら停止する。
 
 ### V2-6-19 Release candidate audit and Phase gate
 
-- **目的／前提:** V2-6とTerrain Generation v2全体を監査し親Phase gateを閉じる。前提は`V2-6-01`〜`V2-6-18`。外部Taskの`BLOCKED_EXTERNAL`は未完扱い。
+- **状態／Phase／優先度:** 完了（2026-07-19）／V2-6／P0。`PlacementPhaseGateV2Test`（catalog非昇格・hard limit 64×64・sealed example・capability list／5 valid prefix不変・placement example portfolio決定性・R2全lifecycleのrepeat／thread／locale／timezone同一block-state map＋terminal `UNDONE`）とfull clean test／build（909 tests）でV2-6 Phase gateを閉じた。監査発見のlocale依存`toLowerCase()` 6箇所をchecksum不変の`Locale.ROOT`最小修正として同Task内で修正した。能力昇格は行わず`V2-11-01`へ登録し、release candidateはBeta hardening未完のため未承認のまま。証拠は [V2-6 Phase gate audit](audits/v2-6-phase-gate.md)。Track D（V2-9）／Track E（V2-10）のPaper apply capability `SUPPORTED`化の必須gate（達成済み。実昇格は`V2-11-01`）。
+- **目的／前提:** V2-6とTerrain Generation v2全体を監査し親Phase gateを閉じる。前提は`V2-6-01`〜`V2-6-15`、`V2-6-18`、および`V2-6-20`／`V2-6-21`。`V2-6-16`／`V2-6-17`は無効化済みであり未完BLOCKED扱いにはしないが、未測定寸法の`SUPPORTED`主張があればgate失敗とする。
 - **Scope／成果物:** contract→provider/manual/image→generation→validation/preview→Release→placement/verify/rollback/Undo/Recovery、catalog、security、performance、v1回帰のRC auditとrelease decisionを作る。
 - **非Scope:** 新実装、大規模bug fix、未完Beta hardeningの免除、Web UI。
 - **主変更:** audit、roadmap、release checklist、README/limitations/operationsの実態同期。production修正は行わず、defectは新Task化する。
-- **必須test／D/M/S:** full clean test/build、all capability directory/ZIP tamper、all supported scenario/determinism/runtime profile、measured admission/effect/snapshot/disk、fault injection/recovery、v1 Schema/generator/Release1/placement/Undo golden。
-- **Gate／docs／次／停止:** 全必須Taskとsupport evidenceが完了し未解決critical/high riskがない時だけV2-6を完了とする。Beta hardeningの別未完項目はそのまま残す。失敗・外部環境不足・大規模修正は新Taskを登録し、Release candidateを未承認のまま停止する。
+- **必須test／D/M/S:** full clean test/build、all capability directory/ZIP tamper、全`paper_apply: SUPPORTED` scenarioのsurface/solid/air/fluid/child/overlay、determinism/runtime profile、measured admission/effect/snapshot/disk、fault injection/recovery、capability matrix false-promotion corpus、v1 Schema/generator/Release1/placement/Undo golden。
+- **Gate／docs／次／停止:** 全必須Taskと能力ごとのsupport evidenceが完了し未解決critical/high riskがない時だけV2-6を完了とする。Track D（V2-9）／Track E（V2-10）はこのgateの完了を待たず並行実装できるが、新foundation featureのPaper `SUPPORTED`化にはこのgateと`V2-6-06`〜`V2-6-10`の完了が必要である。Track D／Eの進行はV2-6を延期する理由にしない。Beta hardeningの別未完項目はそのまま残す。失敗・外部環境不足・大規模修正は新Taskを登録し、Release candidateを未承認のまま停止する。
 
-## 7. 親Phaseを閉じる規則
+### V2-6-20 Verified Release 2 canonical block source
 
-`V2-2-12`、`V2-3-15`、`V2-4-15`、`V2-5-18`、`V2-6-19`だけが親Phaseを完了へ変更できる。先行Taskが完了しても、次のどれかが残れば親Phaseは `進行中` である。
+- **状態／Phase／優先度:** 完了（2026-07-19）／V2-6／P0。`VerifiedReleaseCanonicalBlockSourceV2`、closeable `VerifiedReleaseViewV2`、bounded Sponge decode cursorを実装した。surface／ZIP／sparse-volume final stream、cursor reopen、post-verify drift、extra file、cancel、ZIP staging cleanupと既存tamper corpusを検証し、ADR 0033を追加した。Release format／Schema／v1は不変。次は`V2-6-21`。
+- **目的／前提:** strict verify済みRelease format 2 directory／ZIPから、apply／full verify／Undo／Recoveryが再利用できるimmutable `PlacementCanonicalBlockSourceV2`を構築する。前提は`V2-5-16`／`V2-5-17`／`V2-6-01`／`V2-6-12`。
+- **Scope／成果物:** manifest exact-file-setとcapability prefixの再検証、bounded Sponge v3 decode、surface＋sparse-volume overlayのcanonical X-fastest/Z/Y stream、source binding／fingerprint、directory／ZIP parity、restart-safe reopen、positive／corruption fixtures。
+- **非Scope:** Paper world mutation、command routing、新artifact format、新Schema version、v1 reader／Release 1 allowlist変更。
+- **主変更:** `format.v2.release`／`format.v2.tile`のstrict reader adapter、`core.v2.placement.apply` source adapter、tests／fixtures、artifact-format／security／operations docs。
+- **必須test／D/M/S:** missing／extra／duplicate／case collision／traversal／symlink、unknown version／capability／palette／block state、checksum／semantic checksum tamper、directory／ZIP同値、tile／overlay順不変、locale／timezone／charset不変、entry／decode／resident／disk budget、cursor close／reopen／interrupt cleanup、v1 golden。
+- **Gate／docs／次／停止:** verified Release 2からbyte-identical cursorを繰返し開け、tamper corpusをstrict rejectし、bounded resourceとv1回帰を満たせば完了して`V2-6-21`へ進める。新artifact format、unbounded dense decode、WorldEdit／Paper依存が必要なら停止する。
+
+### V2-6-21 Release 2 Paper application／command lifecycle
+
+- **状態／Phase／優先度:** **再完了（2026-07-20、P0再オープン）**／V2-6／P0。2026-07-19実装に加え、placement durability／Undo reservation／R2 command securityをhardeningした。既存version付きrecordだけを使うstage commit marker、fsync＋atomic publish＋strict read-back、全12 operation-store write point×before／after failpoint、confirm／apply間restart、Undo self-overlap許可／第三者overlap拒否／baseline完全復元、Recovery retryをproduction file store testで固定した。R2 commandはoperator Player／CONSOLE／RCONだけを受理し、command block／非operator、actor mismatch、deny／missing worldをworld mutation前のstable domain errorにする。permission-aware completionはdeny worldとtokenを候補へ出さない。新Release artifact／Schema／example／support昇格と後続Taskは含めない。
+- **目的／前提:** Release 2のplan→effect envelope→reservation-bound confirm→snapshot-all→containment→apply→settle→full verify→rollback／Undo／Recoveryをproduction lifecycleとして組み立て、v1と混同しない明示command経路を提供する。前提は`V2-6-01`〜`V2-6-13`および`V2-6-20`。
+- **Scope／成果物:** version-dispatched R2 application facade、Paper gateway／store／journal／executor所有とshutdown、explicit R2 plan／confirm／execute／status／Undo／Recovery command、restart inspection、operator diagnostics、fake-gateway integration tests。
+- **非Scope:** WorldEdit／FAWE実機smoke、500／1000実測、v1 command意味変更、新Release artifact／Schema、support catalog昇格。
+- **主変更:** `core.v2.placement` application orchestration、Paper lifecycle／command adapter、config／permissions、tests、commands／admin／operations／security docs。
+- **必須test／D/M/S:** happy path全順序、confirm binding、全snapshot前mutationゼロ、containment failureゼロmutation、settle/full verify／rollback、late cancel commit point、restart ambiguity、Undo／Recovery actor binding、main-thread assertion、bounded queue／memory／disk admission、shutdown／interrupt cleanup、v1 command／golden回帰。P0再オープンgateとして全operation-store write failpoint（before／after publish）、restart、即時Undoのself／third-party overlap、baseline exact restore、Recovery plan retry、operator／sender／world policy／missing world／actor／completion回帰を追加する。
+- **Gate／docs／次／停止:** 上記P0再オープンgateと既存Acceptanceを満たしたため再完了。新Schema／exampleは不要（operational stateは既存version付きrecordのstrict保存のみ）。support catalog昇格は行わず、後続`V2-11-01`は本Taskで開始しない。private WorldEdit／FAWE API、新artifact format、またはsnapshot外副作用の容認が必要なら停止する。
+
+## 7. V2-7 Image fidelity（Track B: 画像・スケッチの直接制約化）
+
+前提はV2-1 gate完了のみで、Track Aの進行を待たない。全Taskで「画像からhard geometryの暗黙生成禁止」（draft＋明示昇格）を維持する。
+
+### V2-7-01 Deterministic land-water extraction core
+
+- **状態:** 完了（2026-07-17再設計時に実装）。`format.v2.constraint.extract`へ`image-land-water-extract-v1`（integer-only固定閾値、alpha/UNKNOWN帯、信頼度0..255）、`ExtractedMaskDraftV2`（tagged SHA-256 semantic checksum、water/land/unknown計数）、trusted ceiling付き`ImageMaskExtractionLimitsV2`（4096/16Mピクセル/aspect32/working 64 MiB）、行単位cancelを実装した。golden分類、checksum再現（repeat/thread/locale/timezone）、寸法/aspect/pixel/working/buffer/checksum拒否、cancelを`ImageLandWaterExtractorV2Test`で検証した。CLI/Paper/Requestへは未接続、`EXPERIMENTAL`である。採用判断は [ADR 0017](../adr/0017-deterministic-image-mask-extraction.md)。
+
+- **目的／前提:** 通常画像からland-water draftをAIなしで決定論的に抽出するcore契約を固定する。前提はV2-1 gate完了。
+- **Scope／成果物:** 分類規則のversion凍結、draft record、admission limits、semantic checksum、決定性・拒否テスト。
+- **非Scope:** ファイル入力封筒、draft artifact保存、preview、昇格、height/zone抽出。
+- **Gate:** golden分類と決定性・拒否・cancelが通り、既存回帰が不変であること（達成済み）。
+
+### V2-7-02 Secure extraction input envelope
+
+- **目的／前提:** sanitized画像fileから抽出coreへのARGB供給路を固定する。前提は`V2-7-01`。
+- **Scope／成果物:** v1 `ReferenceImageProcessor`と同等のpath/symlink/hardlink/magic/byte/pixel/frame/EXIF検査を持つ抽出専用envelope、decode/working budget、cancel、source checksum連鎖を実装する。
+- **非Scope:** Request Schema変更、draft artifact保存、AI Provider接続。
+- **主変更:** `format.v2.constraint.extract`、fixtures、image-constraint-maps docs。
+- **必須test／D/M/S:** path/link/TOCTOU/bomb/multi-frame拒否、byte/pixel/decode/working budget、checksum連鎖、thread/locale不変、cancel cleanup。
+- **Gate／docs／次／停止:** 実PNG/JPEGからdraftまでの経路がstrictに通れば完了し、`V2-7-03`へ進める。v1画像境界の意味を変える必要があれば停止する。
+
+### V2-7-03 Draft artifact and confidence preview
+
+- **目的／前提:** draftを検証可能なartifact＋診断previewにする。前提は`V2-7-02`。
+- **Scope／成果物:** draft artifactのstrict Schema/codec（staging→read-back→atomic publish）、class/confidence/unknownの固定PNG preview、strict index、budget。
+- **非Scope:** 昇格、Release capability、Paper UI。
+- **主変更:** `format.v2.constraint.extract`、`preview.v2` registry、新Schema、examples、docs。
+- **必須test／D/M/S:** round-trip、checksum改変/欠損/extra拒否、preview palette/dimension固定、1枚ずつbounded render、cancel cleanup。
+- **Gate／docs／次／停止:** strict read-backとpreview indexが通れば完了し、`V2-7-04`へ進める。既存preview registryの意味変更が必要なら停止する。
+
+### V2-7-04 Explicit promotion to constraint map
+
+- **目的／前提:** draft→数値constraint PNG（V2-1経路）への明示昇格を実装する。前提は`V2-7-03`。
+- **Scope／成果物:** 昇格操作（confidence閾値・UNKNOWN処理の明示指定）、生成した数値PNGのV2-1 strict decoder再検証、source→draft→constraint mapのprovenance連鎖、昇格記録。
+- **非Scope:** 自動/暗黙昇格、AIによる補完、Request外の新しいhard constraint種別。
+- **主変更:** `core.v2`昇格サービス、provenance Schema、examples、image-constraint-maps docs。
+- **必須test／D/M/S:** 昇格round-trip（draft→PNG→field）、checksum連鎖検証、閾値境界、UNKNOWN扱いの明示指定必須、改変拒否、決定性。
+- **Gate／docs／次／停止:** 昇格物がV2-1経路の全検査を通過しprovenanceが検証可能なら完了し、`V2-7-05`へ進める。暗黙のhard化が必要になれば停止する。
+
+### V2-7-05 Height guide extraction
+
+- **目的／前提:** 輝度ベースのheight guide draft抽出を追加する。前提は`V2-7-02`（並行可: `V2-7-03`）。
+- **Scope／成果物:** integer-only輝度→height draft（version凍結）、信頼度、既存3種height意味との対応宣言、昇格連携。
+- **非Scope:** 等高線ベクトル化、陰影推定、AI推定。
+- **主変更:** `format.v2.constraint.extract`、Schema、fixtures、docs。
+- **必須test／D/M/S:** golden輝度変換、no-data、範囲clamp、決定性、budget、拒否。
+- **Gate／docs／次／停止:** draft→昇格→residual報告が一貫すれば完了し、`V2-7-06`へ進める。
+- **モデル割当:** [model-assignment.md](model-assignment.md)参照。
+
+### V2-7-06 Zone and sketch label extraction
+
+- **目的／前提:** スケッチ・zone画像から有界・整数のみの量子化でzone label draftを抽出する。前提は`V2-7-02`。
+- **Scope／成果物:** 固定palette距離量子化（反復クラスタリング禁止）、label表提案、ambiguous帯のUNKNOWN化、昇格連携。
+- **非Scope:** 自由曲線のベクトル化、意味推定（AIによるlabel命名は提案のみ）。
+- **主変更:** `format.v2.constraint.extract`、Schema、fixtures、docs。
+- **必須test／D/M/S:** palette境界golden、ambiguous帯、label数budget、決定性、拒否。
+- **Gate／docs／次／停止:** zone draftが昇格後V2-1 zone経路の全検査を通れば完了し、`V2-7-07`へ進める。
+- **モデル割当:** [model-assignment.md](model-assignment.md)参照。
+
+### V2-7-07 Multi-source reconciliation, source diff, and Phase gate audit
+
+- **目的／前提:** 複数入力（複数画像・prompt・手動map）の競合と優先順位を明示解決し、Phase gateを閉じる。前提は`V2-7-01`〜`V2-7-06`。
+- **Scope／成果物:** source優先順位contract（prompt vs 画像、hard vs draft）、競合診断、source-to-result差分metric/preview、V2-7全portfolioの統合監査。
+- **非Scope:** 新抽出種別、Release capability追加（必要なら新Task）、Paper UI。
+- **必須test／D/M/S:** 競合fixture（画像同士/画像とprompt）、優先順位の決定性、差分metricのstable reduction、全corruption回帰、clean build。
+- **Gate／docs／次／停止:** 全前提Taskと統合監査が通った場合だけV2-7を完了とし、抽出経路を`SUPPORTED`候補として記録する。未解決競合ruleが残れば新Taskを追加して停止する。
+
+## 8. V2-8 Scale-up（Track C: LARGE 3000×3000）
+
+設計正本は [scale-and-streaming.md](scale-and-streaming.md)、採用判断は [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md)。V2-8はofflineのLARGE生成をgateし、LARGEのPaper配置はV2-6完了後の追加Taskとする。
+
+### V2-8-01 Scale class, profile, tile plan, and admission contract
+
+- **状態:** 完了（2026-07-17再設計時に実装）。`model.v2.scale`へ`ScaleClassV2`（SMALL≤512/MEDIUM≤1024/LARGE≤3072、stable id、LARGE=streaming必須）、trusted ceiling付き`ScaleProfileV2`（version凍結defaults: tile128、halo16/32、coarse4/8/16、予算）、canonical row-major `TilePlanV2`（`tileZ*countX+tileX`、halo clamp、`tile-x{X}-z{Z}`）を実装した。`core.v2.scale.ScaleAdmissionV2`（`scale-admission-v1`）が寸法/class/tile/working/retained/artifactを割当前に検査し、stable failure codeで拒否する。3000×3000=576 tileのgolden分解、決定性（repeat/thread/locale/timezone）、全failure code、ceiling clampを`TilePlanV2Test`/`ScaleAdmissionV2Test`で検証した。既存の分散寸法検査・v1・全checksumは不変で、LARGE生成は未実装・`EXPERIMENTAL`である。
+
+- **目的／前提:** 規模別実行の単一契約を固定する。前提はなし。
+- **Scope／成果物:** scale class、profile、tile plan、admission、決定性・拒否テスト。
+- **非Scope:** 既存検査の置換、LARGE生成、予算実測。
+- **Gate:** 契約のstrict検証と既存回帰不変（達成済み）。
+
+### V2-8-02 Dimension policy unification
+
+- **目的／前提:** v2 subsystemへ分散した`1..1_000`検査をscale契約経由へ集約する。前提は`V2-8-01`。
+- **Scope／成果物:** `ConstraintMapSamplerV2`、`HydrologyRoutingRequestV2`、`CoastalRasterKernelV2`、各coast generator、preview index等の寸法検査をscale契約参照へ置換し、MEDIUM以下の全出力checksum不変を回帰で固定する。v1（`GenerationBounds`）は変更しない。
+- **非Scope:** LARGE値の受理（predicateはMEDIUM上限のまま）、予算変更。
+- **主変更:** `core.v2`／`generator.v2`各所、tests。Schema変更なし。
+- **必須test／D/M/S:** v1 golden、V2-2/V2-3統合fixtureのchecksum不変、寸法境界（1024/1025）拒否、決定性回帰。
+- **Gate／docs／次／停止:** checksum完全不変で置換が完了すれば`V2-8-03`へ。1箇所でもchecksumが変わる場合は停止して原因を報告する。
+
+### V2-8-03 Constraint map and field store LARGE budgets
+
+- **目的／前提:** 数値PNG decode（現行1枚4Mピクセル）と`LFC_GRID_V1`/windowの上限をLARGEへ拡張する。前提は`V2-8-02`。
+- **Scope／成果物:** 3072²を収容するdecode/resident/artifact上限の再設計、disk-backed windowでのpeak実測テスト、trusted ceilingの更新（ADR追記）。
+- **非Scope:** generator側のLARGE対応、抽出経路。
+- **必須test／D/M/S:** 3072角のdecode/window peak実測、budget拒否境界、既存4M以下回帰、決定性。
+- **Gate／docs／次／停止:** 実測がbudget内で回帰不変なら`V2-8-04`へ。ImageIOのdecode保証が得られない形式は拒否のまま残す。
+
+### V2-8-04 Coarse global planning and LARGE hydrology
+
+- **目的／前提:** coarse大域計画passとhydrology global solveのLARGE実行を確定する。前提は`V2-8-03`、V2-3 gate完了。
+- **Scope／成果物:** coarse cell解像度のmacro layout、priority floodの3072²実測またはcoarse solve＋reach詳細化の採用判断（ADR）、graph/field予算。
+- **非Scope:** environment/volumeのLARGE対応、streaming resume。
+- **必須test／D/M/S:** 3072角routingのpeak/時間実測、coarse↔fullの整合契約、決定性（tile/thread/locale/timezone）、budget拒否。
+- **Gate／docs／次／停止:** LARGE routingが予算内で決定論的なら`V2-8-05`へ。予算内に収まらない場合はcoarse解像度契約を再設計するADRを書いて停止する。
+
+### V2-8-05 Streaming generation, resume, and partial regeneration
+
+- **目的／前提:** tile artifact hash＝cache key、resume、halo依存グラフによる部分再生成を実装する。前提は`V2-8-04`。
+- **Scope／成果物:** tileごとのartifact hash導出（Blueprint checksum・seed・依存halo）、中断/再開、変更featureの影響tile無効化、journal。
+- **非Scope:** Paper配置、Release分割。
+- **必須test／D/M/S:** resume前後checksum一致、cache有無一致、部分再生成の影響範囲正確性、cancel/crash安全、budget。
+- **Gate／docs／次／停止:** 全再生成と部分再生成の結果が全XZで一致すれば`V2-8-06`へ。一致しないhalo依存が見つかれば該当generator Taskを再openする。
+
+### V2-8-06 Staged preview pyramid
+
+- **目的／前提:** LARGEのpreviewを段階生成（coarse overview→tile詳細）にする。前提は`V2-8-04`（並行可: `V2-8-05`）。
+- **Scope／成果物:** 解像度段数契約、downsample規則（integer-only）、bounded render、preview index拡張。
+- **非Scope:** 新しいvalidation種別、Web UI。
+- **必須test／D/M/S:** downsample golden、段階間整合、1枚ずつbounded render、index strict read-back。
+- **Gate／docs／次／停止:** 3072角のpreview一式がbudget内なら`V2-8-07`へ。
+
+### V2-8-07 Export and Release segmentation
+
+- **目的／前提:** LARGEのRelease 2をsegment分割し結合検証する。前提は`V2-8-05`。
+- **Scope／成果物:** segment単位のdirectory/ZIP、跨りmanifest、結合strict verify、disk budget。
+- **非Scope:** Release format 3、Paper配置。
+- **必須test／D/M/S:** segment欠損/入替/改変拒否、結合順不変、disk予約、既存capability回帰。
+- **Gate／docs／次／停止:** 分割・結合のstrict verifyが通れば`V2-8-08`へ。format 2 coreの意味変更が必要なら停止する。
+
+### V2-8-08 LARGE offline integration and Phase gate audit
+
+- **目的／前提:** 3000×3000 offline統合fixtureでV2-8全体を監査しPhase gateを閉じる。前提は`V2-8-01`〜`V2-8-07`。
+- **Scope／成果物:** 代表featureを含む3000角end-to-end（生成→validation→preview→分割export→self-verify）、peak memory/時間/disk実測、決定性portfolio、Phase audit。
+- **非Scope:** LARGEのPaper配置（V2-6完了後の新Task）、新機能。
+- **必須test／D/M/S:** 全positive/corruption、resume/部分再生成、tile正逆/thread/locale/timezone、実測admission対比、v1/Release/V2-2〜4回帰、clean build。
+- **Gate／docs／次／停止:** 全gate通過時だけLARGE offlineを`SUPPORTED`とする。実測未達は明示上限（例: 2048）を証拠付きで固定して完了してもよい。未測定をsupportedにしない。
+
+## 9. V2-9 Terrain foundation expansion（Track D）
+
+V2-9は`V2-6-01`／`V2-6-02`がfreezeするRelease 2 placement plan／mutation-effect envelope契約だけを前提に開始でき、`V2-6-19`のPhase gate完了を待たない。Track A（V2-6）／B（V2-7）／C（V2-8）／D（V2-9）は明示依存があるTask以外を互いに待たず並行実行できる。新FeatureごとのPaper adapterは作らず、全出力をV2-6 canonical surface／solid／air／fluid placement streamへ適合させる。V2-9 Taskはoffline生成／検証／previewまでを完了条件とし、Paper apply capabilityの`SUPPORTED`宣言はV2-6 apply/verify/rollback/Undo/Recovery（`V2-6-06`〜`V2-6-10`）と`V2-6-19`のPhase gate完了後に別Taskで接続する。
+
+### V2-9共通contract（全Task必須）
+
+- **Design／implementation:** vertical sliceはintent/schema→compile→named derived seed→deterministic generation→validation→preview→export→tests→docsを閉じる。未実装kindへのfallback noise、placeholder、暗黙default、priority-only conflictは禁止する。
+- **Determinism:** request seedからfeature stable key/IDでseedを分離し、input/module/candidate/tile order、thread scheduling、locale、timezone、charsetに非依存とする。preview／export／Paper expected streamは同一query結果を使う。
+- **Ownership／transition:** 変更可能なcell/voxel、parent/child/overlay ordinal、overlap解決、transition band、solid/fluid競合、surface/volume接続をplanへfreezeする。HARD同士はerror、last-write-winsは禁止する。
+- **Memory／security:** `ScaleProfileV2`とadmissionを使い、最大3072角を想定しても全域dense 3Dを保持しない。tile、coarse global plan、sparse AABB/interval、bounded windowを使う。寸法、座標、finite数値、標高/深度、graph node/edge、nesting、allocation、decode/disk/path/manifestを上限検査する。LARGEをsupportedにできるのはV2-8 gate後だけである。
+- **Compatibility:** v1 Schema/generator `3.0.0-phase6`/Release 1/placement/Undo、既存FeatureKind ID、Release 2 manifest、seed checksum、v2 fixtureを変更しない。既存specialized featureの出力変更は新schema/generator versionとmigration/aliasを必要とする。
+- **Tests／docs:** positive、negative/corruption、strict round-trip、whole/tile/seam、tile正逆、1/4 thread、module/candidate順、locale/timezone/charset、cancel/cleanup、CPU/memory/disk/artifact budget、v1/直前capability回帰を実行し、taxonomy、design、example、roadmapを同期する。
+
+### V2-9-01 Surface foundation field, ownership, and transition contract
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。
+- **状態詳細:** `SurfaceFoundationPlanV2`（`surface-foundation-field-contract-v1`）、`SurfaceFoundationPlanCompilerV2`（ScaleAdmission＋named seed）、`SurfaceFoundationMergeCompilerV2`、Schema／example／strict codecを実装。empty/minimal strict round-tripと2 synthetic ownerのwhole/tile同checksum、ownerless／tie／undeclared overlap／band外／seed collision／scale admission拒否を`SurfaceFoundationPlanCompilerV2Test`で検証。kindはSUPPORTEDへしていない。
+- **目的／背景:** PLAIN、hill、mountain、valley、river、wetlandが共有する2.5D field、ownership、transition、seed契約を先に固定し、specialized generatorの重複を防ぐ。
+- **Scope／成果物:** version付きfoundation plan、surface class/elevation/residual/owner/transition descriptors、stable seed namespace、merge/interaction compiler、ScaleProfile admission、strict Schema/example/codec。共通contractのみを実装しkindをsupportedへしない。
+- **非Scope:** 個別形状generator、既存ALPINE/GLACIAL/MEANDERING出力変更、Paper実装、LARGE enable。
+- **依存／変更面:** `V2-6-02`（placement mutation/effect envelope契約）、`V2-8-01`（`ScaleProfileV2`／`ScaleAdmissionV2`）。`V2-8-02`寸法統一と`V2-6-19` Phase gateの完了は前提としない。`model.v2.foundation`、`core.v2` compiler、`generator.v2.foundation`、Schema/design/tests。
+- **個別要件:** ownerなしcell、同票owner、未宣言overlap、0..32外transition、seed collision、field/support/halo budgetを拒否する。
+- **Acceptance／停止:** empty/minimal planがstrictで、2つのsynthetic ownerのwhole/tile mergeが同checksumなら完了する。既存field意味のin-place変更または新artifact formatが必要なら停止する。
+
+### V2-9-02 PLAIN and HILL_RANGE vertical slices
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。
+- **状態詳細:** `PLAIN`／`HILL_RANGE`をIntentへ追加し、`PlainPlanV2`／`HillRangePlanV2`、integer-only generator、foundation merge経由のplain↔hill transition、validation artifact／preview index、sealed plan exportを実装。dedicated moduleは`EXPERIMENTAL`だが、既存WorldBlueprint checksum不変のためグローバルcatalogへは未登録（diagnostic bindingのまま）。`BACKSHORE_PLAINS`はID維持のまま`BackshorePlainsAliasV2`でPLAIN候補へ写像。`SUPPORTED`昇格はしていない。
+- **目的／背景:** v1 zoneや`BACKSHORE_PLAINS` diagnosticを実装済みと見なさず、基準面と低〜中reliefの共通基盤を作る。
+- **Scope／成果物:** `PLAIN`と`HILL_RANGE`のtyped parameter、compiler、integer-only generator、microrelief/ridge/saddle fields、validator、preview、Release 2 export、fixtures。`BACKSHORE_PLAINS`はlegacy alias/migration候補を設計するが既存IDを削除しない。
+- **非Scope:** forest/grassland ecology、mountain peak、river routing、Paper専用処理。
+- **依存／変更面:** `V2-9-01`。Intent/schema追加はswitch影響を全列挙し、generator完成までcatalogを`EXPERIMENTAL`に保つ。
+- **個別要件:** plainはdefault/no-opにせず微地形と地下水handoffを持ち、hillはclosed ridge/saddle budgetとplain transitionを持つ。
+- **Acceptance／停止:** 2 kindのvertical sliceとtransition corruptionが通り、既存coast/hydrology/v1 checksum不変なら完了する。aliasで既存serializationを変える必要があればversioned migration Taskへ分離する。
+
+### V2-9-03 MOUNTAIN_RANGE and VALLEY foundation
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。
+- **状態詳細:** `MOUNTAIN_RANGE`／`VALLEY`をIntentへ追加し、`MountainRangePlanV2`／`ValleyPlanV2`、ridge／peak／saddle／spur／pass／foothillのderived component catalog（FeatureKind化なし）、V／U cross-section、floor／shoulder／transition、`FoundationMountainValleySliceCompilerV2`、validation／preview／sealed exportを実装。dedicated moduleは`EXPERIMENTAL`だが既存WorldBlueprint checksum不変のためグローバルcatalog未登録（diagnostic binding）。ALPINE／GLACIAL／FJORD specialized module・seed・parametersは未変更。`SUPPORTED`昇格はしていない。
+- **目的／背景:** ALPINE/GLACIAL mountain、fjord、river valleyが再利用できるrange/valley coreを、既存specialized outputを変えず導入する。
+- **Scope／成果物:** general range/valley plans、ridge/peak/saddle/spur/pass/foothill component catalog、V/U cross-section、floor/shoulder/transition fields、vertical slice、validator/preview/export。
+- **非Scope:** specialized generatorの全面リファクタ、glacier ice、karst、escarpment、Paper専用処理。
+- **依存／変更面:** `V2-9-01`、V2-3 mountain/fjord contracts。既存moduleはadapter/version transitionで段階再利用する。
+- **個別要件:** componentはFeatureKind化せずstable derived IDを持つ。ridge graph/floor owner conflict、valley/fjord/river connection、peak/pass count budgetを検査する。
+- **Acceptance／停止:** 2 kindのvertical sliceが通り、ALPINE/GLACIAL/FJORD golden checksumが旧versionで不変なら完了する。既存seedを黙って再解釈する必要があれば停止する。
+
+### V2-9-04 General RIVER contract and vertical slice
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。
+- **状態詳細:** public `FeatureKind.RIVER`と`RiverParameters`／`RiverPlanV2`（source→mouth reach graph、bank／bed／discharge／floodplain handoff）を`EXPERIMENTAL`で追加。`FoundationRiverSliceCompilerV2`がvalidation／preview／sealed exportを閉じる。dedicated moduleはグローバルcatalog未登録（diagnostic binding）。`MEANDERING_RIVER`／`HydrologyRiverModuleV2`／`MeanderingRiverPlanV2` serializationとSUPPORTED bindingは不変。`MeanderingRiverSubtypeBridgeV2`はlegacy params→suggested `RiverParameters`の写像のみ。orphan／self-loop graph拒否を検証。`SUPPORTED`昇格はしていない。
+- **目的／背景:** public `MEANDERING_RIVER`に限定されない一般riverを、V2-3 global Hydrology IRの共通Featureとして定義する。
+- **Scope／成果物:** `RIVER` typed contract、source-to-mouth reach graph、bank/bed/discharge/floodplain handoff、compiler/generator/validator/preview/export、`MEANDERING_RIVER`互換subtype transition。
+- **非Scope:** braided/bedrock/estuary、rapids等のgraph role拡張、Paper個別配置。
+- **依存／変更面:** `V2-9-01`、V2-3 IR/routing/reconciliation。既存`RiverVariant`/fixtureのserializationを維持する。
+- **個別要件:** source-mouth reachability、bed monotonicity、confluence flow、cross-tile continuity、graph node/edge/degree/work budget、cycle/duplicate/orphan拒否を固定する。
+- **Acceptance／停止:** straight/general riverとlegacy meanderが同IRでstrict生成でき、legacy seed output不変なら完了する。V2-3 planの非version的再解釈が必要なら停止する。
+
+### V2-9-05 FLOODPLAIN and MARSH hydrologic foundation
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。`FLOODPLAIN`／`MARSH` parameter／plan、river adjacency、groundwater／hydroperiod／wetness、microrelief／open-water、fluid／solid ownership、`FoundationFloodplainMarshSliceCompilerV2`、validator／preview／sealed exportを`EXPERIMENTAL`で実装した。surface mergeはfloodplain+marsh、river graphは別compile。`MANGROVE_WETLAND`回帰を維持し、bog／fen／salt-marsh／ecology FeatureKind化とmangrove再実装は含まない。`SUPPORTED`昇格とWorldBlueprint埋込はしていない。
+
+- **目的／背景:** river fieldだけのfloodplainとv1 wetlandを、独立ownershipを持つv2 hydrologic surfaceへ引き上げる。
+- **Scope／成果物:** `FLOODPLAIN`/`MARSH` parameter/plan、river adjacency、groundwater/hydroperiod/wetness、microrelief/open-water transition、generator/validator/preview/export。MANGROVEは既存kindのままprofile/childとして再利用する。
+- **非Scope:** mangrove tree/root再実装、bog/fen/salt-marsh kinds、ecology FeatureKind化。
+- **依存／変更面:** `V2-9-02`、`V2-9-04`、V2-4 water/environment fields。
+- **個別要件:** dry marsh、filled channel、river disconnect、groundwater/hydroperiod conflict、owner overlapをrejectし、fluid/solid ownershipを明示する。
+- **Acceptance／停止:** floodplain-river-marsh transitionのvertical sliceとMANGROVE回帰が通れば完了する。ecologyをshape generatorへ吸収する必要があれば停止する。
+
+### V2-9-06 ROCKY_COAST and SEA_CLIFF foundation
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。`RockyCoastPlanV2`／`SeaCliffPlanV2`／`FoundationRockyCoastCliffSliceCompilerV2`がshelf／cliff face／talus／notch・coast transition・sea-cave／overhang host AABB handoffのvertical sliceを閉じた。moduleは`EXPERIMENTAL`・catalog未登録。`ROCKY_CAPE`と既存SeaCave／Overhang checksumは不変。
+- **目的／背景:** v1 rocky coast、v2 rocky cape、V2-5 sea cave/overhangをつなぐcoast/volume hostを作る。
+- **Scope／成果物:** `ROCKY_COAST`/`SEA_CLIFF` vertical slices、rock shelf/cliff face/talus/notch descriptors、coast transition、`CARVES_FLANK_OF`/`SUPPORTS_FROM` host handoff、validator/preview/export。
+- **非Scope:** wave simulation、sea stack generator、existing `ROCKY_CAPE` output rewrite、Paper adapter。
+- **依存／変更面:** `V2-9-01`、V2-2 coast、V2-5 sea-cave/overhang contracts。
+- **個別要件:** cliff face/support AABB、marine opening、shore side、talus material、surface-volume ownership、halo/window budgetを検査する。
+- **Acceptance／停止:** rocky coast↔cape/beach transitionとsea-cave/overhang host fixtureがstrictで既存coast checksum不変なら完了する。dense cliff voxel正本が必要なら停止する。
+
+### V2-9-07 SINGLE_ISLAND, ARCHIPELAGO, and VOLCANIC_CONE foundation
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。`SingleIslandPlanV2`／`ArchipelagoPlanV2`／`VolcanicConePlanV2`と3 slice compiler、validation／preview／export、`VolcanicIslandConeAdapterV2` suggested-paramsを閉じた。moduleはEXPERIMENTAL・catalog未登録（diagnostic binding）。既存`VOLCANIC_ARCHIPELAGO` checksum／hook／moduleは未変更。
+- **目的／背景:** volcanicに限定されないisland ownershipと、既存VOLCANIC_ARCHIPELAGO内で再利用できるcone coreを定義する。
+- **Scope／成果物:** island mass/shore/drainage/submarine saddle、group spacing/dominance、cone/crater/radial drainageのplansと3 vertical slices、validator/preview/export、legacy volcanic adapter。
+- **非Scope:** caldera standalone昇格、lava tube、atoll/coral ecology、既存volcanic checksum変更。
+- **依存／変更面:** `V2-9-01`、`V2-9-06`、V2-3/4 volcanic contracts。
+- **個別要件:** dry-land gap、component count、shore/basin ownership、saddle depth、cone containment、derived seedを検査する。
+- **Acceptance／停止:** non-volcanic single/groupとcone sliceが通り、VOLCANIC_ARCHIPELAGO旧version output不変なら完了する。既存child hook ID変更が必要なら停止する。
+
+### V2-9-08 OCEAN_BASIN, CONTINENTAL_SHELF, and CONTINENTAL_SLOPE core
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。`OceanBasinPlanV2`／`ContinentalShelfPlanV2`／`ContinentalSlopePlanV2`と3 slice＋`FoundationBathymetryTransectCompilerV2`、validation／preview／streaming underwater exportを閉じた。moduleはEXPERIMENTAL・catalog未登録（diagnostic binding）。dense 3D water配列なし。`SUPPORTED`昇格はしていない。
+- **目的／背景:** coastから深海まで連続するbathymetry depth fieldとownershipを先に閉じる。
+- **Scope／成果物:** basin/shelf/slope plans、water-level/depth/slope/coast-distance fields、basin→slope→shelf→coast transition、3 vertical slices、validator/preview/export。
+- **非Scope:** submarine canyon、abyssal/trench/ridge/seamount、dynamic ocean、Paper専用水処理。
+- **依存／変更面:** `V2-9-01`、`V2-9-06`、V2-3 marine boundary、水中columnはV2-6 canonical fluid contractへ適合。
+- **個別要件:** depth finite/range、monotone transition、shelf/slope width、water column/solid floor conflict、global field freeze後のtile query、resident/artifact budgetを検査する。
+- **Acceptance／停止:** coast-to-basin断面とwhole/tile depth/checksum、underwater exportが通れば完了する。全域dense 3D water arrayまたはFeature別Paper applyが必要なら停止する。
+
+### V2-9-09 SUBMARINE_CANYON vertical slice
+
+- **状態／Phase／優先度:** 完了／V2-9／P1。
+- **目的／背景:** shelf/slopeを横断する海底谷をsurface `CANYON`と識別し、bathymetry ownershipへ接続する。
+- **Scope／成果物:** typed spline/plan、shelf head、slope crossing、basin outlet、bounded carve、validator/preview/export。
+- **非Scope:** continental sediment simulation、surface canyon ID変更、deep trench。
+- **依存／変更面:** `V2-9-08`、既存CANYON cross-section assets（reuse only；`LandformCanyonModuleV2`／`CanyonPlanV2`未変更）。
+- **個別要件:** head/outlet containment、down-gradient continuity、floor depth、shelf/slope owner handoff、water/solid column、cross-tile seamを検査する。
+- **Acceptance／停止:** positive/blocked/out-of-host fixturesとbathymetry regressionが通れば完了する。surface CANYONの意味変更が必要なら別kind/versionで停止する。
+- **完了要約:** `FeatureKind.SUBMARINE_CANYON`＋`SubmarineCanyonParameters`、`SubmarineCanyonPlanV2`／`FoundationSubmarineCanyonSliceCompilerV2`、EXPERIMENTAL module（catalog未登録・diagnostic binding）、whole／tile＋underwater streaming checksum。`SUPPORTED`／WorldBlueprint埋込なし。
+
+### V2-9-10 CAVE_ENTRANCE surface-volume connector
+
+- **状態／Phase／優先度:** 完了／V2-9／P0。
+- **目的／背景:** diagnostic-only enumを、surface ownerとCAVE_NETWORKの明示connectorとして完成する。
+- **Scope／成果物:** entrance plan、surface opening/approach、cave reachability、roof/support/clearance、ordered carve、validator/preview/exportのvertical slice。
+- **非Scope:** cave generator再実装、underground river、Paper個別配置、arbitrary surface breakthrough。
+- **依存／変更面:** `V2-9-03`、V2-5-06/15/17。host surface/volume checksumsへbindingする。
+- **個別要件:** exactly one surface host/one cave target、orphan/unreachable/thin roof/flood leak/owner conflict、AABB/support budgetを検査する。
+- **Acceptance／停止:** entrance→cave reachabilityとsurface/volume seamless query/exportが通れば完了する。既存cave plan checksumをin-place変更する必要があればversion移行へ分離する。
+- **完了要約:** `CaveEntranceParameters`、`CaveEntrancePlanV2`／`FoundationCaveEntranceSliceCompilerV2`、EXPERIMENTAL module（catalog未登録・diagnostic binding）、frozen `CaveNetworkPlanV2` checksum bind、seamless query／carve export。`SUPPORTED`／WorldBlueprint埋込なし。
+
+### V2-9-11 UNDERGROUND_RIVER and flooded-volume connection
+
+- **状態:** 完了。`UndergroundRiverParameters`／`FloodedCaveParameters`、`UndergroundRiverPlanV2`／`FoundationUndergroundRiverSliceCompilerV2`、EXPERIMENTAL module（catalog未登録・diagnostic binding）、frozen cave＋underground-lake checksum bind、carve→単一`ADD_FLUID`、FLOODED_CAVE hook、whole／tile／scene exportを閉じた。`SUPPORTED`／WorldBlueprint埋込なし。次は`V2-9-12`。
+
+- **目的／背景:** cave、underground lake、surface river/entranceをつなぐbounded underground fluid graphを定義する。
+- **Scope／成果物:** underground reach graph、source/outlet、carve→fluid ordering、cave/lake/entrance relations、`FLOODED_CAVE` fluid-region hook、validator/preview/export vertical slice。
+- **非Scope:** full fluid simulation、karst-specific generator、sump/shaft FeatureKind、Paper個別fluid code。
+- **依存／変更面:** `V2-9-04`、`V2-9-10`、V2-5 underground lake/query/CSG。
+- **個別要件:** reachability/gradient/flow continuity、single fluid owner、leak/air pocket policy、graph/CSG/AABB/interval budget、fluid orderingを検査する。
+- **Acceptance／停止:** cave→underground river→lake/outlet sceneがwhole/tile/exportで一致しV2-6 common fluid contractと互換なら完了する。dynamic simulation必須なら停止する。
+- **完了要約:** static `ADD_FLUID`（dynamic simなし）、単一`fluid.underground-lake` owner、frozen host checksum不変、CaveEntrance moduleは引き続きEXPERIMENTAL。
+
+### V2-9-12 Macro land-water topology contract
+
+- **状態:** 完了。`MacroLandWaterTopologyPlanV2`／`MacroLandWaterTopologyPlanCompilerV2`／`MacroLandWaterTopologySliceCompilerV2`、manual mask／zone→topology、adjacency／containment／min-width、validator／preview／canonical sidecar、whole／tile／thread freezeを閉じた。FeatureKind追加なし。次は`V2-9-13`。
+
+- **目的／背景:** bay/cove/headland/peninsula/isthmus/strait/enclosed basin/coastal embaymentをgenerator kindではなくtopology constraintとして表す。
+- **Scope／成果物:** region topology primitive、land/water adjacency/connectivity/containment/min-width、mask/zone semantic、compiler、topology validator/preview、canonical sidecar。FeatureKindは追加しない。
+- **非Scope:** 8個のshape generator、画像draftの暗黙hard昇格、coast feature shaping。
+- **依存／変更面:** V2-1 constraint maps、`V2-9-01`、画像由来入力は`V2-7-04`完了時だけ利用可。
+- **個別要件:** disconnected strait、collapsed isthmus、nested basin、ambiguous boundary、node/edge/nesting/raster/decode budgetを検査する。
+- **Acceptance／停止:** manual mask/zoneから同じtopologyがtile/order/thread非依存でcompileされ後段coast/bathymetryへfreezeされれば完了する。FeatureKind列挙が必要になる設計なら停止する。
+- **完了要約:** zone-split connected components、`MACRO_CONSTRAINT` kinds、strict Schema／example、coast／bathymetry向け`freezeChecksum`。画像draft経路は未接続。
+
+### V2-9-13 River graph roles and composite patterns
+
+- **状態／Phase／優先度:** 完了／V2-9／P1。`RiverPlanV2`へnode role／reach class／modifier／child ownershipを拡張し、`WaterfallChainPlanV2` COMPOSITE_PRESET、`RiverGraphRolesPlanCompilerV2`／`WaterfallChainPlanCompilerV2`／`FoundationRiverGraphRolesSliceCompilerV2`、Schema／example／validator／preview／exportを閉じた。FeatureKind追加なし。既存meandering／delta／waterfall fixtures不変。次は`V2-9-14`。
+- **目的／背景:** stream/headwater/tributary/confluence/distributary/rapids等を不要にFeatureKind化せず、一般river graphを拡張する。
+- **Scope／成果物:** node/edge/reach-class/modifier/child semantic、sandbar/river-island child ownership、multiple waterfall nodes＋plunge poolsの`WATERFALL_CHAIN` preset compiler/validator/preview/export。
+- **非Scope:** estuary/braided river vertical slices、専用waterfall-chain generator、existing graph ID変更。
+- **依存／変更面:** `V2-9-04`、`V2-9-05`、V2-3 delta/waterfall/reconciliation。
+- **個別要件:** split/merge flow conservation、elevation continuity、stable graph IDs、modifier order、node/edge/branch budget、cycle/orphan/conflict拒否。
+- **Acceptance／停止:** graph rolesとwaterfall chainが同じgeneral IRで再現され、既存river/delta/waterfall fixtures不変なら完了する。新FeatureKindが必要なら独立ownershipを証明する別Taskへ分離する。
+- **完了要約:** HEADWATER／STREAM／TRIBUTARY／CONFLUENCE／BIFURCATION／DISTRIBUTARY／RAPIDS／SANDBAR／RIVER_ISLAND／PLUNGE_POOLをgeneral `RiverPlanV2`へ載せ、`WATERFALL_CHAIN` presetが複数fall＋plunge poolをfreeze。flow／elevation／child／budget拒否とlegacy fixture不変を`FoundationRiverGraphRolesSliceCompilerV2Test`で確認。
+
+### V2-9-14 Terrain foundation integration and Phase gate
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-9／P0 gate。`FoundationPhaseGateV2Test`が19 foundation kindのdiagnostic binding維持（false-promotionなし）、18 dedicated moduleの`EXPERIMENTAL`、Release capability list不変、22 foundation plan exampleのstrict read安定性（正逆順／1・4 thread／locale／timezone）、plain-hill代表scenarioの再compile＋whole／tile merge一致、1000角ScaleProfile admission＋oversized拒否を固定し、full clean suiteでv1／Release 1／V2-2〜V2-6回帰を通過した。offline plan-levelのgenerate／validation／previewを`SUPPORTED`、intent_compile／standalone／exportを`PARTIAL`（diagnostic binding・sealed JSONのみ、Release capability未定義）、Paper以降を`UNSUPPORTED`（共通stream互換としてV2-6 evidence継承を記録）とした。証拠は [V2-9 Phase gate audit](audits/v2-9-phase-gate.md)。次はTrack E `V2-10-01`。
+- **目的／背景:** `V2-9-01`〜`V2-9-13`を統合し、基礎Featureとcontractのoffline support能力だけを確定する。
+- **Scope／成果物:** representative surface/coast/island/marine/connection/macro/river scenarios、capability matrix、strict Release、determinism/resource/security/compatibility audit。
+- **非Scope:** V2-10 feature、LARGEの無条件support、Paper個別実装、未完能力の昇格。
+- **依存／変更面:** 全V2-9 Task。`V2-6-19` Phase gateの完了は前提としない（回帰対象は着手時点でのV2-6実装状態）。audit、roadmap、taxonomy、README/limitations、support catalog。
+- **個別要件:** full positive/corruption/tamper、whole/tile/thread/module/candidate/locale/timezone、1000角＋ScaleProfile admission、cancel/cleanup、v1/Release1/V2-2〜V2-6回帰を統合する。
+- **Acceptance／停止:** 証拠が揃った能力だけ`SUPPORTED`へし、Paper能力はV2-6 evidenceを継承できる共通stream compatibilityとして記録する。欠損、cycle、budget、compatibility regressionがあれば新V2-9 Taskを追加し親Phaseを未完のまま停止する。
+
+### V2-9 dependency table
+
+| Task | Direct dependencies | Unblocks |
+|---|---|---|
+| V2-9-01 | V2-6-02, V2-8-01 | 02〜08, 12 |
+| V2-9-02 | 01 | 05 |
+| V2-9-03 | 01, V2-3 | 10, V2-10 glacial |
+| V2-9-04 | 01, V2-3 | 05, 11, 13 |
+| V2-9-05 | 02, 04, V2-4 | V2-10 river/wetland |
+| V2-9-06 | 01, V2-2, V2-5 sea cave | 07, 08 |
+| V2-9-07 | 01, 06, V2-4 volcanic | V2-10 island/reef |
+| V2-9-08 | 01, 06, V2-3 | 09, V2-10 marine |
+| V2-9-09 | 08, V2-3 canyon | gate |
+| V2-9-10 | 03, V2-5 cave | 11, V2-10 karst |
+| V2-9-11 | 04, 10, V2-5 lake/query | V2-10 karst/lava tube |
+| V2-9-12 | V2-1, 01 | gate |
+| V2-9-13 | 04, 05, V2-3 | V2-10 river |
+| V2-9-14 | 01〜13 | V2-10 |
+
+## 10. V2-10 Deferred terrain families（Track E、V2-9後）
+
+V2-10はV2-9の対応する先行Task完了後に開始し、V2-6のPhase gate完了は前提としない。V2-9共通contractをそのまま適用する。Paper apply capabilityの`SUPPORTED`宣言はV2-9同様、V2-6 apply/verify/rollback/Undo/Recoveryと`V2-6-19`完了後に別Taskで接続する。
+
+### V2-10-01 Glacial ice foundation
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-10／P2。`VALLEY_GLACIER`／`ICE_CAP`／`ICE_SHEET`の共通`GlacialIcePlanV2`、cold climate＋snow binding、bounded sparse `ADD_SOLID`、meltwater handoff、`IceFjordPlanV2` COMPOSITE_PRESET、validator／preview／sealed exportを`EXPERIMENTAL`で実装した。dedicated moduleはcatalog未登録（diagnostic binding）。`SUPPORTED`昇格とdense ice voxel正本はしていない。次は`V2-10-02`（完了）。
+- **目的／Scope:** `VALLEY_GLACIER`、`ICE_CAP`、`ICE_SHEET`のsurface/volume ownership、flow direction、thickness、bed contact、meltwater handoffを3 vertical sliceで実装する。
+- **非Scope:** moraine/outwash/permafrost、ice physics、`ICE_FJORD`専用generator。
+- **依存／変更面:** `V2-9-03/11/14`、V2-4 climate/snow、V2-5 volume。
+- **要件／test:** cold-climate binding、support/contact、bounded sparse ice、flow/terminus、whole/tile/thread/budget、warm/unsupported/leaking corruption。
+- **Acceptance／停止:** 3 sliceと`ICE_FJORD` preset compositionが共通contractで表現できれば完了する。dense ice voxel正本が必要なら停止する。
+
+### V2-10-02 Glacial deposition and cold-ground profiles
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-10／P2。`MORAINE_FIELD`／`OUTWASH_PLAIN`のEXPERIMENTAL deposition slice（`MoraineFieldPlanV2`／`OutwashPlainPlanV2`、glacial parent geometry bind、integer raster whole／tile export）と`PermafrostPlainProfileV2`（`PLAIN`＋cold climate、FeatureKindなし）を実装した。dedicated moduleはcatalog未登録（diagnostic binding）。`PERMAFROST_PLAIN` FeatureKind化と`SUPPORTED`昇格はしていない。次は`V2-10-03`。
+- **目的／Scope:** `MORAINE_FIELD`、`OUTWASH_PLAIN`のstandalone/child ownershipを評価しvertical sliceを実装、`PERMAFROST_PLAIN`はplain＋environment profileとして実装する。
+- **非Scope:** new climate solver、全glacial landform、Paper adapter。
+- **依存／変更面:** `V2-10-01`、`V2-9-02/04`、V2-4 material/environment。
+- **要件／test:** provenance、sediment owner、ridge/flow relation、profile-kind分離、budget/determinism/corruption、v1/parent回帰。
+- **Acceptance／停止:** independent ownershipがない概念はprofile/childのままにし、無理なFeatureKind化をしなければ完了する。
+
+### V2-10-03 Karst hydrology graph
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-10／P2。
+- **目的／Scope:** `SINKHOLE`／`KARST_SPRING` FeatureKind、`KarstHydrologyGraphPlanV2` typed graph freeze、`CenotePlanV2` COMPOSITE_PRESET、surface/volume/material handoff、validator/preview/exportを実装する。`KARST_CAVE_SYSTEM`はsealed `CAVE_NETWORK`上のgraph node role（FeatureKind化しない）。`CENOTE`もFeatureKind化しない。
+- **非Scope:** doline/polje/limestone pavement/karst peak generators、full groundwater simulation、module catalog登録。
+- **依存／変更面:** `V2-9-10/11/14`、V2-5 cave、limestone semantic material。
+- **要件／test:** drainage reachability、loss/spring balance、collapse/roof/fluid ownership、graph/CSG/budget、orphan/cycle/leak corruption、host cave checksum不変。
+- **Acceptance／停止:** graph中心のvertical sliceが成立しcomponentを誤ってFeatureKind化しなければ完了する。unbounded groundwater solveが必要なら停止する。
+
+### V2-10-04 Additional marine landforms
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-10／P2。
+- **目的／Scope:** `ABYSSAL_PLAIN`と`SEAMOUNT`をbathymetry foundation上のvertical sliceとして実装し、`OCEAN_TRENCH`、`MID_OCEAN_RIDGE`、`SUBMARINE_VOLCANO`はownership/scale evidence後の候補としてcatalog評価する。
+- **非Scope:** 5種一括generator、plate tectonic simulation、LARGE自動support。
+- **依存／変更面:** `V2-9-08/09/14`。
+- **要件／test:** basin containment、depth/relief/slope、transition、tile/global planning、budget/corruption、marine regression。
+- **Acceptance／停止:** first two slicesを閉じ、advanced threeを実装なしで`SUPPORTED`にしなければ完了する。
+- **証拠:** `FoundationAdditionalMarineSliceCompilerV2Test`（positive abyssal/seamount metrics、round-trip、missing/out-of-basin、FeatureKind classification、module EXPERIMENTAL、4-thread/locale checksum、host `ocean-basin-plan-v2.json` checksum不変）、`SchemaContractTest`、full `./gradlew test`／`build`。
+
+### V2-10-05 Advanced river and lake landforms
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-10／P2。contract／分割決定のみ。FeatureKind／generatorは導入していない。
+- **目的／Scope:** 7候補をownership/graph依存で分類し、最初の実装対象を最大2種類へ固定、実装用Task IDを追加する。
+- **非Scope:** 7 generator一括実装、pond/crater/glacial lake kind化、dam entity/block entity、本Task内のslice実装。
+- **依存／変更面:** `V2-9-04/05/13/14`、V2-3 lake/delta。
+- **分割決定:** first slices = `SPRING`（`V2-10-10`）＋`OXBOW_LAKE`（`V2-10-11`）。deferred = `RIVER_TERRACE`（child/reach profile）、`ALLUVIAL_FAN`（later sediment-fan）、`ESTUARY`（later mouth composition）、`BRAIDED_RIVER`（later multi-channel DAG）、`DAM_RESERVOIR`（later barrier+basin）。
+- **成果物:** `AdvancedRiverLakeSplitContractV2`＋schema＋sealed example、taxonomy／gap-audit／roadmap同期。
+- **要件／test:** graph node/edge/basin/barrier ownership分類、risk exclusion、resource/security/compatibility notes、strict contract round-trip、7候補のFeatureKind非導入、river/lake regression fixture load。
+- **Acceptance／停止:** 高リスクが混在しない最大2 sliceへTask IDを追加し、本Taskはcontract/分割決定だけで完了する。実装を抱き合わせる必要があれば停止する（本Taskでは停止せず完了）。
+
+### V2-10-06 Escarpment and dry-land foundation
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-10／P2。
+- **目的／Scope:** standalone ownershipを持つ`ESCARPMENT`を評価し、`PLATEAU`とのtransition vertical sliceを実装する。dune/badlands/salt-flat群はcommon dry-land modifier/field contractへ分類する。
+- **非Scope:** 全dry-land generator、climate profileのFeatureKind化、existing canyon rewrite。
+- **依存／変更面:** `V2-9-01/02/03/14`、V2-4 geology/climate/material。
+- **成果物:** `EscarpmentPlanV2`／`PlateauPlanV2`、`DryLandModifierContractV2`、`FoundationEscarpmentPlateauSliceCompilerV2`、generators／schemas／examples／tests。
+- **要件／test:** long scarp owner、cap/floor/talus、erosion/material handoff、tile seam/budget、degenerate/overlap corruption。
+- **Acceptance／停止:** escarpment独立性が成立し、残りを無理にkind化しなければ完了する。独立validatorを定義できなければmodifierへ降格する。
+- **完了証拠:** `FoundationEscarpmentPlateauSliceCompilerV2Test`（positive metrics、HARD OVERLAPS transition、short-scarp/missing-transition rejection、`DryLandModifierContractV2.decisionV21006()`、forbidden FeatureKind asserts、locale/thread checksum stability、plain-plan regression checksum）、`SchemaContractTest`、sealed examples `escarpment-plan-v2.json`／`plateau-plan-v2.json`／`dry-land-modifier-contract-v2.json`。
+
+### V2-10-07 LAVA_TUBE volumetric vertical slice
+
+- **状態／Phase／優先度:** 完了／V2-10／P2。
+- **目的／Scope:** volcanic provenance、lava-flow/caldera relation、swept tunnel carve、roof/support/entrance、local materialを持つ`LAVA_TUBE`のplan/generator/validator/preview/exportを実装する。
+- **非Scope:** lava simulation、standalone caldera/lava-flow昇格、Paper個別配置。
+- **依存／変更面:** `V2-9-07/10/11/14`、V2-5 SDF/CSG。
+- **要件／test:** host relation、tube continuity、roof/collapse/fluid conflict、AABB/budget、whole/tile/thread、orphan/corruption。
+- **Acceptance／停止:** bounded sparse volumeとして共通placement stream互換なら完了する。dynamic lavaまたはdense voxelが必要なら停止する。
+- **完了証拠:** `FoundationLavaTubeSliceCompilerV2Test`（positive metrics、round-trip、orphan/missing-provenance rejection、FeatureKind asserts、locale/thread stability、volcanic-cone checksum regression、cave-network/underground-river fixture load）、`SchemaContractTest`、sealed examples `lava-tube-plan-v2.json`／`lava-tube-positive.terrain-intent-v2.json`／`lava-tube-orphan.terrain-intent-v2.json`。
+
+### V2-10-08 Advanced island and reef landforms
+
+- **状態／Phase／優先度:** 完了／V2-10／P2。
+- **目的／Scope:** `BARRIER_ISLAND`と`ATOLL`をgeneral island/coast/reef child plansのcompositionとして実装し、advanced reef/island候補をpreset/child/standaloneへ分類する。
+- **非Scope:** floating reef専用generator、coral ecology再実装、全island taxonomy実装。
+- **依存／変更面:** `V2-9-07/08/12/14`、existing CORAL_REEF/LAGOON/REEF_PASS。
+- **要件／test:** shore-parallel ridge、lagoon/pass/marine connectivity、islet ownership、transition/budget、sealed/disconnected/collision corruption。
+- **Acceptance／停止:** 2 composition slicesが既存child contractsを再利用しlegacy coral/volcanic fixtures不変なら完了する。
+- **完了証拠:** `FoundationAdvancedIslandReefSliceCompilerV2Test`（positive barrier/atoll metrics、round-trip、FeatureKind asserts、missing lagoon/disconnected pass rejection、catalog contract seal、locale/thread stability、`single-island-plan-v2.json` checksum regression、diagnostic coral-reef load、volcanic-cone checksum regression）、`SchemaContractTest`、sealed examples `barrier-island-plan-v2.json`／`atoll-plan-v2.json`／`advanced-island-reef-catalog-contract-v2.json`、fixtures `barrier-island-composition.terrain-intent-v2.json`／`atoll-composition.terrain-intent-v2.json`。
+
+### V2-10-09 Deferred terrain integration and Phase gate
+
+- **状態／Phase／優先度:** 完了（2026-07-18）／V2-10／P2 gate。`DeferredTerrainPhaseGateV2Test`が14 V2-10 FeatureKindのdiagnostic binding維持（false-promotionなし）、12 dedicated moduleの`EXPERIMENTAL`・catalog未登録、17 profile/preset/role/候補名のFeatureKind不在、Release capability list不変、21 V2-10 sealed exampleのstrict read安定性（正逆順／1・4 thread／tr-TR locale／Chatham timezone）、plateau-escarpment代表scenarioの再compile＋whole／tile export一致、protected host checksum（plain／ocean-basin／volcanic-cone／single-island／river／river-graph-roles／split contract／open-spill lake）不変、1000角ScaleProfile admission＋SMALL越え拒否を固定し、full suite（`./gradlew test`／`build`）でv1／Release 1／V2-2〜V2-6／V2-9回帰を通過した。offline plan-levelのgenerate／validationを全completed sliceで`SUPPORTED`、previewはpreview index証拠があるsliceのみ`SUPPORTED`（`MORAINE_FIELD`／`OUTWASH_PLAIN`は`EXPERIMENTAL`のまま）、intent_compile／standalone／exportを`PARTIAL`（diagnostic binding・sealed JSONのみ、Release capability未定義）、Paper以降を`UNSUPPORTED`とし、preset／profile／graph role／deferred候補は昇格していない。証拠は [V2-10 Phase gate audit](audits/v2-10-phase-gate.md)。V2-10全11 Task完了によりTrack Eは終了。
+- **目的／Scope:** V2-10 completed slicesだけを統合監査し、deferred候補を実装済みに見せず能力別supportを確定する。
+- **非Scope:** 未選択候補の実装、gate waiver、Paper個別処理。
+- **依存／変更面:** `V2-10-01`〜`V2-10-08`、`V2-10-10`、`V2-10-11`。
+- **要件／test:** full positive/corruption/tamper/determinism/resource、V2-9/V2-6/v1 regression、support false-promotion検査。
+- **Acceptance／停止:** evidenceがあるsliceだけを昇格し、profile/preset/component/候補をFeatureKind `SUPPORTED`にしなければ完了する。未解決riskは追加V2-10 Taskで停止する。
+
+### V2-10-10 Surface SPRING graph-node vertical slice
+
+- **状態／Phase／優先度:** 完了／V2-10／P2（`V2-10-05` split）。
+- **目的／Scope:** surface `SPRING`のEXPERIMENTAL graph-node／source／outflow ownership vertical sliceを実装する。`HydrologyPlanV2.NodeKind.SPRING`／`RiverPlanV2` SOURCE bind、flow continuity、validator／preview／export。
+- **非Scope:** `KARST_SPRING` rewrite、braided／dam／estuary、pond kind化。
+- **依存／変更面:** `V2-10-05`、`V2-9-04/13/14`。
+- **要件／test:** source ownership、outflow continuity、budget／corruption、karst spring／river sealed checksum不変、diagnostic binding。
+- **Acceptance／停止:** surface spring ownershipが`KARST_SPRING`と分離して閉じれば完了する。karst graph改変が必要なら停止する。
+- **完了証拠:** `FoundationSpringSliceCompilerV2Test`（positive metrics/export、round-trip、FeatureKind `SPRING` assert、orphan/missing-host/disconnect rejection、locale/thread stability、protected karst/river checksum regression、diagnostic catalog binding、module catalog-unregistered）、`SchemaContractTest`、sealed `spring-plan-v2.json`、fixtures `spring-positive.terrain-intent-v2.json`／`spring-orphan.terrain-intent-v2.json`。
+
+### V2-10-11 OXBOW_LAKE reach-cutoff basin vertical slice
+
+- **状態／Phase／優先度:** 完了／V2-10／P2（`V2-10-05` split）。
+- **目的／Scope:** `OXBOW_LAKE`をreach-relation＋`LakePlan`互換basinとしてEXPERIMENTAL vertical slice実装する（cutoff geometry、stagnant level、wetland handoff、`RIVER`／`MEANDERING_RIVER` bind）。
+- **非Scope:** `BRAIDED_RIVER`、`DAM_RESERVOIR`、`ESTUARY`、LAKE derivative kind化。
+- **依存／変更面:** `V2-10-05`、V2-3-04 lake、`V2-9-04/13/14`。
+- **要件／test:** cutoff basin ownership、level／rim、budget／corruption、open-spill lake fixture不変。
+- **Acceptance／停止:** braid／barrierと独立したcutoff basin ownershipが閉じれば完了する。barrier ownershipが必要なら`DAM_RESERVOIR` Taskへ分離する。
+- **完了証拠:** `FoundationOxbowLakeSliceCompilerV2Test`（positive metrics/export、round-trip、FeatureKind `OXBOW_LAKE` assert、orphan/missing-host/disconnect rejection、locale/thread stability、protected open-spill SHA-256／river-split checksum regression、open-spill `LAKE` `OPEN_SPILL` load、diagnostic catalog binding、module catalog-unregistered）、`SchemaContractTest`、sealed `oxbow-lake-plan-v2.json`、fixtures `oxbow-lake-positive.terrain-intent-v2.json`／`oxbow-lake-orphan.terrain-intent-v2.json`。
+
+### V2-10 dependency table
+
+| Task | Direct dependencies | Notes |
+|---|---|---|
+| V2-10-01 | V2-9-03/11/14, V2-4/5 | glacial ice |
+| V2-10-02 | 01, V2-9-02/04 | deposition/profile |
+| V2-10-03 | V2-9-10/11/14 | karst graph |
+| V2-10-04 | V2-9-08/09/14 | marine follow-up |
+| V2-10-05 | V2-9-04/05/13/14 | contract then split |
+| V2-10-06 | V2-9-01/02/03/14 | escarpment/dry land |
+| V2-10-07 | V2-9-07/10/11/14 | lava tube |
+| V2-10-08 | V2-9-07/08/12/14 | island/reef |
+| V2-10-09 | 01〜08, 10, 11 | Phase gate |
+| V2-10-10 | 05, V2-9-04/13/14 | surface SPRING slice |
+| V2-10-11 | 05, V2-3 lake, V2-9-04/13/14 | OXBOW_LAKE slice |
+
+## 11. V2-11 Capability promotion（Track A後続、`V2-6-19`監査で追加）
+
+`V2-6-19` RC auditは監査専任Taskであり能力を昇格しないため、gate完了後のPaper capability昇格・接続を独立Taskとして登録する。追加理由: 各所で「`V2-6-06`〜`V2-6-10`と`V2-6-19`完了後に別Taskで接続する」と予告されていた作業に具体的なTask IDがなく、gate完了後のTrack Aの次Taskが不定になるため。
+
+2026-07-20の全体再監査（V2-6-19再検証。P0指摘は`V2-6-21`再完了で解消済み）を受け、`V2-11-02`〜`V2-11-06`を追加した。無効化済み`V2-6-16`／`V2-6-17`は復活させず、500／1000再実測は専用高memory実測ホストを前提に`V2-11-04`／`V2-11-05`の新IDで管理する。
+
+### V2-11-01 Paper apply capability promotion and Track D／E connection
+
+- **状態／Phase／優先度:** 完了（2026-07-20）／V2-11／P1。2026-07-20全体再監査で検出した「catalog／testは64×64昇格済み、正本（roadmap／本索引）は未着手」という矛盾を、既存昇格コードを正式成果として確定する方向で解消した（差し戻しは選ばない。`V2-6-14`／`V2-6-15`の実機smokeと [V2-6 Phase gate audit](audits/v2-6-phase-gate.md) が`surface-2_5d`×64×64の範囲でevidenceを満たすため）。昇格範囲は`surface-2_5d` capabilityのSANDY_BEACH／BREAKWATER_HARBOR／HARBOR_BASIN／ROCKY_CAPEの4 entry×5 Paper列のみで、`hydrology-plan`／`environment-fields`／`sparse-volume`は`EXPERIMENTAL`、Release capability未接続のV2-9／V2-10 foundation entryは`UNSUPPORTED`を維持した。dimension limitは64×64のまま、docs（README／commands／limitations／taxonomy／migration-plan／beta checklist／roadmap）とevidence linkを同期した。証拠は [docs/roadmap.md](../roadmap.md) の`V2-11-01`段落。
+- **目的／前提:** smoke実測済み範囲（64×64、WorldEdit 7.3.19／FAWE 2.15.2）のRelease 2 placementについて、Feature Support Catalogの`paper_apply`／`post_apply_validation`／`snapshot`／`rollback`／`restart_recovery`列を証拠へbindして昇格し、Track D（V2-9）／Track E（V2-10）foundation featureの共通canonical stream互換を能力表へ反映する。前提は`V2-6-19`（完了）と`V2-6-06`〜`V2-6-10`（完了）。
+- **Scope／成果物:** catalog data／sealed exampleの更新（dimension limit 64×64のまま）、evidence link（V2-6-14／15 smoke、V2-6 Phase gate audit）、false-promotion corpusの更新（昇格後も未測定寸法・未接続featureを拒否）、README／user docs／taxonomy／limitations同期。
+- **非Scope:** 500／1000寸法の昇格、新featureのPaper adapter、Release format変更、Beta hardening項目の完了化。
+- **必須test／D/M/S:** catalog consistency verifier、sealed example round-trip、昇格entryのevidence link照合、未測定寸法／未接続featureの昇格拒否回帰、v1回帰。
+- **Gate／docs／次／停止:** 達成。`FeatureSupportCatalogConsistencyVerifierV2`（smoke-evidenced prefix／宣言runtime／smoke evidence link／Release capability path必須）、false-promotion corpus（`FeatureSupportCatalogV2Test`）、sealed example round-trip、`PlacementPhaseGateV2Test`のhard limit 64×64／500・1000拒否、full test／buildが通過した。寸法昇格は行わず次は`V2-11-02`（本Taskからは開始しない）。evidenceのない昇格が必要になれば停止する。
+
+### V2-11-02 R2 placement dimension guard and measurement profile
+
+- **状態／Phase／優先度:** 完了（2026-07-20）／V2-11／P0。2026-07-20全体再監査で追加（監査判定#5: catalog hard limit 64×64が設定で最大10,000まで上書き可能、R2経路へ一部disk設定未反映）。両指摘を解消した。
+- **目的／前提:** 通常運用のR2 placementをcatalog hard limit（64×64）で設定によらずfail-fastさせ、上限超の寸法は再実測専用profileだけで明示的に許可する。前提は`V2-6-21`（P0再完了）。`V2-11-01`と並行実行できるが同一ファイルの同時編集は不可。
+- **Scope／成果物:** production設定でのdimension上限クランプ（catalog値を超える設定値の起動時拒否またはworld mutation前のstable domain error）、measurement profile（明示config flag＋operator限定＋隔離world前提、`V2-11-04`／`V2-11-05`専用）、R2経路へのdisk関連設定の完全反映、restart時reservation rebuildがeffect envelope基準であることの回帰固定。
+- **非Scope:** 500／1000実測そのもの、capability昇格、新artifact format、v1 placement変更、寸法・予算の新しいhard-code追加（scale契約ADR 0016を正本とする）。
+- **主変更:** `core.v2.placement`のadmission／config検証、Paper config／permissions、tests、admin／operations／limitations docs。
+- **必須test／D/M/S:** 64×64境界許可と65×65以上の通常profile拒否、超過config値の拒否、measurement profile gating（flagなし・非operator・deny worldで拒否）、disk設定反映、effect envelope基準rebuild回帰、v1回帰。既定挙動でsecurity boundaryを弱めない。
+- **Gate／docs／次／停止:** 達成。`Release2MeasuredDimensionGateV2.production(...)`がcatalog `SMOKE_MEASURED_MAXIMUM`超の設定値を起動時に拒否し、`Release2PlacementDimensionPolicyV2`が唯一のadmission pointとしてworld mutation・journal・reservationのいずれよりも前にlayoutを拒否する。`Release2MeasurementProfileV2`は明示flag＋隔離world＋CONSOLE／RCON operatorの3条件が揃った時だけ有効で既定無効。`disk.minimum-free-bytes`／`disk.safety-margin-bytes`を`Release2DiskBudgetV2`でR2 reservation floorへ反映し、`FilePlacementSafetyStoreV2.rebuild`をsealed effect envelope基準へ修正した。新規寸法hard-codeは追加していない（catalogの`SMOKE_MEASURED_MAXIMUM`／`CATALOG_BUDGET_MAXIMUM`が正本）。次は`V2-11-03`（本Taskからは開始しない）。
+- **既知の未解決（本Task外）:** full suiteで`PlacementPhaseGateV2Test.release2LifecycleAppliesVerifiesAndUndoesDeterministically`が約4回に1回`RejectedExecutionException: I/O concurrency limit reached`で落ちる。原因は`GenerationExecutors.TrackedTask`がfutureを完了させた**後**にI/O permitを解放するため、`io=1`構成では`.join()`直後の次submitが`tryAcquire`に失敗する既存のrace（本Taskで追加したsubmitはない）。共有core executorの変更は本TaskのScope外のため修正せず、新Task化を提案する。
+
+### V2-11-03 Docs／Schema／example consistency sync
+
+- **状態／Phase／優先度:** 完了（2026-07-20）／V2-11／P2。2026-07-20全体再監査で追加。
+- **目的／前提:** 監査で検出した文書・Schema整備不足を実装と一致した表現へ同期する。前提なし（`V2-6-19`完了済み）。
+- **Scope／成果物:** Quickstartの`sandy-coast-001`生成→`rocky-coast-001`配置の誤記修正、console confirmation token説明の追記、roadmapの古いanchor参照3件の修正、Schema 2件へのtitle・139件へのdescription追加（validation挙動不変）、feature-support catalog Schemaの共通Schema検証への追加、Schema／exampleのinventory-driven検証（disk列挙とtest対象の一致検査）、任意でdocs anchor checker。
+- **非Scope:** Schema semantic変更、契約version変更、新機能docs、roadmap進捗状態の変更、64×64以外を`SUPPORTED`と表示する記述の追加。
+- **主変更:** `docs/`（Quickstart／user／admin／roadmap anchor）、`schemas/`のtitle／description、`SchemaContractTest`等の共通検証、（任意）`scripts/` checker。
+- **必須test／D/M/S:** 全Schemaのtitle／description presence検査、inventory完全性検査、既存example round-trip・checksum不変、v1 golden不変。
+- **Gate／docs／次／停止:** 達成。全141 schemaが非空の`title`／`description`を持ち（`SchemaContractTest.everySchemaDeclaresATitleAndDescription`）、schema inventory（disk＝`StructuredDataValidator`のbundle＝packaged resource）とexample inventory（`examples/`配下178 documentがsource／docsから参照される）が固定された。共通検証から唯一漏れていた`feature-support-catalog-v2.schema.json`はbundleへ加え、drift（5 Paper能力列の`const: UNSUPPORTED`。`V2-11-01`昇格後のsealed exampleと125件矛盾）を`supportLevel` enumへ同期して`FeatureSupportCatalogCodecV2.read`から共通strict検証を通した。昇格evidenceの強制は従来どおり`FeatureSupportCatalogConsistencyVerifierV2`が正本である。Quickstart誤記とCONSOLE／RCON confirmation token運用、`roadmap.md#terrain-generation-v2`参照3件を修正し、`DocsLinkConsistencyTest`をdocs anchor checkerとして追加した。契約version、canonical checksum、昇格範囲（64×64／`surface-2_5d`）は不変。次は`V2-11-04`（本Taskからは開始しない）。
+
+### V2-11-04 500×500 real-world measurement on dedicated host
+
+- **状態／Phase／優先度:** 未着手／V2-11／P1。無効化済み`V2-6-16`の後継新ID（同IDは復活させない、[Task Execution Guide §8](task-execution-guide.md)）。専用の高memory実測ホストを確保済み（2026-07-20）。
+- **目的／前提:** 500×500 Release 2 placementの全lifecycleを実機で完走・計測し、寸法昇格（`V2-11-06`）の判断証拠を作る。前提は`V2-11-01`（昇格状態確定）と`V2-11-02`（measurement profile）。
+- **Scope／成果物:** PaperをGradleから完全分離した単独JVM起動（standalone script、Gradle daemon経由のconsole中継なし）、RCON操作、bounded log、server PID単独のheap／RSS／GC／JFR計測、WorldEdit 7.3.19とFAWE 2.15.2の各単独profileでgenerate→export→strict R2 verify→plan→confirm→snapshot-all→containment→apply→settle→full verify→Undo（baseline復元）まで、反復実行のchecksum決定性、failure／recovery drill、evidence文書。
+- **非Scope:** 1000×1000、catalog昇格（`V2-11-06`）、coreの推測最適化（budget超過なら停止して別Taskを提案）、offline測定による代用、過去のGradle daemon混在計測の流用。
+- **主変更:** measurement scripts／fixtures、audit evidence docs、release checklist／roadmap。production変更は実測で見つかったdefectの小規模修正だけ。
+- **必須test／D/M/S:** measurement profile経由のみで実行、main-thread assertion、journal restart安全、measured peak／RSS／GC／disk／時間の記録、secret／server artifact非commit、v1 smoke回帰。
+- **Gate／docs／次／停止:** 両profileで`APPLIED`→full verify→`UNDONE`完走とserver PID単独telemetryが揃えば完了し`V2-11-05`へ進める。budget超過・未完走・環境不足は`BLOCKED_EXTERNAL`または停止とし、500を昇格候補にしない。
+
+### V2-11-05 1000×1000 real-world measurement
+
+- **状態／Phase／優先度:** 未着手／V2-11／P1。無効化済み`V2-6-17`の後継新ID（同IDは復活させない）。
+- **目的／前提:** 1000×1000 Release 2 placementを`V2-11-04`と同一手法で実測する。前提は`V2-11-04`が両profileで安定して全lifecycleを完走していること。
+- **Scope／成果物:** `V2-11-04`と同じ分離Paper JVM／RCON／PID単独telemetry手法での1000角全lifecycle、加えてscheduler slice／queueの長時間挙動とdisk予約上限の実測、evidence文書。
+- **非Scope:** 500結果の外挿、LARGE（V2-8）、catalog昇格、測定なしのsupport宣言。
+- **主変更:** measurement scripts、audit evidence docs、release checklist／roadmap。
+- **必須test／D/M/S:** `V2-11-04`と同じ。加えて長時間実行でのbounded queue／memory admissionの実証。
+- **Gate／docs／次／停止:** 両profile完走とtelemetryが揃えば完了。未完走なら1000を昇格候補にせず、`BLOCKED_EXTERNAL`または停止とする。
+
+### V2-11-06 Measured dimension catalog promotion
+
+- **状態／Phase／優先度:** 未着手／V2-11／P1。
+- **目的／前提:** `V2-11-04`／`V2-11-05`の実測evidenceに限定してcatalog placement dimension limitを更新する。前提は`V2-11-04`（必須）と、実施済みの場合の`V2-11-05`。
+- **Scope／成果物:** catalog data／sealed exampleの更新、evidence link（各実測audit）、false-promotion corpus更新（未実測寸法拒否の維持）、README／user／limitations docs同期。
+- **非Scope:** 実測なし寸法の昇格、LARGE、Release format変更、新feature追加。
+- **主変更:** built-in catalog data／sealed example、capability matrix docs、README／user／limitations／roadmap。
+- **必須test／D/M/S:** catalog consistency verifier、sealed example round-trip、昇格entryのevidence link照合、未実測寸法のfalse-promotion拒否回帰、v1回帰。
+- **Gate／docs／次／停止:** 昇格が実測evidenceの範囲に限定され、catalog検証と対象testが通れば完了。evidenceのない昇格が必要になれば停止する。
+
+## 12. V2-12 V2 production path and v1 full migration（Track A後続、2026-07-20全体再監査で追加）
+
+追加理由: 2026-07-20の全体再監査で、通常のCLI／Paper経路が依然v1であり、v2のrequest→design→generate→preview/export→Release 2 placementが未接続、production Release 2 export経路とv1→v2 migration toolが未実装であることを確認した。本PhaseはV2を正式なユーザー経路にし、その後にv1の不要機能削除と名称整理（完全移行）を段階的に行う。AGENTS.md §6のv1凍結は`V2-12-01`のADR承認までは全Taskで有効であり、`V2-12-01`完了前にv1契約を変更するTaskを開始しない。`V2-12-05`以降はユーザー可視の破壊的変更を含むため人間承認を必須とする。
+
+### V2-12-01 v1 retirement governance ADR and compatibility policy update
+
+- **状態／Phase／優先度:** 未着手／V2-12／P1。
+- **目的／前提:** v1凍結（AGENTS.md §6）を段階的に解除するgovernance ADRを作り、削除・改名の範囲と順序を正本化する。前提は`V2-11-01`。
+- **Scope／成果物:** ADR（削除対象v1機能の一覧と根拠、維持するv1資産（参照用golden等）の扱い、名称変更方針 — Javaクラス等の`V2` suffix改名は自由、contract ID／Schema `$id`／checksumへ影響する識別子はADRが明示承認した場合のみ変更、`/lfc r2`→正式command名、deprecation window）、AGENTS.md §6／roadmap「継続する製品境界」／task-execution-guideの改訂。コード変更なし。
+- **非Scope:** 実コードの削除・改名、catalog変更、Schema変更。
+- **主変更:** `docs/adr/`、AGENTS.md、roadmap、task-execution-guide。
+- **必須test／D/M/S:** なし（正本間の矛盾検査のみ）。
+- **Gate／docs／次／停止:** ADRと改訂正本が矛盾なく揃い人間承認が得られれば完了し、`V2-12-05`以降のv1変更Taskを解禁する。v2が未カバーのv1機能が削除対象に含まれる場合は停止し、先行カバレッジTaskを提案する。
+
+### V2-12-02 Production Release 2 export path
+
+- **状態／Phase／優先度:** 未着手／V2-12／P1。2026-07-20全体再監査の残課題「P1 — V2通常利用経路」の前半。
+- **目的／前提:** v2のrequest→design→generate→preview/exportをstrict Release 2 publisherへ接続し、production export経路（core application service／API）を成立させる。前提は`V2-11-01`。v1不変のため`V2-12-01`とは独立に実装できる。
+- **Scope／成果物:** `TerrainDesignApplicationServiceV2`〜generation〜preview/export〜Release 2 publisherの正式接続、staging→strict read-back→atomic publish、export成果物を`V2-6-20` verified canonical block sourceで開きplacement planを作れるまでのoffline E2E、CLI／Paperから呼べるapplication API。
+- **非Scope:** Paper／CLI command routing（`V2-12-03`）、v1変更、新capability／artifact format、world mutation。
+- **主変更:** `core.v2`のapplication orchestration、`format.v2.release` publisher接続（共有領域のため直列実行）、tests、architecture／artifact-format docs。
+- **必須test／D/M/S:** request fixture→R2 strict verify→placement eligibilityのoffline E2E、同Blueprint同checksumのdeterminism、cancel／cleanup、budget admission、v1 golden不変。
+- **Gate／docs／次／停止:** 正式APIから`ReleasePlacementEligibilityVerifierV2`を通るstrict R2を再現的にpublishできれば完了し`V2-12-03`へ進める。新artifact formatや推測fallbackが必要になれば停止する。
+
+### V2-12-03 CLI／Paper v2 command routing and E2E
+
+- **状態／Phase／優先度:** 未着手／V2-12／P1。2026-07-20全体再監査の残課題「P1 — V2通常利用経路」の後半（監査判定#13: CLI・補完・routing test不足）。
+- **目的／前提:** CLIとPaperへ正式なv2 command経路（request／design／generate／preview／export／place／undo／status）を追加し、評価用`/lfc r2`を正式経路へ統合する。前提は`V2-12-02`と`V2-6-21`。
+- **Scope／成果物:** CLI subcommand、Paper command＋help／tab completion／permission整合、routing tests、fake gateway E2E（request→export→64×64 placement→Undo）、実機smoke evidence（64×64）。
+- **非Scope:** v1 commandの削除・意味変更（`V2-12-06`まで凍結）、500／1000、Web UI。
+- **主変更:** CLI／Paper command adapter、permissions／config、tests、commands／user／admin docs。
+- **必須test／D/M/S:** command routing／permission／completion回帰、operator／actor／world policyの継承（`V2-6-21`のsecurity gate回帰）、v1 command不変回帰、main-thread assertion、correlation ID／stable error code。
+- **Gate／docs／次／停止:** v2正規経路のE2Eが自動test＋実機smokeで固定されれば完了。v1 command変更が必要になれば`V2-12-01`のADR承認を確認できるまで停止する。
+
+### V2-12-04 v1→v2 migration tool
+
+- **状態／Phase／優先度:** 未着手／V2-12／P1。2026-07-20全体再監査（監査判定#12: migration toolなし）。
+- **目的／前提:** 既存v1資産（intent／design package／Release 1）を明示操作でv2 artifactへ変換するmigration toolを実装する。前提は`V2-12-02`。
+- **Scope／成果物:** v1 strict read→v2 contract mapping（v1から欠落した位置・形状・関係・地質をhard constraintへ推測補完しない — 欠落はdraft／未指定のまま）、新artifact生成（in-place書換なし）、変換reportとstrict verify、CLI subcommand、user docs。
+- **非Scope:** 自動一括migration、v1資産の削除・変更、lossy変換の暗黙容認、未知version受理。
+- **主変更:** `core.v2`のmigration service、CLI subcommand、tests／fixtures、user／artifact-format docs。
+- **必須test／D/M/S:** 代表v1 fixture変換のstrict verify／round-trip、非対応要素の明示reject／report、determinism（同入力同checksum）、v1資産の非破壊、path／ZIP／未知version拒否。
+- **Gate／docs／次／停止:** v1代表資産がv2で検証可能なartifactへ再現的に変換でき、非対応が明示報告されれば完了。変換にhard constraint推測が必要なら停止する。
+
+### V2-12-05 v2 default switchover and v1 deprecation
+
+- **状態／Phase／優先度:** 未着手／V2-12／P1。
+- **目的／前提:** CLI／Paperの既定経路をv2へ切替え、v1を明示flag付きdeprecatedへ移す。前提は`V2-12-01`〜`V2-12-04`、および`V2-11-06`（v1同等の寸法カバレッジ確定。`V2-11-05`未実施ならその制限をADRで明示承認）。
+- **Scope／成果物:** default routing切替、v1のdeprecation表示と明示opt-in flag、v1→v2機能カバレッジ監査（v1で可能だった操作・寸法がv2で同等以上であるevidence）、user／admin／README／Quickstart全面更新、CHANGELOG。
+- **非Scope:** v1コード削除（`V2-12-06`）、catalog昇格、新機能。
+- **主変更:** CLI／Paperのdefault routing、config、tests、全ユーザー向けdocs。
+- **必須test／D/M/S:** 既定操作の全E2Eがv2経路で完走、v1 opt-in経路の回帰維持、deprecation表示、v1 golden不変。
+- **Gate／docs／次／停止:** 既定操作が全てv2で完走し、v1がopt-in化され、カバレッジ監査で劣化なし（または劣化がADRで明示承認済み）で人間承認が得られれば完了。未承認のカバレッジ劣化があれば停止する。
+
+### V2-12-06 v1 removal and renaming
+
+- **状態／Phase／優先度:** 未着手／V2-12／P1。
+- **目的／前提:** `V2-12-01` ADRの一覧に従いv1の不要機能を削除し、名称を正式化する。前提は`V2-12-05`（deprecation windowはADRに従う）。
+- **Scope／成果物:** v1 generator `3.0.0-phase6`、Release format 1 publisher／verifier、v1 placement／Undo／recovery、v1専用Schema／example／golden、v1 commandの削除（ADR一覧の範囲）、単一versionとなる箇所のversion dispatch layer簡約、`V2` suffix等の名称正規化（contract ID／Schema `$id`／checksumへ影響しない範囲。影響する改名はADR明示承認分のみ）、全docs／testsの同期。
+- **非Scope:** ADR一覧外の削除、v2契約のsemantic変更、機能追加、maintained golden（ADRで維持指定した資産）の削除。
+- **主変更:** v1系source／schemas／examples／tests削除、rename一括、CLI／Paper、全docs。
+- **必須test／D/M/S:** 削除後のfull `./gradlew test`／`build`、v2全回帰（placement／Undo／Recovery／Release 2／catalog／determinism）、改名後のchecksum不変確認（ADR承認済み変更を除く）、dead code／dead docs／dead link検査。
+- **Gate／docs／次／停止:** ADR一覧と削除・改名結果が一致し、full suiteとv2回帰が通れば完了。一覧外削除やv2契約変更が必要になれば停止する。
+
+### V2-12-07 Migration integration audit and Phase gate
+
+- **状態／Phase／優先度:** 未着手／V2-12／P1。
+- **目的／前提:** V2-12全体を統合監査しPhase gateを閉じる。前提は`V2-12-01`〜`V2-12-06`。
+- **Scope／成果物:** v2単独構成でのfull clean test／build、E2E（request→design→generate→export→placement→Undo→Recovery）、command／permission／security監査、docs／roadmap／catalog／Schema inventory整合、release checklist更新、release decision。
+- **非Scope:** 新実装、大規模bug fix（defectは新Task化して本gateを未完のままにする）、未完Beta hardeningの免除。
+- **主変更:** audit、roadmap、release checklist、README／limitations／operationsの実態同期。
+- **必須test／D/M/S:** full clean suite、all capability directory／ZIP tamper、determinism／runtime profile、fault injection／recovery、catalog false-promotion corpus、（v1削除後の）v2 golden。
+- **Gate／docs／次／停止:** 未解決critical／highなしでv2単独運用が成立すれば完了しV2-12を閉じる。失敗時は原因Taskの再openまたは新IDを登録し、gateを未完のまま停止する。
+
+## 13. 親Phaseを閉じる規則
+
+`V2-2-12`、`V2-3-15`、`V2-4-15`、`V2-5-18`、`V2-6-19`、`V2-7-07`、`V2-8-08`、`V2-9-14`、`V2-10-09`、`V2-12-07`だけが親Phaseを完了へ変更できる。先行Taskが完了しても、次のどれかが残れば親Phaseは `進行中` である。
 
 - 同Phaseの未完／再open／追加Task
 - feature lifecycleのvalidator／preview／corruption／budget不足

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/mountain-range-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-03 mountain-range foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-03 mountain-range foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "ridgePoints", "peaks", "saddles", "spurs", "passes", "foothills",
+    "selectedRidgeHalfWidthBlocks", "selectedMaxReliefBlocks", "foothillBandBlocks",
+    "valleyTransitionBandBlocks", "minY", "maxY", "waterLevel", "width", "length",
+    "ridgeMaskFieldId", "peakMaskFieldId", "saddleMaskFieldId", "spurMaskFieldId", "passMaskFieldId",
+    "elevationFieldId", "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "ridgePoints": { "type": "array", "minItems": 2, "maxItems": 16384, "items": { "$ref": "#/$defs/ridgePoint" } },
+    "peaks": { "type": "array", "minItems": 2, "maxItems": 8, "items": { "$ref": "#/$defs/peak" } },
+    "saddles": { "type": "array", "maxItems": 7, "items": { "$ref": "#/$defs/saddle" } },
+    "spurs": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/spur" } },
+    "passes": { "type": "array", "maxItems": 7, "items": { "$ref": "#/$defs/pass" } },
+    "foothills": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/foothill" } },
+    "selectedRidgeHalfWidthBlocks": { "type": "integer", "minimum": 4, "maximum": 64 },
+    "selectedMaxReliefBlocks": { "type": "integer", "minimum": 16, "maximum": 128 },
+    "foothillBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "valleyTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "ridgeMaskFieldId": { "const": "foundation.mountain.ridge-mask" },
+    "peakMaskFieldId": { "const": "foundation.mountain.peak-mask" },
+    "saddleMaskFieldId": { "const": "foundation.mountain.saddle-mask" },
+    "spurMaskFieldId": { "const": "foundation.mountain.spur-mask" },
+    "passMaskFieldId": { "const": "foundation.mountain.pass-mask" },
+    "elevationFieldId": { "const": "foundation.mountain.elevation" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ridgePoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths", "arcLengthMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "peak": {
+      "type": "object", "additionalProperties": false,
+      "required": ["peakId", "xMillionths", "zMillionths", "arcLengthMillionths", "reliefBlocks"],
+      "properties": {
+        "peakId": { "$ref": "#/$defs/slug" },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "reliefBlocks": { "type": "integer", "minimum": 1, "maximum": 128 }
+      }
+    },
+    "saddle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["saddleId", "xMillionths", "zMillionths", "arcLengthMillionths", "reliefBlocks"],
+      "properties": {
+        "saddleId": { "$ref": "#/$defs/slug" },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "reliefBlocks": { "type": "integer", "minimum": 1, "maximum": 128 }
+      }
+    },
+    "spur": {
+      "type": "object", "additionalProperties": false,
+      "required": ["spurId", "xMillionths", "zMillionths", "arcLengthMillionths", "lengthBlocks"],
+      "properties": {
+        "spurId": { "$ref": "#/$defs/slug" },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "lengthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "pass": {
+      "type": "object", "additionalProperties": false,
+      "required": ["passId", "xMillionths", "zMillionths", "arcLengthMillionths", "reliefBlocks"],
+      "properties": {
+        "passId": { "$ref": "#/$defs/slug" },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "reliefBlocks": { "type": "integer", "minimum": 1, "maximum": 128 }
+      }
+    },
+    "foothill": {
+      "type": "object", "additionalProperties": false,
+      "required": ["foothillId", "xMillionths", "zMillionths", "bandBlocks"],
+      "properties": {
+        "foothillId": { "$ref": "#/$defs/slug" },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "bandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/karst-spring-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-03 karst spring foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-03 karst spring foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "caveNetworkFeatureId", "caveNetworkCanonicalChecksum",
+    "caveRelationId", "outletSurfaceFeatureId", "outletSurfaceGeometryChecksum",
+    "outletRelationId", "springDischargeBlocks", "materialHandoffId",
+    "openingXMillionths", "openingYMillionths", "openingZMillionths",
+    "dischargeMaskFieldId", "ownershipFieldId", "reachabilityFieldId",
+    "supportRadiusXZ", "estimatedWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "caveNetworkFeatureId": { "$ref": "#/$defs/slug" },
+    "caveNetworkCanonicalChecksum": { "$ref": "#/$defs/checksum" },
+    "caveRelationId": { "$ref": "#/$defs/slug" },
+    "outletSurfaceFeatureId": { "$ref": "#/$defs/slug" },
+    "outletSurfaceGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "outletRelationId": { "$ref": "#/$defs/slug" },
+    "springDischargeBlocks": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "materialHandoffId": { "const": "karst-limestone-handoff" },
+    "openingXMillionths": { "type": "integer", "minimum": 0 },
+    "openingYMillionths": { "type": "integer", "minimum": 0 },
+    "openingZMillionths": { "type": "integer", "minimum": 0 },
+    "dischargeMaskFieldId": { "const": "foundation.karst-spring.discharge-mask" },
+    "ownershipFieldId": { "const": "foundation.karst-spring.ownership" },
+    "reachabilityFieldId": { "const": "foundation.karst-spring.reachability" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

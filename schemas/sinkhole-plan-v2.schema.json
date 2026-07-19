@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/sinkhole-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-03 sinkhole foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-03 sinkhole foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "surfaceHostFeatureId", "surfaceHostGeometryChecksum",
+    "surfaceHostRelationId", "caveNetworkFeatureId", "caveNetworkCanonicalChecksum",
+    "caveRelationId", "targetEntranceNodeId", "collapseRadiusBlocks", "roofClearanceBlocks",
+    "lossVolumeBlocks", "materialHandoffId", "openingXMillionths", "openingYMillionths",
+    "openingZMillionths", "collapseMaskFieldId", "ownershipFieldId", "reachabilityFieldId",
+    "roofClearanceFieldId", "supportRadiusXZ", "estimatedWorkUnits", "geometryChecksum",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "surfaceHostFeatureId": { "$ref": "#/$defs/slug" },
+    "surfaceHostGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "surfaceHostRelationId": { "$ref": "#/$defs/slug" },
+    "caveNetworkFeatureId": { "$ref": "#/$defs/slug" },
+    "caveNetworkCanonicalChecksum": { "$ref": "#/$defs/checksum" },
+    "caveRelationId": { "$ref": "#/$defs/slug" },
+    "targetEntranceNodeId": { "$ref": "#/$defs/slug" },
+    "collapseRadiusBlocks": { "type": "integer", "minimum": 2, "maximum": 16 },
+    "roofClearanceBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "lossVolumeBlocks": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "materialHandoffId": { "const": "karst-limestone-handoff" },
+    "openingXMillionths": { "type": "integer", "minimum": 0 },
+    "openingYMillionths": { "type": "integer", "minimum": 0 },
+    "openingZMillionths": { "type": "integer", "minimum": 0 },
+    "collapseMaskFieldId": { "const": "foundation.sinkhole.collapse-mask" },
+    "ownershipFieldId": { "const": "foundation.sinkhole.ownership" },
+    "reachabilityFieldId": { "const": "foundation.sinkhole.reachability" },
+    "roofClearanceFieldId": { "const": "foundation.sinkhole.roof-clearance" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

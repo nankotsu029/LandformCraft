@@ -79,7 +79,7 @@ public record TerrainIntentV2(
         for (Relation relation : relations) {
             validateEndpoint(relation.from(), featureIds, relation.id());
             validateEndpoint(relation.to(), featureIds, relation.id());
-            relation.validateEndpointTypes();
+            validateRelationEndpointTypes(relation, features);
         }
         for (Constraint constraint : constraints) {
             validateSubject(constraint.subject(), featureIds, constraint.id());
@@ -109,6 +109,29 @@ public record TerrainIntentV2(
         if (endpoint.startsWith("feature:") && !featureIds.contains(endpoint.substring("feature:".length()))) {
             throw new IllegalArgumentException("unknown relation endpoint in " + relationId + ": " + endpoint);
         }
+    }
+
+    private static void validateRelationEndpointTypes(Relation relation, List<Feature> features) {
+        if (relation.kind() == RelationKind.EMPTIES_INTO
+                && relation.from().startsWith("feature:")
+                && relation.to().startsWith("feature:")) {
+            String fromId = relation.from().substring("feature:".length());
+            String toId = relation.to().substring("feature:".length());
+            FeatureKind fromKind = featureKindOrNull(features, fromId);
+            FeatureKind toKind = featureKindOrNull(features, toId);
+            if (fromKind == FeatureKind.SPRING && toKind == FeatureKind.RIVER) {
+                return;
+            }
+        }
+        relation.validateEndpointTypes();
+    }
+
+    private static FeatureKind featureKindOrNull(List<Feature> features, String featureId) {
+        return features.stream()
+                .filter(feature -> feature.id().equals(featureId))
+                .map(Feature::kind)
+                .findFirst()
+                .orElse(null);
     }
 
     private static void validateSubject(String subject, Set<String> featureIds, String constraintId) {
@@ -187,6 +210,7 @@ public record TerrainIntentV2(
     public enum VerticalMode { ABSOLUTE_Y, SURFACE_OFFSET, WATER_LEVEL_OFFSET }
     public enum Strength { HARD, SOFT }
     public enum Edge { NORTH, EAST, SOUTH, WEST }
+    public enum PlateauProfile { MESA, BUTTE, GENERIC }
     public enum EdgeClassification { LAND, SEA }
     public enum Sampling { NEAREST, BILINEAR_FIXED }
     public enum ConstraintMapRole { LAND_WATER_MASK, HEIGHT_GUIDE, ZONE_LABEL_MAP }
@@ -209,6 +233,10 @@ public record TerrainIntentV2(
     public enum DeltaFanProfile { APEX_TO_SEA_LINEAR }
     public enum TidalEdgeKind { BIDIRECTIONAL }
     public enum FjordCrossSection { GLACIAL_U }
+    /** V2-9-03 general valley cross-section; distinct from specialized {@link FjordCrossSection}. */
+    public enum ValleyCrossSection { V_PROFILE, U_PROFILE }
+    /** Optional valley connection role for fjord/river handoff inspection (not a FeatureKind). */
+    public enum ValleyConnectionRole { NONE, FJORD_HEAD, RIVER_CORRIDOR }
     public enum MountainVariant { ALPINE, GLACIAL }
     public enum CalderaBreachDirection {
         NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
@@ -219,7 +247,15 @@ public record TerrainIntentV2(
         BREAKWATER_HARBOR,
         HARBOR_BASIN,
         ROCKY_CAPE,
+        ROCKY_COAST,
         BACKSHORE_PLAINS,
+        PLAIN,
+        HILL_RANGE,
+        MOUNTAIN_RANGE,
+        VALLEY,
+        RIVER,
+        FLOODPLAIN,
+        MARSH,
         FJORD,
         GLACIAL_MOUNTAIN_RANGE,
         MEANDERING_RIVER,
@@ -228,6 +264,15 @@ public record TerrainIntentV2(
         VOLCANIC_ARCHIPELAGO,
         VOLCANIC_CALDERA,
         LAVA_FLOW_FIELD,
+        SINGLE_ISLAND,
+        ARCHIPELAGO,
+        VOLCANIC_CONE,
+        OCEAN_BASIN,
+        ABYSSAL_PLAIN,
+        SEAMOUNT,
+        CONTINENTAL_SHELF,
+        CONTINENTAL_SLOPE,
+        SUBMARINE_CANYON,
         CANYON,
         BEDROCK_RIVER,
         WATERFALL,
@@ -240,17 +285,31 @@ public record TerrainIntentV2(
         REEF_PASS,
         CAVE_NETWORK,
         CAVE_ENTRANCE,
+        UNDERGROUND_RIVER,
+        SINKHOLE,
+        KARST_SPRING,
+        FLOODED_CAVE,
         LUSH_CAVE,
         SEA_CLIFF,
         OVERHANG,
-        SKY_ISLAND_GROUP
+        SKY_ISLAND_GROUP,
+        VALLEY_GLACIER,
+        ICE_CAP,
+        ICE_SHEET,
+        MORAINE_FIELD,
+        OUTWASH_PLAIN,
+        ESCARPMENT,
+        PLATEAU,
+        LAVA_TUBE,
+        SPRING,
+        OXBOW_LAKE
     }
 
     public enum RelationKind {
         CONNECTS_TO(false), DRAINS_TO(true), EMPTIES_INTO(true), WITHIN(true), FLANKS(true),
         ADJACENT_TO(false), ENCLOSED_BY(true), ENCLOSES(true), ON_PATH_OF(true), ORIGINATES_AT(true),
-        REACHABLE_FROM(true), ENTRANCE_OF(true), CARVES_FLANK_OF(true), CARVES_THROUGH(true),
-        SUPPORTED_BY(true), OVERLAPS(false), EXCLUDES(false), UPSTREAM_OF(true);
+        REACHABLE_FROM(true), ENTRANCE_OF(true),         CARVES_FLANK_OF(true), CARVES_THROUGH(true),
+        SUPPORTED_BY(true), SUPPORTS_FROM(true), OVERLAPS(false), EXCLUDES(false), UPSTREAM_OF(true);
 
         private final boolean requiresDag;
 
@@ -391,10 +450,23 @@ public record TerrainIntentV2(
     }
 
     public sealed interface FeatureParameters permits SandyBeachParameters, BreakwaterHarborParameters,
-            HarborBasinParameters, RockyCapeParameters, BackshorePlainsParameters, MeanderingRiverParameters,
+            HarborBasinParameters, RockyCapeParameters, RockyCoastParameters, BackshorePlainsParameters,
+            PlainParameters, HillRangeParameters, MountainRangeParameters, ValleyParameters, RiverParameters,
+            FloodplainParameters, MarshParameters, MeanderingRiverParameters, SeaCliffParameters,
             LakeParameters, CanyonParameters, WaterfallParameters, DeltaParameters, TidalChannelParameters,
             FjordParameters, MountainParameters, VolcanicArchipelagoParameters, VolcanicCalderaParameters,
-            LavaFlowParameters, NoParameters { }
+            LavaFlowParameters, SingleIslandParameters, ArchipelagoParameters, VolcanicConeParameters,
+            OceanBasinParameters, ContinentalShelfParameters, ContinentalSlopeParameters,
+            SubmarineCanyonParameters, CaveEntranceParameters,
+            UndergroundRiverParameters, FloodedCaveParameters,
+            SinkholeParameters, KarstSpringParameters,
+            GlacialIceParameters,
+            MoraineFieldParameters, OutwashPlainParameters,
+            EscarpmentParameters, PlateauParameters, LavaTubeParameters, SpringParameters,
+            OxbowLakeParameters,
+            AbyssalPlainParameters, SeamountParameters,
+            MangroveWetlandParameters, CoralReefParameters, LagoonParameters,
+            ReefPassParameters, NoParameters { }
 
     public record IntRange(int minimum, int maximum) {
         public IntRange { if (minimum > maximum) throw new IllegalArgumentException("range minimum exceeds maximum"); }
@@ -560,6 +632,65 @@ public record TerrainIntentV2(
             }
             Objects.requireNonNull(seawardSide, "seawardSide");
             Objects.requireNonNull(capeMode, "capeMode");
+        }
+    }
+
+    /**
+     * V2-9-06 ROCKY_COAST foundation parameters: rock shelf, exposure, shore side, and cape/beach
+     * transition band. Distinct from {@link RockyCapeParameters}.
+     */
+    public record RockyCoastParameters(
+            IntRange rockShelfWidthBlocks,
+            FixedRange rockExposure01,
+            Edge shoreSide,
+            IntRange channelCount,
+            int capeOrBeachTransitionBandBlocks,
+            IntRange talusHandoffDepthBlocks
+    ) implements FeatureParameters {
+        public RockyCoastParameters {
+            Objects.requireNonNull(rockShelfWidthBlocks, "rockShelfWidthBlocks");
+            Objects.requireNonNull(rockExposure01, "rockExposure01");
+            Objects.requireNonNull(shoreSide, "shoreSide");
+            Objects.requireNonNull(channelCount, "channelCount");
+            Objects.requireNonNull(talusHandoffDepthBlocks, "talusHandoffDepthBlocks");
+            requireBoundedPositiveRange(rockShelfWidthBlocks, "rockShelfWidthBlocks", 64);
+            requireUnitRange(rockExposure01, "rockExposure01");
+            if (rockExposure01.minimumMillionths() < 50_000L) {
+                throw new IllegalArgumentException("rocky coast rockExposure01 minimum must be at least 0.05");
+            }
+            requireBoundedPositiveRange(channelCount, "channelCount", 8);
+            if (capeOrBeachTransitionBandBlocks < 1 || capeOrBeachTransitionBandBlocks > 32) {
+                throw new IllegalArgumentException("capeOrBeachTransitionBandBlocks outside 1..32");
+            }
+            requireBoundedPositiveRange(talusHandoffDepthBlocks, "talusHandoffDepthBlocks", 32);
+        }
+    }
+
+    /**
+     * V2-9-06 SEA_CLIFF foundation parameters: cliff face, talus, wave-cut notch, and volume host support.
+     * Replaces diagnostic-only empty parameters for this kind.
+     */
+    public record SeaCliffParameters(
+            IntRange cliffHeightBlocks,
+            IntRange talusWidthBlocks,
+            IntRange notchDepthBlocks,
+            Edge seawardSide,
+            IntRange supportHalfExtentXZBlocks,
+            int coastTransitionBandBlocks
+    ) implements FeatureParameters {
+        public SeaCliffParameters {
+            Objects.requireNonNull(cliffHeightBlocks, "cliffHeightBlocks");
+            Objects.requireNonNull(talusWidthBlocks, "talusWidthBlocks");
+            Objects.requireNonNull(notchDepthBlocks, "notchDepthBlocks");
+            Objects.requireNonNull(seawardSide, "seawardSide");
+            Objects.requireNonNull(supportHalfExtentXZBlocks, "supportHalfExtentXZBlocks");
+            requireBoundedPositiveRange(cliffHeightBlocks, "cliffHeightBlocks", 128);
+            requireBoundedPositiveRange(talusWidthBlocks, "talusWidthBlocks", 64);
+            requireBoundedPositiveRange(notchDepthBlocks, "notchDepthBlocks", 32);
+            requireBoundedPositiveRange(supportHalfExtentXZBlocks, "supportHalfExtentXZBlocks", 64);
+            if (coastTransitionBandBlocks < 1 || coastTransitionBandBlocks > 32) {
+                throw new IllegalArgumentException("coastTransitionBandBlocks outside 1..32");
+            }
         }
     }
 
@@ -851,6 +982,648 @@ public record TerrainIntentV2(
         }
     }
 
+    /**
+     * V2-9-07 SINGLE_ISLAND foundation parameters (non-volcanic island mass／shore／drainage).
+     */
+    public record SingleIslandParameters(
+            IntRange radiusBlocks,
+            IntRange summitHeightBlocksAboveSea,
+            IntRange shoreBandWidthBlocks,
+            FixedRange radialDrainage01,
+            IntRange submarineApronDepthBlocks
+    ) implements FeatureParameters {
+        public SingleIslandParameters {
+            Objects.requireNonNull(radiusBlocks, "radiusBlocks");
+            Objects.requireNonNull(summitHeightBlocksAboveSea, "summitHeightBlocksAboveSea");
+            Objects.requireNonNull(shoreBandWidthBlocks, "shoreBandWidthBlocks");
+            Objects.requireNonNull(radialDrainage01, "radialDrainage01");
+            Objects.requireNonNull(submarineApronDepthBlocks, "submarineApronDepthBlocks");
+            requireBoundedPositiveRange(radiusBlocks, "radiusBlocks", 256);
+            if (radiusBlocks.minimum() < 8) {
+                throw new IllegalArgumentException("single island radiusBlocks must be at least 8");
+            }
+            requireBoundedPositiveRange(summitHeightBlocksAboveSea, "summitHeightBlocksAboveSea", 256);
+            if (summitHeightBlocksAboveSea.minimum() < 8) {
+                throw new IllegalArgumentException("summitHeightBlocksAboveSea must be at least 8");
+            }
+            requireBoundedPositiveRange(shoreBandWidthBlocks, "shoreBandWidthBlocks", 32);
+            requireUnitRange(radialDrainage01, "radialDrainage01");
+            requireBoundedPositiveRange(submarineApronDepthBlocks, "submarineApronDepthBlocks", 64);
+            if (submarineApronDepthBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("submarineApronDepthBlocks must be at least 4");
+            }
+        }
+    }
+
+    /**
+     * V2-9-07 ARCHIPELAGO foundation parameters (non-volcanic group spacing／dominance／saddles).
+     * Reuses {@link IslandSpec} shape; distinct from {@link VolcanicArchipelagoParameters}.
+     */
+    public record ArchipelagoParameters(
+            List<IslandSpec> islands,
+            IntRange submarineSaddleDepthBlocks,
+            int minDryLandGapBlocks
+    ) implements FeatureParameters {
+        public ArchipelagoParameters {
+            islands = V2Validation.sorted(islands, "islands", 64, Comparator.comparing(IslandSpec::pointId));
+            Objects.requireNonNull(submarineSaddleDepthBlocks, "submarineSaddleDepthBlocks");
+            if (islands.size() < 2) {
+                throw new IllegalArgumentException("archipelago needs at least two islands");
+            }
+            requireUnique(islands.stream().map(IslandSpec::pointId).toList(), "island pointId");
+            requireBoundedPositiveRange(submarineSaddleDepthBlocks, "submarineSaddleDepthBlocks", 64);
+            if (submarineSaddleDepthBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("submarineSaddleDepthBlocks must be at least 4");
+            }
+            if (minDryLandGapBlocks < 4 || minDryLandGapBlocks > 64) {
+                throw new IllegalArgumentException("minDryLandGapBlocks outside 4..64");
+            }
+        }
+    }
+
+    /**
+     * V2-9-07 VOLCANIC_CONE foundation parameters (cone／crater／radial drainage core).
+     * Does not promote {@link VolcanicCalderaParameters} to standalone.
+     */
+    public record VolcanicConeParameters(
+            IntRange baseRadiusBlocks,
+            IntRange summitHeightBlocksAboveSea,
+            IntRange craterRadiusBlocks,
+            IntRange craterFloorDepthBlocks,
+            FixedRange radialDrainage01
+    ) implements FeatureParameters {
+        public VolcanicConeParameters {
+            Objects.requireNonNull(baseRadiusBlocks, "baseRadiusBlocks");
+            Objects.requireNonNull(summitHeightBlocksAboveSea, "summitHeightBlocksAboveSea");
+            Objects.requireNonNull(craterRadiusBlocks, "craterRadiusBlocks");
+            Objects.requireNonNull(craterFloorDepthBlocks, "craterFloorDepthBlocks");
+            Objects.requireNonNull(radialDrainage01, "radialDrainage01");
+            requireBoundedPositiveRange(baseRadiusBlocks, "baseRadiusBlocks", 256);
+            if (baseRadiusBlocks.minimum() < 8) {
+                throw new IllegalArgumentException("cone baseRadiusBlocks must be at least 8");
+            }
+            requireBoundedPositiveRange(summitHeightBlocksAboveSea, "summitHeightBlocksAboveSea", 256);
+            if (summitHeightBlocksAboveSea.minimum() < 8) {
+                throw new IllegalArgumentException("summitHeightBlocksAboveSea must be at least 8");
+            }
+            requireBoundedPositiveRange(craterRadiusBlocks, "craterRadiusBlocks", 64);
+            requireBoundedPositiveRange(craterFloorDepthBlocks, "craterFloorDepthBlocks", 64);
+            if (craterRadiusBlocks.maximum() >= baseRadiusBlocks.minimum()) {
+                throw new IllegalArgumentException("craterRadiusBlocks must be strictly inside baseRadiusBlocks");
+            }
+            if (craterFloorDepthBlocks.maximum() > summitHeightBlocksAboveSea.minimum()) {
+                throw new IllegalArgumentException("craterFloorDepthBlocks exceeds summit height");
+            }
+            requireUnitRange(radialDrainage01, "radialDrainage01");
+        }
+    }
+
+    /**
+     * V2-10-04 ABYSSAL_PLAIN foundation parameters: deep flat floor within an ocean basin host.
+     */
+    public record AbyssalPlainParameters(
+            IntRange floorDepthBlocksBelowSea,
+            IntRange floorReliefBlocks
+    ) implements FeatureParameters {
+        public AbyssalPlainParameters {
+            Objects.requireNonNull(floorDepthBlocksBelowSea, "floorDepthBlocksBelowSea");
+            Objects.requireNonNull(floorReliefBlocks, "floorReliefBlocks");
+            requireBoundedPositiveRange(floorDepthBlocksBelowSea, "floorDepthBlocksBelowSea", 256);
+            if (floorDepthBlocksBelowSea.minimum() < 16) {
+                throw new IllegalArgumentException("abyssal plain floorDepthBlocksBelowSea must be at least 16");
+            }
+            requireNonNegativeRange(floorReliefBlocks, "floorReliefBlocks");
+            if (floorReliefBlocks.maximum() > 8) {
+                throw new IllegalArgumentException("abyssal plain floorReliefBlocks exceeds 8");
+            }
+        }
+    }
+
+    /**
+     * V2-10-04 SEAMOUNT foundation parameters: underwater relief cone within an ocean basin host.
+     */
+    public record SeamountParameters(
+            IntRange baseRadiusBlocks,
+            IntRange reliefBlocks,
+            IntRange summitDepthBlocksBelowSea
+    ) implements FeatureParameters {
+        public SeamountParameters {
+            Objects.requireNonNull(baseRadiusBlocks, "baseRadiusBlocks");
+            Objects.requireNonNull(reliefBlocks, "reliefBlocks");
+            Objects.requireNonNull(summitDepthBlocksBelowSea, "summitDepthBlocksBelowSea");
+            requireBoundedPositiveRange(baseRadiusBlocks, "baseRadiusBlocks", 64);
+            if (baseRadiusBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("seamount baseRadiusBlocks must be at least 4");
+            }
+            requireBoundedPositiveRange(reliefBlocks, "reliefBlocks", 64);
+            if (reliefBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("seamount reliefBlocks must be at least 4");
+            }
+            requireBoundedPositiveRange(summitDepthBlocksBelowSea, "summitDepthBlocksBelowSea", 240);
+            if (summitDepthBlocksBelowSea.minimum() < 8) {
+                throw new IllegalArgumentException("seamount summitDepthBlocksBelowSea must be at least 8");
+            }
+        }
+    }
+
+    /**
+     * V2-9-08 OCEAN_BASIN foundation parameters: deep-water depth ownership (2.5D only).
+     */
+    public record OceanBasinParameters(
+            IntRange maxDepthBlocksBelowSea,
+            IntRange floorReliefBlocks
+    ) implements FeatureParameters {
+        public OceanBasinParameters {
+            Objects.requireNonNull(maxDepthBlocksBelowSea, "maxDepthBlocksBelowSea");
+            Objects.requireNonNull(floorReliefBlocks, "floorReliefBlocks");
+            requireBoundedPositiveRange(maxDepthBlocksBelowSea, "maxDepthBlocksBelowSea", 256);
+            if (maxDepthBlocksBelowSea.minimum() < 16) {
+                throw new IllegalArgumentException("ocean basin maxDepthBlocksBelowSea must be at least 16");
+            }
+            requireBoundedPositiveRange(floorReliefBlocks, "floorReliefBlocks", 16);
+        }
+    }
+
+    /**
+     * V2-9-08 CONTINENTAL_SHELF foundation parameters: coast→shelf shallow depth belt.
+     */
+    public record ContinentalShelfParameters(
+            IntRange shelfWidthBlocks,
+            IntRange shelfDepthBlocksBelowSea,
+            IntRange coastDistanceBandBlocks,
+            Edge seawardSide
+    ) implements FeatureParameters {
+        public ContinentalShelfParameters {
+            Objects.requireNonNull(shelfWidthBlocks, "shelfWidthBlocks");
+            Objects.requireNonNull(shelfDepthBlocksBelowSea, "shelfDepthBlocksBelowSea");
+            Objects.requireNonNull(coastDistanceBandBlocks, "coastDistanceBandBlocks");
+            Objects.requireNonNull(seawardSide, "seawardSide");
+            requireBoundedPositiveRange(shelfWidthBlocks, "shelfWidthBlocks", 128);
+            if (shelfWidthBlocks.minimum() < 8) {
+                throw new IllegalArgumentException("shelfWidthBlocks must be at least 8");
+            }
+            requireBoundedPositiveRange(shelfDepthBlocksBelowSea, "shelfDepthBlocksBelowSea", 64);
+            if (shelfDepthBlocksBelowSea.minimum() < 2) {
+                throw new IllegalArgumentException("shelfDepthBlocksBelowSea must be at least 2");
+            }
+            requireBoundedPositiveRange(coastDistanceBandBlocks, "coastDistanceBandBlocks", 32);
+        }
+    }
+
+    /**
+     * V2-9-08 CONTINENTAL_SLOPE foundation parameters: shelf→basin monotone depth belt.
+     */
+    public record ContinentalSlopeParameters(
+            IntRange slopeWidthBlocks,
+            IntRange upperDepthBlocksBelowSea,
+            IntRange lowerDepthBlocksBelowSea,
+            FixedRange maxGradient01
+    ) implements FeatureParameters {
+        public ContinentalSlopeParameters {
+            Objects.requireNonNull(slopeWidthBlocks, "slopeWidthBlocks");
+            Objects.requireNonNull(upperDepthBlocksBelowSea, "upperDepthBlocksBelowSea");
+            Objects.requireNonNull(lowerDepthBlocksBelowSea, "lowerDepthBlocksBelowSea");
+            Objects.requireNonNull(maxGradient01, "maxGradient01");
+            requireBoundedPositiveRange(slopeWidthBlocks, "slopeWidthBlocks", 128);
+            if (slopeWidthBlocks.minimum() < 8) {
+                throw new IllegalArgumentException("slopeWidthBlocks must be at least 8");
+            }
+            requireBoundedPositiveRange(upperDepthBlocksBelowSea, "upperDepthBlocksBelowSea", 128);
+            requireBoundedPositiveRange(lowerDepthBlocksBelowSea, "lowerDepthBlocksBelowSea", 256);
+            if (lowerDepthBlocksBelowSea.minimum() <= upperDepthBlocksBelowSea.maximum()) {
+                throw new IllegalArgumentException(
+                        "continental slope lowerDepth must be strictly deeper than upperDepth");
+            }
+            requireUnitRange(maxGradient01, "maxGradient01");
+            if (maxGradient01.minimumMillionths() < 10_000L) {
+                throw new IllegalArgumentException("maxGradient01 minimum must be at least 0.01");
+            }
+        }
+    }
+
+    /**
+     * V2-9-09 SUBMARINE_CANYON foundation parameters: bathymetric carve distinct from surface {@link CanyonParameters}.
+     */
+    public record SubmarineCanyonParameters(
+            IntRange floorWidthBlocks,
+            IntRange rimWidthBlocks,
+            IntRange additionalCarveDepthBlocks,
+            CanyonCrossSection crossSection,
+            int terraceCount,
+            int terraceWidthBlocks
+    ) implements FeatureParameters {
+        public SubmarineCanyonParameters {
+            Objects.requireNonNull(floorWidthBlocks, "floorWidthBlocks");
+            Objects.requireNonNull(rimWidthBlocks, "rimWidthBlocks");
+            Objects.requireNonNull(additionalCarveDepthBlocks, "additionalCarveDepthBlocks");
+            Objects.requireNonNull(crossSection, "crossSection");
+            requireBoundedPositiveRange(floorWidthBlocks, "floorWidthBlocks", 64);
+            if (floorWidthBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("floorWidthBlocks must be at least 2");
+            }
+            requireBoundedPositiveRange(rimWidthBlocks, "rimWidthBlocks", 256);
+            requireBoundedPositiveRange(additionalCarveDepthBlocks, "additionalCarveDepthBlocks", 64);
+            if (additionalCarveDepthBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("additionalCarveDepthBlocks must be at least 1");
+            }
+            if (rimWidthBlocks.minimum() < floorWidthBlocks.maximum() + 2) {
+                throw new IllegalArgumentException(
+                        "rimWidthBlocks must leave at least two blocks of wall outside the floor");
+            }
+            boolean terraced = crossSection == CanyonCrossSection.TERRACED_V
+                    || crossSection == CanyonCrossSection.TERRACED_U;
+            if (terraced) {
+                if (terraceCount < 1 || terraceCount > 4
+                        || terraceWidthBlocks < 1 || terraceWidthBlocks > 32) {
+                    throw new IllegalArgumentException(
+                            "terraced submarine canyon requires terraceCount 1..4 and terraceWidthBlocks 1..32");
+                }
+            } else if (terraceCount != 0 || terraceWidthBlocks != 0) {
+                throw new IllegalArgumentException("non-terraced submarine canyon must not declare terraces");
+            }
+        }
+    }
+
+    /**
+     * V2-9-10 CAVE_ENTRANCE surface-volume connector parameters. Opening sits below local surface
+     * and approaches a host {@code CAVE_NETWORK} ENTRANCE node.
+     */
+    public record CaveEntranceParameters(
+            int surfaceOffsetBlocks,
+            int minimumOpeningBlocks,
+            int approachLengthBlocks,
+            int roofClearanceBlocks,
+            String targetEntranceNodeId
+    ) implements FeatureParameters {
+        public CaveEntranceParameters {
+            if (surfaceOffsetBlocks > -1 || surfaceOffsetBlocks < -64) {
+                throw new IllegalArgumentException("surfaceOffsetBlocks must be in -64..-1");
+            }
+            if (minimumOpeningBlocks < 2 || minimumOpeningBlocks > 16) {
+                throw new IllegalArgumentException("minimumOpeningBlocks must be in 2..16");
+            }
+            if (approachLengthBlocks < 2 || approachLengthBlocks > 32) {
+                throw new IllegalArgumentException("approachLengthBlocks must be in 2..32");
+            }
+            if (roofClearanceBlocks < 1 || roofClearanceBlocks > 16) {
+                throw new IllegalArgumentException("roofClearanceBlocks must be in 1..16");
+            }
+            targetEntranceNodeId = V2Validation.slug(targetEntranceNodeId, "targetEntranceNodeId");
+        }
+    }
+
+    /**
+     * V2-9-11 UNDERGROUND_RIVER parameters. Static channel carve plus single-owner ADD_FLUID
+     * along a host cave path; fluidBodyId must match the outlet underground-lake owner.
+     */
+    public record UndergroundRiverParameters(
+            IntRange channelRadiusBlocks,
+            IntRange fluidDepthBlocks,
+            int minimumAirPocketBlocks,
+            String sourceCaveNodeId,
+            String outletCaveNodeId,
+            String fluidBodyId
+    ) implements FeatureParameters {
+        public UndergroundRiverParameters {
+            Objects.requireNonNull(channelRadiusBlocks, "channelRadiusBlocks");
+            Objects.requireNonNull(fluidDepthBlocks, "fluidDepthBlocks");
+            requireBoundedPositiveRange(channelRadiusBlocks, "channelRadiusBlocks", 8);
+            requireBoundedPositiveRange(fluidDepthBlocks, "fluidDepthBlocks", 16);
+            if (minimumAirPocketBlocks < 1 || minimumAirPocketBlocks > 8) {
+                throw new IllegalArgumentException("minimumAirPocketBlocks must be in 1..8");
+            }
+            sourceCaveNodeId = V2Validation.slug(sourceCaveNodeId, "sourceCaveNodeId");
+            outletCaveNodeId = V2Validation.slug(outletCaveNodeId, "outletCaveNodeId");
+            fluidBodyId = V2Validation.slug(fluidBodyId, "fluidBodyId");
+            if (sourceCaveNodeId.equals(outletCaveNodeId)) {
+                throw new IllegalArgumentException("sourceCaveNodeId and outletCaveNodeId must differ");
+            }
+        }
+    }
+
+    /**
+     * V2-10-03 SINKHOLE surface collapse parameters. Static loss volume balances paired
+     * {@code KARST_SPRING} discharge in the karst hydrology graph.
+     */
+    public record SinkholeParameters(
+            IntRange collapseRadiusBlocks,
+            IntRange roofClearanceBlocks,
+            IntRange lossVolumeBlocks,
+            String targetEntranceNodeId
+    ) implements FeatureParameters {
+        public SinkholeParameters {
+            Objects.requireNonNull(collapseRadiusBlocks, "collapseRadiusBlocks");
+            Objects.requireNonNull(roofClearanceBlocks, "roofClearanceBlocks");
+            Objects.requireNonNull(lossVolumeBlocks, "lossVolumeBlocks");
+            requireBoundedPositiveRange(collapseRadiusBlocks, "collapseRadiusBlocks", 16);
+            if (collapseRadiusBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("collapseRadiusBlocks minimum must be >= 2");
+            }
+            requireBoundedPositiveRange(roofClearanceBlocks, "roofClearanceBlocks", 16);
+            if (roofClearanceBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("roofClearanceBlocks minimum must be >= 1");
+            }
+            requireBoundedPositiveRange(lossVolumeBlocks, "lossVolumeBlocks", 1_000_000);
+            targetEntranceNodeId = V2Validation.slug(targetEntranceNodeId, "targetEntranceNodeId");
+        }
+    }
+
+    /**
+     * V2-10-03 KARST_SPRING outlet parameters. Discharge must match paired sinkhole loss volume.
+     */
+    public record KarstSpringParameters(
+            IntRange springDischargeBlocks,
+            String outletHint
+    ) implements FeatureParameters {
+        public KarstSpringParameters {
+            Objects.requireNonNull(springDischargeBlocks, "springDischargeBlocks");
+            requireBoundedPositiveRange(springDischargeBlocks, "springDischargeBlocks", 1_000_000);
+            if (outletHint == null || outletHint.isBlank()) {
+                outletHint = "";
+            } else {
+                outletHint = V2Validation.slug(outletHint, "outletHint");
+            }
+        }
+    }
+
+    /**
+     * V2-9-11 FLOODED_CAVE fluid-region hook parameters. Marks a static flooded region owned by
+     * the same fluidBodyId as the underground river / lake.
+     */
+    public record FloodedCaveParameters(
+            String fluidBodyId,
+            int waterSurfaceYBlocks,
+            String hostCaveFeatureIdHint
+    ) implements FeatureParameters {
+        public FloodedCaveParameters {
+            fluidBodyId = V2Validation.slug(fluidBodyId, "fluidBodyId");
+            if (waterSurfaceYBlocks < -512 || waterSurfaceYBlocks > 512) {
+                throw new IllegalArgumentException("waterSurfaceYBlocks out of range");
+            }
+            if (hostCaveFeatureIdHint == null || hostCaveFeatureIdHint.isBlank()) {
+                hostCaveFeatureIdHint = "";
+            } else {
+                hostCaveFeatureIdHint = V2Validation.slug(hostCaveFeatureIdHint, "hostCaveFeatureIdHint");
+            }
+        }
+    }
+
+    /**
+     * V2-10-01 glacial ice parameters shared by {@code VALLEY_GLACIER}, {@code ICE_CAP},
+     * and {@code ICE_SHEET}. Cold climate binding is required; meltwater handoff is optional.
+     */
+    public record GlacialIceParameters(
+            IntRange thicknessBlocks,
+            IntRange halfWidthBlocks,
+            int flowAzimuthDegrees,
+            String climatePreset,
+            String meltwaterHandoffFeatureIdHint
+    ) implements FeatureParameters {
+        public GlacialIceParameters {
+            Objects.requireNonNull(thicknessBlocks, "thicknessBlocks");
+            Objects.requireNonNull(halfWidthBlocks, "halfWidthBlocks");
+            requireBoundedPositiveRange(thicknessBlocks, "thicknessBlocks", 64);
+            if (thicknessBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("thicknessBlocks minimum must be >= 2");
+            }
+            requireBoundedPositiveRange(halfWidthBlocks, "halfWidthBlocks", 128);
+            if (halfWidthBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("halfWidthBlocks minimum must be >= 2");
+            }
+            if (flowAzimuthDegrees < 0 || flowAzimuthDegrees > 359) {
+                throw new IllegalArgumentException("flowAzimuthDegrees must be in 0..359");
+            }
+            climatePreset = requiredSymbol(climatePreset, "climatePreset");
+            if (!Set.of("COLD_ALPINE", "COLD_MARITIME", "COOL_HIGH_ALTITUDE").contains(climatePreset)) {
+                throw new IllegalArgumentException("glacial ice climatePreset must be cold");
+            }
+            if (meltwaterHandoffFeatureIdHint == null || meltwaterHandoffFeatureIdHint.isBlank()) {
+                meltwaterHandoffFeatureIdHint = "";
+            } else {
+                meltwaterHandoffFeatureIdHint = V2Validation.slug(
+                        meltwaterHandoffFeatureIdHint, "meltwaterHandoffFeatureIdHint");
+            }
+        }
+    }
+
+    /** V2-10-02 moraine-field sediment ridge parameters. */
+    public record MoraineFieldParameters(
+            IntRange ridgeCount,
+            IntRange ridgeHalfWidthBlocks,
+            IntRange sedimentThicknessBlocks,
+            int flowAzimuthDegrees
+    ) implements FeatureParameters {
+        public MoraineFieldParameters {
+            Objects.requireNonNull(ridgeCount, "ridgeCount");
+            Objects.requireNonNull(ridgeHalfWidthBlocks, "ridgeHalfWidthBlocks");
+            Objects.requireNonNull(sedimentThicknessBlocks, "sedimentThicknessBlocks");
+            requireBoundedPositiveRange(ridgeCount, "ridgeCount", 16);
+            if (ridgeCount.minimum() < 1) {
+                throw new IllegalArgumentException("ridgeCount minimum must be >= 1");
+            }
+            requireBoundedPositiveRange(ridgeHalfWidthBlocks, "ridgeHalfWidthBlocks", 32);
+            if (ridgeHalfWidthBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("ridgeHalfWidthBlocks minimum must be >= 2");
+            }
+            requireBoundedPositiveRange(sedimentThicknessBlocks, "sedimentThicknessBlocks", 16);
+            if (sedimentThicknessBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("sedimentThicknessBlocks minimum must be >= 1");
+            }
+            if (flowAzimuthDegrees < 0 || flowAzimuthDegrees > 359) {
+                throw new IllegalArgumentException("flowAzimuthDegrees must be in 0..359");
+            }
+        }
+    }
+
+    /** V2-10-02 outwash-plain proglacial sediment/flow parameters. */
+    public record OutwashPlainParameters(
+            IntRange sedimentThicknessBlocks,
+            IntRange channelSpacingBlocks,
+            int flowAzimuthDegrees,
+            String meltwaterHandoffFeatureIdHint
+    ) implements FeatureParameters {
+        public OutwashPlainParameters {
+            Objects.requireNonNull(sedimentThicknessBlocks, "sedimentThicknessBlocks");
+            Objects.requireNonNull(channelSpacingBlocks, "channelSpacingBlocks");
+            requireBoundedPositiveRange(sedimentThicknessBlocks, "sedimentThicknessBlocks", 16);
+            if (sedimentThicknessBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("sedimentThicknessBlocks minimum must be >= 1");
+            }
+            requireBoundedPositiveRange(channelSpacingBlocks, "channelSpacingBlocks", 64);
+            if (channelSpacingBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("channelSpacingBlocks minimum must be >= 2");
+            }
+            if (flowAzimuthDegrees < 0 || flowAzimuthDegrees > 359) {
+                throw new IllegalArgumentException("flowAzimuthDegrees must be in 0..359");
+            }
+            if (meltwaterHandoffFeatureIdHint == null || meltwaterHandoffFeatureIdHint.isBlank()) {
+                meltwaterHandoffFeatureIdHint = "";
+            } else {
+                meltwaterHandoffFeatureIdHint = V2Validation.slug(
+                        meltwaterHandoffFeatureIdHint, "meltwaterHandoffFeatureIdHint");
+            }
+        }
+    }
+
+    /**
+     * V2-10-10 surface SPRING parameters. Groundwater outflow node bound to a general RIVER source;
+     * distinct from {@code KARST_SPRING} limestone karst graph ownership.
+     */
+    public record SpringParameters(
+            IntRange outflowRadiusBlocks,
+            IntRange dischargeBlocks,
+            IntRange supportRadiusBlocks
+    ) implements FeatureParameters {
+        public SpringParameters {
+            Objects.requireNonNull(outflowRadiusBlocks, "outflowRadiusBlocks");
+            Objects.requireNonNull(dischargeBlocks, "dischargeBlocks");
+            Objects.requireNonNull(supportRadiusBlocks, "supportRadiusBlocks");
+            requireBoundedPositiveRange(outflowRadiusBlocks, "outflowRadiusBlocks", 16);
+            if (outflowRadiusBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("outflowRadiusBlocks minimum must be >= 1");
+            }
+            requireBoundedPositiveRange(dischargeBlocks, "dischargeBlocks", 1_000_000);
+            requireBoundedPositiveRange(supportRadiusBlocks, "supportRadiusBlocks", 32);
+            if (supportRadiusBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("supportRadiusBlocks minimum must be >= 2");
+            }
+        }
+    }
+
+    /**
+     * V2-10-11 OXBOW_LAKE parameters. Reach-cutoff stagnant basin with wetland handoff;
+     * distinct from open-spill {@code LAKE} and barrier {@code DAM_RESERVOIR}.
+     */
+    public record OxbowLakeParameters(
+            IntRange targetDepthBlocks,
+            int shoreWidthBlocks,
+            IntRange wetlandHandoffWidthBlocks,
+            IntRange supportRadiusBlocks,
+            String cutoffReachIdHint
+    ) implements FeatureParameters {
+        public OxbowLakeParameters {
+            Objects.requireNonNull(targetDepthBlocks, "targetDepthBlocks");
+            Objects.requireNonNull(wetlandHandoffWidthBlocks, "wetlandHandoffWidthBlocks");
+            Objects.requireNonNull(supportRadiusBlocks, "supportRadiusBlocks");
+            requireBoundedPositiveRange(targetDepthBlocks, "targetDepthBlocks", 32);
+            if (targetDepthBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("targetDepthBlocks minimum must be >= 1");
+            }
+            if (shoreWidthBlocks < 1 || shoreWidthBlocks > 16) {
+                throw new IllegalArgumentException("shoreWidthBlocks must be in 1..16");
+            }
+            requireBoundedPositiveRange(wetlandHandoffWidthBlocks, "wetlandHandoffWidthBlocks", 64);
+            if (wetlandHandoffWidthBlocks.minimum() < shoreWidthBlocks) {
+                throw new IllegalArgumentException("wetlandHandoffWidthBlocks minimum must be >= shoreWidthBlocks");
+            }
+            requireBoundedPositiveRange(supportRadiusBlocks, "supportRadiusBlocks", 64);
+            if (supportRadiusBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("supportRadiusBlocks minimum must be >= 4");
+            }
+            if (cutoffReachIdHint == null || cutoffReachIdHint.isBlank()) {
+                cutoffReachIdHint = "";
+            } else {
+                cutoffReachIdHint = V2Validation.slug(cutoffReachIdHint, "cutoffReachIdHint");
+            }
+        }
+    }
+
+    /**
+     * V2-10-07 LAVA_TUBE parameters. Swept tunnel carve within a volcanic cone with roof/support
+     * clearance; provenance binds to caldera or lava-flow child features only.
+     */
+    public record LavaTubeParameters(
+            IntRange tubeRadiusBlocks,
+            IntRange roofClearanceBlocks,
+            IntRange supportRadiusBlocks,
+            int entranceOffsetBlocks
+    ) implements FeatureParameters {
+        public LavaTubeParameters {
+            Objects.requireNonNull(tubeRadiusBlocks, "tubeRadiusBlocks");
+            Objects.requireNonNull(roofClearanceBlocks, "roofClearanceBlocks");
+            Objects.requireNonNull(supportRadiusBlocks, "supportRadiusBlocks");
+            requireBoundedPositiveRange(tubeRadiusBlocks, "tubeRadiusBlocks", 8);
+            if (tubeRadiusBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("tubeRadiusBlocks minimum must be >= 2");
+            }
+            requireBoundedPositiveRange(roofClearanceBlocks, "roofClearanceBlocks", 16);
+            if (roofClearanceBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("roofClearanceBlocks minimum must be >= 2");
+            }
+            requireBoundedPositiveRange(supportRadiusBlocks, "supportRadiusBlocks", 16);
+            if (supportRadiusBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("supportRadiusBlocks minimum must be >= 2");
+            }
+            if (entranceOffsetBlocks < 0 || entranceOffsetBlocks > 32) {
+                throw new IllegalArgumentException("entranceOffsetBlocks must be in 0..32");
+            }
+        }
+
+        public LavaTubeParameters(
+                IntRange tubeRadiusBlocks,
+                IntRange roofClearanceBlocks,
+                IntRange supportRadiusBlocks
+        ) {
+            this(tubeRadiusBlocks, roofClearanceBlocks, supportRadiusBlocks, 0);
+        }
+    }
+
+    /** V2-10-06 ESCARPMENT foundation parameters: scarp face, talus, floor drop, and plateau transition. */
+    public record EscarpmentParameters(
+            IntRange scarpHeightBlocks,
+            IntRange talusWidthBlocks,
+            IntRange floorDropBlocks,
+            Edge dropSide,
+            int plateauTransitionBandBlocks
+    ) implements FeatureParameters {
+        public EscarpmentParameters {
+            Objects.requireNonNull(scarpHeightBlocks, "scarpHeightBlocks");
+            Objects.requireNonNull(talusWidthBlocks, "talusWidthBlocks");
+            Objects.requireNonNull(floorDropBlocks, "floorDropBlocks");
+            Objects.requireNonNull(dropSide, "dropSide");
+            requireBoundedPositiveRange(scarpHeightBlocks, "scarpHeightBlocks", 128);
+            if (scarpHeightBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("scarpHeightBlocks minimum must be >= 4");
+            }
+            requireBoundedPositiveRange(talusWidthBlocks, "talusWidthBlocks", 64);
+            if (talusWidthBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("talusWidthBlocks minimum must be >= 2");
+            }
+            requireBoundedPositiveRange(floorDropBlocks, "floorDropBlocks", 128);
+            if (floorDropBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("floorDropBlocks minimum must be >= 4");
+            }
+            if (plateauTransitionBandBlocks < 2 || plateauTransitionBandBlocks > 32) {
+                throw new IllegalArgumentException("plateauTransitionBandBlocks outside 2..32");
+            }
+        }
+    }
+
+    /** V2-10-06 PLATEAU foundation parameters: cap elevation/relief and escarpment transition band. */
+    public record PlateauParameters(
+            IntRange capElevationBlocks,
+            IntRange capReliefBlocks,
+            PlateauProfile profile,
+            int escarpmentTransitionBandBlocks
+    ) implements FeatureParameters {
+        public PlateauParameters {
+            Objects.requireNonNull(capElevationBlocks, "capElevationBlocks");
+            Objects.requireNonNull(capReliefBlocks, "capReliefBlocks");
+            Objects.requireNonNull(profile, "profile");
+            requireBoundedPositiveRange(capElevationBlocks, "capElevationBlocks", 96);
+            if (capElevationBlocks.minimum() < 8) {
+                throw new IllegalArgumentException("capElevationBlocks minimum must be >= 8");
+            }
+            if (capReliefBlocks.minimum() < 0 || capReliefBlocks.maximum() > 8
+                    || capReliefBlocks.minimum() > capReliefBlocks.maximum()) {
+                throw new IllegalArgumentException("capReliefBlocks outside 0..8");
+            }
+            if (escarpmentTransitionBandBlocks < 2 || escarpmentTransitionBandBlocks > 32) {
+                throw new IllegalArgumentException("escarpmentTransitionBandBlocks outside 2..32");
+            }
+        }
+    }
+
     public record MeanderingRiverParameters(
             IntRange bankfullWidthBlocks,
             DischargeClass dischargeClass,
@@ -871,12 +1644,306 @@ public record TerrainIntentV2(
         }
     }
 
+    /**
+     * V2-9-04 general RIVER foundation parameters. Distinct from legacy
+     * {@link MeanderingRiverParameters}; MEANDERING_RIVER serialization remains unchanged.
+     */
+    public record RiverParameters(
+            IntRange bankfullWidthBlocks,
+            DischargeClass dischargeClass,
+            long minimumBedSlopeMillionths,
+            IntRange floodplainHandoffWidthBlocks,
+            int maxReachCount,
+            int maxNodeDegree
+    ) implements FeatureParameters {
+        public RiverParameters {
+            Objects.requireNonNull(bankfullWidthBlocks, "bankfullWidthBlocks");
+            Objects.requireNonNull(dischargeClass, "dischargeClass");
+            Objects.requireNonNull(floodplainHandoffWidthBlocks, "floodplainHandoffWidthBlocks");
+            requireBoundedPositiveRange(bankfullWidthBlocks, "bankfullWidthBlocks", 64);
+            if (bankfullWidthBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("river bankfullWidthBlocks must be at least 2");
+            }
+            if (minimumBedSlopeMillionths < 1 || minimumBedSlopeMillionths > FIXED_SCALE) {
+                throw new IllegalArgumentException("minimumBedSlope01 outside (0..1]");
+            }
+            requireBoundedPositiveRange(floodplainHandoffWidthBlocks, "floodplainHandoffWidthBlocks", 128);
+            if (floodplainHandoffWidthBlocks.minimum() < bankfullWidthBlocks.minimum()) {
+                throw new IllegalArgumentException("floodplain handoff must be at least bankfull width");
+            }
+            if (maxReachCount < 1 || maxReachCount > 8) {
+                throw new IllegalArgumentException("maxReachCount outside 1..8");
+            }
+            if (maxNodeDegree < 1 || maxNodeDegree > 4) {
+                throw new IllegalArgumentException("maxNodeDegree outside 1..4");
+            }
+        }
+    }
+
+    /**
+     * V2-9-05 FLOODPLAIN foundation parameters with river adjacency and groundwater handoff.
+     * Distinct from river-owned {@code foundation.river.floodplain-mask}.
+     */
+    public record FloodplainParameters(
+            IntRange riverAdjacencyBandBlocks,
+            IntRange groundwaterHandoffDepthBlocks,
+            IntRange microReliefBlocks
+    ) implements FeatureParameters {
+        public FloodplainParameters {
+            Objects.requireNonNull(riverAdjacencyBandBlocks, "riverAdjacencyBandBlocks");
+            Objects.requireNonNull(groundwaterHandoffDepthBlocks, "groundwaterHandoffDepthBlocks");
+            Objects.requireNonNull(microReliefBlocks, "microReliefBlocks");
+            requireBoundedPositiveRange(riverAdjacencyBandBlocks, "riverAdjacencyBandBlocks", 32);
+            requireBoundedPositiveRange(groundwaterHandoffDepthBlocks, "groundwaterHandoffDepthBlocks", 32);
+            requireBoundedPositiveRange(microReliefBlocks, "microReliefBlocks", 8);
+            if (microReliefBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("floodplain microReliefBlocks must be at least 1");
+            }
+        }
+    }
+
+    /**
+     * V2-9-05 MARSH foundation parameters with hydroperiod／wetness／open-water.
+     * MANGROVE_WETLAND remains a separate kind and is not rewritten here.
+     */
+    public record MarshParameters(
+            IntRange hydroperiodBlocks,
+            FixedRange wetness01,
+            FixedRange openWaterShare01,
+            IntRange microReliefBlocks,
+            IntRange groundwaterMinDepthBlocks
+    ) implements FeatureParameters {
+        public MarshParameters {
+            Objects.requireNonNull(hydroperiodBlocks, "hydroperiodBlocks");
+            Objects.requireNonNull(wetness01, "wetness01");
+            Objects.requireNonNull(openWaterShare01, "openWaterShare01");
+            Objects.requireNonNull(microReliefBlocks, "microReliefBlocks");
+            Objects.requireNonNull(groundwaterMinDepthBlocks, "groundwaterMinDepthBlocks");
+            requireBoundedPositiveRange(hydroperiodBlocks, "hydroperiodBlocks", 64);
+            if (hydroperiodBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("marsh hydroperiodBlocks must be at least 1");
+            }
+            requireUnitRange(wetness01, "wetness01");
+            if (wetness01.minimumMillionths() < 200_000L) {
+                throw new IllegalArgumentException("marsh wetness01 minimum must be at least 0.2");
+            }
+            requireUnitRange(openWaterShare01, "openWaterShare01");
+            if (openWaterShare01.maximumMillionths() > 700_000L) {
+                throw new IllegalArgumentException("marsh openWaterShare01 maximum must be at most 0.7");
+            }
+            requireBoundedPositiveRange(microReliefBlocks, "microReliefBlocks", 8);
+            if (microReliefBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("marsh microReliefBlocks must be at least 1");
+            }
+            requireBoundedPositiveRange(groundwaterMinDepthBlocks, "groundwaterMinDepthBlocks", 32);
+        }
+    }
+
     public record BackshorePlainsParameters(IntRange elevationAboveWaterBlocks, FixedRange grassCover01)
             implements FeatureParameters {
         public BackshorePlainsParameters {
             Objects.requireNonNull(elevationAboveWaterBlocks, "elevationAboveWaterBlocks");
             requireNonNegativeRange(elevationAboveWaterBlocks, "elevationAboveWaterBlocks");
             requireUnitRange(grassCover01, "grassCover01");
+        }
+    }
+
+    /**
+     * V2-9-02 PLAIN foundation parameters. Distinct from legacy {@link BackshorePlainsParameters};
+     * BACKSHORE_PLAINS remains a diagnostic alias candidate and is not deleted.
+     */
+    public record PlainParameters(
+            IntRange baseElevationAboveDatumBlocks,
+            IntRange microReliefBlocks,
+            IntRange groundwaterHandoffDepthBlocks
+    ) implements FeatureParameters {
+        public PlainParameters {
+            Objects.requireNonNull(baseElevationAboveDatumBlocks, "baseElevationAboveDatumBlocks");
+            Objects.requireNonNull(microReliefBlocks, "microReliefBlocks");
+            Objects.requireNonNull(groundwaterHandoffDepthBlocks, "groundwaterHandoffDepthBlocks");
+            requireNonNegativeRange(baseElevationAboveDatumBlocks, "baseElevationAboveDatumBlocks");
+            requireBoundedPositiveRange(microReliefBlocks, "microReliefBlocks", 8);
+            if (microReliefBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("plain microReliefBlocks must be at least 1");
+            }
+            requireBoundedPositiveRange(groundwaterHandoffDepthBlocks, "groundwaterHandoffDepthBlocks", 32);
+        }
+    }
+
+    /** V2-9-02 HILL_RANGE foundation parameters with closed ridge/saddle budgets. */
+    public record HillRangeParameters(
+            IntRange ridgeHalfWidthBlocks,
+            IntRange maxReliefBlocks,
+            IntRange ridgeStationCount,
+            IntRange saddleCount,
+            int plainTransitionBandBlocks
+    ) implements FeatureParameters {
+        public HillRangeParameters {
+            Objects.requireNonNull(ridgeHalfWidthBlocks, "ridgeHalfWidthBlocks");
+            Objects.requireNonNull(maxReliefBlocks, "maxReliefBlocks");
+            Objects.requireNonNull(ridgeStationCount, "ridgeStationCount");
+            Objects.requireNonNull(saddleCount, "saddleCount");
+            requireBoundedPositiveRange(ridgeHalfWidthBlocks, "ridgeHalfWidthBlocks", 32);
+            requireBoundedPositiveRange(maxReliefBlocks, "maxReliefBlocks", 64);
+            requireBoundedPositiveRange(ridgeStationCount, "ridgeStationCount", 8);
+            if (ridgeStationCount.minimum() < 2) {
+                throw new IllegalArgumentException("hill ridgeStationCount must be at least 2");
+            }
+            requireBoundedPositiveRange(saddleCount, "saddleCount", 7);
+            if (saddleCount.maximum() > ridgeStationCount.maximum() - 1) {
+                throw new IllegalArgumentException("hill saddleCount must fit under ridge stations");
+            }
+            if (plainTransitionBandBlocks < 1 || plainTransitionBandBlocks > 32) {
+                throw new IllegalArgumentException("plainTransitionBandBlocks outside 1..32");
+            }
+        }
+    }
+
+    /**
+     * V2-9-03 general MOUNTAIN_RANGE foundation parameters. Distinct from specialized
+     * {@link MountainParameters} used by ALPINE/GLACIAL modules; does not reinterpret those seeds.
+     */
+    public record MountainRangeParameters(
+            IntRange peakCount,
+            IntRange ridgeHalfWidthBlocks,
+            IntRange maxReliefBlocks,
+            IntRange saddleCount,
+            int spurCount,
+            int passCount,
+            int foothillBandBlocks,
+            int valleyTransitionBandBlocks
+    ) implements FeatureParameters {
+        public MountainRangeParameters {
+            Objects.requireNonNull(peakCount, "peakCount");
+            Objects.requireNonNull(ridgeHalfWidthBlocks, "ridgeHalfWidthBlocks");
+            Objects.requireNonNull(maxReliefBlocks, "maxReliefBlocks");
+            Objects.requireNonNull(saddleCount, "saddleCount");
+            requireBoundedPositiveRange(peakCount, "peakCount", 8);
+            if (peakCount.minimum() < 2) {
+                throw new IllegalArgumentException("mountain range peakCount must be at least 2");
+            }
+            requireBoundedPositiveRange(ridgeHalfWidthBlocks, "ridgeHalfWidthBlocks", 64);
+            if (ridgeHalfWidthBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("mountain range ridgeHalfWidthBlocks must be at least 4");
+            }
+            requireBoundedPositiveRange(maxReliefBlocks, "maxReliefBlocks", 128);
+            if (maxReliefBlocks.minimum() < 16) {
+                throw new IllegalArgumentException("mountain range maxReliefBlocks must be at least 16");
+            }
+            requireBoundedPositiveRange(saddleCount, "saddleCount", 7);
+            if (saddleCount.maximum() > peakCount.maximum() - 1) {
+                throw new IllegalArgumentException("mountain range saddleCount must fit under peaks");
+            }
+            if (spurCount < 0 || spurCount > 8) {
+                throw new IllegalArgumentException("mountain range spurCount outside 0..8");
+            }
+            if (passCount < 0 || passCount > peakCount.maximum() - 1) {
+                throw new IllegalArgumentException("mountain range passCount outside 0..peakCount-1");
+            }
+            if (foothillBandBlocks < 1 || foothillBandBlocks > 32) {
+                throw new IllegalArgumentException("foothillBandBlocks outside 1..32");
+            }
+            if (valleyTransitionBandBlocks < 1 || valleyTransitionBandBlocks > 32) {
+                throw new IllegalArgumentException("valleyTransitionBandBlocks outside 1..32");
+            }
+        }
+    }
+
+    /**
+     * V2-9-03 general VALLEY foundation parameters with V/U cross-section and connection role.
+     * Specialized {@link FjordParameters} remain unchanged.
+     */
+    public record ValleyParameters(
+            ValleyCrossSection crossSection,
+            IntRange floorHalfWidthBlocks,
+            IntRange shoulderWidthBlocks,
+            IntRange maxDepthBlocks,
+            int mountainTransitionBandBlocks,
+            ValleyConnectionRole connectionRole
+    ) implements FeatureParameters {
+        public ValleyParameters {
+            Objects.requireNonNull(crossSection, "crossSection");
+            Objects.requireNonNull(floorHalfWidthBlocks, "floorHalfWidthBlocks");
+            Objects.requireNonNull(shoulderWidthBlocks, "shoulderWidthBlocks");
+            Objects.requireNonNull(maxDepthBlocks, "maxDepthBlocks");
+            Objects.requireNonNull(connectionRole, "connectionRole");
+            requireBoundedPositiveRange(floorHalfWidthBlocks, "floorHalfWidthBlocks", 64);
+            if (floorHalfWidthBlocks.minimum() < 2) {
+                throw new IllegalArgumentException("valley floorHalfWidthBlocks must be at least 2");
+            }
+            requireBoundedPositiveRange(shoulderWidthBlocks, "shoulderWidthBlocks", 32);
+            requireBoundedPositiveRange(maxDepthBlocks, "maxDepthBlocks", 64);
+            if (maxDepthBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("valley maxDepthBlocks must be at least 4");
+            }
+            if (mountainTransitionBandBlocks < 1 || mountainTransitionBandBlocks > 32) {
+                throw new IllegalArgumentException("mountainTransitionBandBlocks outside 1..32");
+            }
+        }
+    }
+
+    /** V2-4-09 parameters for bounded mangrove wetland micro-relief and hydroperiod gaps. */
+    public record MangroveWetlandParameters(
+            IntRange microReliefBlocks,
+            FixedRange waterloggedShare01
+    ) implements FeatureParameters {
+        public MangroveWetlandParameters {
+            Objects.requireNonNull(microReliefBlocks, "microReliefBlocks");
+            Objects.requireNonNull(waterloggedShare01, "waterloggedShare01");
+            requireBoundedPositiveRange(microReliefBlocks, "microReliefBlocks", 4);
+            if (microReliefBlocks.minimum() < 1) {
+                throw new IllegalArgumentException("microReliefBlocks must be at least 1");
+            }
+            if (waterloggedShare01.minimumMillionths() < 100_000L
+                    || waterloggedShare01.maximumMillionths() > 900_000L) {
+                throw new IllegalArgumentException("waterloggedShare01 outside 0.1..0.9");
+            }
+        }
+    }
+
+    /** V2-4-10 parameters for coral reef crest, width, and outer slope bathymetry. */
+    public record CoralReefParameters(
+            IntRange reefCrestDepthBlocks,
+            IntRange reefWidthBlocks,
+            IntRange outerSlopeDegrees
+    ) implements FeatureParameters {
+        public CoralReefParameters {
+            Objects.requireNonNull(reefCrestDepthBlocks, "reefCrestDepthBlocks");
+            Objects.requireNonNull(reefWidthBlocks, "reefWidthBlocks");
+            Objects.requireNonNull(outerSlopeDegrees, "outerSlopeDegrees");
+            requireBoundedPositiveRange(reefCrestDepthBlocks, "reefCrestDepthBlocks", 4);
+            requireBoundedPositiveRange(reefWidthBlocks, "reefWidthBlocks", 46);
+            if (reefCrestDepthBlocks.minimum() < 1 || reefWidthBlocks.minimum() < 18
+                    || outerSlopeDegrees.minimum() < 18 || outerSlopeDegrees.maximum() > 42) {
+                throw new IllegalArgumentException("coral reef parameter range is invalid");
+            }
+        }
+    }
+
+    /** V2-4-10 parameters for enclosed lagoon bathymetry linked to a parent CORAL_REEF. */
+    public record LagoonParameters(IntRange depthBlocks) implements FeatureParameters {
+        public LagoonParameters {
+            Objects.requireNonNull(depthBlocks, "depthBlocks");
+            requireBoundedPositiveRange(depthBlocks, "depthBlocks", 14);
+            if (depthBlocks.minimum() < 5) {
+                throw new IllegalArgumentException("lagoon depthBlocks must be at least 5");
+            }
+        }
+    }
+
+    /** V2-4-10 parameters for a navigable reef pass corridor. */
+    public record ReefPassParameters(
+            IntRange widthBlocks,
+            IntRange waterDepthBlocks
+    ) implements FeatureParameters {
+        public ReefPassParameters {
+            Objects.requireNonNull(widthBlocks, "widthBlocks");
+            Objects.requireNonNull(waterDepthBlocks, "waterDepthBlocks");
+            requireBoundedPositiveRange(widthBlocks, "widthBlocks", 14);
+            requireBoundedPositiveRange(waterDepthBlocks, "waterDepthBlocks", 7);
+            if (widthBlocks.minimum() < 10 || waterDepthBlocks.minimum() < 4) {
+                throw new IllegalArgumentException("reef pass parameter range is invalid");
+            }
         }
     }
 
@@ -1093,7 +2160,16 @@ public record TerrainIntentV2(
             case BREAKWATER_HARBOR -> parameters instanceof BreakwaterHarborParameters;
             case HARBOR_BASIN -> parameters instanceof HarborBasinParameters;
             case ROCKY_CAPE -> parameters instanceof RockyCapeParameters;
+            case ROCKY_COAST -> parameters instanceof RockyCoastParameters;
             case BACKSHORE_PLAINS -> parameters instanceof BackshorePlainsParameters;
+            case PLAIN -> parameters instanceof PlainParameters;
+            case HILL_RANGE -> parameters instanceof HillRangeParameters;
+            case MOUNTAIN_RANGE -> parameters instanceof MountainRangeParameters;
+            case VALLEY -> parameters instanceof ValleyParameters;
+            case RIVER -> parameters instanceof RiverParameters;
+            case FLOODPLAIN -> parameters instanceof FloodplainParameters;
+            case MARSH -> parameters instanceof MarshParameters;
+            case SEA_CLIFF -> parameters instanceof SeaCliffParameters;
             case MEANDERING_RIVER -> parameters instanceof MeanderingRiverParameters;
             case LAKE -> parameters instanceof LakeParameters;
             case CANYON -> parameters instanceof CanyonParameters;
@@ -1101,10 +2177,36 @@ public record TerrainIntentV2(
             case DELTA -> parameters instanceof DeltaParameters;
             case TIDAL_CHANNEL_NETWORK -> parameters instanceof TidalChannelParameters;
             case FJORD -> parameters instanceof FjordParameters;
+            case MANGROVE_WETLAND -> parameters instanceof MangroveWetlandParameters;
+            case CORAL_REEF -> parameters instanceof CoralReefParameters;
+            case LAGOON -> parameters instanceof LagoonParameters;
+            case REEF_PASS -> parameters instanceof ReefPassParameters;
             case ALPINE_MOUNTAIN_RANGE, GLACIAL_MOUNTAIN_RANGE -> parameters instanceof MountainParameters;
             case VOLCANIC_ARCHIPELAGO -> parameters instanceof VolcanicArchipelagoParameters;
             case VOLCANIC_CALDERA -> parameters instanceof VolcanicCalderaParameters;
             case LAVA_FLOW_FIELD -> parameters instanceof LavaFlowParameters;
+            case SINGLE_ISLAND -> parameters instanceof SingleIslandParameters;
+            case ARCHIPELAGO -> parameters instanceof ArchipelagoParameters;
+            case VOLCANIC_CONE -> parameters instanceof VolcanicConeParameters;
+            case OCEAN_BASIN -> parameters instanceof OceanBasinParameters;
+            case ABYSSAL_PLAIN -> parameters instanceof AbyssalPlainParameters;
+            case SEAMOUNT -> parameters instanceof SeamountParameters;
+            case CONTINENTAL_SHELF -> parameters instanceof ContinentalShelfParameters;
+            case CONTINENTAL_SLOPE -> parameters instanceof ContinentalSlopeParameters;
+            case SUBMARINE_CANYON -> parameters instanceof SubmarineCanyonParameters;
+            case CAVE_ENTRANCE -> parameters instanceof CaveEntranceParameters;
+            case UNDERGROUND_RIVER -> parameters instanceof UndergroundRiverParameters;
+            case SINKHOLE -> parameters instanceof SinkholeParameters;
+            case KARST_SPRING -> parameters instanceof KarstSpringParameters;
+            case FLOODED_CAVE -> parameters instanceof FloodedCaveParameters;
+            case VALLEY_GLACIER, ICE_CAP, ICE_SHEET -> parameters instanceof GlacialIceParameters;
+            case MORAINE_FIELD -> parameters instanceof MoraineFieldParameters;
+            case OUTWASH_PLAIN -> parameters instanceof OutwashPlainParameters;
+            case ESCARPMENT -> parameters instanceof EscarpmentParameters;
+            case PLATEAU -> parameters instanceof PlateauParameters;
+            case LAVA_TUBE -> parameters instanceof LavaTubeParameters;
+            case SPRING -> parameters instanceof SpringParameters;
+            case OXBOW_LAKE -> parameters instanceof OxbowLakeParameters;
             default -> parameters instanceof NoParameters;
         };
         if (!valid) throw new IllegalArgumentException("parameter type does not match feature kind " + kind);
@@ -1112,13 +2214,19 @@ public record TerrainIntentV2(
 
     private static void validateGeometryType(FeatureKind kind, GeometryType type) {
         boolean valid = switch (kind) {
-            case SANDY_BEACH, FJORD, MEANDERING_RIVER, LAVA_FLOW_FIELD, CANYON, BEDROCK_RIVER,
-                    ALPINE_MOUNTAIN_RANGE, SEA_CLIFF, REEF_PASS -> type == GeometryType.SPLINE;
+            case SANDY_BEACH, FJORD, MEANDERING_RIVER, RIVER, LAVA_FLOW_FIELD, CANYON, SUBMARINE_CANYON,
+                    BEDROCK_RIVER, ALPINE_MOUNTAIN_RANGE, SEA_CLIFF, ESCARPMENT, ROCKY_COAST, REEF_PASS,
+                    HILL_RANGE, MOUNTAIN_RANGE, VALLEY, UNDERGROUND_RIVER, LAVA_TUBE, VALLEY_GLACIER
+                    -> type == GeometryType.SPLINE;
             case BREAKWATER_HARBOR, TIDAL_CHANNEL_NETWORK -> type == GeometryType.MULTI_SPLINE;
-            case HARBOR_BASIN, ROCKY_CAPE, BACKSHORE_PLAINS, GLACIAL_MOUNTAIN_RANGE, DELTA,
-                    MANGROVE_WETLAND, CORAL_REEF, LAGOON, LAKE -> type == GeometryType.POLYGON;
-            case VOLCANIC_ARCHIPELAGO, GLACIAL_CIRQUE_FIELD -> type == GeometryType.MULTI_POINT;
-            case VOLCANIC_CALDERA, WATERFALL, CAVE_ENTRANCE -> type == GeometryType.POINT;
+            case HARBOR_BASIN, ROCKY_CAPE, BACKSHORE_PLAINS, PLAIN, PLATEAU, FLOODPLAIN, MARSH,
+                    GLACIAL_MOUNTAIN_RANGE, DELTA, OCEAN_BASIN, ABYSSAL_PLAIN, CONTINENTAL_SHELF,
+                    CONTINENTAL_SLOPE, MANGROVE_WETLAND, CORAL_REEF, LAGOON, LAKE, OXBOW_LAKE, ICE_SHEET,
+                    MORAINE_FIELD, OUTWASH_PLAIN -> type == GeometryType.POLYGON;
+            case VOLCANIC_ARCHIPELAGO, ARCHIPELAGO, GLACIAL_CIRQUE_FIELD -> type == GeometryType.MULTI_POINT;
+            case VOLCANIC_CALDERA, WATERFALL, CAVE_ENTRANCE, SINKHOLE, KARST_SPRING, SPRING,
+                    FLOODED_CAVE, SINGLE_ISLAND, VOLCANIC_CONE, ICE_CAP, SEAMOUNT
+                    -> type == GeometryType.POINT;
             case CAVE_NETWORK, LUSH_CAVE, OVERHANG, SKY_ISLAND_GROUP -> type == GeometryType.VOLUME_GUIDE;
         };
         if (!valid) throw new IllegalArgumentException("geometry type " + type + " is invalid for " + kind);

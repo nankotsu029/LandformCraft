@@ -21,7 +21,7 @@ Phase 1のterrain gridとpreview生成では次を上限とします。
 | rocky coast 500×500 | 250,000 | 16 | 1,258 ms（command 4.13 s） | 18.52 s | 1.09／0.91 s | 12,065,536 B | 108,560,384 B | 480 KiB／328,831 B |
 | rocky coast 1000×1000 | 1,000,000 | 64 | 4,277 ms（command 7.46 s） | 67.77 s | 1.29／1.12 s | 48,262,144 B | 108,593,152 B | 1.5 MiB／1,083,255 B |
 
-PNG preview時間はCLIの独立metricとしてまだ分離されずgenerate command wall timeへ含まれます。64×64 Paper＋WorldEdit planではdisk予約293,621,754 bytes、実snapshot 828 bytes、apply／full verify／Undoが成功しました。500×500／1000×1000のPaper plan、snapshot estimate、apply／Undo、tick impactは今回未計測でありbeta blockerです。1000×1000実配置の性能保証はしません。
+PNG preview時間はCLIの独立metricとしてまだ分離されずgenerate command wall timeへ含まれます。64×64 Paper＋WorldEdit／FAWE smoke（`V2-6-14`／`V2-6-15`）ではplan／apply／full verify／Undoが成功しました。500×500／1000×1000のPaper実測Task（`V2-6-16`／`V2-6-17`）は無効化済みで、未測定寸法のPaper apply性能を保証せずcatalog `SUPPORTED`にもしません。
 
 計測値はhardwareとJVM warm-upで変動します。自動testは500×500を30秒以内かつ96 MiB推定以内で生成できることを検査し、1000×1000は`examples/performance/request-1000.yml`でgenerate／export／directory・ZIP verifyの手動smoke testができます。このfixtureはRelease計測のためschematicとZIPを有効にしています。
 

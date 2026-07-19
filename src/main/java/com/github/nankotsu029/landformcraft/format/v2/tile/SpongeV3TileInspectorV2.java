@@ -47,6 +47,11 @@ public final class SpongeV3TileInspectorV2 {
     }
 
     public Inspection inspect(byte[] compressed, OfflineTilePlanV2 expectedPlan) throws IOException {
+        return decode(compressed, expectedPlan).inspection();
+    }
+
+    /** Strictly decodes one bounded tile for restartable Release 2 placement cursors. */
+    public DecodedTile decode(byte[] compressed, OfflineTilePlanV2 expectedPlan) throws IOException {
         Objects.requireNonNull(compressed, "compressed");
         Objects.requireNonNull(expectedPlan, "expectedPlan");
         if (compressed.length < 2 || compressed.length > OfflineTileArtifactV2.MAXIMUM_ARTIFACT_BYTES) {
@@ -109,9 +114,10 @@ public final class SpongeV3TileInspectorV2 {
         requireEmptyList(blocks.get("BlockEntities"), "BlockEntities");
         if (schematic.containsKey("Entities")) requireEmptyList(schematic.get("Entities"), "Entities");
         if (schematic.containsKey("Biomes")) throw new IOException("offline tile must not contain biome data");
-        return new Inspection(
+        Inspection inspection = new Inspection(
                 width, height, length, statesById.length, entries, compressed.length,
                 CanonicalBlockStreamV2.finish(digest));
+        return new DecodedTile(inspection, List.of(statesById), data);
     }
 
     private static int validateAndHashVarInts(
@@ -186,6 +192,62 @@ public final class SpongeV3TileInspectorV2 {
             long compressedBytes,
             String semanticChecksum
     ) {
+    }
+
+    public static final class DecodedTile {
+        private final Inspection inspection;
+        private final List<String> palette;
+        private final byte[] encodedBlockData;
+
+        private DecodedTile(Inspection inspection, List<String> palette, byte[] encodedBlockData) {
+            this.inspection = Objects.requireNonNull(inspection, "inspection");
+            this.palette = List.copyOf(palette);
+            this.encodedBlockData = encodedBlockData.clone();
+        }
+
+        public Inspection inspection() {
+            return inspection;
+        }
+
+        public BlockStateCursor openCursor() {
+            return new BlockStateCursor(palette, encodedBlockData);
+        }
+    }
+
+    public static final class BlockStateCursor {
+        private final List<String> palette;
+        private final byte[] data;
+        private int cursor;
+        private boolean closed;
+
+        private BlockStateCursor(List<String> palette, byte[] data) {
+            this.palette = palette;
+            this.data = data;
+        }
+
+        public String next() throws IOException {
+            if (closed) throw new IOException("offline tile block-state cursor is closed");
+            if (cursor == data.length) return null;
+            int value = 0;
+            int shift = 0;
+            int current;
+            do {
+                if (cursor >= data.length || shift >= 35) {
+                    throw new IOException("offline tile contains a truncated or oversized VarInt");
+                }
+                current = Byte.toUnsignedInt(data[cursor++]);
+                value |= (current & 0x7f) << shift;
+                shift += 7;
+            } while ((current & 0x80) != 0);
+            if (value < 0 || value >= palette.size()) {
+                throw new IOException("offline tile references an invalid palette ID");
+            }
+            return palette.get(value);
+        }
+
+        public void close() {
+            closed = true;
+        }
     }
 
     private static final class NbtReader {

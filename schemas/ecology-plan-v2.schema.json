@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/ecology-plan-v2.schema.json",
+  "title": "LandformCraft V2-4-11 sparse ecology placement contract",
+  "description": "Strict, version-frozen v2 contract for the V2-4-11 sparse ecology placement contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "placementContractVersion", "moduleId", "moduleVersion", "stageId",
+    "namedSeed", "seedNamespace", "width", "length", "minY", "maxY", "ecologyPreset",
+    "climateBinding", "waterConditionBinding", "snowBinding", "catalog", "activeAssemblages",
+    "kernel", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "placementContractVersion": { "const": "ecology-placement-contract-v1" },
+    "moduleId": { "const": "v2.environment.ecology" },
+    "moduleVersion": { "const": "0.1.0-v2-4-11" },
+    "stageId": { "const": "generate.ecology" },
+    "namedSeed": { "type": "integer" },
+    "seedNamespace": { "const": "terrain.v2.ecology" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 3072 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 3072 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "ecologyPreset": {
+      "enum": [
+        "MANGROVE_ESTUARY", "SHALLOW_CORAL_REEF", "ALPINE_TREELINE", "SPARSE_COASTAL",
+        "SUBALPINE_FJORD", "DELTA_MARSH", "RIVER_CORRIDOR", "LAKE_BASIN",
+        "VOLCANIC_SUCCESSION", "WIND_EXPOSED_CLIFF", "WIND_EXPOSED_SKY_MEADOW",
+        "RIPARIAN_CANYON", "LUSH_SUBTERRANEAN"
+      ]
+    },
+    "climateBinding": { "$ref": "#/$defs/climateBinding" },
+    "waterConditionBinding": { "$ref": "#/$defs/waterConditionBinding" },
+    "snowBinding": { "$ref": "#/$defs/snowBinding" },
+    "catalog": { "$ref": "#/$defs/catalog" },
+    "activeAssemblages": {
+      "type": "array",
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/assemblageKind" }
+    },
+    "kernel": { "$ref": "#/$defs/kernel" },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "assemblageKind": {
+      "enum": [
+        "MANGROVE_CANOPY", "MANGROVE_ROOT", "CORAL_COLONY", "ALPINE_SHRUB", "ALPINE_MEADOW"
+      ]
+    },
+    "habitatClass": {
+      "enum": ["NONE", "MANGROVE_WETLAND", "CORAL_REEF", "ALPINE_VEGETATION"]
+    },
+    "placementLayer": {
+      "enum": ["CANOPY", "ROOT", "UNDERSTORY", "GROUND", "AQUATIC"]
+    },
+    "supportRule": {
+      "enum": [
+        "WETLAND_CANOPY", "WETLAND_ROOT", "REEF_COLONY", "ALPINE_SHRUB", "ALPINE_MEADOW"
+      ]
+    },
+    "climateBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceClimatePlanChecksum", "temperatureFieldId", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceClimatePlanChecksum": { "$ref": "#/$defs/checksum" },
+        "temperatureFieldId": { "const": "climate.final.temperature" },
+        "bindingContractVersion": { "const": "ecology-climate-binding-v1" }
+      }
+    },
+    "waterConditionBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceWaterConditionPlanChecksum", "wetnessFieldId",
+        "salinityFieldId", "hydroperiodFieldId", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceWaterConditionPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "wetnessFieldId": { "const": "environment.water.wetness" },
+        "salinityFieldId": { "const": "environment.water.salinity" },
+        "hydroperiodFieldId": { "const": "environment.water.hydroperiod" },
+        "bindingContractVersion": { "const": "ecology-water-condition-binding-v1" }
+      }
+    },
+    "snowBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceSnowPlanChecksum", "snowCoverFieldId", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceSnowPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "snowCoverFieldId": { "const": "environment.snow.cover" },
+        "bindingContractVersion": { "const": "ecology-snow-binding-v1" }
+      }
+    },
+    "catalogEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "kind", "assemblageId", "compactCode", "habitatClass", "layer", "supportRule",
+        "densityMillionths", "minSpacingBlocks", "clusterScaleBlocks"
+      ],
+      "properties": {
+        "kind": { "$ref": "#/$defs/assemblageKind" },
+        "assemblageId": { "$ref": "#/$defs/qualified" },
+        "compactCode": { "type": "integer", "minimum": 1, "maximum": 255 },
+        "habitatClass": { "$ref": "#/$defs/habitatClass" },
+        "layer": { "$ref": "#/$defs/placementLayer" },
+        "supportRule": { "$ref": "#/$defs/supportRule" },
+        "densityMillionths": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "minSpacingBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "clusterScaleBlocks": { "type": "integer", "minimum": 1, "maximum": 128 }
+      }
+    },
+    "catalogBudget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["budgetVersion", "maximumEntries", "maximumCanonicalBytes"],
+      "properties": {
+        "budgetVersion": { "const": "ecology-catalog-budget-v1" },
+        "maximumEntries": { "const": 5 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1024, "maximum": 16384 }
+      }
+    },
+    "catalog": {
+      "type": "object", "additionalProperties": false,
+      "required": ["catalogVersion", "catalogId", "catalogContractVersion", "entries", "budget"],
+      "properties": {
+        "catalogVersion": { "const": 1 },
+        "catalogId": { "const": "landformcraft.builtin-ecology-assemblage" },
+        "catalogContractVersion": { "const": "builtin-ecology-assemblage-catalog-v1" },
+        "entries": {
+          "type": "array", "minItems": 5, "maxItems": 5,
+          "items": { "$ref": "#/$defs/catalogEntry" }
+        },
+        "budget": { "$ref": "#/$defs/catalogBudget" }
+      }
+    },
+    "kernel": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "kernelVersion", "mangroveMinTemperatureRaw", "mangroveMinSalinityRaw",
+        "mangroveMaxSalinityRaw", "mangroveMinHydroperiodRaw", "mangroveMinWetnessRaw",
+        "coralMinTemperatureRaw", "coralMinSalinityRaw", "coralMinDepthRaw", "coralMaxDepthRaw",
+        "alpineMaxTemperatureRaw", "alpineMaxSnowCoverRaw", "alpineMinSurfaceY",
+        "alpineMaxSurfaceY", "alpineShrubMaxSurfaceY", "minimumRaw", "maximumRaw"
+      ],
+      "properties": {
+        "kernelVersion": { "const": "ecology-placement-fixed-v1" },
+        "mangroveMinTemperatureRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "mangroveMinSalinityRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "mangroveMaxSalinityRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "mangroveMinHydroperiodRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "mangroveMinWetnessRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "coralMinTemperatureRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "coralMinSalinityRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "coralMinDepthRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "coralMaxDepthRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "alpineMaxTemperatureRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "alpineMaxSnowCoverRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "alpineMinSurfaceY": { "type": "integer" },
+        "alpineMaxSurfaceY": { "type": "integer" },
+        "alpineShrubMaxSurfaceY": { "type": "integer" },
+        "minimumRaw": { "const": 0 },
+        "maximumRaw": { "const": 1000 }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "globalCellCount", "assemblageCount", "activeAssemblageCount",
+        "estimatedCpuWorkUnits", "estimatedRetainedBytes", "maximumWindowSize",
+        "maximumWorkingBytes", "maximumPlacementDescriptorsPerWindow", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "ecology-placement-budget-v1" },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "assemblageCount": { "const": 5 },
+        "activeAssemblageCount": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 32000000 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "maximumWindowSize": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 4194304 },
+        "maximumPlacementDescriptorsPerWindow": {
+          "type": "integer", "minimum": 1, "maximum": 65536
+        },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1, "maximum": 49152 }
+      }
+    }
+  }
+}

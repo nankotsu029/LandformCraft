@@ -1,5 +1,6 @@
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
+import xyz.jpenilla.runpaper.task.RunServer
 
 plugins {
     java
@@ -30,6 +31,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:6.1.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     testImplementation("com.sk89q.worldedit:worldedit-core:7.3.19")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
@@ -98,7 +100,20 @@ tasks {
 
     runServer {
         minecraftVersion("1.21.11")
+        // Lock to the same Paper build used by V2-6-14 WorldEdit smoke evidence.
+        build(132)
         jvmArgs("-Xms2G", "-Xmx2G")
+    }
+
+    // V2-6-15: FAWE-only isolated profile. Do not point default runServer at run-fawe/.
+    register<RunServer>("runFaweServer") {
+        group = "Run Paper"
+        description = "Run Paper 1.21.11 with FAWE-only plugins under run-fawe/ (V2-6-15)."
+        minecraftVersion("1.21.11")
+        build(132)
+        runDirectory(file("run-fawe"))
+        jvmArgs("-Xms2G", "-Xmx2G")
+        pluginJars(shadowJar.flatMap { it.archiveFile })
     }
 
     test {

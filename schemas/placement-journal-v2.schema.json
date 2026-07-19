@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-journal-v2.schema.json",
+  "title": "LandformCraft V2-6-01 Release 2 placement journal contract",
+  "description": "Strict, version-frozen v2 contract for the V2-6-01 Release 2 placement journal contract. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "journalVersion", "journalContractVersion", "plan", "planChecksum", "state",
+    "tiles", "reservedBytes", "snapshotBytesUsed", "updatedAt", "message", "journalChecksum"
+  ],
+  "properties": {
+    "journalVersion": {"const": 1},
+    "journalContractVersion": {"const": "release-2-placement-journal-v1"},
+    "plan": {
+      "$ref": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-plan-v2.schema.json"
+    },
+    "planChecksum": {"$ref": "#/$defs/checksum"},
+    "state": {
+      "enum": [
+        "PLANNED", "RELEASE_VALIDATED", "ENVELOPE_BOUND", "RESERVATION_BOUND",
+        "CONFIRMATION_ISSUED", "SNAPSHOTTING", "SNAPSHOT_COMPLETE", "APPLYING",
+        "SETTLING", "VERIFYING", "APPLIED", "ROLLING_BACK", "ROLLED_BACK",
+        "UNDOING", "UNDONE", "RECOVERY_REQUIRED"
+      ]
+    },
+    "tiles": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/tileEntry"}
+    },
+    "reservedBytes": {"type": "integer", "minimum": 0},
+    "snapshotBytesUsed": {"type": "integer", "minimum": 0},
+    "updatedAt": {"type": "string", "format": "date-time"},
+    "message": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "journalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "tileEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tileId", "tileIndex", "state", "snapshotFile", "snapshotChecksum"],
+      "properties": {
+        "tileId": {"type": "string", "pattern": "^tile-x[0-9]+-z[0-9]+$"},
+        "tileIndex": {"type": "integer", "minimum": 0, "maximum": 1023},
+        "state": {"enum": ["PENDING", "SNAPSHOTTED", "APPLIED", "VERIFIED", "RESTORED"]},
+        "snapshotFile": {
+          "type": "string",
+          "pattern": "^(?:|(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+)$"
+        },
+        "snapshotChecksum": {"type": "string", "pattern": "^(?:|[0-9a-f]{64})$"}
+      }
+    }
+  }
+}

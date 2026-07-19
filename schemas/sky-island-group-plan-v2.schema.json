@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/sky-island-group-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-12 SKY_ISLAND_GROUP plan contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-12 SKY_ISLAND_GROUP plan contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "skyIslandGroupContractVersion", "featureId", "kernel",
+    "groundReferenceYBlocks", "minimumAllowedYBlocks", "maximumAllowedYBlocks",
+    "components", "aabb", "sdfPlanBinding", "csgPlanBinding", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "skyIslandGroupContractVersion": {"const": "sky-island-group-contract-v1"},
+    "featureId": {"$ref": "#/$defs/qualified"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "groundReferenceYBlocks": {"type": "integer", "minimum": -512, "maximum": 512},
+    "minimumAllowedYBlocks": {"type": "integer", "minimum": -512, "maximum": 512},
+    "maximumAllowedYBlocks": {"type": "integer", "minimum": -512, "maximum": 512},
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {"$ref": "#/$defs/component"}
+    },
+    "aabb": {"$ref": "#/$defs/aabb"},
+    "sdfPlanBinding": {"$ref": "#/$defs/sdfBinding"},
+    "csgPlanBinding": {"$ref": "#/$defs/csgBinding"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "millionths": {"type": "integer", "minimum": -100000000000000, "maximum": 100000000000000},
+    "halfExtent": {"type": "integer", "minimum": 1000000, "maximum": 32000000},
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/millionths"},
+        "yMillionths": {"$ref": "#/$defs/millionths"},
+        "zMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "halfExtents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/halfExtent"},
+        "yMillionths": {"$ref": "#/$defs/halfExtent"},
+        "zMillionths": {"$ref": "#/$defs/halfExtent"}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": {"$ref": "#/$defs/millionths"},
+        "minYMillionths": {"$ref": "#/$defs/millionths"},
+        "minZMillionths": {"$ref": "#/$defs/millionths"},
+        "maxXMillionths": {"$ref": "#/$defs/millionths"},
+        "maxYMillionths": {"$ref": "#/$defs/millionths"},
+        "maxZMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernelVersion", "minimumComponentCount", "maximumComponentCount",
+        "minimumGroundClearanceBlocks", "minimumInterIslandGapBlocks",
+        "minimumThicknessBlocks", "supportFreeAllowed",
+        "maximumHalfExtentMillionths", "maximumDescriptorSamples"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "sky-island-group-v1"},
+        "minimumComponentCount": {"type": "integer", "minimum": 1, "maximum": 8},
+        "maximumComponentCount": {"type": "integer", "minimum": 1, "maximum": 8},
+        "minimumGroundClearanceBlocks": {"type": "integer", "minimum": 1, "maximum": 256},
+        "minimumInterIslandGapBlocks": {"type": "integer", "minimum": 1, "maximum": 256},
+        "minimumThicknessBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "supportFreeAllowed": {"const": true},
+        "maximumHalfExtentMillionths": {"type": "integer", "minimum": 1000000, "maximum": 32000000},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000}
+      }
+    },
+    "boxSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["center", "halfExtentsMillionths", "cornerRadiusMillionths"],
+      "properties": {
+        "center": {"$ref": "#/$defs/vec3"},
+        "halfExtentsMillionths": {"$ref": "#/$defs/halfExtents"},
+        "cornerRadiusMillionths": {"type": "integer", "minimum": 0, "maximum": 31999999}
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["componentId", "lobe", "underside"],
+      "properties": {
+        "componentId": {"$ref": "#/$defs/qualified"},
+        "lobe": {"$ref": "#/$defs/boxSpec"},
+        "underside": {"$ref": "#/$defs/boxSpec"}
+      }
+    },
+    "sdfBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "sky-island-group-sdf-binding-v1"}
+      }
+    },
+    "csgBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "sky-island-group-csg-binding-v1"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "estimatedCanonicalBytes", "maximumCanonicalBytes",
+        "maximumWorkingBytes", "maximumDescriptorSamples", "maximumComponents"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "sky-island-group-budget-v1"},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 65536},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000},
+        "maximumComponents": {"type": "integer", "minimum": 1, "maximum": 8}
+      }
+    }
+  }
+}

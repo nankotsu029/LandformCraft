@@ -178,7 +178,7 @@ public final class WaterfallGeneratorV2 {
         return Collections.unmodifiableMap(result);
     }
 
-    /** EXPERIMENTAL validator hooks for V2-3-06 Acceptance metrics. */
+    /** Validator hooks for V2-3-06 Acceptance metrics (module SUPPORTED since the V2-5 gate). */
     public WaterfallMetrics evaluate(CancellationToken token) {
         Objects.requireNonNull(token, "token");
         long lipCells = 0L;

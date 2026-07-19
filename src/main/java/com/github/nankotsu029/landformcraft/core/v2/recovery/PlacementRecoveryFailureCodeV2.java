@@ -1,0 +1,24 @@
+package com.github.nankotsu029.landformcraft.core.v2.recovery;
+
+/** Stable failure classification for Release 2 recovery diagnose／prepare／execute／cleanup. */
+public enum PlacementRecoveryFailureCodeV2 {
+    STATE_MISMATCH,
+    BINDING_MISMATCH,
+    CLASSIFICATION_MISMATCH,
+    SNAPSHOT_MISSING,
+    SNAPSHOT_TAMPERED,
+    SNAPSHOT_COVERAGE_GAP,
+    RESERVATION_MISSING,
+    ACTOR_MISMATCH,
+    CONFIRMATION_INVALID,
+    CONFIRMATION_EXPIRED,
+    CONFIRMATION_REPLAY,
+    WORLD_DRIFT,
+    RESOURCE_BUDGET_EXCEEDED,
+    GATEWAY_FAILURE,
+    JOURNAL_PERSISTENCE_FAILED,
+    RESERVATION_RELEASE_FAILED,
+    CLEANUP_NOT_ELIGIBLE,
+    CLEANUP_PLAN_STALE,
+    CANCELLED
+}

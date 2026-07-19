@@ -1,0 +1,17 @@
+package com.github.nankotsu029.landformcraft.generator.v2.volume.seacave;
+
+public enum SeaCaveFailureCodeV2 {
+    UNKNOWN_KERNEL,
+    BUDGET_EXCEEDED,
+    UNSUPPORTED_HOST,
+    LANDLOCKED,
+    LEAKING_INLAND,
+    HARD_LAND_WATER_CONFLICT,
+    MISSING_SEA_OPENING,
+    FLUID_DISCONTINUITY,
+    THIN_ROOF,
+    SURFACE_BREAKTHROUGH,
+    DOUBLE_FLUID_OWNER,
+    CARVE_AS_FLUID_CORRUPTION,
+    BINDING_MISMATCH
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "release-2-retention-cleanup-plan-v1",
+  "planId": "22222222-2222-2222-2222-222222222222",
+  "actorCanonical": "CONSOLE:CONSOLE",
+  "createdAt": "2026-07-19T00:00:00Z",
+  "expiresAt": "2026-07-19T00:10:00Z",
+  "placementId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1",
+  "journalChecksum": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "recoveryCleanupPlanChecksum": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "fileCount": 1,
+  "totalBytes": 42,
+  "confirmationHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "executed": false
+}

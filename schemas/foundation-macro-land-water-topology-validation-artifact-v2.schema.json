@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/foundation-macro-land-water-topology-validation-artifact-v2.schema.json",
+  "title": "LandformCraft V2-9-12 macro land-water topology validation artifact",
+  "description": "Strict, version-frozen v2 contract for the V2-9-12 macro land-water topology validation artifact. Validation evidence only; it never authorizes generation or world mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "contractVersion", "topologyId", "metrics", "issues", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "contractVersion": { "const": "foundation-macro-land-water-topology-validation-artifact-v1" },
+    "topologyId": { "type": "string", "maxLength": 64 },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "issues": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/issue" } },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "connectivityOk", "containmentOk", "minWidthOk", "zoneSemanticOk",
+        "graphBudgetOk", "rasterBudgetOk", "wholeTileOk",
+        "orderIndependent", "threadIndependent", "freezeReady"
+      ],
+      "properties": {
+        "connectivityOk": { "type": "boolean" },
+        "containmentOk": { "type": "boolean" },
+        "minWidthOk": { "type": "boolean" },
+        "zoneSemanticOk": { "type": "boolean" },
+        "graphBudgetOk": { "type": "boolean" },
+        "rasterBudgetOk": { "type": "boolean" },
+        "wholeTileOk": { "type": "boolean" },
+        "orderIndependent": { "type": "boolean" },
+        "threadIndependent": { "type": "boolean" },
+        "freezeReady": { "type": "boolean" }
+      }
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleId", "message"],
+      "properties": {
+        "ruleId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "message": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    }
+  }
+}

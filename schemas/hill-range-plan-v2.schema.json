@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hill-range-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-02 hill-range foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-02 hill-range foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "ridgePoints", "ridgeStations", "saddles",
+    "selectedRidgeHalfWidthBlocks", "selectedMaxReliefBlocks", "plainTransitionBandBlocks",
+    "minY", "maxY", "waterLevel", "width", "length",
+    "ridgeMaskFieldId", "saddleMaskFieldId", "elevationFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "ridgePoints": { "type": "array", "minItems": 2, "maxItems": 16384, "items": { "$ref": "#/$defs/ridgePoint" } },
+    "ridgeStations": { "type": "array", "minItems": 2, "maxItems": 8, "items": { "$ref": "#/$defs/ridgeStation" } },
+    "saddles": { "type": "array", "maxItems": 7, "items": { "$ref": "#/$defs/saddle" } },
+    "selectedRidgeHalfWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "selectedMaxReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "plainTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "ridgeMaskFieldId": { "const": "foundation.hill.ridge-mask" },
+    "saddleMaskFieldId": { "const": "foundation.hill.saddle-mask" },
+    "elevationFieldId": { "const": "foundation.hill.elevation" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ridgePoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths", "arcLengthMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ridgeStation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stationId", "xMillionths", "zMillionths", "arcLengthMillionths", "reliefBlocks"],
+      "properties": {
+        "stationId": { "$ref": "#/$defs/slug" },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "reliefBlocks": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "saddle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["saddleId", "xMillionths", "zMillionths", "arcLengthMillionths", "reliefBlocks"],
+      "properties": {
+        "saddleId": { "$ref": "#/$defs/slug" },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "reliefBlocks": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    }
+  }
+}

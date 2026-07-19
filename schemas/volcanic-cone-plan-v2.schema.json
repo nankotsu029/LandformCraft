@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/volcanic-cone-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-07 volcanic-cone foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-07 volcanic-cone foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "centerXMillionths", "centerZMillionths",
+    "selectedBaseRadiusBlocks", "selectedSummitHeightBlocksAboveSea",
+    "selectedCraterRadiusBlocks", "selectedCraterFloorDepthBlocks",
+    "selectedRadialDrainageMillionths",
+    "minY", "maxY", "waterLevel", "width", "length",
+    "coneMaskFieldId", "craterMaskFieldId", "drainageFieldId", "solidOwnershipFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "centerXMillionths": { "type": "integer", "minimum": 0 },
+    "centerZMillionths": { "type": "integer", "minimum": 0 },
+    "selectedBaseRadiusBlocks": { "type": "integer", "minimum": 8, "maximum": 256 },
+    "selectedSummitHeightBlocksAboveSea": { "type": "integer", "minimum": 8, "maximum": 256 },
+    "selectedCraterRadiusBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "selectedCraterFloorDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "selectedRadialDrainageMillionths": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "coneMaskFieldId": { "const": "foundation.cone.mask" },
+    "craterMaskFieldId": { "const": "foundation.cone.crater-mask" },
+    "drainageFieldId": { "const": "foundation.cone.drainage" },
+    "solidOwnershipFieldId": { "const": "foundation.cone.solid-ownership" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

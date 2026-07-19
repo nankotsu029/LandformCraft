@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/image-draft-evidence-v2.schema.json",
+  "title": "LandformCraft ImageDraftEvidenceV2",
+  "description": "Strict, version-frozen v2 contract for the ImageDraftEvidenceV2. Rejects unknown fields, versions and encodings instead of falling back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "algorithmVersion", "sourceChecksum", "semanticChecksum",
+    "confirmationState", "width", "length", "waterCells", "landCells", "unknownCells"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "algorithmVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "sourceChecksum": { "$ref": "#/$defs/checksum" },
+    "semanticChecksum": { "$ref": "#/$defs/checksum" },
+    "confirmationState": {
+      "enum": ["UNCONFIRMED", "CONFIRMED_SOFT", "REJECTED"]
+    },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "waterCells": { "type": "integer", "minimum": 0 },
+    "landCells": { "type": "integer", "minimum": 0 },
+    "unknownCells": { "type": "integer", "minimum": 0 },
+    "sourceRelativePath": { "$ref": "#/$defs/safePath" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+    }
+  }
+}

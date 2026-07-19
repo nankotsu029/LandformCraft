@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/ocean-basin-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-08 ocean-basin foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-08 ocean-basin foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "rings", "selectedMaxDepthBlocksBelowSea", "selectedFloorReliefBlocks", "minY", "maxY", "waterLevel", "width", "length", "depthFieldId", "slopeFieldId", "coastDistanceFieldId", "ownershipFieldId", "fluidColumnHintFieldId", "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "rings": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/ring" } },
+    "selectedMaxDepthBlocksBelowSea": { "type": "integer", "minimum": 16, "maximum": 256 },
+    "selectedFloorReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "depthFieldId": { "const": "foundation.ocean-basin.depth" },
+    "slopeFieldId": { "const": "foundation.ocean-basin.slope" },
+    "coastDistanceFieldId": { "const": "foundation.ocean-basin.coast-distance" },
+    "ownershipFieldId": { "const": "foundation.ocean-basin.ownership" },
+    "fluidColumnHintFieldId": { "const": "foundation.ocean-basin.fluid-column-hint" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "vertex": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ring": {
+      "type": "object", "additionalProperties": false,
+      "required": ["vertices"],
+      "properties": {
+        "vertices": {
+          "type": "array", "minItems": 4, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/vertex" }
+        }
+      }
+    }
+  }
+}

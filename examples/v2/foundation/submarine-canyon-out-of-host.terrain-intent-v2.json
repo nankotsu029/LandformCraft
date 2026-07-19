@@ -1,0 +1,113 @@
+{
+  "intentVersion": 2,
+  "intentId": "submarine-canyon-out-of-host-v2",
+  "theme": "V2-9-09 SUBMARINE_CANYON out-of-host spline on dry land",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "west-shelf",
+      "kind": "CONTINENTAL_SHELF",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [[0.06, 0.10], [0.34, 0.10], [0.34, 0.90], [0.06, 0.90], [0.06, 0.10]]
+        ]
+      },
+      "parameters": {
+        "shelfWidthBlocks": { "min": 24, "max": 32 },
+        "shelfDepthBlocksBelowSea": { "min": 6, "max": 8 },
+        "coastDistanceBandBlocks": { "min": 4, "max": 8 },
+        "seawardSide": "EAST"
+      },
+      "priority": 14,
+      "provenance": { "source": "MANUAL", "sourceId": "submarine-canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "mid-slope",
+      "kind": "CONTINENTAL_SLOPE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [[0.30, 0.10], [0.58, 0.10], [0.58, 0.90], [0.30, 0.90], [0.30, 0.10]]
+        ]
+      },
+      "parameters": {
+        "slopeWidthBlocks": { "min": 24, "max": 32 },
+        "upperDepthBlocksBelowSea": { "min": 8, "max": 10 },
+        "lowerDepthBlocksBelowSea": { "min": 28, "max": 32 },
+        "maxGradient01": { "min": 0.50, "max": 0.90 }
+      },
+      "priority": 12,
+      "provenance": { "source": "MANUAL", "sourceId": "submarine-canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "east-basin",
+      "kind": "OCEAN_BASIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [[0.54, 0.10], [0.96, 0.10], [0.96, 0.90], [0.54, 0.90], [0.54, 0.10]]
+        ]
+      },
+      "parameters": {
+        "maxDepthBlocksBelowSea": { "min": 40, "max": 48 },
+        "floorReliefBlocks": { "min": 2, "max": 4 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "submarine-canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "dry-land-canyon",
+      "kind": "SUBMARINE_CANYON",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.02, 0.20], [0.02, 0.50], [0.02, 0.80]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "floorWidthBlocks": { "min": 4, "max": 6 },
+        "rimWidthBlocks": { "min": 10, "max": 14 },
+        "additionalCarveDepthBlocks": { "min": 3, "max": 5 },
+        "crossSection": "V",
+        "terraceCount": 0,
+        "terraceWidthBlocks": 0
+      },
+      "priority": 18,
+      "provenance": { "source": "MANUAL", "sourceId": "submarine-canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "canyon-head-shelf",
+      "kind": "ORIGINATES_AT",
+      "from": "feature:dry-land-canyon",
+      "to": "feature:west-shelf",
+      "strength": "HARD"
+    },
+    {
+      "id": "canyon-carves-slope",
+      "kind": "CARVES_THROUGH",
+      "from": "feature:dry-land-canyon",
+      "to": "feature:mid-slope",
+      "strength": "HARD"
+    },
+    {
+      "id": "canyon-outlet-basin",
+      "kind": "DRAINS_TO",
+      "from": "feature:dry-land-canyon",
+      "to": "feature:east-basin",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "COASTAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "COASTAL_SCRUB" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "submarine-canyon-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/continental-shelf-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-08 continental-shelf foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-08 continental-shelf foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "rings", "selectedShelfWidthBlocks", "selectedShelfDepthBlocksBelowSea", "selectedCoastDistanceBandBlocks", "seawardSide", "minY", "maxY", "waterLevel", "width", "length", "depthFieldId", "slopeFieldId", "coastDistanceFieldId", "ownershipFieldId", "fluidColumnHintFieldId", "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "rings": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/ring" } },
+    "selectedShelfWidthBlocks": { "type": "integer", "minimum": 8, "maximum": 128 },
+    "selectedShelfDepthBlocksBelowSea": { "type": "integer", "minimum": 2, "maximum": 64 },
+    "selectedCoastDistanceBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "seawardSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "depthFieldId": { "const": "foundation.continental-shelf.depth" },
+    "slopeFieldId": { "const": "foundation.continental-shelf.slope" },
+    "coastDistanceFieldId": { "const": "foundation.continental-shelf.coast-distance" },
+    "ownershipFieldId": { "const": "foundation.continental-shelf.ownership" },
+    "fluidColumnHintFieldId": { "const": "foundation.continental-shelf.fluid-column-hint" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "vertex": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ring": {
+      "type": "object", "additionalProperties": false,
+      "required": ["vertices"],
+      "properties": {
+        "vertices": {
+          "type": "array", "minItems": 4, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/vertex" }
+        }
+      }
+    }
+  }
+}

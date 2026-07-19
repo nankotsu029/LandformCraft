@@ -1,6 +1,6 @@
 # v1からv2への移行計画
 
-> Status: V2-0〜V2-3の互換・offline Phase gateと`V2-4-01`〜`V2-4-04`を完了した。typed geology／lithology／strataに加え、coarse climate priorとfinal temperature／moistureを別plan／stageとして追加し、V2-3 fixed runoff priorからの境界はchecksum付き明示version transitionにした。environmentとwaterfall／mountain／volcanicは後続依存のため`EXPERIMENTAL`である。v1 Schema、generator、Release、CLI／Paper commandは変更しておらず、v2 Paper配置はまだない。次は`V2-4-05`で、V2-5〜V2-6は前提待ちである。
+> Status: V2-0〜V2-5の互換・offline Phase gateを完了した。`V2-6-01`〜`V2-6-13`でplacement safetyからRecovery、hardening、operationsまでを固定し、`V2-6-20`／`V2-6-21`でstrict sourceとPaper lifecycleを実装し、`V2-6-14`／`V2-6-15`でWorldEdit 7.3.19およびFAWE 2.15.2実機smokeを完了し、`V2-6-18`で能力別Feature Support CatalogとPaper寸法hard limit（64×64）を固定し、`V2-6-19`のRC auditでV2-6 Phase gateを閉じた（[audit](audits/v2-6-phase-gate.md)）。v1契約と既定CLI／Paper commandは変更せず、R2は`/lfc r2`へ分離したままである。Paper能力列と未測定500／1000は`SUPPORTED`にせず（昇格は`V2-11-01`）、`V2-6-19`のRC監査後もv1完全撤去の条件は満たさないため、explicit version dispatchを維持する（§15）。Track Aの次は`V2-11-01`である（`V2-6-16`／`17`無効化）。
 
 ## 1. 移行原則
 
@@ -169,7 +169,7 @@ release-v2/
 └── checksums.sha256
 ```
 
-`V2-2-10`は`release-manifest-v2.schema.json`、canonical exclude-self checksum、strict `artifacts[]`／`requiredCapabilities[]`、directory／ZIP publisher/verifierを実装した。core-only releaseは`manifest.json`だけを含み、配列は空でなければならない。`V2-2-11`は`surface-2_5d`を別dispatchで有効化し、request／intent／Blueprint、field index＋sidecar、validation、preview index＋PNG、tile metadata＋Sponge v3をexact setとして固定した。`V2-3-14`は`hydrology-plan`を`surface-2_5d`依存で追加し、plan／routing／reconciliation／validation／12 previewをexact setとして固定した。未知capability、未知type/version、index外file、symlink、ZIP traversal／case collision、checksum、semantic binding、entry／展開／resident／disk budget違反を拒否する。format 1 verifierのallowlistを共有可変Listにして緩めず、version別verifierを使う。
+`V2-2-10`は`release-manifest-v2.schema.json`、canonical exclude-self checksum、strict `artifacts[]`／`requiredCapabilities[]`、directory／ZIP publisher/verifierを実装した。core-only releaseは`manifest.json`だけを含み、配列は空でなければならない。`V2-2-11`は`surface-2_5d`を別dispatchで有効化し、request／intent／Blueprint、field index＋sidecar、validation、preview index＋PNG、tile metadata＋Sponge v3をexact setとして固定した。`V2-3-14`は`hydrology-plan`を`surface-2_5d`依存で追加し、plan／routing／reconciliation／validation／12 previewをexact setとして固定した。`V2-4-14`は`environment-fields`を`hydrology-plan`＋`surface-2_5d`依存で追加した。`V2-5-17`は`sparse-volume`を`environment-fields`＋`hydrology-plan`＋`surface-2_5d`依存で追加し、`volume/`配下のSDF primitive／ordered CSG／AABB index／volume validation／3D volume tileをexact setとして固定した（CSG→SDF、AABB→CSGのchecksum binding、validation `sourcePlanChecksum`＝CSG、volume tileのstrict Sponge v3 read-back）。volume tileは`volume-offline-tile-artifact-v2`／`volume-sponge-schematic-v3`の専用typeでsurface tile集合と分離する。各capabilityは直前capability setをstrictに回帰verifyする。未知capability、未知type/version、index外file、symlink、ZIP traversal／case collision、checksum、semantic binding、entry／展開／resident／disk budget違反を拒否する。format 1 verifierのallowlistを共有可変Listにして緩めず、version別verifierを使う。
 
 ## 8. Placement migration
 
@@ -191,6 +191,8 @@ validate all artifacts
 → commit or reverse-order rollback
 ```
 
+`V2-6-01`は上記pipelineの契約層を固定した。`PlacementPlanV2`／`PlacementJournalV2`はRelease format 2 manifest checksum、world target／bounds／anchor、capability set、canonical tile order、envelope／reservation／confirmation binding slot、operation ID、format 2 journal statesをchecksum-boundに持ち、v1 journal codecとは別versionでstrict読取する（ADR 0020）。`V2-6-02`〜`V2-6-05`はmutation／effect envelope、reservation／confirmation、snapshot-all、containment evidenceを順に固定し、`V2-6-06`はこれらを迂回できないcanonical apply application serviceを追加した（ADR 0024）。`V2-6-07`はbounded settleとeffect envelope全体のexact verifyを追加し、成功時だけterminal `APPLIED`へ進める（ADR 0025）。`V2-6-08`はrollback、`V2-6-09`はoperation-bound Undoを追加した（ADR 0026／0027）。startup Recoveryは`V2-6-10`である。
+
 観測FutureのtimeoutだけでScheduler受理済みoperationを取消済みにしない。dispatch前validation／confirm、実operation ID、late completion reconciliationを既存規則どおり持つ。
 
 snapshot scope拡大はdiskと時間へ直接影響するため、Release 2のestimateをRelease 1と分ける。offline generation/exportは1000×1000 gateを必須とする。Paperの初期配置上限を500角とするなら500×500実world apply/verify/Undoの成功が必須であり、1000角配置をsupportedと宣言するには1000×1000の同じ実測を別途必須とする。実測していない寸法は設定上限で拒否する。
@@ -199,7 +201,7 @@ snapshot scope拡大はdiskと時間へ直接影響するため、Release 2のes
 
 - v1 commandのdefault挙動を変えず、version／capabilityを明示optionまたはartifactから選ぶ。
 - `--intent-version` 等の具体的UIは実装時に決めるが、曖昧なauto-upgradeをしない。
-- Providerごとにv2 structured output capabilityを宣言し、未対応modelはv1またはmanual importへ限定する。
+- Providerごとにv2 structured output capabilityを宣言し、未対応model／capabilityは hard reject する（V2-6-11、ADR 0029）。明示 v2 dispatch を v1 へ暗黙 fallback しない。v1 default path は別経路として維持する。
 - Intent v2生成、map compile、Blueprint、generator、preview、Release I/OをPaper main threadで実行しない。
 - Bukkit／world accessだけをScheduler経由でmain threadへ送る。
 - error codeへversion、stage、rule IDを含め、秘密値をredactする。
@@ -273,11 +275,22 @@ feature追加は柔軟だが、任意code、version、resource、determinism、s
 |---|---|---|
 | Release format 2 coreをformat 1と分離 | `V2-2-10`（完了） | core directory／ZIP strict verifyとRelease 1回帰 |
 | 最初のoffline surface capability | `V2-2-11`（完了） | `surface-2_5d`必須集合とtampering test |
-| Hydrology／Environment／Volume capability | `V2-3-14`（完了）／`V2-4-14`／`V2-5-17` | 各直前capability setのstrict回帰 |
+| Hydrology／Environment／Volume capability | `V2-3-14`（完了）／`V2-4-14`（完了）／`V2-5-17` | 各直前capability setのstrict回帰 |
 | Release 2 placement contract | `V2-6-01` | v1 journalと別versionでchecksum-bound |
 | Paper mutation開始条件 | `V2-6-02`〜`V2-6-06` | envelope、予約／confirm、snapshot-all、containment完了 |
 | Rollback／Undo／Recovery | `V2-6-08`〜`V2-6-10` | failure injectionとv1回帰 |
-| Cross-capability hardening | `V2-6-12` | 全valid prefixとdirectory／ZIP corruption拒否 |
+| Cross-capability hardening | `V2-6-12`（完了、ADR 0030） | 全valid prefixとdirectory／ZIP corruption拒否；Release 1 allowlist未緩和 |
 | Supported runtime／dimension | `V2-6-14`〜`V2-6-18` | 今回buildの実機evidenceがある範囲だけcatalog化 |
 
-`V2-6-14`〜`V2-6-17`は実機依存であり、環境がなければ`BLOCKED_EXTERNAL`とする。mockや過去buildの結果でmigration gateを閉じない。個別Task完了でv1 defaultをv2へ切り替えず、`V2-6-19`のrelease candidate監査までexplicit version dispatchを維持する。V2-6が完了しても、既存Beta hardeningの未チェック項目を根拠なく完了へ変更しない。
+`V2-6-14`／`V2-6-15`は実機依存であり、環境がなければ`BLOCKED_EXTERNAL`とする。`V2-6-16`／`V2-6-17`は無効化済み。mockや過去buildの結果でmigration gateを閉じない。個別Task完了でv1 defaultをv2へ切り替えず、`V2-6-19`のrelease candidate監査後もexplicit version dispatchを維持する（判断根拠は§15）。V2-6が完了しても、既存Beta hardeningの未チェック項目を根拠なく完了へ変更しない。
+
+## 15. V2-6-19時点の完全移行判断（2026-07-19）
+
+`V2-6-19` RC auditは、v1→v2の完全移行（v1 production code／command／Schemaの削除とv2 default化）を**実施しない**と判断した。根拠は時間ではなく、次の技術的未達条件である。
+
+1. **v2のPaper apply能力が最小範囲でしか昇格していない。** `V2-11-01`（2026-07-20）で`paper_apply`／`post_apply_validation`／`snapshot`／`rollback`／`restart_recovery`を`SUPPORTED`にできたのは、`surface-2_5d` capabilityの4 entry（SANDY_BEACH／BREAKWATER_HARBOR／HARBOR_BASIN／ROCKY_CAPE）を64×64以内で使う場合だけである。他prefixは`EXPERIMENTAL`、Release capability未接続のfoundation entryは`UNSUPPORTED`のままで、実機evidenceは64×64 smokeのみ。v1 placementは500／1000のCLI計測とproduction運用実績を持ち、これを置換できるv2実測はない（`V2-6-16`／`17`無効化により当面測定しない方針）。
+2. **v2の公開Intent経路が部分接続。** foundation／volume kindはdiagnostic bindingのままで、公開Intent dispatch・Release 2 capability・CLI／Paperの通常生成経路に接続していない。v2でrequest→design→generate→export→placementの全経路を通常利用できるのは、capability明示のdesign path（V2-6-11）と`/lfc r2`（評価用）に限られる。
+3. **Track B／Cが未完。** 画像入力（V2-7、1/7）とLARGE生成（V2-8、1/8）はv1相当機能（画像role前処理、1000×1000生成）をv2側で置換できる段階にない。
+4. **v1契約の凍結はAGENTS.mdの正本規範。** v1 Schema、generator `3.0.0-phase6`、Release format 1、v1 placement／Undo、既存checksum／goldenは変更禁止であり、v1削除はこの互換性境界の破壊を必要とするため停止条件に該当する。
+
+このため境界は次のとおり維持する: **v1が既定経路**（CLI／Paper既定command、Release 1）、**v2は明示選択経路**（capability明示design、`/lfc r2`、Release 2）。新規利用へのv2既定化は、`V2-11-01`（完了）に加えてV2-7／V2-8の各gate完了後に、新しいADR（`V2-12-01`）で再判断する。互換レイヤー（version dispatch、v1 adapter）は上記条件が解消するまで残し、削除条件はこの節の1〜3の解消とする。

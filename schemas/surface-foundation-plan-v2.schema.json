@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/surface-foundation-plan-v2.schema.json",
+  "title": "LandformCraft V2-9 surface foundation field/ownership/transition plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9 surface foundation field/ownership/transition plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "fieldContractVersion", "moduleId", "moduleVersion", "stageId",
+    "namedSeed", "seedNamespace", "width", "length", "scaleClassId", "tileSizeBlocks",
+    "haloBlocks", "mergeOperator", "ambiguityPolicy", "owners", "interactions", "fields",
+    "supportRadiusXZ", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "fieldContractVersion": { "const": "surface-foundation-field-contract-v1" },
+    "moduleId": { "const": "v2.foundation.surface" },
+    "moduleVersion": { "const": "0.1.0-v2-9-01" },
+    "stageId": { "const": "compile.surface-foundation" },
+    "namedSeed": { "type": "integer" },
+    "seedNamespace": { "const": "terrain.v2.foundation" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 3072 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 3072 },
+    "scaleClassId": { "enum": ["small", "medium", "large"] },
+    "tileSizeBlocks": { "type": "integer", "minimum": 32, "maximum": 512, "multipleOf": 32 },
+    "haloBlocks": { "type": "integer", "minimum": 0, "maximum": 256 },
+    "mergeOperator": { "const": "PRIORITY_BLEND" },
+    "ambiguityPolicy": { "const": "REJECT" },
+    "owners": {
+      "type": "array", "maxItems": 64,
+      "items": { "$ref": "#/$defs/owner" }
+    },
+    "interactions": {
+      "type": "array", "maxItems": 256,
+      "items": { "$ref": "#/$defs/interaction" }
+    },
+    "fields": {
+      "type": "array", "minItems": 5, "maxItems": 5,
+      "items": { "$ref": "#/$defs/fieldBinding" }
+    },
+    "supportRadiusXZ": { "type": "integer", "minimum": 0, "maximum": 32 },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "owner": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ownerId", "ownerIndex", "priority", "parentOrdinal", "surfaceClass", "derivedSeed"],
+      "properties": {
+        "ownerId": { "$ref": "#/$defs/slug" },
+        "ownerIndex": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "priority": { "type": "integer", "minimum": -100, "maximum": 100 },
+        "parentOrdinal": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "surfaceClass": { "enum": ["PLAIN", "HILL", "MOUNTAIN", "VALLEY", "RIVER", "WETLAND", "COAST", "CLIFF", "ISLAND", "CONE", "OCEAN", "SHELF", "SLOPE", "SUBMARINE_CANYON", "ENTRANCE"] },
+        "derivedSeed": { "type": "integer" }
+      }
+    },
+    "interaction": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relationId", "firstOwnerId", "secondOwnerId", "bandBlocks"],
+      "properties": {
+        "relationId": { "$ref": "#/$defs/slug" },
+        "firstOwnerId": { "$ref": "#/$defs/slug" },
+        "secondOwnerId": { "$ref": "#/$defs/slug" },
+        "bandBlocks": { "type": "integer", "minimum": 0, "maximum": 32 }
+      }
+    },
+    "fieldBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "semantic", "valueType", "ownerModuleId", "ownership", "encodingVersion"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/qualified" },
+        "semantic": {
+          "enum": ["SURFACE_CLASS", "ELEVATION", "RESIDUAL", "OWNER_INDEX", "TRANSITION_WEIGHT"]
+        },
+        "valueType": { "const": "U16" },
+        "ownerModuleId": { "const": "v2.foundation.surface" },
+        "ownership": { "const": "SINGLE_OWNER" },
+        "encodingVersion": { "const": "LFC_GRID_V1" }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumOwners", "maximumInteractions", "maximumFields",
+        "globalCellCount", "estimatedCpuWorkUnits", "estimatedRetainedBytes",
+        "maximumWindowSize", "maximumWorkingBytes", "estimatedArtifactBytes",
+        "maximumSingleArtifactBytes", "maximumCanonicalBytes", "supportRadiusXZ", "haloBlocks"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "surface-foundation-budget-v1" },
+        "maximumOwners": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "maximumInteractions": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "maximumFields": { "const": 5 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 9437184 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 268435456 },
+        "maximumWindowSize": { "type": "integer", "minimum": 1, "maximum": 512 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 134217728 },
+        "estimatedArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 268435456 },
+        "maximumSingleArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1, "maximum": 65536 },
+        "supportRadiusXZ": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "haloBlocks": { "type": "integer", "minimum": 0, "maximum": 256 }
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/operational-audit-event-v2.schema.json",
+  "title": "LandformCraft OperationalAuditEventV2",
+  "description": "Strict, version-frozen v2 contract for the OperationalAuditEventV2. Operational telemetry record; it carries no secrets and no world mutation authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "contractVersion", "correlationId", "eventKind", "actorCanonical",
+    "operation", "stage", "decision", "placementId", "resourceId", "bytesAffected",
+    "recordedAt", "detail"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractVersion": { "const": "operational-audit-event-v1" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "eventKind": {
+      "enum": [
+        "METRICS_CAPTURE", "DIAGNOSTICS_LOOKUP", "RETENTION_PLAN",
+        "RETENTION_EXECUTE", "RETENTION_REJECT", "FAILURE"
+      ]
+    },
+    "actorCanonical": {
+      "type": "string",
+      "pattern": "^(CONSOLE|PLAYER|SYSTEM):[A-Za-z0-9._-]{1,128}$"
+    },
+    "operation": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "stage": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "decision": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "placementId": { "type": ["string", "null"], "format": "uuid" },
+    "resourceId": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^$|^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "bytesAffected": { "type": "integer", "minimum": 0 },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "detail": { "type": "string", "maxLength": 256 }
+  }
+}

@@ -25,12 +25,18 @@ public record WorldAccessPolicy(Set<String> allowedWorlds, Set<String> deniedWor
     }
 
     public void requireAllowed(String worldName) {
-        if (deniedWorlds.contains(worldName)
-                || !allowedWorlds.isEmpty() && !allowedWorlds.contains(worldName)) {
+        if (!allows(worldName)) {
             throw new LandformException(LandformErrorCode.CONFIG_INVALID,
                     "Placement is not allowed in this world.", "placement-plan", worldName,
                     "world-policy", "Use an allowed test world or update config and restart Paper.");
         }
+    }
+
+    public boolean allows(String worldName) {
+        return worldName != null
+                && !worldName.isBlank()
+                && !deniedWorlds.contains(worldName)
+                && (allowedWorlds.isEmpty() || allowedWorlds.contains(worldName));
     }
 
     private static boolean invalid(String value) {

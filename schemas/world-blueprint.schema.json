@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/world-blueprint.schema.json",
   "title": "LandformCraft WorldBlueprint",
+  "description": "Strict, frozen v1 contract for the WorldBlueprint. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
   "required": [

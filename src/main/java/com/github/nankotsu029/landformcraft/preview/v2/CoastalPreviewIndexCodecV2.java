@@ -76,7 +76,7 @@ public final class CoastalPreviewIndexCodecV2 {
         CoastalPreviewIndexV2 index = read(indexPath);
         verifyDirectoryEntries(previewRoot, index);
         List<ConstraintMapSourceSpec> specs = index.layers().stream().map(layer ->
-                new ConstraintMapSourceSpec("constraint-source:preview-" + layer.layerId().name().toLowerCase()
+                new ConstraintMapSourceSpec("constraint-source:preview-" + layer.layerId().name().toLowerCase(java.util.Locale.ROOT)
                         .replace('_', '-'), layer.path(), layer.sha256(), layer.width(), layer.length())).toList();
         List<LoadedConstraintMapSource> loaded = new SecureConstraintMapSourceLoader().load(
                 previewRoot.resolve("preview-request.json"), specs, ConstraintMapDecodeLimits.defaults(),

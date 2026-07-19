@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-safety-state-v2.schema.json",
+  "title": "LandformCraft V2-6-03 Release 2 placement safety store ledger",
+  "description": "Strict, version-frozen v2 contract for the V2-6-03 Release 2 placement safety store ledger. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "safetyContractVersion", "regionReservations", "diskReservations",
+    "consumedConfirmationHashes", "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "safetyContractVersion": {"const": "release-2-placement-safety-state-v1"},
+    "regionReservations": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/regionReservation"}
+    },
+    "diskReservations": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/diskReservation"}
+    },
+    "consumedConfirmationHashes": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/checksum"}
+    },
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {"enum": ["PLAYER", "CONSOLE", "SYSTEM"]},
+        "id": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "minY", "minZ", "maxX", "maxY", "maxZ"],
+      "properties": {
+        "minX": {"type": "integer"},
+        "minY": {"type": "integer"},
+        "minZ": {"type": "integer"},
+        "maxX": {"type": "integer"},
+        "maxY": {"type": "integer"},
+        "maxZ": {"type": "integer"}
+      }
+    },
+    "regionReservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "placementId", "worldId", "regions", "operation", "actor", "state",
+        "createdAt", "expiresAt", "reservationPlanChecksum"
+      ],
+      "properties": {
+        "placementId": {"type": "string", "format": "uuid"},
+        "worldId": {"type": "string", "format": "uuid"},
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1024,
+          "items": {"$ref": "#/$defs/aabb"}
+        },
+        "operation": {"enum": ["APPLY", "UNDO", "RECOVERY_ROLLBACK", "RECOVERY_ACCEPT"]},
+        "actor": {"$ref": "#/$defs/actor"},
+        "state": {"enum": ["PLANNED", "ACTIVE", "RECOVERY_REQUIRED"]},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "reservationPlanChecksum": {"$ref": "#/$defs/checksum"}
+      }
+    },
+    "diskReservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["placementId", "fileStoreKey", "reservedBytes", "createdAt", "expiresAt"],
+      "properties": {
+        "placementId": {"type": "string", "format": "uuid"},
+        "fileStoreKey": {"type": "string", "minLength": 1, "maxLength": 512},
+        "reservedBytes": {"type": "integer", "minimum": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}

@@ -56,6 +56,16 @@ public abstract class AbstractHttpTerrainDesignProvider implements TerrainDesign
         );
     }
 
+    @Override
+    public final boolean supportsDurableResponseCache() {
+        return true;
+    }
+
+    @Override
+    public final String cacheIdentity() {
+        return id() + ":" + model;
+    }
+
     protected final String model() {
         return model;
     }

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/material-profile-plan-v2.schema.json",
+  "title": "LandformCraft V2-4-07 semantic material profile contract",
+  "description": "Strict, version-frozen v2 contract for the V2-4-07 semantic material profile contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "profileContractVersion", "geologyBinding", "waterConditionBinding", "snowBinding",
+    "catalog", "resolutionRules", "kernel", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "profileContractVersion": { "const": "material-profile-contract-v1" },
+    "geologyBinding": { "$ref": "#/$defs/geologyBinding" },
+    "waterConditionBinding": { "$ref": "#/$defs/waterConditionBinding" },
+    "snowBinding": { "$ref": "#/$defs/snowBinding" },
+    "catalog": { "$ref": "#/$defs/catalog" },
+    "resolutionRules": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": { "$ref": "#/$defs/resolutionRule" }
+    },
+    "kernel": { "$ref": "#/$defs/kernel" },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "geologyBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceGeologyPlanChecksum", "sourceLithologyPlanChecksum",
+        "sourceStrataPlanChecksum", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceGeologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "sourceLithologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "sourceStrataPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "material-profile-geology-binding-v1" }
+      }
+    },
+    "waterConditionBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceWaterConditionPlanChecksum", "wetnessFieldId", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceWaterConditionPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "wetnessFieldId": { "const": "environment.water.wetness" },
+        "bindingContractVersion": { "const": "material-profile-water-condition-binding-v1" }
+      }
+    },
+    "snowBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceSnowPlanChecksum", "snowCoverFieldId", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceSnowPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "snowCoverFieldId": { "const": "environment.snow.cover" },
+        "bindingContractVersion": { "const": "material-profile-snow-binding-v1" }
+      }
+    },
+    "catalogEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "classId", "classCode", "substrate", "wetVariant", "snowVariant"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "HOST_ROCK_EXPOSED", "HOST_ROCK_WET", "SEDIMENT_EXPOSED", "SEDIMENT_WET",
+            "SNOW_COVERED_ROCK", "SNOW_COVERED_SEDIMENT"
+          ]
+        },
+        "classId": { "$ref": "#/$defs/qualified" },
+        "classCode": { "type": "integer", "minimum": 1, "maximum": 255 },
+        "substrate": { "enum": ["ROCK", "SEDIMENT"] },
+        "wetVariant": { "type": "boolean" },
+        "snowVariant": { "type": "boolean" }
+      }
+    },
+    "catalogBudget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["budgetVersion", "maximumEntries", "maximumCanonicalBytes"],
+      "properties": {
+        "budgetVersion": { "const": "material-profile-catalog-budget-v1" },
+        "maximumEntries": { "const": 6 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1024, "maximum": 16384 }
+      }
+    },
+    "catalog": {
+      "type": "object", "additionalProperties": false,
+      "required": ["catalogVersion", "catalogId", "catalogContractVersion", "entries", "budget"],
+      "properties": {
+        "catalogVersion": { "const": 1 },
+        "catalogId": { "const": "landformcraft.builtin-material-profile" },
+        "catalogContractVersion": { "const": "builtin-material-profile-catalog-v1" },
+        "entries": {
+          "type": "array", "minItems": 6, "maxItems": 6,
+          "items": { "$ref": "#/$defs/catalogEntry" }
+        },
+        "budget": { "$ref": "#/$defs/catalogBudget" }
+      }
+    },
+    "resolutionRule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleOrder", "ruleId", "mergeOperator", "applicableAspects"],
+      "properties": {
+        "ruleOrder": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "ruleId": {
+          "enum": ["BASE_SUBSTRATE_FROM_LITHOLOGY", "WETNESS_OVERRIDE", "SNOW_OVERRIDE"]
+        },
+        "mergeOperator": { "enum": ["BASE_ASSIGNMENT", "CONDITIONAL_OVERRIDE"] },
+        "applicableAspects": {
+          "type": "array", "minItems": 1, "maxItems": 3,
+          "items": { "enum": ["CEILING", "FLOOR", "SURFACE"] }
+        }
+      }
+    },
+    "kernel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kernelVersion", "wetnessThresholdRaw", "snowThresholdRaw", "minimumRaw", "maximumRaw"],
+      "properties": {
+        "kernelVersion": { "const": "material-profile-fixed-v1" },
+        "wetnessThresholdRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "snowThresholdRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "minimumRaw": { "const": 0 },
+        "maximumRaw": { "const": 1000 }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "globalCellCount", "resolutionRuleCount", "estimatedCpuWorkUnits",
+        "estimatedRetainedBytes", "maximumWindowSize", "maximumWorkingBytes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "material-profile-budget-v1" },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "resolutionRuleCount": { "const": 3 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "maximumWindowSize": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 4194304 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1, "maximum": 32768 }
+      }
+    }
+  }
+}

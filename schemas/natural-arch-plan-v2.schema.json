@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/natural-arch-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-11 NATURAL_ARCH plan contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-11 NATURAL_ARCH plan contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "naturalArchContractVersion", "featureId", "kernel", "passageAxis",
+    "mass", "opening", "aabb", "sdfPlanBinding", "csgPlanBinding", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "naturalArchContractVersion": {"const": "natural-arch-contract-v1"},
+    "featureId": {"$ref": "#/$defs/qualified"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "passageAxis": {"enum": ["X", "Z"]},
+    "mass": {"$ref": "#/$defs/boxSpec"},
+    "opening": {"$ref": "#/$defs/boxSpec"},
+    "aabb": {"$ref": "#/$defs/aabb"},
+    "sdfPlanBinding": {"$ref": "#/$defs/sdfBinding"},
+    "csgPlanBinding": {"$ref": "#/$defs/csgBinding"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "millionths": {"type": "integer", "minimum": -100000000000000, "maximum": 100000000000000},
+    "halfExtent": {"type": "integer", "minimum": 1000000, "maximum": 32000000},
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/millionths"},
+        "yMillionths": {"$ref": "#/$defs/millionths"},
+        "zMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "halfExtents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/halfExtent"},
+        "yMillionths": {"$ref": "#/$defs/halfExtent"},
+        "zMillionths": {"$ref": "#/$defs/halfExtent"}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": {"$ref": "#/$defs/millionths"},
+        "minYMillionths": {"$ref": "#/$defs/millionths"},
+        "minZMillionths": {"$ref": "#/$defs/millionths"},
+        "maxXMillionths": {"$ref": "#/$defs/millionths"},
+        "maxYMillionths": {"$ref": "#/$defs/millionths"},
+        "maxZMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernelVersion", "minimumPierBlocks", "minimumCrownBlocks",
+        "minimumClearanceSamples", "minimumSpanBlocks",
+        "maximumHalfExtentMillionths", "maximumDescriptorSamples"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "natural-arch-v1"},
+        "minimumPierBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "minimumCrownBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "minimumClearanceSamples": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "minimumSpanBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "maximumHalfExtentMillionths": {"type": "integer", "minimum": 1000000, "maximum": 32000000},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000}
+      }
+    },
+    "boxSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["center", "halfExtentsMillionths", "cornerRadiusMillionths"],
+      "properties": {
+        "center": {"$ref": "#/$defs/vec3"},
+        "halfExtentsMillionths": {"$ref": "#/$defs/halfExtents"},
+        "cornerRadiusMillionths": {"type": "integer", "minimum": 0, "maximum": 31999999}
+      }
+    },
+    "sdfBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "natural-arch-sdf-binding-v1"}
+      }
+    },
+    "csgBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "natural-arch-csg-binding-v1"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "estimatedCanonicalBytes", "maximumCanonicalBytes",
+        "maximumWorkingBytes", "maximumDescriptorSamples"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "natural-arch-budget-v1"},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 49152},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000}
+      }
+    }
+  }
+}

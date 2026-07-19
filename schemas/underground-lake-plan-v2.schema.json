@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/underground-lake-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-08 UNDERGROUND_LAKE plan contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-08 UNDERGROUND_LAKE plan contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "lakeContractVersion", "featureId", "kernel", "hostBinding",
+    "caveAccess", "basin", "fluidBody", "aabb", "surfaceHeightBlocks",
+    "sdfPlanBinding", "csgPlanBinding", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "lakeContractVersion": {"const": "underground-lake-contract-v1"},
+    "featureId": {"$ref": "#/$defs/qualified"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "hostBinding": {"$ref": "#/$defs/hostBinding"},
+    "caveAccess": {"$ref": "#/$defs/caveAccess"},
+    "basin": {"$ref": "#/$defs/basin"},
+    "fluidBody": {"$ref": "#/$defs/fluidBody"},
+    "aabb": {"$ref": "#/$defs/aabb"},
+    "surfaceHeightBlocks": {"type": "integer", "minimum": -512, "maximum": 512},
+    "sdfPlanBinding": {"$ref": "#/$defs/sdfBinding"},
+    "csgPlanBinding": {"$ref": "#/$defs/csgBinding"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "millionths": {"type": "integer", "minimum": -100000000000000, "maximum": 100000000000000},
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/millionths"},
+        "yMillionths": {"$ref": "#/$defs/millionths"},
+        "zMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": {"$ref": "#/$defs/millionths"},
+        "minYMillionths": {"$ref": "#/$defs/millionths"},
+        "minZMillionths": {"$ref": "#/$defs/millionths"},
+        "maxXMillionths": {"$ref": "#/$defs/millionths"},
+        "maxYMillionths": {"$ref": "#/$defs/millionths"},
+        "maxZMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernelVersion", "minimumRoofBlocks", "minimumAirCavityBlocks",
+        "minimumRimThicknessBlocks", "maximumRadiusMillionths", "maximumDescriptorSamples"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "underground-lake-v1"},
+        "minimumRoofBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "minimumAirCavityBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "minimumRimThicknessBlocks": {"type": "integer", "minimum": 1, "maximum": 16},
+        "maximumRadiusMillionths": {"type": "integer", "minimum": 1000000, "maximum": 24000000},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000}
+      }
+    },
+    "hostBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relationKind", "hostNetworkFeatureId", "hostNetworkPlanChecksum", "hostChamberNodeId"
+      ],
+      "properties": {
+        "relationKind": {"const": "WITHIN"},
+        "hostNetworkFeatureId": {"$ref": "#/$defs/qualified"},
+        "hostNetworkPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "hostChamberNodeId": {"$ref": "#/$defs/qualified"}
+      }
+    },
+    "caveAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationKind", "entranceNodeId"],
+      "properties": {
+        "relationKind": {"const": "REACHABLE_FROM"},
+        "entranceNodeId": {"$ref": "#/$defs/qualified"}
+      }
+    },
+    "basin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["center", "radiusMillionths", "minimumAirCavityBlocks"],
+      "properties": {
+        "center": {"$ref": "#/$defs/vec3"},
+        "radiusMillionths": {"type": "integer", "minimum": 2000000, "maximum": 24000000},
+        "minimumAirCavityBlocks": {"type": "integer", "minimum": 1, "maximum": 64}
+      }
+    },
+    "fluidBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fluidBodyId", "waterSurfaceYBlocks"],
+      "properties": {
+        "fluidBodyId": {"$ref": "#/$defs/qualified"},
+        "waterSurfaceYBlocks": {"type": "integer", "minimum": -512, "maximum": 512}
+      }
+    },
+    "sdfBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "underground-lake-sdf-binding-v1"}
+      }
+    },
+    "csgBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "underground-lake-csg-binding-v1"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "estimatedCanonicalBytes", "maximumCanonicalBytes",
+        "maximumWorkingBytes", "maximumDescriptorSamples", "maximumFluidIntervalsPerColumn"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "underground-lake-budget-v1"},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 49152},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000},
+        "maximumFluidIntervalsPerColumn": {"type": "integer", "minimum": 1, "maximum": 8}
+      }
+    }
+  }
+}

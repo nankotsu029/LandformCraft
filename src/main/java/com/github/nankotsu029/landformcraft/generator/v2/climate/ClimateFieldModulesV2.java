@@ -68,7 +68,7 @@ public final class ClimateFieldModulesV2 {
         return new ModuleDescriptorV2(
                 moduleId,
                 moduleVersion,
-                ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+                ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
                 List.of(),
                 requiredFields,
                 providedFields,

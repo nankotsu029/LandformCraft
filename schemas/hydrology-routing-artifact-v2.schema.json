@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-routing-artifact-v2.schema.json",
   "title": "LandformCraft V2-3-02 global hydrology routing artifact",
+  "description": "Strict, version-frozen v2 contract for the V2-3-02 global hydrology routing artifact. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
   "required": [

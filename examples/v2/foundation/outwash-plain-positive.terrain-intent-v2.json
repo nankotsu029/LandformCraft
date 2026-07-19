@@ -1,0 +1,121 @@
+{
+  "intentVersion": 2,
+  "intentId": "outwash-plain-positive-v2",
+  "theme": "V2-10-02 OUTWASH_PLAIN deposition downstream of valley glacier with meltwater handoff",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "host-valley",
+      "kind": "VALLEY",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.2, 0.15], [0.5, 0.5], [0.8, 0.85]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "crossSection": "U_PROFILE",
+        "floorHalfWidthBlocks": { "min": 18, "max": 22 },
+        "shoulderWidthBlocks": { "min": 12, "max": 16 },
+        "maxDepthBlocks": { "min": 8, "max": 12 },
+        "mountainTransitionBandBlocks": 8,
+        "connectionRole": "NONE"
+      },
+      "priority": 20,
+      "provenance": { "source": "MANUAL", "sourceId": "outwash-plain-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "melt-outwash",
+      "kind": "RIVER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.78, 0.82], [0.9, 0.95]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "bankfullWidthBlocks": { "min": 4, "max": 6 },
+        "dischargeClass": "MEDIUM",
+        "minimumBedSlope01": 0.001,
+        "floodplainHandoffWidthBlocks": { "min": 8, "max": 12 },
+        "maxReachCount": 1,
+        "maxNodeDegree": 2
+      },
+      "priority": 15,
+      "provenance": { "source": "MANUAL", "sourceId": "outwash-plain-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "valley-ice",
+      "kind": "VALLEY_GLACIER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.25, 0.2], [0.5, 0.5], [0.75, 0.8]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "thicknessBlocks": { "min": 8, "max": 12 },
+        "halfWidthBlocks": { "min": 6, "max": 8 },
+        "flowAzimuthDegrees": 135,
+        "climatePreset": "COLD_ALPINE",
+        "meltwaterHandoffFeatureIdHint": "melt-outwash"
+      },
+      "priority": 35,
+      "provenance": { "source": "MANUAL", "sourceId": "outwash-plain-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "proglacial-outwash",
+      "kind": "OUTWASH_PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.72, 0.78], [0.98, 0.78], [0.98, 0.98], [0.72, 0.98], [0.72, 0.78]]]
+      },
+      "parameters": {
+        "sedimentThicknessBlocks": { "min": 2, "max": 4 },
+        "channelSpacingBlocks": { "min": 6, "max": 10 },
+        "flowAzimuthDegrees": 135,
+        "meltwaterHandoffFeatureIdHint": "melt-outwash"
+      },
+      "priority": 28,
+      "provenance": { "source": "MANUAL", "sourceId": "outwash-plain-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "ice-supported-by-valley",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:valley-ice",
+      "to": "feature:host-valley",
+      "strength": "HARD"
+    },
+    {
+      "id": "ice-drains-to-river",
+      "kind": "DRAINS_TO",
+      "from": "feature:valley-ice",
+      "to": "feature:melt-outwash",
+      "strength": "HARD"
+    },
+    {
+      "id": "outwash-downstream-of-ice",
+      "kind": "UPSTREAM_OF",
+      "from": "feature:valley-ice",
+      "to": "feature:proglacial-outwash",
+      "strength": "HARD"
+    },
+    {
+      "id": "outwash-drains-to-river",
+      "kind": "DRAINS_TO",
+      "from": "feature:proglacial-outwash",
+      "to": "feature:melt-outwash",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_ALPINE", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "outwash-plain-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

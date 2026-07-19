@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/volume-validation-artifact-v2.schema.json",
+  "title": "LandformCraft V2 volume validation evidence artifact",
+  "description": "Strict, version-frozen v2 contract for the V2 volume validation evidence artifact. Validation evidence only; it never authorizes generation or world mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["validationArtifactVersion", "sourcePlanChecksum", "validatorId", "validatorVersion", "report", "canonicalChecksum"],
+  "properties": {
+    "validationArtifactVersion": {"const": 1},
+    "sourcePlanChecksum": {"$ref": "#/$defs/checksum"},
+    "validatorId": {"const": "v2.volume.validation"},
+    "validatorVersion": {"const": "volume-validator-v1"},
+    "report": {"$ref": "#/$defs/report"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "report": {
+      "type": "object", "additionalProperties": false, "required": ["metrics", "issues"],
+      "properties": {
+        "metrics": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/metric"}},
+        "issues": {"type": "array", "maxItems": 2048, "items": {"$ref": "#/$defs/issue"}}
+      }
+    },
+    "metric": {
+      "type": "object", "additionalProperties": false,
+      "required": ["metricId", "metricVersion", "subject", "actualMillionths", "expected", "toleranceMillionths", "unit", "passed", "evidenceChecksum"],
+      "properties": {
+        "metricId": {"$ref": "#/$defs/id"}, "metricVersion": {"type": "integer", "minimum": 1},
+        "subject": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "\\S"},
+        "actualMillionths": {"$ref": "#/$defs/int64"},
+        "expected": {"$ref": "#/$defs/range"},
+        "toleranceMillionths": {"type": "integer", "minimum": 0}, "unit": {"$ref": "#/$defs/id"},
+        "passed": {"type": "boolean"}, "evidenceChecksum": {"$ref": "#/$defs/checksum"}
+      }
+    },
+    "range": {
+      "type": "object", "additionalProperties": false, "required": ["minimumMillionths", "maximumMillionths"],
+      "properties": {"minimumMillionths": {"$ref": "#/$defs/int64"}, "maximumMillionths": {"$ref": "#/$defs/int64"}}
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["issueId", "ruleId", "ruleVersion", "severity", "hardness", "references", "metricEvidence", "messageKey", "diagnosticLayerIds"],
+      "properties": {
+        "issueId": {"$ref": "#/$defs/id"}, "ruleId": {"$ref": "#/$defs/id"}, "ruleVersion": {"type": "integer", "minimum": 1},
+        "severity": {"enum": ["ERROR", "WARNING", "INFO"]}, "hardness": {"enum": ["HARD", "SOFT"]},
+        "references": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/reference"}},
+        "metricEvidence": {"type": "array", "maxItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+        "messageKey": {"$ref": "#/$defs/id"},
+        "diagnosticLayerIds": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/id"}}
+      }
+    },
+    "reference": {
+      "type": "object", "additionalProperties": false, "required": ["type", "id"],
+      "properties": {"type": {"enum": ["FEATURE", "CONSTRAINT", "MODULE", "FIELD", "STAGE"]}, "id": {"$ref": "#/$defs/id"}}
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["metric", "expectedMinimumMillionths", "expectedMaximumMillionths", "actualMillionths", "toleranceMillionths"],
+      "properties": {
+        "metric": {"$ref": "#/$defs/id"}, "expectedMinimumMillionths": {"$ref": "#/$defs/int64"},
+        "expectedMaximumMillionths": {"$ref": "#/$defs/int64"}, "actualMillionths": {"$ref": "#/$defs/int64"},
+        "toleranceMillionths": {"type": "integer", "minimum": 0}
+      }
+    },
+    "int64": {"type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807}
+  }
+}

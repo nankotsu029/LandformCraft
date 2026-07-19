@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/foundation-spring-validation-artifact-v2.schema.json",
+  "title": "LandformCraft V2-10-10 surface spring foundation validation artifact",
+  "description": "Strict, version-frozen v2 contract for the V2-10-10 surface spring foundation validation artifact. Validation evidence only; it never authorizes generation or world mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "contractVersion", "springFeatureId", "metrics", "issues", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "contractVersion": { "const": "foundation-spring-validation-artifact-v1" },
+    "springFeatureId": { "type": "string", "maxLength": 64 },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "issues": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/issue" } },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "sourceOwnershipOk", "riverSourceBindOk", "outflowContinuityOk", "hydrologySpringNodeOk",
+        "graphReachableOk", "budgetOk", "wholeTileOk", "exportOk", "orphanFree"
+      ],
+      "properties": {
+        "sourceOwnershipOk": { "type": "boolean" },
+        "riverSourceBindOk": { "type": "boolean" },
+        "outflowContinuityOk": { "type": "boolean" },
+        "hydrologySpringNodeOk": { "type": "boolean" },
+        "graphReachableOk": { "type": "boolean" },
+        "budgetOk": { "type": "boolean" },
+        "wholeTileOk": { "type": "boolean" },
+        "exportOk": { "type": "boolean" },
+        "orphanFree": { "type": "boolean" }
+      }
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleId", "message"],
+      "properties": {
+        "ruleId": { "type": "string", "maxLength": 64 },
+        "message": { "type": "string", "maxLength": 512 }
+      }
+    }
+  }
+}

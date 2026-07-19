@@ -1,5 +1,11 @@
-# V2-4 water-condition field example
+# V2-4／V2-5 environment examples
 
-`water-condition-plan-v2.json` はV2-4-05の400×400最小contract例です。最終地形／水系接続とclimate moistureから、drainage/water distance、groundwater proxy、tidal influence、salinity、hydroperiod、wetness、wetness residualの7 fieldをinteger-onlyで導出します。
+`water-condition-plan-v2.json` はV2-4-05の400×400最小contract例です。
 
-距離は最大64 blockのbounded supportに限定し、marine connectivityが明示されない限りsalinity／tidal influenceを0にします。implicit ocean fallbackとunbounded diffusionは拒否します。mangrove shaping、coral bathymetry、ecology placement、cave-local moisture、sidecar／Release capabilityは含みません。
+`environment-validation-artifact-v2.json` はV2-4-13の独立environment validation evidence例です。
+
+`snow-plan-v2.schema.json` はV2-4-14でRelease収容のために追加したsnow field Schemaです。PNG／preview indexの正本例はsource-treeに同梱せず、atomic publish後のcodec verifyで固定します。Release layoutは `examples/v2/release-environment/README.md` を参照してください。
+
+`volume-local-environment-plan-v2.json` はV2-5-14のpost-volume local environment／material／sparse placement契約例（`volume-local-environment-v1`）です。
+
+Release capabilityのPaper接続とfeature lifecycleの`SUPPORTED`昇格は含みません。

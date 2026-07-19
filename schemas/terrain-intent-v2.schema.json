@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/terrain-intent-v2.schema.json",
   "title": "LandformCraft TerrainIntent v2 diagnostic contract",
+  "description": "Strict, version-frozen v2 contract for the TerrainIntent v2 diagnostic contract. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
   "required": ["intentVersion", "intentId", "theme", "coordinateSystem", "features", "relations", "constraints", "environment", "mapReferences", "structures", "provenance"],
@@ -324,12 +325,294 @@
         "capeMode": { "enum": ["TWO_POINT_FIVE_D_ONLY", "LOCAL_VOLUME_REQUIRED"] }
       }
     },
+    "rockyCoastParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "rockShelfWidthBlocks", "rockExposure01", "shoreSide", "channelCount",
+        "capeOrBeachTransitionBandBlocks", "talusHandoffDepthBlocks"
+      ],
+      "properties": {
+        "rockShelfWidthBlocks": { "$ref": "#/$defs/positiveIntRange64" },
+        "rockExposure01": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0.05, "maximum": 1, "multipleOf": 0.000001 },
+            "max": { "type": "number", "minimum": 0.05, "maximum": 1, "multipleOf": 0.000001 }
+          }
+        },
+        "shoreSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "channelCount": { "$ref": "#/$defs/positiveIntRange8" },
+        "capeOrBeachTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "talusHandoffDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        }
+      }
+    },
+    "seaCliffParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "cliffHeightBlocks", "talusWidthBlocks", "notchDepthBlocks",
+        "seawardSide", "supportHalfExtentXZBlocks", "coastTransitionBandBlocks"
+      ],
+      "properties": {
+        "cliffHeightBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 128 }
+          }
+        },
+        "talusWidthBlocks": { "$ref": "#/$defs/positiveIntRange64" },
+        "notchDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        },
+        "seawardSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "supportHalfExtentXZBlocks": { "$ref": "#/$defs/positiveIntRange64" },
+        "coastTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 }
+      }
+    },
     "backshoreParameters": {
       "type": "object", "additionalProperties": false,
       "required": ["elevationAboveWaterBlocks", "grassCover01"],
       "properties": {
         "elevationAboveWaterBlocks": { "$ref": "#/$defs/nonNegativeIntRange" },
         "grassCover01": { "$ref": "#/$defs/unitRange" }
+      }
+    },
+    "plainParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": ["baseElevationAboveDatumBlocks", "microReliefBlocks", "groundwaterHandoffDepthBlocks"],
+      "properties": {
+        "baseElevationAboveDatumBlocks": { "$ref": "#/$defs/nonNegativeIntRange" },
+        "microReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 8 }
+          }
+        },
+        "groundwaterHandoffDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        }
+      }
+    },
+    "hillRangeParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ridgeHalfWidthBlocks", "maxReliefBlocks", "ridgeStationCount", "saddleCount", "plainTransitionBandBlocks"],
+      "properties": {
+        "ridgeHalfWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        },
+        "maxReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 64 }
+          }
+        },
+        "ridgeStationCount": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 8 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 8 }
+          }
+        },
+        "saddleCount": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 7 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 7 }
+          }
+        },
+        "plainTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 }
+      }
+    },
+    "mountainRangeParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "peakCount", "ridgeHalfWidthBlocks", "maxReliefBlocks", "saddleCount",
+        "spurCount", "passCount", "foothillBandBlocks", "valleyTransitionBandBlocks"
+      ],
+      "properties": {
+        "peakCount": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 8 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 8 }
+          }
+        },
+        "ridgeHalfWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 64 }
+          }
+        },
+        "maxReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 16, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 16, "maximum": 128 }
+          }
+        },
+        "saddleCount": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 7 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 7 }
+          }
+        },
+        "spurCount": { "type": "integer", "minimum": 0, "maximum": 8 },
+        "passCount": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "foothillBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "valleyTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 }
+      }
+    },
+    "valleyParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "crossSection", "floorHalfWidthBlocks", "shoulderWidthBlocks", "maxDepthBlocks",
+        "mountainTransitionBandBlocks", "connectionRole"
+      ],
+      "properties": {
+        "crossSection": { "enum": ["V_PROFILE", "U_PROFILE"] },
+        "floorHalfWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 64 }
+          }
+        },
+        "shoulderWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        },
+        "maxDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 64 }
+          }
+        },
+        "mountainTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "connectionRole": { "enum": ["NONE", "FJORD_HEAD", "RIVER_CORRIDOR"] }
+      }
+    },
+    "riverParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bankfullWidthBlocks", "dischargeClass", "minimumBedSlope01",
+        "floodplainHandoffWidthBlocks", "maxReachCount", "maxNodeDegree"
+      ],
+      "properties": {
+        "bankfullWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 64 }
+          }
+        },
+        "dischargeClass": { "enum": ["SMALL", "MEDIUM", "LARGE"] },
+        "minimumBedSlope01": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "multipleOf": 0.000001 },
+        "floodplainHandoffWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 128 }
+          }
+        },
+        "maxReachCount": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "maxNodeDegree": { "type": "integer", "minimum": 1, "maximum": 4 }
+      }
+    },
+    "floodplainParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": ["riverAdjacencyBandBlocks", "groundwaterHandoffDepthBlocks", "microReliefBlocks"],
+      "properties": {
+        "riverAdjacencyBandBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        },
+        "groundwaterHandoffDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        },
+        "microReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 8 }
+          }
+        }
+      }
+    },
+    "marshParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "hydroperiodBlocks", "wetness01", "openWaterShare01",
+        "microReliefBlocks", "groundwaterMinDepthBlocks"
+      ],
+      "properties": {
+        "hydroperiodBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 64 }
+          }
+        },
+        "wetness01": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0.2, "maximum": 1, "multipleOf": 0.000001 },
+            "max": { "type": "number", "minimum": 0.2, "maximum": 1, "multipleOf": 0.000001 }
+          }
+        },
+        "openWaterShare01": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0, "maximum": 0.7, "multipleOf": 0.000001 },
+            "max": { "type": "number", "minimum": 0, "maximum": 0.7, "multipleOf": 0.000001 }
+          }
+        },
+        "microReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 8 }
+          }
+        },
+        "groundwaterMinDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        }
       }
     },
     "meanderingRiverParameters": {
@@ -391,6 +674,43 @@
           "properties": {
             "min": { "type": "integer", "minimum": 1, "maximum": 128 },
             "max": { "type": "integer", "minimum": 1, "maximum": 128 }
+          }
+        },
+        "crossSection": { "enum": ["V", "U", "TERRACED_V", "TERRACED_U"] },
+        "terraceCount": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "terraceWidthBlocks": { "type": "integer", "minimum": 0, "maximum": 32 }
+      }
+    },
+    "submarineCanyonParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "floorWidthBlocks", "rimWidthBlocks", "additionalCarveDepthBlocks", "crossSection",
+        "terraceCount", "terraceWidthBlocks"
+      ],
+      "properties": {
+        "floorWidthBlocks": {
+          "type": "object", "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 64 }
+          }
+        },
+        "rimWidthBlocks": {
+          "type": "object", "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 256 }
+          }
+        },
+        "additionalCarveDepthBlocks": {
+          "type": "object", "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 64 }
           }
         },
         "crossSection": { "enum": ["V", "U", "TERRACED_V", "TERRACED_U"] },
@@ -476,6 +796,87 @@
         },
         "tidalRangeBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
         "edgeKind": { "const": "BIDIRECTIONAL" }
+      }
+    },
+    "mangroveWetlandParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["microReliefBlocks", "waterloggedShare01"],
+      "properties": {
+        "microReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 4 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 4 }
+          }
+        },
+        "waterloggedShare01": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0.1, "maximum": 0.9, "multipleOf": 0.000001 },
+            "max": { "type": "number", "minimum": 0.1, "maximum": 0.9, "multipleOf": 0.000001 }
+          }
+        }
+      }
+    },
+    "coralReefParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": ["reefCrestDepthBlocks", "reefWidthBlocks", "outerSlopeDegrees"],
+      "properties": {
+        "reefCrestDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 4 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 4 }
+          }
+        },
+        "reefWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 18, "maximum": 46 },
+            "max": { "type": "integer", "minimum": 18, "maximum": 46 }
+          }
+        },
+        "outerSlopeDegrees": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 18, "maximum": 42 },
+            "max": { "type": "integer", "minimum": 18, "maximum": 42 }
+          }
+        }
+      }
+    },
+    "lagoonParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": ["depthBlocks"],
+      "properties": {
+        "depthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 5, "maximum": 14 },
+            "max": { "type": "integer", "minimum": 5, "maximum": 14 }
+          }
+        }
+      }
+    },
+    "reefPassParameters": {
+      "type": "object", "additionalProperties": false,
+      "required": ["widthBlocks", "waterDepthBlocks"],
+      "properties": {
+        "widthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 10, "maximum": 14 },
+            "max": { "type": "integer", "minimum": 10, "maximum": 14 }
+          }
+        },
+        "waterDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 7 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 7 }
+          }
+        }
       }
     },
     "fjordParameters": {
@@ -593,15 +994,476 @@
         }
       }
     },
+    "singleIslandParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "radiusBlocks", "summitHeightBlocksAboveSea", "shoreBandWidthBlocks",
+        "radialDrainage01", "submarineApronDepthBlocks"
+      ],
+      "properties": {
+        "radiusBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 256 }
+          }
+        },
+        "summitHeightBlocksAboveSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 256 }
+          }
+        },
+        "shoreBandWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        },
+        "radialDrainage01": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0, "maximum": 1, "multipleOf": 0.000001 },
+            "max": { "type": "number", "minimum": 0, "maximum": 1, "multipleOf": 0.000001 }
+          }
+        },
+        "submarineApronDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 64 }
+          }
+        }
+      }
+    },
+    "archipelagoParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["islands", "submarineSaddleDepthBlocks", "minDryLandGapBlocks"],
+      "properties": {
+        "islands": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pointId", "radiusBlocks", "summitHeightBlocksAboveSea"],
+            "properties": {
+              "pointId": { "type": "string", "minLength": 1, "maxLength": 64 },
+              "radiusBlocks": { "type": "integer", "minimum": 8, "maximum": 256 },
+              "summitHeightBlocksAboveSea": { "type": "integer", "minimum": 8, "maximum": 256 }
+            }
+          }
+        },
+        "submarineSaddleDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 64 }
+          }
+        },
+        "minDryLandGapBlocks": { "type": "integer", "minimum": 4, "maximum": 64 }
+      }
+    },
+    "volcanicConeParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseRadiusBlocks", "summitHeightBlocksAboveSea", "craterRadiusBlocks",
+        "craterFloorDepthBlocks", "radialDrainage01"
+      ],
+      "properties": {
+        "baseRadiusBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 256 }
+          }
+        },
+        "summitHeightBlocksAboveSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 256 }
+          }
+        },
+        "craterRadiusBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 64 }
+          }
+        },
+        "craterFloorDepthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 64 }
+          }
+        },
+        "radialDrainage01": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0, "maximum": 1, "multipleOf": 0.000001 },
+            "max": { "type": "number", "minimum": 0, "maximum": 1, "multipleOf": 0.000001 }
+          }
+        }
+      }
+    },
+    "oceanBasinParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxDepthBlocksBelowSea", "floorReliefBlocks"],
+      "properties": {
+        "maxDepthBlocksBelowSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 16, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 16, "maximum": 256 }
+          }
+        },
+        "floorReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 16 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 16 }
+          }
+        }
+      }
+    },
+    "continentalShelfParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shelfWidthBlocks", "shelfDepthBlocksBelowSea", "coastDistanceBandBlocks", "seawardSide"
+      ],
+      "properties": {
+        "shelfWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 128 }
+          }
+        },
+        "shelfDepthBlocksBelowSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 64 }
+          }
+        },
+        "coastDistanceBandBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 32 }
+          }
+        },
+        "seawardSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] }
+      }
+    },
+    "continentalSlopeParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slopeWidthBlocks", "upperDepthBlocksBelowSea", "lowerDepthBlocksBelowSea", "maxGradient01"
+      ],
+      "properties": {
+        "slopeWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 128 }
+          }
+        },
+        "upperDepthBlocksBelowSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 128 }
+          }
+        },
+        "lowerDepthBlocksBelowSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 1, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 1, "maximum": 256 }
+          }
+        },
+        "maxGradient01": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0.01, "maximum": 1, "multipleOf": 0.000001 },
+            "max": { "type": "number", "minimum": 0.01, "maximum": 1, "multipleOf": 0.000001 }
+          }
+        }
+      }
+    },
+    "caveEntranceParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surfaceOffsetBlocks", "minimumOpeningBlocks", "approachLengthBlocks",
+        "roofClearanceBlocks", "targetEntranceNodeId"
+      ],
+      "properties": {
+        "surfaceOffsetBlocks": { "type": "integer", "minimum": -64, "maximum": -1 },
+        "minimumOpeningBlocks": { "type": "integer", "minimum": 2, "maximum": 16 },
+        "approachLengthBlocks": { "type": "integer", "minimum": 2, "maximum": 32 },
+        "roofClearanceBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "targetEntranceNodeId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "undergroundRiverParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channelRadiusBlocks", "fluidDepthBlocks", "minimumAirPocketBlocks",
+        "sourceCaveNodeId", "outletCaveNodeId", "fluidBodyId"
+      ],
+      "properties": {
+        "channelRadiusBlocks": { "$ref": "#/$defs/intRange" },
+        "fluidDepthBlocks": { "$ref": "#/$defs/intRange" },
+        "minimumAirPocketBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "sourceCaveNodeId": { "$ref": "#/$defs/slug" },
+        "outletCaveNodeId": { "$ref": "#/$defs/slug" },
+        "fluidBodyId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "lavaTubeParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tubeRadiusBlocks", "roofClearanceBlocks", "supportRadiusBlocks"],
+      "properties": {
+        "tubeRadiusBlocks": { "$ref": "#/$defs/intRange" },
+        "roofClearanceBlocks": { "$ref": "#/$defs/intRange" },
+        "supportRadiusBlocks": { "$ref": "#/$defs/intRange" },
+        "entranceOffsetBlocks": { "type": "integer", "minimum": 0, "maximum": 32 }
+      }
+    },
+    "floodedCaveParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fluidBodyId", "waterSurfaceYBlocks", "hostCaveFeatureIdHint"],
+      "properties": {
+        "fluidBodyId": { "$ref": "#/$defs/slug" },
+        "waterSurfaceYBlocks": { "type": "integer", "minimum": -512, "maximum": 512 },
+        "hostCaveFeatureIdHint": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "glacialIceParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "thicknessBlocks", "halfWidthBlocks", "flowAzimuthDegrees",
+        "climatePreset", "meltwaterHandoffFeatureIdHint"
+      ],
+      "properties": {
+        "thicknessBlocks": { "$ref": "#/$defs/intRange" },
+        "halfWidthBlocks": { "$ref": "#/$defs/intRange" },
+        "flowAzimuthDegrees": { "type": "integer", "minimum": 0, "maximum": 359 },
+        "climatePreset": { "enum": ["COLD_ALPINE", "COLD_MARITIME", "COOL_HIGH_ALTITUDE"] },
+        "meltwaterHandoffFeatureIdHint": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "moraineFieldParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ridgeCount", "ridgeHalfWidthBlocks", "sedimentThicknessBlocks", "flowAzimuthDegrees"
+      ],
+      "properties": {
+        "ridgeCount": { "$ref": "#/$defs/intRange" },
+        "ridgeHalfWidthBlocks": { "$ref": "#/$defs/intRange" },
+        "sedimentThicknessBlocks": { "$ref": "#/$defs/intRange" },
+        "flowAzimuthDegrees": { "type": "integer", "minimum": 0, "maximum": 359 }
+      }
+    },
+    "outwashPlainParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sedimentThicknessBlocks", "channelSpacingBlocks", "flowAzimuthDegrees",
+        "meltwaterHandoffFeatureIdHint"
+      ],
+      "properties": {
+        "sedimentThicknessBlocks": { "$ref": "#/$defs/intRange" },
+        "channelSpacingBlocks": { "$ref": "#/$defs/intRange" },
+        "flowAzimuthDegrees": { "type": "integer", "minimum": 0, "maximum": 359 },
+        "meltwaterHandoffFeatureIdHint": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "escarpmentParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scarpHeightBlocks", "talusWidthBlocks", "floorDropBlocks",
+        "dropSide", "plateauTransitionBandBlocks"
+      ],
+      "properties": {
+        "scarpHeightBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 128 }
+          }
+        },
+        "talusWidthBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 2, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 2, "maximum": 64 }
+          }
+        },
+        "floorDropBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 128 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 128 }
+          }
+        },
+        "dropSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "plateauTransitionBandBlocks": { "type": "integer", "minimum": 2, "maximum": 32 }
+      }
+    },
+    "plateauParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capElevationBlocks", "capReliefBlocks", "profile", "escarpmentTransitionBandBlocks"
+      ],
+      "properties": {
+        "capElevationBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 96 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 96 }
+          }
+        },
+        "capReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 0, "maximum": 8 },
+            "max": { "type": "integer", "minimum": 0, "maximum": 8 }
+          }
+        },
+        "profile": { "enum": ["MESA", "BUTTE", "GENERIC"] },
+        "escarpmentTransitionBandBlocks": { "type": "integer", "minimum": 2, "maximum": 32 }
+      }
+    },
+    "abyssalPlainParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["floorDepthBlocksBelowSea", "floorReliefBlocks"],
+      "properties": {
+        "floorDepthBlocksBelowSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 16, "maximum": 256 },
+            "max": { "type": "integer", "minimum": 16, "maximum": 256 }
+          }
+        },
+        "floorReliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 0, "maximum": 8 },
+            "max": { "type": "integer", "minimum": 0, "maximum": 8 }
+          }
+        }
+      }
+    },
+    "seamountParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseRadiusBlocks", "reliefBlocks", "summitDepthBlocksBelowSea"],
+      "properties": {
+        "baseRadiusBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 64 }
+          }
+        },
+        "reliefBlocks": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 4, "maximum": 64 },
+            "max": { "type": "integer", "minimum": 4, "maximum": 64 }
+          }
+        },
+        "summitDepthBlocksBelowSea": {
+          "type": "object", "additionalProperties": false, "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 8, "maximum": 240 },
+            "max": { "type": "integer", "minimum": 8, "maximum": 240 }
+          }
+        }
+      }
+    },
+    "sinkholeParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collapseRadiusBlocks", "roofClearanceBlocks", "lossVolumeBlocks", "targetEntranceNodeId"
+      ],
+      "properties": {
+        "collapseRadiusBlocks": { "$ref": "#/$defs/intRange" },
+        "roofClearanceBlocks": { "$ref": "#/$defs/intRange" },
+        "lossVolumeBlocks": { "$ref": "#/$defs/intRange" },
+        "targetEntranceNodeId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "karstSpringParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["springDischargeBlocks", "outletHint"],
+      "properties": {
+        "springDischargeBlocks": { "$ref": "#/$defs/intRange" },
+        "outletHint": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "springParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outflowRadiusBlocks", "dischargeBlocks", "supportRadiusBlocks"],
+      "properties": {
+        "outflowRadiusBlocks": { "$ref": "#/$defs/intRange" },
+        "dischargeBlocks": { "$ref": "#/$defs/intRange" },
+        "supportRadiusBlocks": { "$ref": "#/$defs/intRange" }
+      }
+    },
+    "oxbowLakeParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetDepthBlocks", "shoreWidthBlocks", "wetlandHandoffWidthBlocks", "supportRadiusBlocks"],
+      "properties": {
+        "targetDepthBlocks": { "$ref": "#/$defs/intRange" },
+        "shoreWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "wetlandHandoffWidthBlocks": { "$ref": "#/$defs/intRange" },
+        "supportRadiusBlocks": { "$ref": "#/$defs/intRange" },
+        "cutoffReachIdHint": { "type": "string", "maxLength": 64 }
+      }
+    },
     "noParameters": { "type": "object", "additionalProperties": false, "maxProperties": 0 },
     "featureKind": {
       "enum": [
-        "SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "BACKSHORE_PLAINS",
+        "SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "ROCKY_COAST", "BACKSHORE_PLAINS",
+        "PLAIN", "HILL_RANGE", "MOUNTAIN_RANGE", "VALLEY", "RIVER", "FLOODPLAIN", "MARSH",
         "FJORD", "GLACIAL_MOUNTAIN_RANGE", "MEANDERING_RIVER", "LAKE", "DELTA", "VOLCANIC_ARCHIPELAGO",
-        "VOLCANIC_CALDERA", "LAVA_FLOW_FIELD", "CANYON", "BEDROCK_RIVER", "WATERFALL",
+        "VOLCANIC_CALDERA", "LAVA_FLOW_FIELD", "SINGLE_ISLAND", "ARCHIPELAGO", "VOLCANIC_CONE",
+        "OCEAN_BASIN", "ABYSSAL_PLAIN", "SEAMOUNT", "CONTINENTAL_SHELF", "CONTINENTAL_SLOPE", "SUBMARINE_CANYON",
+        "CANYON", "BEDROCK_RIVER", "WATERFALL",
         "MANGROVE_WETLAND", "TIDAL_CHANNEL_NETWORK", "ALPINE_MOUNTAIN_RANGE", "GLACIAL_CIRQUE_FIELD",
-        "CORAL_REEF", "LAGOON", "REEF_PASS", "CAVE_NETWORK", "CAVE_ENTRANCE", "LUSH_CAVE",
-        "SEA_CLIFF", "OVERHANG", "SKY_ISLAND_GROUP"
+        "CORAL_REEF", "LAGOON", "REEF_PASS", "CAVE_NETWORK", "CAVE_ENTRANCE", "UNDERGROUND_RIVER",
+        "SINKHOLE", "KARST_SPRING", "FLOODED_CAVE", "LUSH_CAVE",
+        "SEA_CLIFF", "OVERHANG", "SKY_ISLAND_GROUP",
+        "VALLEY_GLACIER", "ICE_CAP", "ICE_SHEET",
+        "MORAINE_FIELD", "OUTWASH_PLAIN",
+        "ESCARPMENT", "PLATEAU", "LAVA_TUBE", "SPRING", "OXBOW_LAKE"
       ]
     },
     "provenance": {
@@ -630,19 +1492,54 @@
         { "if": { "properties": { "kind": { "const": "BREAKWATER_HARBOR" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/breakwaterParameters" } } } },
         { "if": { "properties": { "kind": { "const": "HARBOR_BASIN" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/harborBasinParameters" } } } },
         { "if": { "properties": { "kind": { "const": "ROCKY_CAPE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/rockyCapeParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "ROCKY_COAST" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/rockyCoastParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "SEA_CLIFF" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/seaCliffParameters" } } } },
         { "if": { "properties": { "kind": { "const": "BACKSHORE_PLAINS" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/backshoreParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "PLAIN" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/plainParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "HILL_RANGE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/hillRangeParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "MOUNTAIN_RANGE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/mountainRangeParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "VALLEY" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/valleyParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "RIVER" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/riverParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "FLOODPLAIN" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/floodplainParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "MARSH" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/marshParameters" } } } },
         { "if": { "properties": { "kind": { "const": "MEANDERING_RIVER" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/meanderingRiverParameters" } } } },
         { "if": { "properties": { "kind": { "const": "LAKE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/lakeParameters" } } } },
         { "if": { "properties": { "kind": { "const": "CANYON" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/canyonParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "SUBMARINE_CANYON" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/submarineCanyonParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "CAVE_ENTRANCE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/caveEntranceParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "UNDERGROUND_RIVER" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/undergroundRiverParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "LAVA_TUBE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/lavaTubeParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "SPRING" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/springParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "OXBOW_LAKE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/oxbowLakeParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "SINKHOLE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/sinkholeParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "KARST_SPRING" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/karstSpringParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "FLOODED_CAVE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/floodedCaveParameters" } } } },
+        { "if": { "properties": { "kind": { "enum": ["VALLEY_GLACIER", "ICE_CAP", "ICE_SHEET"] } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/glacialIceParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "MORAINE_FIELD" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/moraineFieldParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "OUTWASH_PLAIN" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/outwashPlainParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "ESCARPMENT" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/escarpmentParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "PLATEAU" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/plateauParameters" } } } },
         { "if": { "properties": { "kind": { "const": "WATERFALL" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/waterfallParameters" } } } },
         { "if": { "properties": { "kind": { "const": "DELTA" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/deltaParameters" } } } },
         { "if": { "properties": { "kind": { "const": "TIDAL_CHANNEL_NETWORK" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/tidalChannelParameters" } } } },
         { "if": { "properties": { "kind": { "const": "FJORD" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/fjordParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "MANGROVE_WETLAND" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/mangroveWetlandParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "CORAL_REEF" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/coralReefParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "LAGOON" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/lagoonParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "REEF_PASS" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/reefPassParameters" } } } },
         { "if": { "properties": { "kind": { "enum": ["ALPINE_MOUNTAIN_RANGE", "GLACIAL_MOUNTAIN_RANGE"] } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/mountainParameters" } } } },
         { "if": { "properties": { "kind": { "const": "VOLCANIC_ARCHIPELAGO" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/volcanicArchipelagoParameters" } } } },
         { "if": { "properties": { "kind": { "const": "VOLCANIC_CALDERA" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/volcanicCalderaParameters" } } } },
         { "if": { "properties": { "kind": { "const": "LAVA_FLOW_FIELD" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/lavaFlowParameters" } } } },
-        { "if": { "properties": { "kind": { "not": { "enum": ["SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "BACKSHORE_PLAINS", "MEANDERING_RIVER", "LAKE", "CANYON", "WATERFALL", "DELTA", "TIDAL_CHANNEL_NETWORK", "FJORD", "ALPINE_MOUNTAIN_RANGE", "GLACIAL_MOUNTAIN_RANGE", "VOLCANIC_ARCHIPELAGO", "VOLCANIC_CALDERA", "LAVA_FLOW_FIELD"] } } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/noParameters" } } } }
+        { "if": { "properties": { "kind": { "const": "SINGLE_ISLAND" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/singleIslandParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "ARCHIPELAGO" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/archipelagoParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "VOLCANIC_CONE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/volcanicConeParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "OCEAN_BASIN" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/oceanBasinParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "ABYSSAL_PLAIN" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/abyssalPlainParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "SEAMOUNT" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/seamountParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "CONTINENTAL_SHELF" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/continentalShelfParameters" } } } },
+        { "if": { "properties": { "kind": { "const": "CONTINENTAL_SLOPE" } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/continentalSlopeParameters" } } } },
+        { "if": { "properties": { "kind": { "not": { "enum": ["SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "ROCKY_COAST", "SEA_CLIFF", "BACKSHORE_PLAINS", "PLAIN", "HILL_RANGE", "MOUNTAIN_RANGE", "VALLEY", "RIVER", "FLOODPLAIN", "MARSH", "MEANDERING_RIVER", "LAKE", "OXBOW_LAKE", "CANYON", "SUBMARINE_CANYON", "CAVE_ENTRANCE", "UNDERGROUND_RIVER", "LAVA_TUBE", "SPRING", "SINKHOLE", "KARST_SPRING", "FLOODED_CAVE", "VALLEY_GLACIER", "ICE_CAP", "ICE_SHEET", "MORAINE_FIELD", "OUTWASH_PLAIN", "ESCARPMENT", "PLATEAU", "WATERFALL", "DELTA", "TIDAL_CHANNEL_NETWORK", "FJORD", "MANGROVE_WETLAND", "CORAL_REEF", "LAGOON", "REEF_PASS", "ALPINE_MOUNTAIN_RANGE", "GLACIAL_MOUNTAIN_RANGE", "VOLCANIC_ARCHIPELAGO", "VOLCANIC_CALDERA", "LAVA_FLOW_FIELD", "SINGLE_ISLAND", "ARCHIPELAGO", "VOLCANIC_CONE", "OCEAN_BASIN", "ABYSSAL_PLAIN", "SEAMOUNT", "CONTINENTAL_SHELF", "CONTINENTAL_SLOPE"] } } } }, "then": { "properties": { "parameters": { "$ref": "#/$defs/noParameters" } } } }
       ]
     },
     "relation": {
@@ -650,7 +1547,7 @@
       "required": ["id", "kind", "from", "to", "strength"],
       "properties": {
         "id": { "$ref": "#/$defs/slug" },
-        "kind": { "enum": ["CONNECTS_TO", "DRAINS_TO", "EMPTIES_INTO", "WITHIN", "FLANKS", "ADJACENT_TO", "ENCLOSED_BY", "ENCLOSES", "ON_PATH_OF", "ORIGINATES_AT", "REACHABLE_FROM", "ENTRANCE_OF", "CARVES_FLANK_OF", "CARVES_THROUGH", "SUPPORTED_BY", "OVERLAPS", "EXCLUDES", "UPSTREAM_OF"] },
+        "kind": { "enum": ["CONNECTS_TO", "DRAINS_TO", "EMPTIES_INTO", "WITHIN", "FLANKS", "ADJACENT_TO", "ENCLOSED_BY", "ENCLOSES", "ON_PATH_OF", "ORIGINATES_AT", "REACHABLE_FROM", "ENTRANCE_OF", "CARVES_FLANK_OF", "CARVES_THROUGH", "SUPPORTED_BY", "SUPPORTS_FROM", "OVERLAPS", "EXCLUDES", "UPSTREAM_OF"] },
         "from": { "type": "string", "pattern": "^feature:[a-z0-9][a-z0-9._-]{0,63}$" },
         "to": { "type": "string", "pattern": "^(?:feature:[a-z0-9][a-z0-9._-]{0,63}|boundary:(?:NORTH|EAST|SOUTH|WEST))$" },
         "strength": { "enum": ["HARD", "SOFT"] },

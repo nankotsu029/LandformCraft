@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "algorithmVersion": "image-land-water-extract-v1",
+  "sourceChecksum": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "semanticChecksum": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "confirmationState": "UNCONFIRMED",
+  "width": 4,
+  "length": 4,
+  "waterCells": 8,
+  "landCells": 6,
+  "unknownCells": 2,
+  "sourceRelativePath": "maps/coast-sketch.png"
+}

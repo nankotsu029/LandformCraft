@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-snapshot-plan-v2.schema.json",
+  "title": "LandformCraft V2-6-04 Release 2 snapshot-all index",
+  "description": "Strict, version-frozen v2 contract for the V2-6-04 Release 2 snapshot-all index. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "snapshotContractVersion", "placementId", "operationId", "worldId",
+    "placementPlanBinding", "envelopeBinding", "reservationBinding", "snapshotFileFormatVersion",
+    "tiles", "totalBlocks", "totalFileBytes", "budget", "createdAt", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "snapshotContractVersion": {"const": "release-2-placement-snapshot-v1"},
+    "placementId": {"type": "string", "format": "uuid"},
+    "operationId": {"type": "string", "format": "uuid"},
+    "worldId": {"type": "string", "format": "uuid"},
+    "placementPlanBinding": {"$ref": "#/$defs/placementPlanBinding"},
+    "envelopeBinding": {"$ref": "#/$defs/envelopeBinding"},
+    "reservationBinding": {"$ref": "#/$defs/reservationBinding"},
+    "snapshotFileFormatVersion": {"const": "release-2-placement-snapshot-file-v1"},
+    "tiles": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/tileSnapshot"}
+    },
+    "totalBlocks": {"type": "integer", "minimum": 1},
+    "totalFileBytes": {"type": "integer", "minimum": 1},
+    "budget": {"$ref": "#/$defs/budget"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "minY", "minZ", "maxX", "maxY", "maxZ"],
+      "properties": {
+        "minX": {"type": "integer"},
+        "minY": {"type": "integer"},
+        "minZ": {"type": "integer"},
+        "maxX": {"type": "integer"},
+        "maxY": {"type": "integer"},
+        "maxZ": {"type": "integer"}
+      }
+    },
+    "placementPlanBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourcePlacementPlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourcePlacementPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-snapshot-plan-binding-v1"}
+      }
+    },
+    "envelopeBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceEnvelopePlanChecksum", "sourceMutationEnvelopeChecksum",
+        "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceEnvelopePlanChecksum": {"$ref": "#/$defs/checksum"},
+        "sourceMutationEnvelopeChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-snapshot-envelope-binding-v1"}
+      }
+    },
+    "reservationBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "reservationChecksum", "confirmationHash", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "reservationChecksum": {"$ref": "#/$defs/checksum"},
+        "confirmationHash": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-snapshot-reservation-binding-v1"}
+      }
+    },
+    "tileSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tileId", "tileIndex", "effectAabb", "snapshotFile", "fileBytes", "blockCount",
+        "artifactChecksum", "blockStateStreamChecksum"
+      ],
+      "properties": {
+        "tileId": {"type": "string", "pattern": "^tile-x[0-9]+-z[0-9]+$"},
+        "tileIndex": {"type": "integer", "minimum": 0, "maximum": 1023},
+        "effectAabb": {"$ref": "#/$defs/aabb"},
+        "snapshotFile": {"type": "string", "pattern": "^tile-x[0-9]+-z[0-9]+\\.lfcsnap$"},
+        "fileBytes": {"type": "integer", "minimum": 1},
+        "blockCount": {"type": "integer", "minimum": 1},
+        "artifactChecksum": {"$ref": "#/$defs/checksum"},
+        "blockStateStreamChecksum": {"$ref": "#/$defs/checksum"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumTiles", "maximumSnapshotBytes", "maximumPaletteEntriesPerTile",
+        "estimatedCanonicalBytes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "release-2-placement-snapshot-budget-v1"},
+        "maximumTiles": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "maximumSnapshotBytes": {"type": "integer", "minimum": 1},
+        "maximumPaletteEntriesPerTile": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+      }
+    }
+  }
+}

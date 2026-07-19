@@ -9,6 +9,7 @@ import com.github.nankotsu029.landformcraft.core.DoctorService;
 import com.github.nankotsu029.landformcraft.core.LandformException;
 import com.github.nankotsu029.landformcraft.core.LandformErrorCode;
 import com.github.nankotsu029.landformcraft.core.BlueprintCompiler;
+import com.github.nankotsu029.landformcraft.core.v2.operations.OperationalMetricsCollectorV2;
 import com.github.nankotsu029.landformcraft.cli.LandformCraftCli;
 import com.github.nankotsu029.landformcraft.format.Sha256;
 import com.github.nankotsu029.landformcraft.model.ActorIdentity;
@@ -56,12 +57,17 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     private static final String ROOT = "/landformcraft ";
 
     private final PlacementApplicationService placements;
+    private final PaperRelease2PlacementServiceV2 release2Placements;
+    private final PaperPlacementUndoServiceV2 release2Undo;
+    private final PaperPlacementRecoveryServiceV2 release2Recovery;
+    private final PaperOperationalOperationsServiceV2 release2Operations;
     private final PaperWorldEditSelectionService selections;
     private final PaperMainThreadDispatcher dispatcher;
     private final PaperWorkflowService workflow;
     private final SnapshotCleanupService cleanup;
     private final CustomAssetService assets;
     private final Path dataRoot;
+    private final ConsoleConfirmationFileStore consoleConfirmations;
     private final String pluginVersion;
     private final String worldEditStatus;
     private final Map<UUID, PromptSession> prompts = new ConcurrentHashMap<>();
@@ -80,13 +86,89 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             String pluginVersion,
             String worldEditStatus
     ) {
+        this(placements, null, null, null, selections, dispatcher, workflow, cleanup, assets, dataRoot,
+                pluginVersion, worldEditStatus);
+    }
+
+    public LandformCraftCommand(
+            PlacementApplicationService placements,
+            PaperPlacementUndoServiceV2 release2Undo,
+            PaperWorldEditSelectionService selections,
+            PaperMainThreadDispatcher dispatcher,
+            PaperWorkflowService workflow,
+            SnapshotCleanupService cleanup,
+            CustomAssetService assets,
+            Path dataRoot,
+            String pluginVersion,
+            String worldEditStatus
+    ) {
+        this(placements, release2Undo, null, null, selections, dispatcher, workflow, cleanup, assets,
+                dataRoot, pluginVersion, worldEditStatus);
+    }
+
+    public LandformCraftCommand(
+            PlacementApplicationService placements,
+            PaperPlacementUndoServiceV2 release2Undo,
+            PaperPlacementRecoveryServiceV2 release2Recovery,
+            PaperWorldEditSelectionService selections,
+            PaperMainThreadDispatcher dispatcher,
+            PaperWorkflowService workflow,
+            SnapshotCleanupService cleanup,
+            CustomAssetService assets,
+            Path dataRoot,
+            String pluginVersion,
+            String worldEditStatus
+    ) {
+        this(placements, release2Undo, release2Recovery, null, selections, dispatcher, workflow, cleanup,
+                assets, dataRoot, pluginVersion, worldEditStatus);
+    }
+
+    public LandformCraftCommand(
+            PlacementApplicationService placements,
+            PaperPlacementUndoServiceV2 release2Undo,
+            PaperPlacementRecoveryServiceV2 release2Recovery,
+            PaperOperationalOperationsServiceV2 release2Operations,
+            PaperWorldEditSelectionService selections,
+            PaperMainThreadDispatcher dispatcher,
+            PaperWorkflowService workflow,
+            SnapshotCleanupService cleanup,
+            CustomAssetService assets,
+            Path dataRoot,
+            String pluginVersion,
+            String worldEditStatus
+    ) {
+        this(placements, null, release2Undo, release2Recovery, release2Operations, selections,
+                dispatcher, workflow, cleanup, assets, dataRoot, pluginVersion, worldEditStatus);
+    }
+
+    public LandformCraftCommand(
+            PlacementApplicationService placements,
+            PaperRelease2PlacementServiceV2 release2Placements,
+            PaperPlacementUndoServiceV2 release2Undo,
+            PaperPlacementRecoveryServiceV2 release2Recovery,
+            PaperOperationalOperationsServiceV2 release2Operations,
+            PaperWorldEditSelectionService selections,
+            PaperMainThreadDispatcher dispatcher,
+            PaperWorkflowService workflow,
+            SnapshotCleanupService cleanup,
+            CustomAssetService assets,
+            Path dataRoot,
+            String pluginVersion,
+            String worldEditStatus
+    ) {
         this.placements = placements;
+        this.release2Placements = release2Placements;
+        this.release2Undo = release2Undo;
+        this.release2Recovery = release2Recovery;
+        this.release2Operations = release2Operations;
         this.selections = selections;
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
         this.workflow = Objects.requireNonNull(workflow, "workflow");
         this.cleanup = Objects.requireNonNull(cleanup, "cleanup");
         this.assets = Objects.requireNonNull(assets, "assets");
         this.dataRoot = Objects.requireNonNull(dataRoot, "dataRoot").toAbsolutePath().normalize();
+        this.consoleConfirmations = new ConsoleConfirmationFileStore(
+                this.dataRoot.resolve("confirmations"));
         this.pluginVersion = Objects.requireNonNull(pluginVersion, "pluginVersion");
         this.worldEditStatus = Objects.requireNonNull(worldEditStatus, "worldEditStatus");
         refreshCompletionCaches();
@@ -113,6 +195,14 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
                 requirePermission(sender, "landformcraft.doctor");
                 reportDoctor(sender);
+                return true;
+            }
+            if (args.length >= 2 && args[0].equalsIgnoreCase("ops")) {
+                handleOps(sender, args);
+                return true;
+            }
+            if (args.length >= 2 && args[0].equalsIgnoreCase("r2")) {
+                handleRelease2(sender, args);
                 return true;
             }
             if (args.length >= 2 && args[0].equalsIgnoreCase("request")) {
@@ -168,7 +258,8 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                     && args[1].equalsIgnoreCase("execute")) {
                 requirePermission(sender, "landformcraft.apply.execute");
                 requirePlacementAvailable();
-                reportJournal(sender, placements.execute(uuid(args[2]), args[3], actor(sender)));
+                reportJournal(sender, placements.execute(uuid(args[2]), args[3], actor(sender)),
+                        () -> discardConsoleConfirmation("apply-execute-" + uuid(args[2])));
                 return true;
             }
             if (args.length == 3 && args[0].equalsIgnoreCase("apply")
@@ -189,7 +280,8 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                     && args[1].equalsIgnoreCase("execute")) {
                 requirePermission(sender, "landformcraft.undo.execute");
                 requirePlacementAvailable();
-                reportJournal(sender, placements.undo(uuid(args[2]), args[3], actor(sender)));
+                reportJournal(sender, placements.undo(uuid(args[2]), args[3], actor(sender)),
+                        () -> discardConsoleConfirmation("undo-execute-" + uuid(args[2])));
                 return true;
             }
             if (args.length >= 4 && args[0].equalsIgnoreCase("apply")
@@ -197,7 +289,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 handleRecovery(sender, args);
                 return true;
             }
-        } catch (IllegalArgumentException exception) {
+        } catch (IllegalArgumentException | LandformException exception) {
             sendFailure(sender, exception);
             return true;
         }
@@ -219,6 +311,16 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             addIfAllowed(roots, sender, "landformcraft.help", "help");
             addIfAllowed(roots, sender, "landformcraft.version", "version");
             addIfAllowed(roots, sender, "landformcraft.doctor", "doctor");
+            addIfAllowed(roots, sender, "landformcraft.doctor", "ops");
+            if (release2Placements != null && Release2CommandSecurityV2.isEligibleOperator(sender)
+                    && (sender.hasPermission("landformcraft.r2.plan")
+                    || sender.hasPermission("landformcraft.r2.confirm")
+                    || sender.hasPermission("landformcraft.r2.execute")
+                    || sender.hasPermission("landformcraft.r2.status")
+                    || sender.hasPermission("landformcraft.r2.undo")
+                    || sender.hasPermission("landformcraft.r2.recovery"))) {
+                roots.add("r2");
+            }
             addIfAllowed(roots, sender, "landformcraft.request.list", "request");
             addIfAllowed(roots, sender, "landformcraft.design.verify", "design");
             addIfAllowed(roots, sender, "landformcraft.generate", "generate");
@@ -246,6 +348,26 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                         Integer.toString(player.getLocation().getBlockY()),
                         Integer.toString(player.getLocation().getBlockZ())
                 ) : List.of("0", "0", "0");
+        if (args[0].equalsIgnoreCase("r2")) {
+            if (release2Placements == null || !Release2CommandSecurityV2.isEligibleOperator(sender)) {
+                return List.of();
+            }
+            List<String> allowedWorlds = worlds.stream()
+                    .filter(release2Placements::allowsWorld)
+                    .toList();
+            return LandformCraftSuggestions.completeRelease2(
+                    args,
+                    sender.hasPermission("landformcraft.r2.plan"),
+                    sender.hasPermission("landformcraft.r2.confirm"),
+                    sender.hasPermission("landformcraft.r2.execute"),
+                    sender.hasPermission("landformcraft.r2.status"),
+                    sender.hasPermission("landformcraft.r2.undo"),
+                    sender.hasPermission("landformcraft.r2.recovery"),
+                    placementIds,
+                    releaseDirectories,
+                    allowedWorlds,
+                    coordinates);
+        }
         return LandformCraftSuggestions.complete(
                 args,
                 sender.hasPermission("landformcraft.selection"),
@@ -328,6 +450,26 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             sender.sendMessage(detail("Java", value.javaVersion()));
             sender.sendMessage(detail("Paper", value.runtime()));
             sender.sendMessage(detail("WorldEdit / FAWE", worldEditStatus));
+            sender.sendMessage(detail("Release 2 Undo path",
+                    release2Placements != null && release2Placements.isRelease2Path()
+                            ? "available (/lfc r2 undo-plan|undo-execute)"
+                            : release2Undo != null && release2Undo.isRelease2Path()
+                            ? "available (PlacementUndoApplicationServiceV2)"
+                            : "v1 only (Release 2 service not injected)"));
+            sender.sendMessage(detail("Release 2 application path",
+                    release2Placements != null && release2Placements.isRelease2Path()
+                            ? "available (explicit /lfc r2 lifecycle)"
+                            : "not injected"));
+            sender.sendMessage(detail("Release 2 Recovery path",
+                    release2Placements != null && release2Placements.isRelease2Path()
+                            ? "available (/lfc r2 recover-diagnose|recover-plan|recover-execute)"
+                            : release2Recovery != null && release2Recovery.isRelease2Path()
+                            ? "available (PlacementRecoveryApplicationServiceV2)"
+                            : "v1 only (Release 2 service not injected)"));
+            sender.sendMessage(detail("Release 2 ops path",
+                    release2Operations != null && release2Operations.isRelease2Path()
+                            ? "available (OperationalOperationsServiceV2)"
+                            : "not injected"));
             sender.sendMessage(detail("data directory", value.dataDirectory()));
             sender.sendMessage(detail("writable / atomic move", value.writable() + " / " + value.atomicMove()));
             sender.sendMessage(detail("disk usable bytes", Long.toString(value.usableBytes())));
@@ -512,13 +654,13 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 var prepared = workflow.planExport(uuid(args[2]), actor(sender));
                 sender.sendMessage(detail("Export plan ID", prepared.planId().toString()));
                 String command = ROOT + "export create " + prepared.planId() + " " + prepared.confirmationToken();
-                sender.sendMessage(Component.text(command, NamedTextColor.YELLOW)
-                        .clickEvent(ClickEvent.suggestCommand(command)));
+                sender.sendMessage(confirmationDelivery(sender, "export-" + prepared.planId(), command));
             }
             case "create" -> {
                 requirePermission(sender, "landformcraft.export.execute");
                 requireLength(args, 4, "export create <export-plan-id> <token>");
                 sender.sendMessage(detail("Job ID", workflow.startExport(uuid(args[2]), args[3], actor(sender)).toString()));
+                discardConsoleConfirmation("export-" + uuid(args[2]));
             }
             case "status" -> {
                 requirePermission(sender, "landformcraft.job.status");
@@ -583,14 +725,16 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                         + prepared.plan().totalBytes()));
                 String command = ROOT + "cleanup execute " + prepared.plan().planId() + " "
                         + prepared.confirmationToken();
-                sender.sendMessage(Component.text(command, NamedTextColor.YELLOW)
-                        .clickEvent(ClickEvent.suggestCommand(command)));
+                sender.sendMessage(confirmationDelivery(
+                        sender, "cleanup-" + prepared.plan().planId(), command));
             });
         } else if (args[1].equalsIgnoreCase("execute")) {
             requirePermission(sender, "landformcraft.cleanup");
             requireLength(args, 4, "cleanup execute <plan-id> <token>");
-            report(sender, cleanup.execute(uuid(args[2]), args[3], actor(sender)), value ->
-                    sender.sendMessage(detail("deleted bytes", Long.toString(value.totalBytes()))));
+            report(sender, cleanup.execute(uuid(args[2]), args[3], actor(sender)), value -> {
+                sender.sendMessage(detail("deleted bytes", Long.toString(value.totalBytes())));
+                discardConsoleConfirmation("cleanup-" + uuid(args[2]));
+            });
         } else if (args[1].equalsIgnoreCase("status")) {
             requirePermission(sender, "landformcraft.cleanup");
             requireLength(args, 2, "cleanup status");
@@ -599,6 +743,213 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         } else {
             throw new IllegalArgumentException("cleanupはplan、execute、statusです。");
         }
+    }
+
+    private void handleOps(CommandSender sender, String[] args) {
+        requirePermission(sender, "landformcraft.doctor");
+        if (release2Operations == null || !release2Operations.isRelease2Path()) {
+            throw new IllegalStateException("Release 2 operational services are not injected");
+        }
+        String operation = args[1].toLowerCase(Locale.ROOT);
+        if (operation.equals("metrics")) {
+            report(sender, workflow.io(() -> {
+                try {
+                    return release2Operations.captureMetrics(
+                            OperationalMetricsCollectorV2.PlacementStageCountsV2.zeros(),
+                            0L, 0L, 0, actor(sender).canonical());
+                } catch (java.io.IOException exception) {
+                    throw new java.io.UncheckedIOException(exception);
+                }
+            }), snapshot -> {
+                sender.sendMessage(detail("metrics contract", snapshot.contractVersion()));
+                sender.sendMessage(detail("samples", Integer.toString(snapshot.samples().size())));
+                sender.sendMessage(detail("checksum", snapshot.canonicalChecksum()));
+            });
+            return;
+        }
+        if (operation.equals("diagnose")) {
+            requireLength(args, 3, "ops diagnose <correlation-id>");
+            UUID correlationId = uuid(args[2]);
+            report(sender, workflow.io(() -> {
+                try {
+                    boolean openai = System.getenv("OPENAI_API_KEY") != null
+                            && !System.getenv("OPENAI_API_KEY").isBlank();
+                    boolean anthropic = System.getenv("ANTHROPIC_API_KEY") != null
+                            && !System.getenv("ANTHROPIC_API_KEY").isBlank();
+                    return release2Operations.diagnose(
+                            correlationId, openai, anthropic, actor(sender).canonical());
+                } catch (java.io.IOException exception) {
+                    throw new java.io.UncheckedIOException(exception);
+                }
+            }), report -> {
+                sender.sendMessage(detail("correlation", report.correlationId().toString()));
+                sender.sendMessage(detail("operation / stage", report.operation() + " / " + report.stage()));
+                sender.sendMessage(detail("suggested", report.suggestedAction()));
+                report.findings().forEach(finding -> sender.sendMessage(detail("finding", finding)));
+            });
+            return;
+        }
+        throw new IllegalArgumentException("opsはmetrics、diagnoseです。");
+    }
+
+    private void handleRelease2(CommandSender sender, String[] args) {
+        Release2CommandSecurityV2.requireOperator(sender);
+        if (release2Placements == null || !release2Placements.isRelease2Path()) {
+            throw new IllegalStateException("Release 2 placement application is unavailable");
+        }
+        String operation = args[1].toLowerCase(Locale.ROOT);
+        switch (operation) {
+            case "plan" -> {
+                requirePermission(sender, "landformcraft.r2.plan");
+                requireLength(args, 7, "r2 plan <release-path> <world> <x> <y> <z>");
+                report(sender, release2Placements.plan(
+                        args[2], args[3], integer(args[4]), integer(args[5]), integer(args[6]),
+                        actorV2(sender)), prepared -> {
+                    UUID id = prepared.plan().placementId();
+                    Component idLine = detail("Release 2 Placement ID", id.toString());
+                    Component stateLine = detail("state", prepared.journal().state().name());
+                    Component effectLine = detail("effect blocks",
+                            Long.toString(prepared.envelope().unionEffectEnvelope().volumeBlocks()));
+                    sender.sendMessage(idLine);
+                    sender.sendMessage(stateLine);
+                    sender.sendMessage(effectLine);
+                    mirrorOperatorMessage(sender, idLine);
+                    mirrorOperatorMessage(sender, stateLine);
+                    mirrorOperatorMessage(sender, effectLine);
+                    String next = ROOT + "r2 confirm " + id + " " + prepared.confirmationToken();
+                    sender.sendMessage(confirmationDelivery(sender, "r2-confirm-" + id, next));
+                });
+            }
+            case "confirm" -> {
+                requirePermission(sender, "landformcraft.r2.confirm");
+                requireLength(args, 4, "r2 confirm <placement-id> <token>");
+                report(sender, release2Placements.confirm(uuid(args[2]), args[3], actorV2(sender)), confirmed -> {
+                    discardConsoleConfirmation("r2-confirm-" + uuid(args[2]));
+                    Component stateLine = detail("state", confirmed.journal().state().name());
+                    sender.sendMessage(stateLine);
+                    mirrorOperatorMessage(sender, stateLine);
+                    Component nextLine = Component.text(
+                            ROOT + "r2 execute " + args[2], NamedTextColor.YELLOW)
+                            .clickEvent(ClickEvent.suggestCommand(ROOT + "r2 execute " + args[2]));
+                    sender.sendMessage(nextLine);
+                    mirrorOperatorMessage(sender, nextLine);
+                });
+            }
+            case "execute" -> {
+                requirePermission(sender, "landformcraft.r2.execute");
+                requireLength(args, 3, "r2 execute <placement-id>");
+                report(sender, release2Placements.execute(uuid(args[2]), actorV2(sender)), executed -> {
+                    Component stateLine = detail("state", executed.journal().state().name());
+                    Component outcomeLine = detail("outcome", executed.outcome());
+                    sender.sendMessage(stateLine);
+                    sender.sendMessage(outcomeLine);
+                    mirrorOperatorMessage(sender, stateLine);
+                    mirrorOperatorMessage(sender, outcomeLine);
+                    if (executed.journal().message() != null && !executed.journal().message().isBlank()) {
+                        Component messageLine = detail("message", executed.journal().message());
+                        sender.sendMessage(messageLine);
+                        mirrorOperatorMessage(sender, messageLine);
+                    }
+                });
+            }
+            case "status" -> {
+                requirePermission(sender, "landformcraft.r2.status");
+                requireLength(args, 3, "r2 status <placement-id>");
+                report(sender, release2Placements.status(uuid(args[2])), journal -> {
+                    Component idLine = detail("Release 2 Placement ID",
+                            journal.plan().placementId().toString());
+                    Component stateLine = detail("state", journal.state().name());
+                    Component messageLine = detail("message", journal.message());
+                    sender.sendMessage(idLine);
+                    sender.sendMessage(stateLine);
+                    sender.sendMessage(messageLine);
+                    mirrorOperatorMessage(sender, idLine);
+                    mirrorOperatorMessage(sender, stateLine);
+                    mirrorOperatorMessage(sender, messageLine);
+                });
+            }
+            case "undo-plan" -> {
+                requirePermission(sender, "landformcraft.r2.undo");
+                requireLength(args, 3, "r2 undo-plan <placement-id>");
+                report(sender, release2Placements.prepareUndo(uuid(args[2]), actorV2(sender)), prepared -> {
+                    String next = ROOT + "r2 undo-execute " + args[2] + " " + prepared.plaintextToken();
+                    Component stateLine = detail("state", prepared.preparedJournal().state().name());
+                    sender.sendMessage(stateLine);
+                    mirrorOperatorMessage(sender, stateLine);
+                    sender.sendMessage(confirmationDelivery(sender, "r2-undo-" + uuid(args[2]), next));
+                });
+            }
+            case "undo-execute" -> {
+                requirePermission(sender, "landformcraft.r2.undo");
+                requireLength(args, 4, "r2 undo-execute <placement-id> <token>");
+                report(sender, release2Placements.executeUndo(
+                        uuid(args[2]), args[3], actorV2(sender)), undone -> {
+                    discardConsoleConfirmation("r2-undo-" + uuid(args[2]));
+                    Component stateLine = detail("state", undone.undoneJournal().state().name());
+                    sender.sendMessage(stateLine);
+                    mirrorOperatorMessage(sender, stateLine);
+                });
+            }
+            case "recover-diagnose" -> {
+                requirePermission(sender, "landformcraft.r2.recovery");
+                requireLength(args, 3, "r2 recover-diagnose <placement-id>");
+                report(sender, release2Placements.diagnoseRecovery(uuid(args[2])), diagnosis -> {
+                    sender.sendMessage(detail("classification", diagnosis.classification().name()));
+                    diagnosis.findings().forEach(finding -> sender.sendMessage(detail("finding", finding)));
+                });
+            }
+            case "recover-plan" -> {
+                requirePermission(sender, "landformcraft.r2.recovery");
+                requireLength(args, 4, "r2 recover-plan <rollback|accept> <placement-id>");
+                var action = switch (args[2].toLowerCase(Locale.ROOT)) {
+                    case "rollback" -> com.github.nankotsu029.landformcraft.model.v2.placement
+                            .PlacementRecoveryActionV2.ROLLBACK;
+                    case "accept" -> com.github.nankotsu029.landformcraft.model.v2.placement
+                            .PlacementRecoveryActionV2.ACCEPT;
+                    default -> throw new IllegalArgumentException("recovery actionはrollbackまたはacceptです。");
+                };
+                report(sender, release2Placements.prepareRecovery(
+                        uuid(args[3]), action, actorV2(sender)), prepared -> {
+                    String next = ROOT + "r2 recover-execute " + args[2].toLowerCase(Locale.ROOT)
+                            + " " + args[3] + " " + prepared.plaintextToken();
+                    sender.sendMessage(detail("classification",
+                            prepared.recoveryPlan().classification().name()));
+                    sender.sendMessage(confirmationDelivery(sender,
+                            "r2-recover-" + args[2].toLowerCase(Locale.ROOT) + "-" + uuid(args[3]),
+                            next));
+                });
+            }
+            case "recover-execute" -> {
+                requirePermission(sender, "landformcraft.r2.recovery");
+                requireLength(args, 5,
+                        "r2 recover-execute <rollback|accept> <placement-id> <token>");
+                if (args[2].equalsIgnoreCase("rollback")) {
+                    report(sender, release2Placements.executeRecoveryRollback(
+                            uuid(args[3]), args[4], actorV2(sender)), rolledBack -> {
+                        discardConsoleConfirmation("r2-recover-rollback-" + uuid(args[3]));
+                        sender.sendMessage(detail("state",
+                                rolledBack.rolledBackJournal().state().name()));
+                    });
+                } else if (args[2].equalsIgnoreCase("accept")) {
+                    report(sender, release2Placements.executeRecoveryAccept(
+                            uuid(args[3]), args[4], actorV2(sender)), accepted -> {
+                        discardConsoleConfirmation("r2-recover-accept-" + uuid(args[3]));
+                        sender.sendMessage(detail("state",
+                                accepted.acceptedJournal().state().name()));
+                    });
+                } else {
+                    throw new IllegalArgumentException("recovery actionはrollbackまたはacceptです。");
+                }
+            }
+            default -> throw new IllegalArgumentException(
+                    "r2はplan、confirm、execute、status、undo-plan、undo-execute、"
+                            + "recover-diagnose、recover-plan、recover-executeです。");
+        }
+    }
+
+    private static com.github.nankotsu029.landformcraft.model.v2.placement.PlacementPlanV2.PlacementActorV2
+            actorV2(CommandSender sender) {
+        return Release2CommandSecurityV2.actor(sender);
     }
 
     private void handleRecovery(CommandSender sender, String[] args) {
@@ -617,15 +968,17 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                     String next = value.action() == ConfirmationAction.RECOVERY_ACCEPT ? "accept" : "rollback";
                     String command = ROOT + "apply recover " + next + " " + args[3] + " "
                             + value.confirmationToken();
-                    sender.sendMessage(Component.text(command, NamedTextColor.YELLOW)
-                            .clickEvent(ClickEvent.suggestCommand(command)));
+                    sender.sendMessage(confirmationDelivery(sender,
+                            "apply-recover-" + next + "-" + uuid(args[3]), command));
                 }
             });
         } else if (operation.equals("rollback") || operation.equals("accept")) {
             requireLength(args, 5, "apply recover " + operation + " <placement-id> <token>");
             reportJournal(sender, operation.equals("rollback")
                     ? placements.recoverRollback(uuid(args[3]), args[4], actor(sender))
-                    : placements.recoverAccept(uuid(args[3]), args[4], actor(sender)));
+                    : placements.recoverAccept(uuid(args[3]), args[4], actor(sender)),
+                    () -> discardConsoleConfirmation(
+                            "apply-recover-" + operation + "-" + uuid(args[3])));
         } else {
             throw new IllegalArgumentException("未知のrecovery操作です。");
         }
@@ -658,10 +1011,57 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         stage.whenComplete((value, failure) -> dispatcher.run(() -> {
             if (failure != null) {
                 sendFailure(sender, failure);
+                mirrorOperatorText(sender, unwrap(failure).getMessage());
             } else {
                 success.accept(value);
             }
         }));
+    }
+
+    /**
+     * Sends the one-time confirmation command to the operator. Players receive the clickable
+     * chat component (player chat is not duplicated into the server log). CONSOLE／RCON output
+     * is persisted into the standard Paper log, so for non-player senders the command is
+     * written to an owner-only file instead and only the path is echoed; the file is discarded
+     * on successful consumption via {@link #discardConsoleConfirmation(String)}.
+     */
+    private Component confirmationDelivery(CommandSender sender, String fileKey, String command) {
+        if (sender instanceof Player) {
+            return Component.text(command, NamedTextColor.YELLOW)
+                    .clickEvent(ClickEvent.suggestCommand(command));
+        }
+        Path file = consoleConfirmations.store(fileKey, command);
+        return Component.text(
+                "確認コマンドをlogへ出力せず保存しました（10分有効・1回用）: " + file,
+                NamedTextColor.YELLOW);
+    }
+
+    private void discardConsoleConfirmation(String fileKey) {
+        try {
+            consoleConfirmations.discard(fileKey);
+        } catch (RuntimeException ignored) {
+            // Cleanup of an already-consumed confirmation must not fail the operation.
+        }
+    }
+
+    /**
+     * RCON responses are dropped when the client disconnects before async completion. Mirror
+     * console／RCON operator text into the server log for terminal states and identifiers.
+     * Confirmation tokens are never mirrored: non-player senders receive them via
+     * {@link #confirmationDelivery(CommandSender, String, String)} file delivery only.
+     */
+    private static void mirrorOperatorText(CommandSender sender, String text) {
+        if (sender instanceof Player || text == null || text.isBlank()) {
+            return;
+        }
+        Bukkit.getLogger().info("[LandformCraft] " + text);
+    }
+
+    private static void mirrorOperatorMessage(CommandSender sender, Component message) {
+        if (sender instanceof Player) {
+            return;
+        }
+        mirrorOperatorText(sender, PlainTextComponentSerializer.plainText().serialize(message));
     }
 
     private void reportPrepared(
@@ -693,24 +1093,39 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             sender.sendMessage(Component.text("  ワールドはまだ変更されていません。確認期限は10分です。",
                     NamedTextColor.WHITE));
             String confirmation = ROOT + nextCommand + " " + id + " " + prepared.confirmationToken();
-            sender.sendMessage(Component.text("  実行候補: ", NamedTextColor.GRAY)
-                    .append(Component.text(confirmation, NamedTextColor.YELLOW)
-                            .decorate(TextDecoration.UNDERLINED)
-                            .clickEvent(ClickEvent.suggestCommand(confirmation))
-                            .hoverEvent(HoverEvent.showText(Component.text(
-                                    "クリックしてチャット入力欄へコピー（自動実行はしません）",
-                                    NamedTextColor.AQUA
-                            )))));
+            if (sender instanceof Player) {
+                sender.sendMessage(Component.text("  実行候補: ", NamedTextColor.GRAY)
+                        .append(Component.text(confirmation, NamedTextColor.YELLOW)
+                                .decorate(TextDecoration.UNDERLINED)
+                                .clickEvent(ClickEvent.suggestCommand(confirmation))
+                                .hoverEvent(HoverEvent.showText(Component.text(
+                                        "クリックしてチャット入力欄へコピー（自動実行はしません）",
+                                        NamedTextColor.AQUA
+                                )))));
+            } else {
+                sender.sendMessage(Component.text("  実行候補: ", NamedTextColor.GRAY)
+                        .append(confirmationDelivery(sender,
+                                nextCommand.replace(' ', '-') + "-" + id, confirmation)));
+            }
         }));
     }
 
     private void reportJournal(CommandSender sender, CompletionStage<PlacementJournal> stage) {
+        reportJournal(sender, stage, () -> { });
+    }
+
+    private void reportJournal(
+            CommandSender sender,
+            CompletionStage<PlacementJournal> stage,
+            Runnable onSuccess
+    ) {
         sendPending(sender, "Placementの状態を更新しています…");
         stage.whenComplete((journal, failure) -> dispatcher.run(() -> {
             if (failure != null) {
                 sendFailure(sender, failure);
                 return;
             }
+            onSuccess.run();
             placementIds.add(journal.plan().placementId().toString());
             NamedTextColor color = journal.state() == PlacementState.RECOVERY_REQUIRED
                     ? NamedTextColor.RED
@@ -724,12 +1139,12 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         }));
     }
 
-    private static void showHelp(CommandSender sender, String label) {
+    private void showHelp(CommandSender sender, String label) {
         sender.sendMessage(prefix("◆", NamedTextColor.AQUA)
                 .append(Component.text("コマンド一覧", NamedTextColor.AQUA)));
         helpSection(sender, "確認");
         help(sender, "/" + label + " selection", "WorldEditの選択範囲を表示");
-        help(sender, "/" + label + " version | doctor", "version表示／read-only診断");
+        help(sender, "/" + label + " version | doctor | ops …", "version表示／read-only診断／運用metrics");
         helpSection(sender, "設計・生成");
         help(sender, "/" + label + " request …", "request作成・範囲・prompt・検証・一覧");
         help(sender, "/" + label + " design … | generate <design-id> | job …", "設計と非同期生成");
@@ -741,6 +1156,29 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         help(sender, "/" + label + " apply undo <id>", "Undoを準備（変更なし）");
         help(sender, "/" + label + " undo execute <id> <token>", "確認済みUndoを実行");
         help(sender, "/" + label + " apply recover … | cleanup …", "復旧診断／snapshot cleanup");
+        if (release2Placements != null && release2Placements.isRelease2Path()) {
+            help(sender, "/" + label + " r2 plan|confirm|execute|status …",
+                    "Release 2専用の配置lifecycle（v1と明示分離）");
+            help(sender, "/" + label + " r2 undo-plan|undo-execute …",
+                    "Release 2 operation-bound Undo");
+            help(sender, "/" + label + " r2 recover-diagnose|recover-plan|recover-execute …",
+                    "Release 2の保守的Recovery");
+        }
+        if (release2Undo != null && release2Undo.isRelease2Path()) {
+            sender.sendMessage(Component.text(
+                    "  Release 2 Undoは PaperPlacementUndoServiceV2（isRelease2Path）経由です。",
+                    NamedTextColor.GRAY));
+        }
+        if (release2Recovery != null && release2Recovery.isRelease2Path()) {
+            sender.sendMessage(Component.text(
+                    "  Release 2 復旧は PaperPlacementRecoveryServiceV2（isRelease2Path）経由です。",
+                    NamedTextColor.GRAY));
+        }
+        if (release2Operations != null && release2Operations.isRelease2Path()) {
+            sender.sendMessage(Component.text(
+                    "  Release 2 opsは PaperOperationalOperationsServiceV2（metrics／diagnose）経由です。",
+                    NamedTextColor.GRAY));
+        }
         sender.sendMessage(Component.text("  Tabキーでサブコマンド、Release、world、IDを補完できます。",
                 NamedTextColor.GRAY));
     }

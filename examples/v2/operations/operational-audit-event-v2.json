@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "operational-audit-event-v1",
+  "correlationId": "11111111-1111-1111-1111-111111111111",
+  "eventKind": "FAILURE",
+  "actorCanonical": "CONSOLE:CONSOLE",
+  "operation": "apply",
+  "stage": "verify",
+  "decision": "mismatch",
+  "placementId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1",
+  "resourceId": "tile0",
+  "bytesAffected": 0,
+  "recordedAt": "2026-07-19T00:00:00Z",
+  "detail": "verify-mismatch"
+}

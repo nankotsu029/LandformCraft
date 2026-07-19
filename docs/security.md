@@ -109,7 +109,31 @@ ZIPはnon-symbolic regular `.zip`だけを受け付け、圧縮／展開とも12
 
 publisherはraw source artifactをportable manifestへ記録せず、non-symbolic sourceをstagingへcopyし、staged directoryとZIPをstrict read-backしてからatomic moveする。copy中のsource fingerprint変化、publish前cancel／failureはtargetを公開しない。ZIP側でもdirectoryと同じsemantic verifierを再実行するため、manifestだけを書換えてchecksumを再計算してもfield／preview／tileの相互bindingを偽装できない。
 
-publisherはstaging self-verify、disk budget確認、fsync、atomic moveを必須とし、non-atomic fallbackを使わない。cancelはpublish前・staging verify中・atomic move直前に観測し、commit前のcancel／failureではtargetを残さない。Release 2 Paper apply、effect envelope、world mutationは未実装であり、このoffline coreをworld変更の権限として扱わない。
+publisherはstaging self-verify、disk budget確認、fsync、atomic moveを必須とし、non-atomic fallbackを使わない。cancelはpublish前・staging verify中・atomic move直前に観測し、commit前のcancel／failureではtargetを残さない。Release 2 apply application serviceとPaper／WorldEdit gatewayはV2-6-06、明示評価commandはV2-6-21で接続したが、production capabilityのsupport昇格とは分離する。`V2-6-02`のmutation／effect envelope契約（ADR 0021）だけをworld変更の権限として扱わず、V2-6-01〜05の全証拠とV2-6-06 strict gateを必須にする。
+
+V2-6-20のverified canonical source（ADR 0033）は、source作成時にRelease 2 exact file set／capability prefix／directory・ZIP budget／semantic bindingを既存strict verifierで再検査する。ZIPは検証済みprivate stagingをsource lifecycle中だけ保持し、tile cursor開始時にも対象schematicのbyte lengthとSHA-256を再検査する。全Release blockの常駐、未検証ZIP entryの直接解釈、unknown block stateのfallback、close後のreopenを許さない。
+
+V2-6-21のPaper lifecycle（ADR 0034）は、`releases-v2/`配下の安全な相対containerだけを受理し、plan時とapply直前にstrict verifyする。confirmationはactor／Release／target／envelope／reservation／operation／expiryへbindingし、平文tokenをjournalへ保存しない。全snapshotのstrict publishとcontainment evidenceなしにscheduler submissionへ進まず、post-commit failureは`RECOVERY_REQUIRED`＋逆順rollbackへ分類する。operation contextはstage commit markerを最後にfsync＋atomic publishし、全write pointのbefore／after failureをrestart-safe testで固定する。Undoは同placement leaseだけを安全に置換し、第三者overlapを拒否する。R2 commandはoperator Player／CONSOLE／RCON限定で、command block／非operator、actor mismatch、deny／missing worldをworld mutation前にstable domain errorで拒否し、tokenを補完しない。startup inspectionはartifactやworldを推測修復せず、manual interventionを成功へ昇格しない。`/lfc r2`をv1 commandと明示分離し、version fallbackを行わない。
+
+### V2-6-02 mutation／effect envelope
+
+envelope compilerはversion固定physics policy以外の半径を受理せず、unknown physics class、world border／Y overflow、effect volume／disk budget超過、tile order mismatch、under-approximationをfallbackせず拒否する。raw pathやsecretはartifactへ保存しない。
+
+### V2-6-05 fluid／gravity／neighbor containment
+
+containment preflightは`SNAPSHOT_COMPLETE`後・最初のapply前にだけ実行する。閉じた`PlacementBlockPhysicsCatalogV2`以外のblock state、UNSUPPORTED denylist、envelope外へ逃げ得るfluid／gravity／neighbor、physics-class understatement、envelope gap、unknown policy／catalog versionをhard rejectし、`CONTAINED` evidenceだけをsealする。snapshot外検出や事後rollbackをcontainmentの代替にしない。apply権限やworld mutationはまだ付与しない。
+
+### V2-6-06 canonical apply transaction
+
+apply前にRelease directory、unbound→envelope-bound→confirmed plan checksum chain、reservation ownership、consumed confirmation、published snapshot、containment evidence、source manifest／capability／fingerprintを再検証する。canonical sourceはmutation AABBをexact coverageし、閉じたphysics catalogとeffect-envelope宣言にないstateを拒否する。executor、queue、block数、overlay数、scheduler sliceはallocation／dispatch前に上限検査する。journalはschema-valid canonical JSONをstagingへ書き、strict read-back、fsync、必須atomic move、directory fsync、published read-back後だけ更新する。scheduler submissionを試みた後はworld mutationの有無を楽観推測せず、失敗を`RECOVERY_REQUIRED`へ分類する。observer timeout／cancelをscheduler operationのcancel証拠にせず、late completionを必ずreconcileする。
+
+### V2-6-12 cross-capability hardening
+
+Release format 2 の valid capability prefix は`ReleaseCapabilityDependencyMatrixV2`（ADR 0030）だけが正本であり、不完全依存・unknown capability・future format／manifest version を silent repair／forward-read しない。`ReleasePlacementEligibilityVerifierV2`は directory／ZIP 双方で strict verify＋sealed checksum＋valid prefix を placement 前に要求する。missing／extra／duplicate／version／checksum／path traversal／case collision／ZIP bomb／entry・expand budget 超過を拒否する。artifact limits は`ReleaseArtifactLimitsCatalogV2`の trusted ceiling を超えない。Release 1 allowlist（`checksums.sha256` 経路）とは共有せず緩めない。foundation／bathymetry は Feature 別 placement type を追加せず、既存 canonical overlay stream への bind だけを許す。
+
+### V2-6-13 operational metrics／diagnostics／retention
+
+運用監査は`operations-audit-v2.jsonl`へbounded eventだけを追記する（ADR 0031）。absolute path、Authorization、API key、raw payloadをaudit／diagnostics findingへ保存しない。metrics labelはclosed enumに限定し、自由文字列cardinalityを拒否する。Release 2 retention cleanupはactor-bound dry-run／confirmであり、startup自動削除defaultはない。
 
 ### V2-3-14 `hydrology-plan` payload
 

@@ -29,7 +29,7 @@ public record HydrologyReconciliationPlanV2(
 ) {
     public static final int VERSION = 1;
     public static final String ALGORITHM_VERSION = "hydrology-reconcile-fixed-v1";
-    public static final String SCAN_ORDER_VERSION = "kind-feature-constraint-v1";
+    public static final String SCAN_ORDER_VERSION = "kind-feature-constraint-v3";
     public static final String BUDGET_VERSION = "hydrology-reconciliation-budget-v1";
     public static final int MAXIMUM_ITERATIONS = 3;
     public static final int MAXIMUM_VARIABLES = 8_192;
@@ -153,8 +153,10 @@ public record HydrologyReconciliationPlanV2(
             case LAKE_SPILL -> 1;
             case DELTA_MOUTH -> 2;
             case TIDAL_CONNECTION -> 3;
-            case FJORD_CONNECTION -> 4;
-            case WATERFALL_LIP_BASE -> 5;
+            case MANGROVE_TIDAL_LINK -> 4;
+            case REEF_LAGOON_PASS -> 5;
+            case FJORD_CONNECTION -> 6;
+            case WATERFALL_LIP_BASE -> 7;
         };
     }
 
@@ -170,7 +172,7 @@ public record HydrologyReconciliationPlanV2(
             case LAKE_SPILL -> left != null
                     && left.kind() == VariableKind.LAKE_SURFACE
                     && right.kind() == VariableKind.LAKE_SPILL;
-            case DELTA_MOUTH, TIDAL_CONNECTION, FJORD_CONNECTION -> left == null
+            case DELTA_MOUTH, TIDAL_CONNECTION, FJORD_CONNECTION, MANGROVE_TIDAL_LINK, REEF_LAGOON_PASS -> left == null
                     && right.kind() == VariableKind.MARINE_CONNECTION;
             case WATERFALL_LIP_BASE -> left != null
                     && left.kind() == VariableKind.WATERFALL_LIP
@@ -192,6 +194,8 @@ public record HydrologyReconciliationPlanV2(
         LAKE_SPILL,
         DELTA_MOUTH,
         TIDAL_CONNECTION,
+        MANGROVE_TIDAL_LINK,
+        REEF_LAGOON_PASS,
         FJORD_CONNECTION,
         WATERFALL_LIP_BASE
     }
@@ -258,7 +262,7 @@ public record HydrologyReconciliationPlanV2(
                 throw new IllegalArgumentException("verify-only reconciliation target must be unary and immutable");
             }
             boolean connectivity = switch (kind) {
-                case DELTA_MOUTH, TIDAL_CONNECTION, FJORD_CONNECTION -> true;
+                case DELTA_MOUTH, TIDAL_CONNECTION, FJORD_CONNECTION, MANGROVE_TIDAL_LINK, REEF_LAGOON_PASS -> true;
                 default -> false;
             };
             if (connectivity != (correctionPolicy == CorrectionPolicy.VERIFY_ONLY)

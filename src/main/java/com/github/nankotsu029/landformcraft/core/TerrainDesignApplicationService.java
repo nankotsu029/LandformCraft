@@ -36,6 +36,7 @@ public final class TerrainDesignApplicationService {
     private final LandformDataCodec codec;
     private final DesignArtifactPublisher publisher;
     private final ReferenceImageProcessor imageProcessor;
+    private final DesignResponseCache responseCache;
     private final Clock clock;
 
     public TerrainDesignApplicationService(
@@ -64,6 +65,7 @@ public final class TerrainDesignApplicationService {
         this.codec = Objects.requireNonNull(codec, "codec");
         this.publisher = Objects.requireNonNull(publisher, "publisher");
         this.imageProcessor = Objects.requireNonNull(imageProcessor, "imageProcessor");
+        this.responseCache = new DesignResponseCache(codec);
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
@@ -75,10 +77,11 @@ public final class TerrainDesignApplicationService {
         CompletableFuture<DesignArtifacts> result = new CompletableFuture<>();
         AtomicReference<CompletableFuture<?>> active = new AtomicReference<>();
         AtomicReference<String> requestId = new AtomicReference<>("unresolved");
+        AtomicReference<byte[]> requestBytes = new AtomicReference<>(new byte[0]);
         AtomicBoolean cancellationRequested = new AtomicBoolean();
 
         CompletableFuture<GenerationRequest> requestRead = executors.supplyIo(
-                () -> readRequest(requestPath, requestId)
+                () -> readRequest(requestPath, requestId, requestBytes)
         );
         active.set(requestRead);
         CompletableFuture<LoadedRequestContext> imageRead = requestRead.thenCompose(request -> {
@@ -115,18 +118,40 @@ public final class TerrainDesignApplicationService {
                     active.set(stage);
                     return stage.thenCompose(ignored -> {
                         ensureNotCancelled(cancellationRequested);
-                        CompletableFuture<TerrainDesignResult> providerFuture = provider.design(
-                                new TerrainDesignRequest(context.request(), context.images().images(), jobId)
-                        );
-                        active.set(providerFuture);
-                        return providerFuture.thenApply(design -> new DesignedContext(
-                                context,
-                                design,
-                                context.images().evidence().withProviderResult(
-                                        design.providerId(), design.responseId(), design.promptVersion(),
-                                        provider.submitsReferenceImages()
-                                )
-                        ));
+                        Path cacheRoot = designsRoot.resolve(".provider-response-cache");
+                        String cacheKey = provider.supportsDurableResponseCache()
+                                ? responseCache.key(provider.cacheIdentity(), requestBytes.get(),
+                                        context.images().images())
+                                : null;
+                        CompletableFuture<java.util.Optional<TerrainDesignResult>> lookup =
+                                cacheKey == null
+                                        ? CompletableFuture.completedFuture(java.util.Optional.empty())
+                                        : executors.supplyIo(() -> responseCache.load(cacheRoot, cacheKey));
+                        active.set(lookup);
+                        return lookup.thenCompose(cached -> {
+                            ensureNotCancelled(cancellationRequested);
+                            if (cached.isPresent()) {
+                                TerrainDesignResult stored = cached.get();
+                                // The audit binds completedAt to this job's timeline, so the
+                                // reused result is restamped; the original creation instant
+                                // stays inside the cache entry.
+                                TerrainDesignResult design = new TerrainDesignResult(
+                                        stored.intent(), stored.providerId(), stored.modelId(),
+                                        stored.promptVersion(), stored.responseId(),
+                                        stored.usage(), stored.attempts(), clock.instant());
+                                return save(jobId, context.request().requestId(),
+                                        GenerationStage.CALLING_AI, 0.6,
+                                        "reusing cached provider response " + design.responseId())
+                                        .thenApply(unused -> designed(context, design, null));
+                            }
+                            CompletableFuture<TerrainDesignResult> providerFuture = provider.design(
+                                    new TerrainDesignRequest(
+                                            context.request(), context.images().images(), jobId)
+                            );
+                            active.set(providerFuture);
+                            return providerFuture.thenApply(design ->
+                                    designed(context, design, cacheKey));
+                        });
                     });
                 })
                 .thenCompose(context -> {
@@ -179,14 +204,35 @@ public final class TerrainDesignApplicationService {
         return new DesignJobHandle(jobId, result);
     }
 
-    private GenerationRequest readRequest(Path requestPath, AtomicReference<String> requestId) {
+    private GenerationRequest readRequest(
+            Path requestPath,
+            AtomicReference<String> requestId,
+            AtomicReference<byte[]> requestBytes
+    ) {
         try {
+            requestBytes.set(java.nio.file.Files.readAllBytes(requestPath));
             GenerationRequest request = codec.readGenerationRequest(requestPath);
             requestId.set(request.requestId());
             return request;
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
+    }
+
+    private DesignedContext designed(
+            RequestContext context,
+            TerrainDesignResult design,
+            String cacheKey
+    ) {
+        return new DesignedContext(
+                context,
+                design,
+                context.images().evidence().withProviderResult(
+                        design.providerId(), design.responseId(), design.promptVersion(),
+                        provider.submitsReferenceImages()
+                ),
+                cacheKey
+        );
     }
 
     private DesignArtifacts publish(
@@ -199,15 +245,27 @@ public final class TerrainDesignApplicationService {
         try {
             String canonical = codec.writeJsonString(context.design().intent());
             codec.readTerrainIntent(canonical, "provider TerrainIntent");
-            return publisher.publish(
+            DesignArtifacts artifacts = publisher.publish(
                     requestPath, designsRoot, jobId, context.request().request().requestId(),
                     startedAt, context.design(), context.imageEvidence()
             );
+            if (context.cacheKey() != null) {
+                // Cache only responses that passed intent validation and artifact publication.
+                responseCache.store(designsRoot.resolve(".provider-response-cache"),
+                        context.cacheKey(), context.design());
+            }
+            return artifacts;
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }
 
+    /**
+     * Persists the stage transition after honoring any externally persisted cancel intent:
+     * {@code job cancel} from another process writes a terminal CANCELLED snapshot, and the
+     * owning job observes it at every stage boundary instead of overwriting it. Mid-call
+     * interruption of an in-flight provider request still requires the in-process cancel.
+     */
     private CompletableFuture<Void> save(
             UUID jobId,
             String requestId,
@@ -215,7 +273,12 @@ public final class TerrainDesignApplicationService {
             double progress,
             String message
     ) {
-        return jobs.save(snapshot(jobId, requestId, stage, progress, message));
+        return jobs.find(jobId.toString()).thenCompose(existing -> {
+            if (existing.isPresent() && existing.get().stage() == GenerationStage.CANCELLED) {
+                throw new CancellationException("design job cancelled");
+            }
+            return jobs.save(snapshot(jobId, requestId, stage, progress, message));
+        });
     }
 
     private GenerationJobSnapshot snapshot(
@@ -265,7 +328,8 @@ public final class TerrainDesignApplicationService {
     private record DesignedContext(
             RequestContext request,
             TerrainDesignResult design,
-            com.github.nankotsu029.landformcraft.model.ImageInputEvidence imageEvidence
+            com.github.nankotsu029.landformcraft.model.ImageInputEvidence imageEvidence,
+            String cacheKey
     ) {
     }
 }

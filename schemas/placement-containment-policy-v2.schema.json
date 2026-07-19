@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-containment-policy-v2.schema.json",
+  "title": "LandformCraft V2-6-05 Release 2 placement containment policy",
+  "description": "Strict, version-frozen v2 contract for the V2-6-05 Release 2 placement containment policy. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policyVersion", "catalogVersion", "fluidSupportRadiusXZ", "fluidSupportRadiusY",
+    "gravityFallBlocks", "neighborUpdateRadius", "budget"
+  ],
+  "properties": {
+    "policyVersion": {"const": "release-2-placement-containment-policy-v1"},
+    "catalogVersion": {"const": "release-2-placement-block-physics-catalog-v1"},
+    "fluidSupportRadiusXZ": {"type": "integer", "minimum": 0, "maximum": 256},
+    "fluidSupportRadiusY": {"type": "integer", "minimum": 0, "maximum": 256},
+    "gravityFallBlocks": {"type": "integer", "minimum": 0, "maximum": 256},
+    "neighborUpdateRadius": {"type": "integer", "minimum": 0, "maximum": 256},
+    "budget": {"$ref": "#/$defs/budget"}
+  },
+  "$defs": {
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumScannedBlocks", "maximumCacheEntries",
+        "maximumBfsNodes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "release-2-placement-containment-budget-v1"},
+        "maximumScannedBlocks": {"type": "integer", "minimum": 1},
+        "maximumCacheEntries": {"type": "integer", "minimum": 1},
+        "maximumBfsNodes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+      }
+    }
+  }
+}

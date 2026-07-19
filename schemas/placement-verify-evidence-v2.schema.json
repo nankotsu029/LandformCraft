@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-verify-evidence-v2.schema.json",
+  "title": "LandformCraft V2-6-07 Release 2 placement verify evidence",
+  "description": "Strict, version-frozen v2 contract for the V2-6-07 Release 2 placement verify evidence. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidenceVersion", "verifyContractVersion", "policy", "placementId", "operationId",
+    "worldId", "placementPlanBinding", "envelopeBinding", "snapshotBinding", "journalBinding",
+    "unionEffectEnvelope", "expectedStreamChecksum", "observedStreamChecksum",
+    "continuityMetrics", "settleStats", "scanStats", "verdict", "createdAt", "canonicalChecksum"
+  ],
+  "properties": {
+    "evidenceVersion": {"const": 1},
+    "verifyContractVersion": {"const": "release-2-placement-settle-verify-v1"},
+    "policy": {"$ref": "#/$defs/policy"},
+    "placementId": {"type": "string", "format": "uuid"},
+    "operationId": {"type": "string", "format": "uuid"},
+    "worldId": {"type": "string", "format": "uuid"},
+    "placementPlanBinding": {"$ref": "#/$defs/placementPlanBinding"},
+    "envelopeBinding": {"$ref": "#/$defs/envelopeBinding"},
+    "snapshotBinding": {"$ref": "#/$defs/snapshotBinding"},
+    "journalBinding": {"$ref": "#/$defs/journalBinding"},
+    "unionEffectEnvelope": {"$ref": "#/$defs/aabb"},
+    "expectedStreamChecksum": {"$ref": "#/$defs/checksum"},
+    "observedStreamChecksum": {"$ref": "#/$defs/checksum"},
+    "continuityMetrics": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/continuityMetric"}
+    },
+    "settleStats": {"$ref": "#/$defs/settleStats"},
+    "scanStats": {"$ref": "#/$defs/scanStats"},
+    "verdict": {"const": "VERIFIED"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyVersion", "maximumSettleTicks", "quiescenceTicks", "settleTimeoutMillis",
+        "maximumBlocksPerVerifySlice", "maximumQueuedVerifySlices", "maximumEffectEnvelopeBlocks",
+        "rejectOutOfEnvelopeUpdates", "rejectSampledVerify", "budget"
+      ],
+      "properties": {
+        "policyVersion": {"const": "release-2-placement-settle-verify-policy-v1"},
+        "maximumSettleTicks": {"type": "integer", "minimum": 1, "maximum": 200},
+        "quiescenceTicks": {"type": "integer", "minimum": 1, "maximum": 32},
+        "settleTimeoutMillis": {"type": "integer", "minimum": 1, "maximum": 120000},
+        "maximumBlocksPerVerifySlice": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "maximumQueuedVerifySlices": {"type": "integer", "minimum": 1, "maximum": 2048},
+        "maximumEffectEnvelopeBlocks": {"type": "integer", "minimum": 1},
+        "rejectOutOfEnvelopeUpdates": {"const": true},
+        "rejectSampledVerify": {"const": true},
+        "budget": {"$ref": "#/$defs/policyBudget"}
+      }
+    },
+    "policyBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumScannedBlocks", "maximumContinuityFindings",
+        "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "release-2-placement-settle-verify-budget-v1"},
+        "maximumScannedBlocks": {"type": "integer", "minimum": 1},
+        "maximumContinuityFindings": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "minY", "minZ", "maxX", "maxY", "maxZ"],
+      "properties": {
+        "minX": {"type": "integer"},
+        "minY": {"type": "integer"},
+        "minZ": {"type": "integer"},
+        "maxX": {"type": "integer"},
+        "maxY": {"type": "integer"},
+        "maxZ": {"type": "integer"}
+      }
+    },
+    "placementPlanBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourcePlacementPlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourcePlacementPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-settle-verify-plan-binding-v1"}
+      }
+    },
+    "envelopeBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceEnvelopePlanChecksum", "sourceMutationEnvelopeChecksum",
+        "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceEnvelopePlanChecksum": {"$ref": "#/$defs/checksum"},
+        "sourceMutationEnvelopeChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-settle-verify-envelope-binding-v1"}
+      }
+    },
+    "snapshotBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceSnapshotPlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceSnapshotPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-settle-verify-snapshot-binding-v1"}
+      }
+    },
+    "journalBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceJournalChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceJournalChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-settle-verify-journal-binding-v1"}
+      }
+    },
+    "continuityMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "examinedEdges", "continuousEdges", "detail", "evidenceHash"],
+      "properties": {
+        "rule": {
+          "type": "string",
+          "enum": [
+            "SURFACE_FOUNDATION",
+            "MARINE_UNDERWATER_COLUMN",
+            "SURFACE_VOLUME_ENTRANCE",
+            "UNDERGROUND_FLUID",
+            "OVERLAY_CONTINUITY"
+          ]
+        },
+        "examinedEdges": {"type": "integer", "minimum": 0},
+        "continuousEdges": {"type": "integer", "minimum": 0},
+        "detail": {"type": "string", "minLength": 1, "maxLength": 256},
+        "evidenceHash": {"$ref": "#/$defs/checksum"}
+      }
+    },
+    "settleStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "settleTicks", "quiescentTicksObserved", "updatesInsideEnvelope",
+        "updatesOutsideEnvelope", "settleElapsedMillis"
+      ],
+      "properties": {
+        "settleTicks": {"type": "integer", "minimum": 0},
+        "quiescentTicksObserved": {"type": "integer", "minimum": 0},
+        "updatesInsideEnvelope": {"type": "integer", "minimum": 0},
+        "updatesOutsideEnvelope": {"const": 0},
+        "settleElapsedMillis": {"type": "integer", "minimum": 0}
+      }
+    },
+    "scanStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scannedBlocks", "verifySlices", "mismatchCount", "tileSeamSamples"],
+      "properties": {
+        "scannedBlocks": {"type": "integer", "minimum": 0},
+        "verifySlices": {"type": "integer", "minimum": 0},
+        "mismatchCount": {"const": 0},
+        "tileSeamSamples": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

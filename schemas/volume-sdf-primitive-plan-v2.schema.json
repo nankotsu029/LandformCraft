@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/volume-sdf-primitive-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-01 VolumePlan SDF primitive contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-01 VolumePlan SDF primitive contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "primitiveContractVersion", "quantization", "kernel",
+    "primitives", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "primitiveContractVersion": {"const": "volume-sdf-primitive-contract-v1"},
+    "quantization": {"$ref": "#/$defs/quantization"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "primitives": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/primitive"}
+    },
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "millionths": {"type": "integer", "minimum": -100000000000000, "maximum": 100000000000000},
+    "positiveMillionths": {"type": "integer", "minimum": 1, "maximum": 100000000000000},
+    "nonNegativeMillionths": {"type": "integer", "minimum": 0, "maximum": 100000000000000},
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/millionths"},
+        "yMillionths": {"$ref": "#/$defs/millionths"},
+        "zMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": {"$ref": "#/$defs/millionths"},
+        "minYMillionths": {"$ref": "#/$defs/millionths"},
+        "minZMillionths": {"$ref": "#/$defs/millionths"},
+        "maxXMillionths": {"$ref": "#/$defs/millionths"},
+        "maxYMillionths": {"$ref": "#/$defs/millionths"},
+        "maxZMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "quantization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quantizationVersion", "fixedScale", "geometryScale"],
+      "properties": {
+        "quantizationVersion": {"const": "volume-sdf-q-v1"},
+        "fixedScale": {"const": 1000000},
+        "geometryScale": {"const": 4096}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernelVersion", "maximumSweptControlPoints", "maximumSampleOperationsPerPrimitive"],
+      "properties": {
+        "kernelVersion": {"const": "volume-sdf-fixed-v1"},
+        "maximumSweptControlPoints": {"type": "integer", "minimum": 2, "maximum": 64},
+        "maximumSampleOperationsPerPrimitive": {"type": "integer", "minimum": 1, "maximum": 256}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumPrimitives", "maximumSweptControlPoints",
+        "estimatedCanonicalBytes", "maximumCanonicalBytes", "maximumWorkingBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "volume-sdf-primitive-budget-v1"},
+        "maximumPrimitives": {"type": "integer", "minimum": 1, "maximum": 32},
+        "maximumSweptControlPoints": {"type": "integer", "minimum": 2, "maximum": 64},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 65536},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "primitive": {
+      "oneOf": [
+        {"$ref": "#/$defs/sphere"},
+        {"$ref": "#/$defs/ellipsoid"},
+        {"$ref": "#/$defs/capsule"},
+        {"$ref": "#/$defs/plane"},
+        {"$ref": "#/$defs/roundedBox"},
+        {"$ref": "#/$defs/sweptSpline"}
+      ]
+    },
+    "sphere": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primitiveId", "kind", "center", "radiusMillionths"],
+      "properties": {
+        "primitiveId": {"$ref": "#/$defs/qualified"},
+        "kind": {"const": "SPHERE"},
+        "center": {"$ref": "#/$defs/vec3"},
+        "radiusMillionths": {"$ref": "#/$defs/positiveMillionths"}
+      }
+    },
+    "ellipsoid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primitiveId", "kind", "center", "radiiMillionths"],
+      "properties": {
+        "primitiveId": {"$ref": "#/$defs/qualified"},
+        "kind": {"const": "ELLIPSOID"},
+        "center": {"$ref": "#/$defs/vec3"},
+        "radiiMillionths": {"$ref": "#/$defs/vec3"}
+      }
+    },
+    "capsule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primitiveId", "kind", "pointA", "pointB", "radiusMillionths"],
+      "properties": {
+        "primitiveId": {"$ref": "#/$defs/qualified"},
+        "kind": {"const": "CAPSULE"},
+        "pointA": {"$ref": "#/$defs/vec3"},
+        "pointB": {"$ref": "#/$defs/vec3"},
+        "radiusMillionths": {"$ref": "#/$defs/positiveMillionths"}
+      }
+    },
+    "plane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primitiveId", "kind", "point", "normalMillionths", "clipAabb"],
+      "properties": {
+        "primitiveId": {"$ref": "#/$defs/qualified"},
+        "kind": {"const": "PLANE"},
+        "point": {"$ref": "#/$defs/vec3"},
+        "normalMillionths": {"$ref": "#/$defs/vec3"},
+        "clipAabb": {"$ref": "#/$defs/aabb"}
+      }
+    },
+    "roundedBox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primitiveId", "kind", "center", "halfExtentsMillionths", "cornerRadiusMillionths"],
+      "properties": {
+        "primitiveId": {"$ref": "#/$defs/qualified"},
+        "kind": {"const": "ROUNDED_BOX"},
+        "center": {"$ref": "#/$defs/vec3"},
+        "halfExtentsMillionths": {"$ref": "#/$defs/vec3"},
+        "cornerRadiusMillionths": {"$ref": "#/$defs/nonNegativeMillionths"}
+      }
+    },
+    "sweptSpline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primitiveId", "kind", "controlPoints", "radiusMillionths"],
+      "properties": {
+        "primitiveId": {"$ref": "#/$defs/qualified"},
+        "kind": {"const": "SWEPT_SPLINE"},
+        "controlPoints": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/vec3"}
+        },
+        "radiusMillionths": {"$ref": "#/$defs/positiveMillionths"}
+      }
+    }
+  }
+}

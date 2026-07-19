@@ -65,3 +65,17 @@ APIキーは`OPENAI_API_KEY`／`ANTHROPIC_API_KEY`環境変数だけから読み
 自動testはlocal fake HTTP serverを使用し、両Providerのrequest shape、画像payload、response mapping、429／5xx retry、4xx非retry、timeout、cancel、過大response、秘密・raw path非送信を検証します。OpenAI fakeは画像付きresponseからgenerator／8 previewまでを通します。Anthropic fakeをDesign Package、generator、Releaseまで通す単一E2Eはrelease checklist上の未完了項目です。実APIへの有料live requestはsecretと課金を必要とするため通常のbuildでは実行せず、live互換性は`IMPLEMENTED_BUT_UNTESTED`として監査します。
 
 Paperは`/lfc design create`から同じadapterを呼びます。`config.yml`はenabled、API key環境変数名、default model、timeout／retry／RPM／token policyだけを持ち、key値は保存しません。
+
+## TerrainIntent v2（V2-6-11）
+
+Release 2／TerrainIntent v2 向けには、v1 SPI と並設した `ai.spi.v2` と `TerrainDesignApplicationServiceV2`（`isRelease2Path()`）を使います。既定の CLI／Paper `design` は **v1 のまま** で、v2 は intent contract version と capability を明示した dispatch だけが受理します。
+
+- Capability: `TERRAIN_INTENT_V2_STRUCTURED`／`MANUAL_CONSTRAINT_BUNDLE`／`REFERENCE_IMAGE_SOFT_DRAFT`
+- Path: OpenAI／Anthropic／import／fixture／manual constraint／reference-image soft draft
+- Negotiation: `ProviderCapabilityCatalogV2`＋`DesignCapabilityNegotiatorV2`。未知 version・未宣言 model・capability mismatch は hard reject し、v1 へ fallback しない（ADR 0029）
+- Provider adapter は TerrainIntent v2 Schema の subset を送り、応答は `LandformV2DataCodec` で完全再検証する
+- Design Package v2: `terrain-intent-v2.json`／`audit-v2.json`／任意 `image-draft-evidence-v2.json`／`checksums.sha256`
+- reference image soft draft は SOFT 提案だけ。HARD `mapReferences` への暗黙昇格は禁止（ADR 0017）。secure ファイル封筒の接続は V2-7-02
+- 実 API credential は通常 test に不要。local fake HTTP の contract test で閉じる
+
+同一 canonical `TerrainIntentV2` なら provider 差は後続 generation checksum に影響しません。

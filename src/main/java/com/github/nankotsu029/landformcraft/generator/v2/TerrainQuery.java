@@ -10,6 +10,19 @@ import java.util.OptionalInt;
  * types. Export adapters resolve the semantic result through a separately versioned palette.</p>
  */
 public interface TerrainQuery {
+    /** Column-only heightfield query kernel used by the v1 adapter. */
+    String QUERY_KERNEL_COLUMN_V1 = "terrain-query-column-v1";
+    /** Base heightfield composed with ordered volume CSG (V2-5-05). */
+    String QUERY_KERNEL_VOLUME_V1 = "terrain-query-volume-v1";
+
+    /**
+     * Versioned query kernel id. Defaults to the column-only contract so existing adapters stay
+     * compatible without source changes.
+     */
+    default String queryKernelVersion() {
+        return QUERY_KERNEL_COLUMN_V1;
+    }
+
     QueryBounds bounds();
 
     BlockClass blockClassAt(int x, int y, int z);

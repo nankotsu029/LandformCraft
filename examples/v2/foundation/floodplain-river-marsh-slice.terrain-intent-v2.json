@@ -1,0 +1,88 @@
+{
+  "intentVersion": 2,
+  "intentId": "floodplain-river-marsh-slice-v2",
+  "theme": "V2-9-05 FLOODPLAIN/RIVER/MARSH hydrologic foundation vertical slice",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "main-stem",
+      "kind": "RIVER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.08], [0.48, 0.35], [0.52, 0.65], [0.5, 0.92]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "bankfullWidthBlocks": { "min": 6, "max": 10 },
+        "dischargeClass": "MEDIUM",
+        "minimumBedSlope01": 0.001,
+        "floodplainHandoffWidthBlocks": { "min": 12, "max": 18 },
+        "maxReachCount": 1,
+        "maxNodeDegree": 2
+      },
+      "priority": 15,
+      "provenance": { "source": "MANUAL", "sourceId": "floodplain-marsh-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "alluvial-plain",
+      "kind": "FLOODPLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      },
+      "parameters": {
+        "riverAdjacencyBandBlocks": { "min": 8, "max": 16 },
+        "groundwaterHandoffDepthBlocks": { "min": 4, "max": 8 },
+        "microReliefBlocks": { "min": 1, "max": 3 }
+      },
+      "priority": 12,
+      "provenance": { "source": "MANUAL", "sourceId": "floodplain-marsh-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "river-marsh",
+      "kind": "MARSH",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.55, 0.25], [0.88, 0.25], [0.88, 0.75], [0.55, 0.75], [0.55, 0.25]]]
+      },
+      "parameters": {
+        "hydroperiodBlocks": { "min": 8, "max": 16 },
+        "wetness01": { "min": 0.45, "max": 0.75 },
+        "openWaterShare01": { "min": 0.1, "max": 0.35 },
+        "microReliefBlocks": { "min": 1, "max": 2 },
+        "groundwaterMinDepthBlocks": { "min": 2, "max": 6 }
+      },
+      "priority": 18,
+      "provenance": { "source": "MANUAL", "sourceId": "floodplain-marsh-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "river-floodplain-adjacent",
+      "kind": "ADJACENT_TO",
+      "from": "feature:main-stem",
+      "to": "feature:alluvial-plain",
+      "strength": "HARD",
+      "transition": { "transitionVersion": 1, "profile": "PRIORITY_BLEND", "bandBlocks": 12 }
+    },
+    {
+      "id": "floodplain-marsh-overlap",
+      "kind": "OVERLAPS",
+      "from": "feature:alluvial-plain",
+      "to": "feature:river-marsh",
+      "strength": "HARD",
+      "transition": { "transitionVersion": 1, "profile": "PRIORITY_BLEND", "bandBlocks": 8 }
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "ALLUVIAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "RIVER_CORRIDOR" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "floodplain-marsh-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

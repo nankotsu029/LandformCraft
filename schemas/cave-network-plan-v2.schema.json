@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/cave-network-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-06 CAVE_NETWORK plan contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-06 CAVE_NETWORK plan contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "caveContractVersion", "featureId", "kernel", "nodes", "edges",
+    "entranceNodeIds", "aabb", "surfaceHeightBlocks", "sdfPlanBinding", "csgPlanBinding",
+    "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "caveContractVersion": {"const": "cave-network-contract-v1"},
+    "featureId": {"$ref": "#/$defs/qualified"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/node"}
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/edge"}
+    },
+    "entranceNodeIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/qualified"}
+    },
+    "aabb": {"$ref": "#/$defs/aabb"},
+    "surfaceHeightBlocks": {"type": "integer", "minimum": -512, "maximum": 512},
+    "sdfPlanBinding": {"$ref": "#/$defs/sdfBinding"},
+    "csgPlanBinding": {"$ref": "#/$defs/csgBinding"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "millionths": {"type": "integer", "minimum": -100000000000000, "maximum": 100000000000000},
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/millionths"},
+        "yMillionths": {"$ref": "#/$defs/millionths"},
+        "zMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": {"$ref": "#/$defs/millionths"},
+        "minYMillionths": {"$ref": "#/$defs/millionths"},
+        "minZMillionths": {"$ref": "#/$defs/millionths"},
+        "maxXMillionths": {"$ref": "#/$defs/millionths"},
+        "maxYMillionths": {"$ref": "#/$defs/millionths"},
+        "maxZMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernelVersion", "minimumRoofBlocks", "maximumNodes",
+        "maximumEdges", "maximumRadiusMillionths"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "cave-network-v1"},
+        "minimumRoofBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "maximumNodes": {"type": "integer", "minimum": 1, "maximum": 64},
+        "maximumEdges": {"type": "integer", "minimum": 0, "maximum": 64},
+        "maximumRadiusMillionths": {"type": "integer", "minimum": 1000000, "maximum": 16000000}
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "kind", "center", "radiusMillionths"],
+      "properties": {
+        "nodeId": {"$ref": "#/$defs/qualified"},
+        "kind": {"enum": ["CHAMBER", "JUNCTION", "ENTRANCE", "DEAD_END"]},
+        "center": {"$ref": "#/$defs/vec3"},
+        "radiusMillionths": {"type": "integer", "minimum": 1000000, "maximum": 16000000}
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edgeId", "fromNodeId", "toNodeId", "radiusMillionths"],
+      "properties": {
+        "edgeId": {"$ref": "#/$defs/qualified"},
+        "fromNodeId": {"$ref": "#/$defs/qualified"},
+        "toNodeId": {"$ref": "#/$defs/qualified"},
+        "radiusMillionths": {"type": "integer", "minimum": 1000000, "maximum": 16000000}
+      }
+    },
+    "sdfBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "cave-network-sdf-binding-v1"}
+      }
+    },
+    "csgBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "cave-network-csg-binding-v1"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumNodes", "maximumEdges",
+        "estimatedCanonicalBytes", "maximumCanonicalBytes",
+        "maximumWorkingBytes", "maximumGraphBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "cave-network-budget-v1"},
+        "maximumNodes": {"type": "integer", "minimum": 1, "maximum": 32},
+        "maximumEdges": {"type": "integer", "minimum": 0, "maximum": 64},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 65536},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1},
+        "maximumGraphBytes": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

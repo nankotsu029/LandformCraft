@@ -11,6 +11,7 @@ import com.github.nankotsu029.landformcraft.generator.v2.hydrology.lake.Hydrolog
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.reconcile.HydrologyReconciliationModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.river.HydrologyRiverModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.tidal.HydrologyTidalModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.hydrology.waterfall.HydrologyWaterfallModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.canyon.LandformCanyonModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.fjord.LandformFjordModuleV2;
 import com.github.nankotsu029.landformcraft.model.GenerationBounds;
@@ -51,6 +52,7 @@ class HydrologyPhaseGateV2Test {
             TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
             TerrainIntentV2.FeatureKind.LAKE,
             TerrainIntentV2.FeatureKind.CANYON,
+            TerrainIntentV2.FeatureKind.WATERFALL,
             TerrainIntentV2.FeatureKind.DELTA,
             TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK,
             TerrainIntentV2.FeatureKind.FJORD);
@@ -60,6 +62,7 @@ class HydrologyPhaseGateV2Test {
             HydrologyRiverModuleV2.MODULE_ID,
             HydrologyLakeModuleV2.MODULE_ID,
             LandformCanyonModuleV2.MODULE_ID,
+            HydrologyWaterfallModuleV2.MODULE_ID,
             HydrologyDeltaModuleV2.MODULE_ID,
             HydrologyTidalModuleV2.MODULE_ID,
             LandformFjordModuleV2.MODULE_ID,
@@ -67,7 +70,7 @@ class HydrologyPhaseGateV2Test {
             HydrologyValidationPreviewModuleV2.MODULE_ID);
 
     @Test
-    void completeOfflineKindsAndInfrastructureAreSupportedButDeferredKindsRemainExperimental() {
+    void completedV2_3KindsRemainSupportedAndWaterfallIsSupportedSinceV2_5Gate() {
         BuiltInLandformModuleCatalogV2 catalog = new BuiltInLandformModuleCatalogV2();
         assertEquals(SUPPORTED_HYDROLOGY_MODULES, catalog.modules().stream()
                 .filter(module -> module.lifecycleStatus() == ModuleDescriptorV2.LifecycleStatus.SUPPORTED)
@@ -80,20 +83,8 @@ class HydrologyPhaseGateV2Test {
             assertEquals(ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
                     catalog.requireFor(kind).lifecycleStatus(), kind.name());
         }
-        for (TerrainIntentV2.FeatureKind kind : Set.of(
-                TerrainIntentV2.FeatureKind.WATERFALL,
-                TerrainIntentV2.FeatureKind.ALPINE_MOUNTAIN_RANGE,
-                TerrainIntentV2.FeatureKind.GLACIAL_MOUNTAIN_RANGE,
-                TerrainIntentV2.FeatureKind.VOLCANIC_ARCHIPELAGO)) {
-            assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
-                    catalog.requireFor(kind).lifecycleStatus(), kind.name());
-        }
-        assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+        assertEquals(ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
                 catalog.hydrologyWaterfallModule().descriptor().lifecycleStatus());
-        assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
-                catalog.landformMountainModule().descriptor().lifecycleStatus());
-        assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
-                catalog.landformVolcanicModule().descriptor().lifecycleStatus());
         assertEquals(List.of(ReleaseArtifactCatalogV2.HYDROLOGY_PLAN,
                         ReleaseArtifactCatalogV2.SURFACE_TWO_POINT_FIVE_D),
                 ReleaseArtifactCatalogV2.HYDROLOGY_WITH_SURFACE);
@@ -141,11 +132,11 @@ class HydrologyPhaseGateV2Test {
                         827413L, "a".repeat(64), DiagnosticCompileRequestV2.defaultBudget()),
                 intent);
         for (TerrainIntentV2.Feature feature : intent.features()) {
-            ModuleDescriptorV2.LifecycleStatus expected = SUPPORTED_KINDS.contains(feature.kind())
-                    ? ModuleDescriptorV2.LifecycleStatus.SUPPORTED
-                    : ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL;
-            assertEquals(expected, new BuiltInLandformModuleCatalogV2()
-                    .requireFor(feature.kind()).lifecycleStatus(), scenario.path() + " " + feature.kind());
+            if (SUPPORTED_KINDS.contains(feature.kind())) {
+                assertEquals(ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
+                        new BuiltInLandformModuleCatalogV2().requireFor(feature.kind()).lifecycleStatus(),
+                        scenario.path() + " " + feature.kind());
+            }
         }
         return blueprint.canonicalChecksum();
     }

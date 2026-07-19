@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-preview-index-v2.schema.json",
   "title": "LandformCraft V2 hydrology diagnostic preview index",
+  "description": "Strict, version-frozen v2 contract for the V2 hydrology diagnostic preview index. Diagnostic preview index that locates generated PNG layers; not a generation input.",
   "type": "object",
   "additionalProperties": false,
   "required": ["previewIndexVersion", "sourceBlueprintChecksum", "width", "length", "layers", "canonicalChecksum"],

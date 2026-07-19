@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/environment-preview-index-v2.schema.json",
+  "title": "LandformCraft V2 environment diagnostic preview index",
+  "description": "Strict, version-frozen v2 contract for the V2 environment diagnostic preview index. Diagnostic preview index that locates generated PNG layers; not a generation input.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["previewIndexVersion", "sourcePlanChecksum", "width", "length", "layers", "canonicalChecksum"],
+  "properties": {
+    "previewIndexVersion": {"const": 1},
+    "sourcePlanChecksum": {"$ref": "#/$defs/checksum"},
+    "width": {"type": "integer", "minimum": 1, "maximum": 1000},
+    "length": {"type": "integer", "minimum": 1, "maximum": 1000},
+    "layers": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"$ref": "#/$defs/layer"}},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "layerId": {"enum": ["TEMPERATURE", "MOISTURE", "WETNESS", "SALINITY", "HYDROPERIOD", "SNOW_COVER", "HABITAT", "MATERIAL_PROFILE", "FEATURE_MATERIAL", "CONSTRAINT_ERROR"]},
+    "layer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["layerId", "layerVersion", "path", "semantic", "sha256", "byteLength", "width", "length", "paletteId"],
+      "properties": {
+        "layerId": {"$ref": "#/$defs/layerId"}, "layerVersion": {"const": 1},
+        "path": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}\\.png$"},
+        "semantic": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+        "sha256": {"$ref": "#/$defs/checksum"}, "byteLength": {"type": "integer", "minimum": 1, "maximum": 8388608},
+        "width": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "length": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "paletteId": {"const": "environment-diagnostic-palette-v1"}
+      }
+    }
+  }
+}

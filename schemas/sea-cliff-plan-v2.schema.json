@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/sea-cliff-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-06 sea-cliff foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-06 sea-cliff foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "centerline", "selectedCliffHeightBlocks",
+    "selectedTalusWidthBlocks", "selectedNotchDepthBlocks", "seawardSide",
+    "selectedSupportHalfExtentXZBlocks", "coastTransitionBandBlocks", "hostSupportAabb",
+    "minY", "maxY", "waterLevel", "width", "length",
+    "cliffFaceMaskFieldId", "talusMaskFieldId", "notchMaskFieldId",
+    "solidOwnershipFieldId", "volumeHostOwnershipFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "centerline": { "type": "array", "minItems": 2, "maxItems": 16384, "items": { "$ref": "#/$defs/centerlinePoint" } },
+    "selectedCliffHeightBlocks": { "type": "integer", "minimum": 1, "maximum": 128 },
+    "selectedTalusWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "selectedNotchDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "seawardSide": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+    "selectedSupportHalfExtentXZBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "coastTransitionBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "hostSupportAabb": { "$ref": "#/$defs/aabb" },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "cliffFaceMaskFieldId": { "const": "foundation.sea-cliff.face-mask" },
+    "talusMaskFieldId": { "const": "foundation.sea-cliff.talus-mask" },
+    "notchMaskFieldId": { "const": "foundation.sea-cliff.notch-mask" },
+    "solidOwnershipFieldId": { "const": "foundation.sea-cliff.solid-ownership" },
+    "volumeHostOwnershipFieldId": { "const": "foundation.sea-cliff.volume-host-ownership" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "centerlinePoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths", "arcLengthMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "aabb": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": { "type": "integer" },
+        "minYMillionths": { "type": "integer" },
+        "minZMillionths": { "type": "integer" },
+        "maxXMillionths": { "type": "integer" },
+        "maxYMillionths": { "type": "integer" },
+        "maxZMillionths": { "type": "integer" }
+      }
+    }
+  }
+}

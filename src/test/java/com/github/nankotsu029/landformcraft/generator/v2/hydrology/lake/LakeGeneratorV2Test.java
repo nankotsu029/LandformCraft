@@ -199,7 +199,7 @@ class LakeGeneratorV2Test {
                         new TerrainIntentV2.Point2(200_000, 200_000),
                         new TerrainIntentV2.Point2(100_000, 200_000),
                         new TerrainIntentV2.Point2(100_000, 100_000)))),
-                new TerrainIntentV2.NoParameters(),
+                defaultMangroveParameters(),
                 0,
                 TerrainIntentV2.Provenance.confirmedManual("lake-test"));
         List<TerrainIntentV2.Relation> bad = List.of(new TerrainIntentV2.Relation(
@@ -363,6 +363,12 @@ class LakeGeneratorV2Test {
             }
             return sample;
         };
+    }
+
+    private static TerrainIntentV2.MangroveWetlandParameters defaultMangroveParameters() {
+        return new TerrainIntentV2.MangroveWetlandParameters(
+                new TerrainIntentV2.IntRange(2, 3),
+                new TerrainIntentV2.FixedRange(200_000, 400_000));
     }
 
     private static long tileKey(int originX, int originZ) {

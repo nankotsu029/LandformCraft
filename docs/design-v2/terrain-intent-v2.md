@@ -1,6 +1,6 @@
 # TerrainIntent v2
 
-> Status: V2-0〜V2-3のPhase gateと`V2-4-01`〜`V2-4-04`を完了した。V2-4-04のBlueprint compilerは既存`environment.climatePreset`をclosed built-in climate catalogとして明示解決し、欠落／unknown presetをfallbackせず拒否する。TerrainIntent v2 Schemaのfield形状と現行v1 Schema／実装は変更していない。次は`V2-4-05`であり、feature contractの導入順は [Task Index](task-index.md) を参照する。
+> Status: V2-0〜V2-4のPhase gateを完了した。V2-4 Blueprint compilerは既存`environment.climatePreset`／`ecologyPreset`をclosed built-in catalogとして明示解決し、欠落／unknown presetをfallbackせず拒否する。TerrainIntent v2 Schemaのfield形状と現行v1 Schema／実装はV2-4-15で変更していない。Track Aの次は`V2-5-01`であり、feature contractの導入順は [Task Index](task-index.md) を参照する。
 
 ## 1. 目的
 
@@ -1093,13 +1093,25 @@ Constraint
       "id": "west-entrance",
       "kind": "CAVE_ENTRANCE",
       "geometry": { "type": "POINT", "point": [0.20, 0.42] },
-      "parameters": { "surfaceOffset": -2, "minimumOpeningBlocks": 4 }
+      "parameters": {
+        "surfaceOffsetBlocks": -2,
+        "minimumOpeningBlocks": 4,
+        "approachLengthBlocks": 8,
+        "roofClearanceBlocks": 3,
+        "targetEntranceNodeId": "n.entrance"
+      }
     },
     {
       "id": "east-entrance",
       "kind": "CAVE_ENTRANCE",
       "geometry": { "type": "POINT", "point": [0.79, 0.58] },
-      "parameters": { "surfaceOffset": -4, "minimumOpeningBlocks": 4 }
+      "parameters": {
+        "surfaceOffsetBlocks": -4,
+        "minimumOpeningBlocks": 4,
+        "approachLengthBlocks": 8,
+        "roofClearanceBlocks": 3,
+        "targetEntranceNodeId": "n.exit"
+      }
     },
     {
       "id": "lush-chamber",

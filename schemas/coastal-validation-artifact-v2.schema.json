@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/coastal-validation-artifact-v2.schema.json",
   "title": "LandformCraft V2 coastal validation evidence artifact",
+  "description": "Strict, version-frozen v2 contract for the V2 coastal validation evidence artifact. Validation evidence only; it never authorizes generation or world mutation.",
   "type": "object",
   "additionalProperties": false,
   "required": ["validationArtifactVersion", "sourceBlueprintChecksum", "validatorId", "validatorVersion", "report", "canonicalChecksum"],

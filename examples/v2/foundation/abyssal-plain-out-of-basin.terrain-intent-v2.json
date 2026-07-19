@@ -1,0 +1,60 @@
+{
+  "intentVersion": 2,
+  "intentId": "abyssal-plain-out-of-basin-v2",
+  "theme": "V2-10-04 ABYSSAL_PLAIN polygon outside ocean basin host (negative)",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "deep-basin",
+      "kind": "OCEAN_BASIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [[0.15, 0.15], [0.85, 0.15], [0.85, 0.85], [0.15, 0.85], [0.15, 0.15]]
+        ]
+      },
+      "parameters": {
+        "maxDepthBlocksBelowSea": { "min": 40, "max": 48 },
+        "floorReliefBlocks": { "min": 2, "max": 4 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "abyssal-negative-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "corner-abyssal",
+      "kind": "ABYSSAL_PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [[0.05, 0.05], [0.12, 0.05], [0.12, 0.12], [0.05, 0.12], [0.05, 0.05]]
+        ]
+      },
+      "parameters": {
+        "floorDepthBlocksBelowSea": { "min": 42, "max": 46 },
+        "floorReliefBlocks": { "min": 1, "max": 2 }
+      },
+      "priority": 20,
+      "provenance": { "source": "MANUAL", "sourceId": "abyssal-negative-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "abyssal-within-basin",
+      "kind": "WITHIN",
+      "from": "feature:corner-abyssal",
+      "to": "feature:deep-basin",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "COASTAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "COASTAL_SCRUB" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "abyssal-negative-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

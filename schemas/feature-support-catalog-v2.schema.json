@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/feature-support-catalog-v2.schema.json",
+  "title": "LandformCraft V2-6-18 Feature Support Catalog",
+  "description": "Strict, version-frozen v2 contract for the V2-6-18 Feature Support Catalog. Rejects unknown fields, versions and encodings instead of falling back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "catalogVersion",
+    "contractVersion",
+    "placementDimensionLimit",
+    "entries",
+    "availablePresets",
+    "unsupportedDiagnostics",
+    "deferredDiagnostics",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "catalogVersion": { "const": 1 },
+    "contractVersion": { "const": "feature-support-catalog-v1" },
+    "placementDimensionLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maximumWidth", "maximumLength"],
+      "properties": {
+        "maximumWidth": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "maximumLength": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "availablePresets": {
+      "type": "array",
+      "maxItems": 32,
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "unsupportedDiagnostics": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "deferredDiagnostics": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "supportLevel": {
+      "type": "string",
+      "enum": ["SUPPORTED", "PARTIAL", "EXPERIMENTAL", "UNSUPPORTED", "NOT_APPLICABLE"]
+    },
+    "primaryRole": {
+      "type": "string",
+      "enum": [
+        "MACRO_CONSTRAINT",
+        "STANDALONE_FEATURE",
+        "VOLUME_OVERLAY",
+        "CHILD_PLAN_ONLY",
+        "COMPONENT",
+        "MODIFIER",
+        "ENVIRONMENT_PROFILE",
+        "COMPOSITE_PRESET"
+      ]
+    },
+    "support": {
+      "type": "object",
+      "description": "Per-capability support levels. Promotion evidence for the five Paper columns (paper_apply, post_apply_validation, snapshot, rollback, restart_recovery) is enforced by FeatureSupportCatalogConsistencyVerifierV2, not by this schema.",
+      "additionalProperties": false,
+      "required": [
+        "intent_compile",
+        "offline_generate",
+        "validation",
+        "preview",
+        "export",
+        "standalone_usage",
+        "child_plan_usage",
+        "volume_overlay_usage",
+        "paper_apply",
+        "post_apply_validation",
+        "snapshot",
+        "rollback",
+        "restart_recovery"
+      ],
+      "properties": {
+        "intent_compile": { "$ref": "#/$defs/supportLevel" },
+        "offline_generate": { "$ref": "#/$defs/supportLevel" },
+        "validation": { "$ref": "#/$defs/supportLevel" },
+        "preview": { "$ref": "#/$defs/supportLevel" },
+        "export": { "$ref": "#/$defs/supportLevel" },
+        "standalone_usage": { "$ref": "#/$defs/supportLevel" },
+        "child_plan_usage": { "$ref": "#/$defs/supportLevel" },
+        "volume_overlay_usage": { "$ref": "#/$defs/supportLevel" },
+        "paper_apply": { "$ref": "#/$defs/supportLevel" },
+        "post_apply_validation": { "$ref": "#/$defs/supportLevel" },
+        "snapshot": { "$ref": "#/$defs/supportLevel" },
+        "rollback": { "$ref": "#/$defs/supportLevel" },
+        "restart_recovery": { "$ref": "#/$defs/supportLevel" }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entryId",
+        "profileId",
+        "primaryRole",
+        "allowedUsages",
+        "support",
+        "featureKindName",
+        "lifecycleStatus",
+        "requiredReleaseCapability",
+        "requiredRuntime",
+        "evidenceRef",
+        "notes"
+      ],
+      "properties": {
+        "entryId": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" },
+        "profileId": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$" },
+        "primaryRole": { "$ref": "#/$defs/primaryRole" },
+        "allowedUsages": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/primaryRole" }
+        },
+        "support": { "$ref": "#/$defs/support" },
+        "featureKindName": { "type": "string", "maxLength": 64 },
+        "lifecycleStatus": { "enum": ["EXPERIMENTAL", "SUPPORTED", "DEPRECATED"] },
+        "requiredReleaseCapability": { "type": "string", "maxLength": 64 },
+        "requiredRuntime": { "type": "string", "maxLength": 128 },
+        "evidenceRef": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "notes": {
+          "type": "array",
+          "maxItems": 16,
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      }
+    }
+  }
+}

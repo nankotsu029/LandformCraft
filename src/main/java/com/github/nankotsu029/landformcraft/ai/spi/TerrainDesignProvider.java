@@ -18,6 +18,23 @@ public interface TerrainDesignProvider extends AutoCloseable {
         return false;
     }
 
+    /**
+     * Whether successful results may be reused from the durable response cache. Only remote
+     * (billed) providers opt in; import／fixture providers read local state that can change
+     * between jobs, so caching them would serve stale intents.
+     */
+    default boolean supportsDurableResponseCache() {
+        return false;
+    }
+
+    /**
+     * Cache identity for the durable response cache. Must distinguish provider configurations
+     * that can produce different results for the same request (e.g. the configured model).
+     */
+    default String cacheIdentity() {
+        return id();
+    }
+
     @Override
     default void close() {
         // Most fixture/import providers own no resources. Network providers override this method.

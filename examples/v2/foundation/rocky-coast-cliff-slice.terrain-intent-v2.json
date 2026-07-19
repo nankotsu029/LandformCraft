@@ -1,0 +1,94 @@
+{
+  "intentVersion": 2,
+  "intentId": "rocky-coast-cliff-slice-v2",
+  "theme": "V2-9-06 ROCKY_COAST/SEA_CLIFF foundation vertical slice with beach transition relation",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "rocky-shore",
+      "kind": "ROCKY_COAST",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.08], [0.49, 0.35], [0.51, 0.65], [0.5, 0.92]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "rockShelfWidthBlocks": { "min": 32, "max": 32 },
+        "rockExposure01": { "min": 0.35, "max": 0.75 },
+        "shoreSide": "WEST",
+        "channelCount": { "min": 2, "max": 3 },
+        "capeOrBeachTransitionBandBlocks": 8,
+        "talusHandoffDepthBlocks": { "min": 4, "max": 8 }
+      },
+      "priority": 14,
+      "provenance": { "source": "MANUAL", "sourceId": "rocky-coast-cliff-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "host-cliff",
+      "kind": "SEA_CLIFF",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.08], [0.49, 0.35], [0.51, 0.65], [0.5, 0.92]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "cliffHeightBlocks": { "min": 24, "max": 40 },
+        "talusWidthBlocks": { "min": 4, "max": 8 },
+        "notchDepthBlocks": { "min": 2, "max": 4 },
+        "seawardSide": "WEST",
+        "supportHalfExtentXZBlocks": { "min": 16, "max": 24 },
+        "coastTransitionBandBlocks": 8
+      },
+      "priority": 18,
+      "provenance": { "source": "MANUAL", "sourceId": "rocky-coast-cliff-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "east-beach",
+      "kind": "SANDY_BEACH",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.72, 0.15], [0.75, 0.45], [0.73, 0.75]],
+        "interpolation": "CATMULL_ROM"
+      },
+      "parameters": {
+        "widthBlocks": { "min": 12, "max": 24 },
+        "shoreSlopeDegrees": { "min": 2, "max": 8 },
+        "nearshoreDepthBlocks": { "atDistance": 24, "target": 4 },
+        "foreshoreShare01": 0.55,
+        "endpointTaperBlocks": 32,
+        "landSide": "LEFT"
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "rocky-coast-cliff-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "coast-cliff-overlap",
+      "kind": "OVERLAPS",
+      "from": "feature:rocky-shore",
+      "to": "feature:host-cliff",
+      "strength": "HARD",
+      "transition": { "transitionVersion": 1, "profile": "PRIORITY_BLEND", "bandBlocks": 8 }
+    },
+    {
+      "id": "coast-beach-adjacent",
+      "kind": "ADJACENT_TO",
+      "from": "feature:rocky-shore",
+      "to": "feature:east-beach",
+      "strength": "HARD",
+      "transition": { "transitionVersion": 1, "profile": "PRIORITY_BLEND", "bandBlocks": 8 }
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "COASTAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "COASTAL_SCRUB" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "rocky-coast-cliff-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

@@ -7,7 +7,11 @@ import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
 import java.util.List;
 
-/** Built-in EXPERIMENTAL module for WATERFALL lip / base / plunge-pool 2.5D shaping. */
+/**
+ * Built-in module for WATERFALL lip / base / plunge-pool 2.5D shaping. SUPPORTED (offline) since
+ * the V2-5 phase gate: the deferred falling-column / behind-fall volume is delivered by the
+ * sparse-volume {@code WaterfallVolumePlanV2} bound to this module's fall geometry checksum.
+ */
 public final class HydrologyWaterfallModuleV2 {
     public static final String MODULE_ID = "v2.hydrology.waterfall";
     public static final String MODULE_VERSION = "0.1.0-v2-3-06";
@@ -36,7 +40,7 @@ public final class HydrologyWaterfallModuleV2 {
     private final ModuleDescriptorV2 descriptor = new ModuleDescriptorV2(
             MODULE_ID,
             MODULE_VERSION,
-            ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+            ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
             List.of(TerrainIntentV2.FeatureKind.WATERFALL),
             REQUIRED,
             PROVIDED,

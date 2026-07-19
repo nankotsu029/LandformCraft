@@ -1,6 +1,6 @@
 # 画像由来Constraint Map
 
-> Status: V2-1〜V2-3のmap contractと回帰を完了した。`V2-4-01`〜`V2-4-04`のgeology／lithology／strata／climate planはいずれも画像constraintの意味、field index、security envelopeを変更していない。通常画像からのAI draft生成は未実装である。次Taskは`V2-4-05`である。詳細は [Task Index](task-index.md) を参照する。
+> Status: V2-1〜V2-3のmap contractと回帰を完了した。geology／lithology／strata／climate planはいずれも画像constraintの意味、field index、security envelopeを変更していない。2026-07-17再設計で、通常画像からの**決定論的（AI非依存）抽出**がTrack B（V2-7）として追加され、`V2-7-01`のland-water抽出coreを実装済みである（15節）。AIによるdraft生成は引き続き未実装で、実装する場合も同じdraft／明示昇格契約を通す。詳細は [Task Index](task-index.md) と [ADR 0017](../adr/0017-deterministic-image-mask-extraction.md) を参照する。
 
 ## 1. 結論
 
@@ -343,3 +343,26 @@ V2-1ではU8 mask、U16 height、U16 label、no-data、rotation／flip／crop、
 ## 14. Manual fixture
 
 `examples/v2/manual-constraint-island/` はRequest／Intentの契約fixtureである。actual PNG、checksum、canonical artifact IDのfreezeと、mask＋height guide＋zone label mapからのAI非経由生成は `ManualConstraintMapGenerationServiceV2Test` が一時directory上で実行する。公開CLI／Paper commandにはまだ接続していないため、example JSONのplaceholder checksumだけを使って生成できるとは表現しない。
+
+## 15. 決定論的抽出（V2-7、2026-07-17追加）
+
+reference image（AI解釈）とconstraint map（外部準備の数値PNG）の間に、第3の経路を追加する。
+
+```text
+通常画像 / スケッチ
+→ sanitized ARGB（V2-7-02のsecure envelope）
+→ ImageLandWaterExtractorV2（image-land-water-extract-v1、integer-only固定閾値）
+→ ExtractedMaskDraftV2（WATER/LAND/UNKNOWN + 信頼度0..255 + semantic checksum）
+→ draft artifact / confidence preview（V2-7-03）
+→ 利用者の明示昇格（V2-7-04）
+→ V2-1 strict decoderを再経由した通常のconstraint map
+```
+
+不変条件:
+
+- 抽出はAIを呼ばず、同一入力から常に同一のdraft checksumを再生する。閾値変更は新algorithm versionとして追加する。
+- draftはSOFT提案であり、hard constraintへの暗黙昇格・fallback昇格を禁止する。昇格はUNKNOWN処理と信頼度閾値を明示指定した操作のみとする。
+- provenanceはsource checksum → draft semantic checksum → constraint map checksumの連鎖で検証可能にする。
+- admissionはtrusted ceiling（4096px/辺、16Mピクセル、aspect 32、working 64 MiB）を割当前に検査し、cancelは行単位で観測する。
+
+height guide抽出はV2-7-05、zone/スケッチlabel抽出はV2-7-06、複数入力の競合解決とsource-to-result差分はV2-7-07で扱う。実装状態は [docs/roadmap.md](../roadmap.md) を正本とする。

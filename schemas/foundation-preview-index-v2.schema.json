@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/foundation-preview-index-v2.schema.json",
+  "title": "LandformCraft V2-9-02 foundation preview index",
+  "description": "Strict, version-frozen v2 contract for the V2-9-02 foundation preview index. Diagnostic preview index that locates generated PNG layers; not a generation input.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["planVersion", "contractVersion", "layers", "width", "length", "canonicalChecksum"],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "contractVersion": { "const": "foundation-preview-index-v1" },
+    "layers": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/layer" } },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "layer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["layerId", "fieldId", "checksum"],
+      "properties": {
+        "layerId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "fieldId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+        "checksum": { "$ref": "#/$defs/checksum" }
+      }
+    }
+  }
+}

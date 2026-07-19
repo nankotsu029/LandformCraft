@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/floodplain-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-05 floodplain foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-05 floodplain foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "rings", "riverAdjacencyBandBlocks",
+    "groundwaterHandoffDepthBlocks", "selectedMicroReliefBlocks",
+    "minY", "maxY", "waterLevel", "width", "length",
+    "floodplainMaskFieldId", "elevationFieldId", "microReliefFieldId",
+    "groundwaterHandoffFieldId", "solidOwnershipFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "rings": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/ring" } },
+    "riverAdjacencyBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "groundwaterHandoffDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "selectedMicroReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "floodplainMaskFieldId": { "const": "foundation.floodplain.mask" },
+    "elevationFieldId": { "const": "foundation.floodplain.elevation" },
+    "microReliefFieldId": { "const": "foundation.floodplain.micro-relief" },
+    "groundwaterHandoffFieldId": { "const": "foundation.floodplain.groundwater-handoff" },
+    "solidOwnershipFieldId": { "const": "foundation.floodplain.solid-ownership" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "vertex": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ring": {
+      "type": "object", "additionalProperties": false,
+      "required": ["vertices"],
+      "properties": {
+        "vertices": {
+          "type": "array", "minItems": 4, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/vertex" }
+        }
+      }
+    }
+  }
+}

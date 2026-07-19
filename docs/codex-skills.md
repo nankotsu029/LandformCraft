@@ -1,13 +1,18 @@
-# Codex Skills
+# Agent Skills
 
 ## 正本docsとの関係
 
-`.agents/skills/` は反復workflowだけを定義する。常時規則は `AGENTS.md`、進捗は `docs/roadmap.md`、TaskのScope／非Scope／Acceptance／停止条件は `docs/design-v2/task-index.md` を正本とする。Skill本文へ現在の次Task、完了件数、Phase状態、将来変わるversionや個別parameterを固定しない。
+`.agents/skills/` は反復workflowだけを定義する。常時規則は `AGENTS.md`、進捗は `docs/roadmap.md`、TaskのScope／非Scope／Acceptance／停止条件は `docs/design-v2/task-index.md`、モデル割当は `docs/design-v2/model-assignment.md` を正本とする。Skill本文へ現在の次Task、完了件数、Phase状態、将来変わるversionや個別parameterを固定しない。SkillはCodexに限らず、Claude Code／Antigravity／Cursorの各エージェントが同じ規約で使う。
 
 ## Skill一覧
 
 | Skill | 用途 | 明示呼び出し例 |
 |---|---|---|
+| `landformcraft-survey-repository` | 実装済み／文書のみ／矛盾をコード根拠で分類し調査記録を残す | `$landformcraft-survey-repository で現状を調査してください` |
+| `landformcraft-assign-task-model` | 新Taskへモデル・Effort・レビュー担当を割り当てる | `$landformcraft-assign-task-model でV2-x-NNの割当を決めてください` |
+| `landformcraft-change-schema-or-ir` | Schema・中間表現・canonical JSON・checksum影響変更を安全に行う | `$landformcraft-change-schema-or-ir でこのSchema変更を実装してください` |
+| `landformcraft-add-image-constraint` | V2-7の抽出・constraint map role・draft／昇格経路を追加する | `$landformcraft-add-image-constraint でheight抽出を実装してください` |
+| `landformcraft-sync-docs-roadmap` | README・docs・roadmap・Task Indexを実装と同期する | `$landformcraft-sync-docs-roadmap でTask完了後の同期をしてください` |
 | `landformcraft-execute-v2-task` | 現在または指定V2 Taskを1件だけAcceptanceまで実装する | `$landformcraft-execute-v2-task で現在の次Taskを実装してください` |
 | `landformcraft-guard-v1-compatibility` | v1 Schema、generator、Release 1、placement、Undoの互換性を監査する | `$landformcraft-guard-v1-compatibility でこのdiffのv1回帰を確認してください` |
 | `landformcraft-audit-determinism-resources` | whole/tile/thread/order差、checksum、memory/CPU/artifact、cancel cleanupを監査する | `$landformcraft-audit-determinism-resources でこのkernelを監査してください` |

@@ -112,7 +112,13 @@ Provider、artifact repository、clock、executorをfakeへ差し替え、成功
 
 ### 3. Real-server smoke test
 
-`run-paper`でPaper 1.21.11を起動し、plugin load、command、Scheduler、WorldEdit／FAWE adapterを検証します。WorldEdit 7.3.19環境とFAWE 2.15.2環境は分け、同時導入しません。2026-07-14に0.9.0-beta.1をWorldEdit 7.3.19で64×64／1 tile／4 structure Releaseへplan（293,621,754 bytes予約）→snapshot→apply→full verify→別token Undoし、`UNDONE` journal read-backと正常停止を確認しました。最初の試行で柵connection state差分をexact verifyが検出して自動rollbackし、生成paletteを修正後に再成功しています。FAWE 2.15.2のcurrent smokeは独立`run-fawe`でplugin initializationまで確認しましたが、実行sandboxのport bind制限によりload／applyへ到達していないため未確認です。
+`run-paper`でPaper 1.21.11を起動し、plugin load、command、Scheduler、WorldEdit／FAWE adapterを検証します。WorldEdit 7.3.19環境とFAWE 2.15.2環境は分け、同時導入しません。2026-07-14に0.9.0-beta.1をWorldEdit 7.3.19で64×64／1 tile／4 structure Releaseへplan（293,621,754 bytes予約）→snapshot→apply→full verify→別token Undoし、`UNDONE` journal read-backと正常停止を確認しました。最初の試行で柵connection state差分をexact verifyが検出して自動rollbackし、生成paletteを修正後に再成功しています。
+
+Release 2 placement smokeは v1 の上記記録とは別である。`V2-6-14` WorldEdit 7.3.19は [evidence](design-v2/audits/v2-6-14-worldedit-smoke-evidence.md) で完了。`V2-6-15` FAWE 2.15.2は [evidence](design-v2/audits/v2-6-15-fawe-smoke-evidence.md) で完了。
+
+- WE: [runbook](smoke/v2-6-14-worldedit-7.3.19-runbook.md) — 起動は `./gradlew runServer`（`versions/*.jar` 直起動不可）
+- FAWE: [runbook](smoke/v2-6-15-fawe-2.15.2-runbook.md)／ADR 0032／`./gradlew runFaweServer`（`runDirectory=run-fawe`）／`scripts/smoke/v2-6-15-run.sh`
+- 共通阻害: Release 2 apply／Undo／Recovery が Paper command へ未注入
 
 `JavaPlugin`を直接constructorで生成するテストは禁止します。
 

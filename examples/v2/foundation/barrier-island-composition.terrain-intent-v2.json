@@ -1,0 +1,64 @@
+{
+  "intentVersion": 2,
+  "intentId": "barrier-island-composition-v2",
+  "theme": "V2-10-08 BARRIER_ISLAND COMPOSITE_PRESET (SINGLE_ISLAND + LAGOON shore-parallel)",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "barrier-ridge",
+      "kind": "SINGLE_ISLAND",
+      "geometry": {
+        "type": "POINT",
+        "point": [0.78, 0.5]
+      },
+      "parameters": {
+        "radiusBlocks": { "min": 18, "max": 24 },
+        "summitHeightBlocksAboveSea": { "min": 8, "max": 12 },
+        "shoreBandWidthBlocks": { "min": 4, "max": 8 },
+        "radialDrainage01": { "min": 0.2, "max": 0.5 },
+        "submarineApronDepthBlocks": { "min": 4, "max": 8 }
+      },
+      "priority": 20,
+      "provenance": { "source": "MANUAL", "sourceId": "barrier-island-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "landward-lagoon",
+      "kind": "LAGOON",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.42, 0.18], [0.62, 0.16], [0.64, 0.82], [0.44, 0.84], [0.42, 0.18]]]
+      },
+      "parameters": { "depthBlocks": { "min": 5, "max": 8 } },
+      "priority": 12,
+      "provenance": { "source": "MANUAL", "sourceId": "barrier-island-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "ridge-flanks-lagoon",
+      "kind": "FLANKS",
+      "from": "feature:barrier-ridge",
+      "to": "feature:landward-lagoon",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "east-sea",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": { "edge": "EAST", "classification": "SEA", "minimumShare01": 0.15 }
+    }
+  ],
+  "environment": { "geologyPreset": "COASTAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "COASTAL_SCRUB" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "barrier-island-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

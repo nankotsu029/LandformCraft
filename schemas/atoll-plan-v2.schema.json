@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/atoll-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-08 ATOLL composite preset plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-08 ATOLL composite preset plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "presetId", "contractVersion", "reefFeatureId", "reefGeometryChecksum",
+    "lagoonFeatureId", "lagoonGeometryChecksum", "reefPassFeatureId", "reefPassGeometryChecksum",
+    "optionalIsletFeatureId", "isletGeometryChecksum", "supportRadiusXZ", "estimatedWorkUnits",
+    "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "presetId": { "$ref": "#/$defs/slug" },
+    "contractVersion": { "const": "atoll-preset-contract-v1" },
+    "reefFeatureId": { "$ref": "#/$defs/slug" },
+    "reefGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "lagoonFeatureId": { "$ref": "#/$defs/slug" },
+    "lagoonGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "reefPassFeatureId": { "$ref": "#/$defs/slug" },
+    "reefPassGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "optionalIsletFeatureId": { "type": "string", "maxLength": 64 },
+    "isletGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 2, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

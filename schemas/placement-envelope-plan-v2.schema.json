@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-envelope-plan-v2.schema.json",
+  "title": "LandformCraft V2-6-02 Release 2 mutation/effect envelope contract",
+  "description": "Strict, version-frozen v2 contract for the V2-6-02 Release 2 mutation/effect envelope contract. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "envelopeContractVersion", "placementPlanBinding", "physicsPolicy",
+    "allowedWorldBounds", "tiles", "unionMutationEnvelope", "unionEffectEnvelope",
+    "diskEstimate", "budget", "mutationEnvelopeChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "envelopeContractVersion": {"const": "release-2-placement-envelope-contract-v1"},
+    "placementPlanBinding": {"$ref": "#/$defs/placementPlanBinding"},
+    "physicsPolicy": {"$ref": "#/$defs/physicsPolicy"},
+    "allowedWorldBounds": {"$ref": "#/$defs/aabb"},
+    "tiles": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/tileEnvelope"}
+    },
+    "unionMutationEnvelope": {"$ref": "#/$defs/aabb"},
+    "unionEffectEnvelope": {"$ref": "#/$defs/aabb"},
+    "diskEstimate": {"$ref": "#/$defs/diskEstimate"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "mutationEnvelopeChecksum": {"$ref": "#/$defs/checksum"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "minY", "minZ", "maxX", "maxY", "maxZ"],
+      "properties": {
+        "minX": {"type": "integer"},
+        "minY": {"type": "integer"},
+        "minZ": {"type": "integer"},
+        "maxX": {"type": "integer"},
+        "maxY": {"type": "integer"},
+        "maxZ": {"type": "integer"}
+      }
+    },
+    "placementPlanBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourcePlacementPlanChecksum", "tileCount", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourcePlacementPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "tileCount": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "bindingContractVersion": {"const": "release-2-placement-envelope-plan-binding-v1"}
+      }
+    },
+    "physicsPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyVersion", "fluidSupportRadiusXZ", "fluidSupportRadiusY",
+        "gravityFallBlocks", "neighborUpdateRadius"
+      ],
+      "properties": {
+        "policyVersion": {"const": "release-2-placement-physics-policy-v1"},
+        "fluidSupportRadiusXZ": {"type": "integer", "minimum": 0, "maximum": 256},
+        "fluidSupportRadiusY": {"type": "integer", "minimum": 0, "maximum": 256},
+        "gravityFallBlocks": {"type": "integer", "minimum": 0, "maximum": 256},
+        "neighborUpdateRadius": {"type": "integer", "minimum": 0, "maximum": 256}
+      }
+    },
+    "tileEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tileId", "tileIndex", "physicsClasses", "mutationAabb", "effectAabb"],
+      "properties": {
+        "tileId": {"type": "string", "pattern": "^tile-x[0-9]+-z[0-9]+$"},
+        "tileIndex": {"type": "integer", "minimum": 0, "maximum": 1023},
+        "physicsClasses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"enum": ["SOLID", "AIR", "FLUID", "GRAVITY", "NEIGHBOR"]}
+        },
+        "mutationAabb": {"$ref": "#/$defs/aabb"},
+        "effectAabb": {"$ref": "#/$defs/aabb"}
+      }
+    },
+    "diskEstimate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutationVolumeBlocks", "effectVolumeBlocks", "snapshotBytes",
+        "safetyMarginBytes", "totalBytes"
+      ],
+      "properties": {
+        "mutationVolumeBlocks": {"type": "integer", "minimum": 1},
+        "effectVolumeBlocks": {"type": "integer", "minimum": 1},
+        "snapshotBytes": {"type": "integer", "minimum": 1},
+        "safetyMarginBytes": {"type": "integer", "minimum": 0},
+        "totalBytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumTiles", "maximumEffectVolumeBlocks",
+        "maximumDiskEstimateBytes", "estimatedCanonicalBytes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "release-2-placement-envelope-budget-v1"},
+        "maximumTiles": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "maximumEffectVolumeBlocks": {"type": "integer", "minimum": 1},
+        "maximumDiskEstimateBytes": {"type": "integer", "minimum": 1},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+      }
+    }
+  }
+}

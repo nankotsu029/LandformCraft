@@ -1,0 +1,59 @@
+{
+  "intentVersion": 2,
+  "intentId": "oxbow-lake-orphan-v2",
+  "theme": "V2-10-11 OXBOW_LAKE orphan fixture missing ORIGINATES_AT parent river",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "host-floodplain",
+      "kind": "FLOODPLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      },
+      "parameters": {
+        "riverAdjacencyBandBlocks": { "min": 8, "max": 12 },
+        "groundwaterHandoffDepthBlocks": { "min": 4, "max": 8 },
+        "microReliefBlocks": { "min": 1, "max": 3 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "oxbow-orphan-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "oxbow-basin",
+      "kind": "OXBOW_LAKE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.54, 0.60], [0.58, 0.60], [0.60, 0.65], [0.56, 0.68], [0.54, 0.60]]]
+      },
+      "parameters": {
+        "targetDepthBlocks": { "min": 3, "max": 5 },
+        "shoreWidthBlocks": 2,
+        "wetlandHandoffWidthBlocks": { "min": 4, "max": 8 },
+        "supportRadiusBlocks": { "min": 6, "max": 10 }
+      },
+      "priority": 16,
+      "provenance": { "source": "MANUAL", "sourceId": "oxbow-orphan-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "oxbow-supported-by-floodplain",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:oxbow-basin",
+      "to": "feature:host-floodplain",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "ALLUVIAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "RIVER_CORRIDOR" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "oxbow-orphan-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

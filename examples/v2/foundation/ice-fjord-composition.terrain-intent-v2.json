@@ -1,0 +1,97 @@
+{
+  "intentVersion": 2,
+  "intentId": "ice-fjord-composition-v2",
+  "theme": "V2-10-01 ICE_FJORD COMPOSITE_PRESET (FJORD + VALLEY_GLACIER + cold/snow)",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "marine-fjord",
+      "kind": "FJORD",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.05], [0.48, 0.35], [0.52, 0.7], [0.5, 0.95]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "surfaceWidthBlocks": { "min": 16, "max": 24 },
+        "channelDepthBlocks": { "min": 8, "max": 16 },
+        "crossSection": "GLACIAL_U",
+        "headBasinRadiusBlocks": 24
+      },
+      "priority": 20,
+      "provenance": { "source": "MANUAL", "sourceId": "ice-fjord-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "host-valley",
+      "kind": "VALLEY",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.2], [0.5, 0.55], [0.5, 0.9]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "crossSection": "U_PROFILE",
+        "floorHalfWidthBlocks": { "min": 18, "max": 22 },
+        "shoulderWidthBlocks": { "min": 12, "max": 16 },
+        "maxDepthBlocks": { "min": 8, "max": 12 },
+        "mountainTransitionBandBlocks": 8,
+        "connectionRole": "FJORD_HEAD"
+      },
+      "priority": 18,
+      "provenance": { "source": "MANUAL", "sourceId": "ice-fjord-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "valley-ice",
+      "kind": "VALLEY_GLACIER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.25], [0.5, 0.55], [0.5, 0.85]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "thicknessBlocks": { "min": 8, "max": 12 },
+        "halfWidthBlocks": { "min": 6, "max": 8 },
+        "flowAzimuthDegrees": 0,
+        "climatePreset": "COLD_MARITIME",
+        "meltwaterHandoffFeatureIdHint": ""
+      },
+      "priority": 35,
+      "provenance": { "source": "MANUAL", "sourceId": "ice-fjord-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "fjord-empties-north",
+      "kind": "EMPTIES_INTO",
+      "from": "feature:marine-fjord",
+      "to": "boundary:NORTH",
+      "strength": "HARD"
+    },
+    {
+      "id": "ice-supported-by-valley",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:valley-ice",
+      "to": "feature:host-valley",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "north-sea",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": { "edge": "NORTH", "classification": "SEA", "minimumShare01": 0.1 }
+    }
+  ],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_MARITIME", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "ice-fjord-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

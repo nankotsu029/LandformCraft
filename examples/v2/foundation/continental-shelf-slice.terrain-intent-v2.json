@@ -1,0 +1,38 @@
+{
+  "intentVersion": 2,
+  "intentId": "continental-shelf-slice-v2",
+  "theme": "V2-9-08 CONTINENTAL_SHELF foundation vertical slice",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "west-shelf",
+      "kind": "CONTINENTAL_SHELF",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [[0.05, 0.10], [0.40, 0.10], [0.40, 0.90], [0.05, 0.90], [0.05, 0.10]]
+        ]
+      },
+      "parameters": {
+        "shelfWidthBlocks": { "min": 24, "max": 32 },
+        "shelfDepthBlocksBelowSea": { "min": 6, "max": 8 },
+        "coastDistanceBandBlocks": { "min": 4, "max": 8 },
+        "seawardSide": "EAST"
+      },
+      "priority": 14,
+      "provenance": { "source": "MANUAL", "sourceId": "continental-shelf-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": { "geologyPreset": "COASTAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "COASTAL_SCRUB" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "continental-shelf-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

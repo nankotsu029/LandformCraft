@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/hydrology-reconciliation-artifact-v2.schema.json",
   "title": "LandformCraft V2-3-12 bounded hydrology reconciliation result",
+  "description": "Strict, version-frozen v2 contract for the V2-3-12 bounded hydrology reconciliation result. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -13,7 +14,7 @@
   "properties": {
     "artifactVersion": { "const": 1 },
     "algorithmVersion": { "const": "hydrology-reconcile-fixed-v1" },
-    "scanOrderVersion": { "const": "kind-feature-constraint-v1" },
+    "scanOrderVersion": { "const": "kind-feature-constraint-v3" },
     "sourceBlueprintChecksum": { "$ref": "#/$defs/checksum" },
     "sourcePlanChecksum": { "$ref": "#/$defs/checksum" },
     "sourceStateChecksum": { "$ref": "#/$defs/checksum" },

@@ -1,0 +1,35 @@
+{
+  "intentVersion": 2,
+  "intentId": "permafrost-plain-profile-v2",
+  "theme": "V2-10-02 permafrost plain profile on PLAIN under cold climate (no PERMAFROST_PLAIN FeatureKind)",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "cold-plain",
+      "kind": "PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9], [0.1, 0.1]]]
+      },
+      "parameters": {
+        "baseElevationAboveDatumBlocks": { "min": 2, "max": 4 },
+        "microReliefBlocks": { "min": 1, "max": 3 },
+        "groundwaterHandoffDepthBlocks": { "min": 4, "max": 8 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "permafrost-plain-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_ALPINE", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "permafrost-plain-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

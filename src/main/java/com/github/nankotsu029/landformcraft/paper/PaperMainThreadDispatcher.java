@@ -17,7 +17,7 @@ import java.util.function.Supplier;
  * Routes Bukkit/Paper world operations through the Paper scheduler.
  * The returned minimal stage is observational: callers cannot cancel an operation after it has been accepted.
  */
-public final class PaperMainThreadDispatcher implements AutoCloseable {
+public final class PaperMainThreadDispatcher implements AutoCloseable, PaperSchedulerV2 {
     private final JavaPlugin plugin;
     private final Set<ScheduledOperation<?>> pending = new HashSet<>();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -35,11 +35,18 @@ public final class PaperMainThreadDispatcher implements AutoCloseable {
         });
     }
 
+    /** True only while code is executing on the Paper primary thread. */
+    @Override
+    public boolean isMainThread() {
+        return Bukkit.isPrimaryThread();
+    }
+
     /**
      * Schedules an operation and returns a read-only stage.
      * Execution start is the commit point. Dispatcher close may cancel a pending task and its stage together;
      * observers cannot cancel either side independently. Higher layers must validate and confirm before submission.
      */
+    @Override
     public <T> CompletionStage<T> supply(Supplier<T> operation) {
         Objects.requireNonNull(operation, "operation");
         synchronized (lifecycleLock) {

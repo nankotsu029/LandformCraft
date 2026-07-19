@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/minecraft-palette-plan-v2.schema.json",
+  "title": "LandformCraft V2-4-08 Minecraft palette adapter contract",
+  "description": "Strict, version-frozen v2 contract for the V2-4-08 Minecraft palette adapter contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "paletteContractVersion", "materialProfileBinding", "compatibility",
+    "catalog", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "paletteContractVersion": { "const": "minecraft-palette-contract-v1" },
+    "materialProfileBinding": { "$ref": "#/$defs/materialProfileBinding" },
+    "compatibility": { "$ref": "#/$defs/compatibility" },
+    "catalog": { "$ref": "#/$defs/catalog" },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "blockState": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^minecraft:[a-z0-9_./-]+(\\[[a-z0-9_]+=[a-z0-9_-]+(,[a-z0-9_]+=[a-z0-9_-]+)*\\])?$"
+    },
+    "materialProfileBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceMaterialProfilePlanChecksum", "sourceCatalogId",
+        "sourceCatalogVersion", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceMaterialProfilePlanChecksum": { "$ref": "#/$defs/checksum" },
+        "sourceCatalogId": { "const": "landformcraft.builtin-material-profile" },
+        "sourceCatalogVersion": { "const": 1 },
+        "bindingContractVersion": { "const": "minecraft-palette-material-binding-v1" }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minecraftVersion", "dataVersion", "resolverVersion", "compatibilityContractVersion"
+      ],
+      "properties": {
+        "minecraftVersion": { "const": "1.21.11" },
+        "dataVersion": { "const": 4671 },
+        "resolverVersion": { "const": "minecraft-palette-resolver-v1" },
+        "compatibilityContractVersion": { "const": "minecraft-palette-compatibility-v1" }
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "classId", "classCode", "aspect", "blockState"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "HOST_ROCK_EXPOSED", "HOST_ROCK_WET", "SEDIMENT_EXPOSED", "SEDIMENT_WET",
+            "SNOW_COVERED_ROCK", "SNOW_COVERED_SEDIMENT"
+          ]
+        },
+        "classId": { "$ref": "#/$defs/qualified" },
+        "classCode": { "type": "integer", "minimum": 1, "maximum": 255 },
+        "aspect": { "enum": ["SURFACE", "CEILING", "FLOOR"] },
+        "blockState": { "$ref": "#/$defs/blockState" }
+      }
+    },
+    "catalogBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["budgetVersion", "maximumMappings", "maximumCanonicalBytes", "maximumDistinctBlockStates"],
+      "properties": {
+        "budgetVersion": { "const": "minecraft-palette-catalog-budget-v1" },
+        "maximumMappings": { "const": 18 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 2048, "maximum": 32768 },
+        "maximumDistinctBlockStates": { "type": "integer", "minimum": 1, "maximum": 256 }
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalogVersion", "catalogId", "catalogContractVersion", "mappings", "budget"],
+      "properties": {
+        "catalogVersion": { "const": 1 },
+        "catalogId": { "const": "landformcraft.builtin-minecraft-palette" },
+        "catalogContractVersion": { "const": "builtin-minecraft-palette-catalog-v1" },
+        "mappings": {
+          "type": "array",
+          "minItems": 18,
+          "maxItems": 18,
+          "items": { "$ref": "#/$defs/mapping" }
+        },
+        "budget": { "$ref": "#/$defs/catalogBudget" }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "mappingCount", "maximumPaletteSize", "maximumPaletteRetainedBytes",
+        "maximumCanonicalBytes", "estimatedRetainedBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "minecraft-palette-budget-v1" },
+        "mappingCount": { "const": 18 },
+        "maximumPaletteSize": { "type": "integer", "minimum": 128, "maximum": 16384 },
+        "maximumPaletteRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1, "maximum": 65536 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 1048576 }
+      }
+    }
+  }
+}

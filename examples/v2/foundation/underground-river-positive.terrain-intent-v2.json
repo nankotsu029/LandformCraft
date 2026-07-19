@@ -1,0 +1,74 @@
+{
+  "intentVersion": 2,
+  "intentId": "underground-river-positive-v2",
+  "theme": "V2-9-11 UNDERGROUND_RIVER cave→lake flooded connection",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "cave.fixture-network",
+      "kind": "CAVE_NETWORK",
+      "geometry": {
+        "type": "VOLUME_GUIDE",
+        "footprint": {
+          "type": "POLYGON",
+          "rings": [[[0.0, 0.0], [0.4, 0.0], [0.4, 0.2], [0.0, 0.2], [0.0, 0.0]]]
+        },
+        "vertical": { "mode": "ABSOLUTE_Y", "min": 4, "max": 22 }
+      },
+      "parameters": {},
+      "priority": 0,
+      "provenance": { "source": "MANUAL", "sourceId": "underground-river-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "flooded-hook",
+      "kind": "FLOODED_CAVE",
+      "geometry": { "type": "POINT", "point": [0.3, 0.0] },
+      "parameters": {
+        "fluidBodyId": "fluid.underground-lake",
+        "waterSurfaceYBlocks": 8,
+        "hostCaveFeatureIdHint": "cave.fixture-network"
+      },
+      "priority": 5,
+      "provenance": { "source": "MANUAL", "sourceId": "underground-river-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "underground-reach",
+      "kind": "UNDERGROUND_RIVER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.190476, 0.0], [0.380952, 0.0]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "channelRadiusBlocks": { "min": 2, "max": 3 },
+        "fluidDepthBlocks": { "min": 2, "max": 4 },
+        "minimumAirPocketBlocks": 2,
+        "sourceCaveNodeId": "n.junction",
+        "outletCaveNodeId": "n.chamber",
+        "fluidBodyId": "fluid.underground-lake"
+      },
+      "priority": 40,
+      "provenance": { "source": "MANUAL", "sourceId": "underground-river-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "river-within-cave",
+      "kind": "WITHIN",
+      "from": "feature:underground-reach",
+      "to": "feature:cave.fixture-network",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "FRACTURED_LIMESTONE_LIKE", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "LUSH_SUBTERRANEAN" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "underground-river-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

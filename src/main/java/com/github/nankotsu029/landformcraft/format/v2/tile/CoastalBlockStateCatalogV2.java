@@ -1,35 +1,16 @@
 package com.github.nankotsu029.landformcraft.format.v2.tile;
 
-import java.util.Set;
+import com.github.nankotsu029.landformcraft.format.v2.minecraft.EnvironmentBlockStateCatalogV2;
 
-/** Compile-time coastal export allowlist; V2-4 replaces material semantics through a new adapter version. */
+/**
+ * V2-2 coastal export gate. V2-4-08 widened the shared offline allowlist to
+ * {@link EnvironmentBlockStateCatalogV2}; coastal states remain a required subset.
+ */
 final class CoastalBlockStateCatalogV2 {
-    private static final Set<String> STATES = Set.of(
-            "minecraft:air",
-            "minecraft:bedrock",
-            "minecraft:cobblestone",
-            "minecraft:dirt",
-            "minecraft:grass_block",
-            "minecraft:gravel",
-            "minecraft:mud",
-            "minecraft:oak_log",
-            "minecraft:oak_planks",
-            "minecraft:sand",
-            "minecraft:sandstone",
-            "minecraft:snow_block",
-            "minecraft:stone",
-            "minecraft:stone_bricks",
-            "minecraft:water"
-    );
-
     private CoastalBlockStateCatalogV2() {
     }
 
     static String requireKnown(String state) {
-        String canonical = CanonicalBlockStateV2.requireCanonical(state);
-        if (!STATES.contains(canonical)) {
-            throw new IllegalArgumentException("unknown V2-2 coastal block state: " + canonical);
-        }
-        return canonical;
+        return EnvironmentBlockStateCatalogV2.requireKnown(state);
     }
 }

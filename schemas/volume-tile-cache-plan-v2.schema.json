@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/volume-tile-cache-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-04 VolumePlan 3D tile-cache contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-04 VolumePlan 3D tile-cache contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "cacheContractVersion", "csgPlanBinding", "kernel",
+    "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "cacheContractVersion": {"const": "volume-tile-cache-contract-v1"},
+    "csgPlanBinding": {"$ref": "#/$defs/csgPlanBinding"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "csgPlanBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceVolumeCsgPlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceVolumeCsgPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "volume-tile-cache-csg-binding-v1"}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernelVersion", "chunkEdgeBlocks", "haloBlocksXyz",
+        "maximumRetainedChunks", "maximumConcurrentChunks",
+        "maximumSolidIntervalsPerColumn", "maximumFluidIntervalsPerColumn"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "volume-tile-cache-v1"},
+        "chunkEdgeBlocks": {"enum": [16, 32]},
+        "haloBlocksXyz": {"type": "integer", "minimum": 0, "maximum": 16},
+        "maximumRetainedChunks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "maximumConcurrentChunks": {"type": "integer", "minimum": 1, "maximum": 8},
+        "maximumSolidIntervalsPerColumn": {"type": "integer", "minimum": 1, "maximum": 64},
+        "maximumFluidIntervalsPerColumn": {"type": "integer", "minimum": 1, "maximum": 64}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumRetainedBytes", "maximumPeakWorkingBytesPerChunk",
+        "maximumConcurrency", "maximumCacheBytes", "estimatedCanonicalBytes",
+        "maximumCanonicalBytes", "maximumWorkingBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "volume-tile-cache-budget-v1"},
+        "maximumRetainedBytes": {"type": "integer", "minimum": 1},
+        "maximumPeakWorkingBytesPerChunk": {"type": "integer", "minimum": 1},
+        "maximumConcurrency": {"type": "integer", "minimum": 1, "maximum": 8},
+        "maximumCacheBytes": {"type": "integer", "minimum": 1},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 65536},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

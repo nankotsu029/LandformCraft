@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/snow-plan-v2.schema.json",
+  "title": "LandformCraft V2-4 snow field contract",
+  "description": "Strict, version-frozen v2 contract for the V2-4 snow field contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "fieldContractVersion", "moduleId", "moduleVersion", "stageId",
+    "namedSeed", "seedNamespace", "width", "length", "minY", "maxY",
+    "kernel", "climateBinding", "fields", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "fieldContractVersion": {"const": "snow-field-contract-v1"},
+    "moduleId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "moduleVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+    "stageId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "namedSeed": {"type": "integer"},
+    "seedNamespace": {"const": "terrain.v2.snow"},
+    "width": {"type": "integer", "minimum": 1, "maximum": 1000},
+    "length": {"type": "integer", "minimum": 1, "maximum": 1000},
+    "minY": {"type": "integer"},
+    "maxY": {"type": "integer"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "climateBinding": {"$ref": "#/$defs/climateBinding"},
+    "fields": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {"$ref": "#/$defs/fieldBinding"}
+    },
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "kernel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kernelVersion", "snowlineTemperatureRaw", "snowlineTransitionBlocks",
+        "steepSlopeThresholdRaw", "steepSlopePenaltyRaw", "minimumRaw", "maximumRaw"],
+      "properties": {
+        "kernelVersion": {"const": "snow-fixed-v1"},
+        "snowlineTemperatureRaw": {"type": "integer", "minimum": -1000, "maximum": 1000},
+        "snowlineTransitionBlocks": {"type": "integer", "minimum": 1, "maximum": 100},
+        "steepSlopeThresholdRaw": {"type": "integer", "minimum": 0, "maximum": 1000},
+        "steepSlopePenaltyRaw": {"type": "integer", "minimum": 0, "maximum": 1000},
+        "minimumRaw": {"const": 0},
+        "maximumRaw": {"const": 1000}
+      }
+    },
+    "climateBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceClimatePlanChecksum", "temperatureFieldId",
+        "moistureFieldId", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceClimatePlanChecksum": {"$ref": "#/$defs/checksum"},
+        "temperatureFieldId": {"const": "climate.final.temperature"},
+        "moistureFieldId": {"const": "climate.final.moisture"},
+        "bindingContractVersion": {"const": "snow-climate-binding-v1"}
+      }
+    },
+    "fieldBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "semantic", "valueType", "ownerModuleId", "ownership", "sampling", "scaleMillionths"],
+      "properties": {
+        "fieldId": {"$ref": "#/$defs/qualified"},
+        "semantic": {"enum": ["SNOW_POTENTIAL", "SNOW_COVER"]},
+        "valueType": {"const": "U16"},
+        "ownerModuleId": {"$ref": "#/$defs/qualified"},
+        "ownership": {"const": "SINGLE_OWNER"},
+        "sampling": {"const": "NEAREST"},
+        "scaleMillionths": {"const": 1000}
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["budgetVersion", "maximumFields", "globalCellCount", "estimatedCpuWorkUnits",
+        "estimatedRetainedBytes", "maximumWindowSize", "maximumWorkingBytes", "maximumCanonicalBytes"],
+      "properties": {
+        "budgetVersion": {"const": "snow-field-budget-v1"},
+        "maximumFields": {"const": 2},
+        "globalCellCount": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "estimatedCpuWorkUnits": {"type": "integer", "minimum": 1, "maximum": 16000000},
+        "estimatedRetainedBytes": {"type": "integer", "minimum": 1, "maximum": 2097152},
+        "maximumWindowSize": {"type": "integer", "minimum": 1, "maximum": 256},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1, "maximum": 8388608},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 131072}
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/oxbow-lake-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-11 oxbow lake foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-11 oxbow lake foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId",
+    "parentRiverFeatureId", "parentRiverKind", "parentRiverPlanChecksum", "parentRelationId",
+    "cutoffReachId",
+    "hostSurfaceFeatureId", "hostSurfaceGeometryChecksum", "hostRelationId",
+    "basinRing", "waterSurfaceYMillionths", "rimMinimumYMillionths",
+    "selectedTargetDepthBlocks", "shoreWidthBlocks", "wetlandHandoffWidthBlocks",
+    "terminalPolicy", "spillEdgeStartIndex", "spillwayWidthBlocks", "spillwayCorridorLengthBlocks",
+    "basinMaskFieldId", "rimMaskFieldId", "wetlandHandoffFieldId", "ownershipFieldId",
+    "cutoffFieldId", "levelFieldId",
+    "supportRadiusXZ", "estimatedWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "parentRiverFeatureId": { "$ref": "#/$defs/slug" },
+    "parentRiverKind": { "enum": ["RIVER", "MEANDERING_RIVER"] },
+    "parentRiverPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "parentRelationId": { "$ref": "#/$defs/slug" },
+    "cutoffReachId": { "$ref": "#/$defs/qualified" },
+    "hostSurfaceFeatureId": { "$ref": "#/$defs/slug" },
+    "hostSurfaceGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "hostRelationId": { "$ref": "#/$defs/slug" },
+    "basinRing": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/ringPoint" }
+    },
+    "waterSurfaceYMillionths": { "type": "integer", "minimum": 0 },
+    "rimMinimumYMillionths": { "type": "integer", "minimum": 0 },
+    "selectedTargetDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "shoreWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "wetlandHandoffWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "terminalPolicy": { "const": "CLOSED" },
+    "spillEdgeStartIndex": { "const": -1 },
+    "spillwayWidthBlocks": { "const": 0 },
+    "spillwayCorridorLengthBlocks": { "const": 0 },
+    "basinMaskFieldId": { "const": "foundation.oxbow-lake.basin-mask" },
+    "rimMaskFieldId": { "const": "foundation.oxbow-lake.rim-mask" },
+    "wetlandHandoffFieldId": { "const": "foundation.oxbow-lake.wetland-handoff" },
+    "ownershipFieldId": { "const": "foundation.oxbow-lake.ownership" },
+    "cutoffFieldId": { "const": "foundation.oxbow-lake.cutoff" },
+    "levelFieldId": { "const": "foundation.oxbow-lake.stagnant-level" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 4, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ringPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

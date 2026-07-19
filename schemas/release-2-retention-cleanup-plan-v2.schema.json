@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/release-2-retention-cleanup-plan-v2.schema.json",
+  "title": "LandformCraft Release2RetentionCleanupPlanV2",
+  "description": "Strict, version-frozen v2 contract for the Release2RetentionCleanupPlanV2. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "contractVersion", "planId", "actorCanonical", "createdAt", "expiresAt",
+    "placementId", "journalChecksum", "recoveryCleanupPlanChecksum", "fileCount", "totalBytes",
+    "confirmationHash", "executed"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractVersion": { "const": "release-2-retention-cleanup-plan-v1" },
+    "planId": { "type": "string", "format": "uuid" },
+    "actorCanonical": {
+      "type": "string",
+      "pattern": "^(CONSOLE|PLAYER|SYSTEM):[A-Za-z0-9._-]{1,128}$"
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "placementId": { "type": "string", "format": "uuid" },
+    "journalChecksum": { "$ref": "#/$defs/checksum" },
+    "recoveryCleanupPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "fileCount": { "type": "integer", "minimum": 0 },
+    "totalBytes": { "type": "integer", "minimum": 0 },
+    "confirmationHash": { "$ref": "#/$defs/checksum" },
+    "executed": { "type": "boolean" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

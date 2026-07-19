@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/volume-local-environment-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-14 post-volume local environment plan",
+  "description": "Strict, version-frozen v2 contract for the V2-5-14 post-volume local environment plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "localEnvironmentContractVersion", "featureId", "kernel", "hostBindings",
+    "catalog", "surfaceProfiles", "sparsePlacements", "materialProfileBinding", "budget",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "localEnvironmentContractVersion": {"const": "volume-local-environment-contract-v1"},
+    "featureId": {"$ref": "#/$defs/qualified"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "hostBindings": {
+      "type": "array", "minItems": 1, "maxItems": 8,
+      "items": {"$ref": "#/$defs/hostBinding"}
+    },
+    "catalog": {"$ref": "#/$defs/catalog"},
+    "surfaceProfiles": {
+      "type": "array", "minItems": 1, "maxItems": 16,
+      "items": {"$ref": "#/$defs/surfaceProfile"}
+    },
+    "sparsePlacements": {
+      "type": "array", "maxItems": 8,
+      "items": {"$ref": "#/$defs/sparsePlacement"}
+    },
+    "materialProfileBinding": {"$ref": "#/$defs/materialProfileBinding"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "hostKind": {
+      "enum": ["LUSH_CAVE", "SEA_CAVE", "CAVE_NETWORK", "SKY_ISLAND_GROUP", "WATERFALL_VOLUME"]
+    },
+    "surfaceClass": {
+      "enum": ["FLOOR", "WALL", "CEILING", "UNDERSIDE", "EXTERIOR_TOP", "EDGE", "SUBMERGED"]
+    },
+    "materialClass": {
+      "enum": [
+        "CAVE_WET_ROCK", "CAVE_DRY_ROCK", "SEA_CAVE_WET_ROCK", "LUSH_MOSS_FLOOR",
+        "LUSH_ROOT_CEILING", "LUSH_POOL_MARGIN", "SKY_TOP", "SKY_EDGE", "SKY_UNDERSIDE",
+        "WATERFALL_WET_ROCK"
+      ]
+    },
+    "placementKind": {"enum": ["MOSS", "ROOT", "POOL_EDGE"]},
+    "lightExposure": {"enum": ["OPEN", "SHADED", "DEEP"]},
+    "kernel": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "kernelVersion", "minimumWetnessMillionths", "minimumDripMillionths",
+        "minimumShadeMillionths", "maximumDescriptorSamples", "maximumSparsePlacementsPerWindow"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "volume-local-environment-v1"},
+        "minimumWetnessMillionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "minimumDripMillionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "minimumShadeMillionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000},
+        "maximumSparsePlacementsPerWindow": {"type": "integer", "minimum": 1, "maximum": 4096}
+      }
+    },
+    "hostBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hostKind", "featureId", "sourceGeometryChecksum"],
+      "properties": {
+        "hostKind": {"$ref": "#/$defs/hostKind"},
+        "featureId": {"$ref": "#/$defs/qualified"},
+        "sourceGeometryChecksum": {"$ref": "#/$defs/checksum"}
+      }
+    },
+    "catalog": {
+      "type": "object", "additionalProperties": false,
+      "required": ["catalogId", "catalogContractVersion", "entries"],
+      "properties": {
+        "catalogId": {"const": "landformcraft.builtin-volume-local-material"},
+        "catalogContractVersion": {"const": "builtin-volume-local-material-catalog-v1"},
+        "entries": {
+          "type": "array", "minItems": 10, "maxItems": 10,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["kind", "classCode", "classId"],
+            "properties": {
+              "kind": {"$ref": "#/$defs/materialClass"},
+              "classCode": {"type": "integer", "minimum": 1, "maximum": 10},
+              "classId": {"$ref": "#/$defs/qualified"}
+            }
+          }
+        }
+      }
+    },
+    "surfaceProfile": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "ruleOrder", "ruleId", "hostKind", "surfaceClass", "materialClass",
+        "requiresWetness", "requiresSupport", "minimumWetnessMillionths",
+        "minimumDripMillionths", "minimumShadeMillionths", "maximumLightExposure"
+      ],
+      "properties": {
+        "ruleOrder": {"type": "integer", "minimum": 0, "maximum": 15},
+        "ruleId": {"$ref": "#/$defs/qualified"},
+        "hostKind": {"$ref": "#/$defs/hostKind"},
+        "surfaceClass": {"$ref": "#/$defs/surfaceClass"},
+        "materialClass": {"$ref": "#/$defs/materialClass"},
+        "requiresWetness": {"type": "boolean"},
+        "requiresSupport": {"type": "boolean"},
+        "minimumWetnessMillionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "minimumDripMillionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "minimumShadeMillionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "maximumLightExposure": {"$ref": "#/$defs/lightExposure"}
+      }
+    },
+    "sparsePlacement": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "ruleOrder", "ruleId", "placementKind", "hostKind", "allowedSurfaceClasses",
+        "requiresWetness", "requiresSupport", "minimumWetnessMillionths"
+      ],
+      "properties": {
+        "ruleOrder": {"type": "integer", "minimum": 0, "maximum": 7},
+        "ruleId": {"$ref": "#/$defs/qualified"},
+        "placementKind": {"$ref": "#/$defs/placementKind"},
+        "hostKind": {"$ref": "#/$defs/hostKind"},
+        "allowedSurfaceClasses": {
+          "type": "array", "minItems": 1, "maxItems": 7,
+          "items": {"$ref": "#/$defs/surfaceClass"}
+        },
+        "requiresWetness": {"type": "boolean"},
+        "requiresSupport": {"type": "boolean"},
+        "minimumWetnessMillionths": {"type": "integer", "minimum": 0, "maximum": 1000000}
+      }
+    },
+    "materialProfileBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceMaterialProfilePlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceMaterialProfilePlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "volume-local-material-profile-binding-v1"}
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "estimatedCanonicalBytes", "maximumCanonicalBytes", "maximumWorkingBytes",
+        "maximumDescriptorSamples", "maximumSparsePlacementsPerWindow", "hostBindingCount",
+        "surfaceProfileCount", "sparseRuleCount"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "volume-local-environment-budget-v1"},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 49152},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000},
+        "maximumSparsePlacementsPerWindow": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "hostBindingCount": {"type": "integer", "minimum": 1, "maximum": 8},
+        "surfaceProfileCount": {"type": "integer", "minimum": 1, "maximum": 16},
+        "sparseRuleCount": {"type": "integer", "minimum": 0, "maximum": 8}
+      }
+    }
+  }
+}

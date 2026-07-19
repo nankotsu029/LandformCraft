@@ -1,0 +1,86 @@
+{
+  "intentVersion": 2,
+  "intentId": "oxbow-lake-positive-v2",
+  "theme": "V2-10-11 OXBOW_LAKE reach-cutoff basin with floodplain host and main-stem river parent",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "host-floodplain",
+      "kind": "FLOODPLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      },
+      "parameters": {
+        "riverAdjacencyBandBlocks": { "min": 8, "max": 12 },
+        "groundwaterHandoffDepthBlocks": { "min": 4, "max": 8 },
+        "microReliefBlocks": { "min": 1, "max": 3 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "oxbow-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "main-stem",
+      "kind": "RIVER",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.08], [0.48, 0.35], [0.52, 0.65], [0.5, 0.92]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "bankfullWidthBlocks": { "min": 8, "max": 12 },
+        "dischargeClass": "MEDIUM",
+        "minimumBedSlope01": 0.001,
+        "floodplainHandoffWidthBlocks": { "min": 16, "max": 24 },
+        "maxReachCount": 1,
+        "maxNodeDegree": 2
+      },
+      "priority": 15,
+      "provenance": { "source": "MANUAL", "sourceId": "oxbow-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "oxbow-basin",
+      "kind": "OXBOW_LAKE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.54, 0.60], [0.58, 0.60], [0.60, 0.65], [0.56, 0.68], [0.54, 0.60]]]
+      },
+      "parameters": {
+        "targetDepthBlocks": { "min": 3, "max": 5 },
+        "shoreWidthBlocks": 2,
+        "wetlandHandoffWidthBlocks": { "min": 4, "max": 8 },
+        "supportRadiusBlocks": { "min": 6, "max": 10 },
+        "cutoffReachIdHint": "reach-main-stem-1"
+      },
+      "priority": 16,
+      "provenance": { "source": "MANUAL", "sourceId": "oxbow-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "oxbow-supported-by-floodplain",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:oxbow-basin",
+      "to": "feature:host-floodplain",
+      "strength": "HARD"
+    },
+    {
+      "id": "oxbow-originates-at-river",
+      "kind": "ORIGINATES_AT",
+      "from": "feature:oxbow-basin",
+      "to": "feature:main-stem",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "ALLUVIAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "RIVER_CORRIDOR" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "oxbow-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

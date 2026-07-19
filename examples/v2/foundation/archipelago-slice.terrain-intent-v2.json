@@ -1,0 +1,43 @@
+{
+  "intentVersion": 2,
+  "intentId": "archipelago-slice-v2",
+  "theme": "V2-9-07 ARCHIPELAGO foundation vertical slice with dry-land gaps",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "isle-group",
+      "kind": "ARCHIPELAGO",
+      "geometry": {
+        "type": "MULTI_POINT",
+        "points": [
+          { "id": "west-isle", "point": [0.18, 0.5] },
+          { "id": "main-isle", "point": [0.5, 0.5] },
+          { "id": "east-isle", "point": [0.82, 0.5] }
+        ]
+      },
+      "parameters": {
+        "islands": [
+          { "pointId": "west-isle", "radiusBlocks": 10, "summitHeightBlocksAboveSea": 14 },
+          { "pointId": "main-isle", "radiusBlocks": 14, "summitHeightBlocksAboveSea": 22 },
+          { "pointId": "east-isle", "radiusBlocks": 10, "summitHeightBlocksAboveSea": 16 }
+        ],
+        "submarineSaddleDepthBlocks": { "min": 8, "max": 16 },
+        "minDryLandGapBlocks": 12
+      },
+      "priority": 16,
+      "provenance": { "source": "MANUAL", "sourceId": "archipelago-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": { "geologyPreset": "COASTAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "COASTAL_SCRUB" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "archipelago-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

@@ -39,6 +39,8 @@ public record WorldBlueprintV2(
         List<WaterfallPlanV2> waterfallPlans,
         List<DeltaPlanV2> deltaPlans,
         List<TidalChannelPlanV2> tidalChannelPlans,
+        List<MangroveWetlandPlanV2> mangroveWetlandPlans,
+        List<CoralReefPlanV2> coralReefPlans,
         List<FjordPlanV2> fjordPlans,
         List<MountainPlanV2> mountainPlans,
         List<VolcanicPlanV2> volcanicPlans,
@@ -102,6 +104,12 @@ public record WorldBlueprintV2(
         tidalChannelPlans = V2Validation.sorted(
                 tidalChannelPlans, "tidalChannelPlans", 256,
                 Comparator.comparing(TidalChannelPlanV2::featureId));
+        mangroveWetlandPlans = V2Validation.sorted(
+                mangroveWetlandPlans, "mangroveWetlandPlans", 256,
+                Comparator.comparing(MangroveWetlandPlanV2::featureId));
+        coralReefPlans = V2Validation.sorted(
+                coralReefPlans, "coralReefPlans", 256,
+                Comparator.comparing(CoralReefPlanV2::featureId));
         fjordPlans = V2Validation.sorted(fjordPlans, "fjordPlans", 256,
                 Comparator.comparing(FjordPlanV2::featureId));
         mountainPlans = V2Validation.sorted(mountainPlans, "mountainPlans", 256,
@@ -124,7 +132,8 @@ public record WorldBlueprintV2(
         validateDescriptors(space, determinism, modules, stages, fields, fieldOwnership,
                 featurePlans, coastalFeaturePlans, sandyBeachPlans, harborBasinPlans, breakwaterHarborPlans,
                 rockyCapePlans, coastalTransitionPlans, meanderingRiverPlans, lakePlans, canyonPlans,
-                waterfallPlans, deltaPlans, tidalChannelPlans, fjordPlans, mountainPlans, volcanicPlans, geologyPlan,
+                waterfallPlans, deltaPlans, tidalChannelPlans, mangroveWetlandPlans, coralReefPlans, fjordPlans, mountainPlans,
+                volcanicPlans, geologyPlan,
                 lithologyPlan,
                 strataPlan,
                 climatePlan,
@@ -138,7 +147,8 @@ public record WorldBlueprintV2(
         return new WorldBlueprintV2(identity, space, determinism, modules, stages, fields, fieldOwnership,
                 featurePlans, coastalFeaturePlans, sandyBeachPlans, harborBasinPlans, breakwaterHarborPlans,
                 rockyCapePlans, coastalTransitionPlans, meanderingRiverPlans, lakePlans, canyonPlans,
-                waterfallPlans, deltaPlans, tidalChannelPlans, fjordPlans, mountainPlans, volcanicPlans, geologyPlan,
+                waterfallPlans, deltaPlans, tidalChannelPlans, mangroveWetlandPlans, coralReefPlans, fjordPlans, mountainPlans,
+                volcanicPlans, geologyPlan,
                 lithologyPlan,
                 strataPlan,
                 climatePlan,
@@ -296,6 +306,16 @@ public record WorldBlueprintV2(
         HYDROLOGY_TIDAL_BRANCH_INDEX,
         HYDROLOGY_TIDAL_DEPTH_CORRIDOR,
         HYDROLOGY_TIDAL_MARINE_CONNECTION,
+        LANDFORM_MANGROVE_WETLAND_MASK,
+        LANDFORM_MANGROVE_SURFACE_HEIGHT,
+        LANDFORM_MANGROVE_OPEN_WATER_GAP,
+        LANDFORM_MANGROVE_SUBSTRATE_CLASS,
+        LANDFORM_MANGROVE_MICRO_RELIEF,
+        LANDFORM_REEF_MASK,
+        LANDFORM_REEF_CREST_DEPTH,
+        LANDFORM_REEF_LAGOON_DEPTH,
+        LANDFORM_REEF_PASS_CORRIDOR,
+        LANDFORM_REEF_MARINE_CONNECTION,
         LANDFORM_FJORD_CHANNEL_MASK,
         LANDFORM_FJORD_FLOOR_MASK,
         LANDFORM_FJORD_SIDEWALL_MASK,
@@ -480,10 +500,12 @@ public record WorldBlueprintV2(
             List<LakePlanV2> lakePlans,
             List<CanyonPlanV2> canyonPlans,
             List<WaterfallPlanV2> waterfallPlans,
-            List<DeltaPlanV2> deltaPlans,
-            List<TidalChannelPlanV2> tidalChannelPlans,
-            List<FjordPlanV2> fjordPlans,
-            List<MountainPlanV2> mountainPlans,
+        List<DeltaPlanV2> deltaPlans,
+        List<TidalChannelPlanV2> tidalChannelPlans,
+        List<MangroveWetlandPlanV2> mangroveWetlandPlans,
+        List<CoralReefPlanV2> coralReefPlans,
+        List<FjordPlanV2> fjordPlans,
+        List<MountainPlanV2> mountainPlans,
             List<VolcanicPlanV2> volcanicPlans,
             GeologyPlanV2 geologyPlan,
             LithologyPlanV2 lithologyPlan,
@@ -527,6 +549,10 @@ public record WorldBlueprintV2(
                 deltaPlans, DeltaPlanV2::featureId, "delta plan");
         Map<String, TidalChannelPlanV2> tidalPlansById = uniqueMap(
                 tidalChannelPlans, TidalChannelPlanV2::featureId, "tidal channel plan");
+        Map<String, MangroveWetlandPlanV2> mangrovePlansById = uniqueMap(
+                mangroveWetlandPlans, MangroveWetlandPlanV2::featureId, "mangrove wetland plan");
+        Map<String, CoralReefPlanV2> coralReefPlansById = uniqueMap(
+                coralReefPlans, CoralReefPlanV2::featureId, "coral reef plan");
         Map<String, FjordPlanV2> fjordPlansById = uniqueMap(
                 fjordPlans, FjordPlanV2::featureId, "fjord plan");
         Map<String, MountainPlanV2> mountainPlansById = uniqueMap(
@@ -1084,6 +1110,109 @@ public record WorldBlueprintV2(
                         "tidal plan presence does not match feature kind: " + plan.featureId());
             }
         }
+        for (MangroveWetlandPlanV2 mangrovePlan : mangroveWetlandPlans) {
+            FeaturePlan featurePlan = plansById.get(mangrovePlan.featureId());
+            if (featurePlan == null || featurePlan.kind() != TerrainIntentV2.FeatureKind.MANGROVE_WETLAND
+                    || !featurePlan.geometryChecksum().equals(mangrovePlan.geometryChecksum())) {
+                throw new IllegalArgumentException(
+                        "mangrove plan does not match feature plan: " + mangrovePlan.featureId());
+            }
+            if (mangrovePlan.tidalNetworkHook() != null) {
+                MangroveWetlandPlanV2.TidalNetworkPlanHook hook = mangrovePlan.tidalNetworkHook();
+                if (!featurePlan.relationIds().contains(hook.withinRelationId())
+                        || !tidalPlansById.containsKey(hook.tidalFeatureId())
+                        || plansById.get(hook.tidalFeatureId()).kind()
+                        != TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK) {
+                    throw new IllegalArgumentException(
+                            "mangrove tidal hook is invalid: " + mangrovePlan.featureId());
+                }
+            }
+            if (mangrovePlan.width() != space.bounds().width()
+                    || mangrovePlan.length() != space.bounds().length()
+                    || mangrovePlan.minY() != space.bounds().minY()
+                    || mangrovePlan.maxY() != space.bounds().maxY()
+                    || mangrovePlan.waterLevel() != space.bounds().waterLevel()) {
+                throw new IllegalArgumentException(
+                        "mangrove plan bounds mismatch: " + mangrovePlan.featureId());
+            }
+            if (mangrovePlan.supportRadiusXZ() > space.tilePolicy().maximumHaloXZ()) {
+                throw new IllegalArgumentException(
+                        "mangrove support exceeds Blueprint halo: " + mangrovePlan.featureId());
+            }
+            for (String fieldId : List.of(
+                    mangrovePlan.wetlandMaskFieldId(),
+                    mangrovePlan.surfaceHeightFieldId(),
+                    mangrovePlan.openWaterGapFieldId(),
+                    mangrovePlan.substrateClassFieldId(),
+                    mangrovePlan.microReliefFieldId())) {
+                if (!fieldsById.containsKey(fieldId) || !featurePlan.providedFields().contains(fieldId)) {
+                    throw new IllegalArgumentException("mangrove field is missing from Blueprint: " + fieldId);
+                }
+            }
+        }
+        for (FeaturePlan plan : plans) {
+            if ((plan.kind() == TerrainIntentV2.FeatureKind.MANGROVE_WETLAND)
+                    != mangrovePlansById.containsKey(plan.featureId())) {
+                throw new IllegalArgumentException(
+                        "mangrove plan presence does not match feature kind: " + plan.featureId());
+            }
+        }
+        for (CoralReefPlanV2 coralPlan : coralReefPlans) {
+            FeaturePlan featurePlan = plansById.get(coralPlan.featureId());
+            if (featurePlan == null || featurePlan.kind() != TerrainIntentV2.FeatureKind.CORAL_REEF
+                    || !featurePlan.geometryChecksum().equals(coralPlan.geometryChecksum())) {
+                throw new IllegalArgumentException(
+                        "coral reef plan does not match feature plan: " + coralPlan.featureId());
+            }
+            CoralReefPlanV2.LagoonPlanHook lagoonHook = coralPlan.lagoonPlanHook();
+            if (!featurePlan.relationIds().contains(lagoonHook.enclosedByRelationId())
+                    || !plansById.containsKey(lagoonHook.lagoonFeatureId())
+                    || plansById.get(lagoonHook.lagoonFeatureId()).kind()
+                    != TerrainIntentV2.FeatureKind.LAGOON) {
+                throw new IllegalArgumentException(
+                        "coral reef lagoon hook is invalid: " + coralPlan.featureId());
+            }
+            for (CoralReefPlanV2.ReefPassPlanHook passHook : coralPlan.passHooks()) {
+                FeaturePlan passPlan = plansById.get(passHook.passFeatureId());
+                if (!featurePlan.relationIds().contains(passHook.carvesThroughRelationId())
+                        || passPlan == null
+                        || passPlan.kind() != TerrainIntentV2.FeatureKind.REEF_PASS
+                        || !passPlan.relationIds().contains(passHook.carvesThroughRelationId())
+                        || !passPlan.relationIds().contains(passHook.connectsToRelationId())) {
+                    throw new IllegalArgumentException(
+                            "coral reef pass hook is invalid: " + coralPlan.featureId());
+                }
+            }
+            if (coralPlan.width() != space.bounds().width()
+                    || coralPlan.length() != space.bounds().length()
+                    || coralPlan.minY() != space.bounds().minY()
+                    || coralPlan.maxY() != space.bounds().maxY()
+                    || coralPlan.waterLevel() != space.bounds().waterLevel()) {
+                throw new IllegalArgumentException(
+                        "coral reef plan bounds mismatch: " + coralPlan.featureId());
+            }
+            if (coralPlan.supportRadiusXZ() > space.tilePolicy().maximumHaloXZ()) {
+                throw new IllegalArgumentException(
+                        "coral reef support exceeds Blueprint halo: " + coralPlan.featureId());
+            }
+            for (String fieldId : List.of(
+                    coralPlan.reefMaskFieldId(),
+                    coralPlan.crestDepthFieldId(),
+                    coralPlan.lagoonDepthFieldId(),
+                    coralPlan.passCorridorFieldId(),
+                    coralPlan.marineConnectionFieldId())) {
+                if (!fieldsById.containsKey(fieldId) || !featurePlan.providedFields().contains(fieldId)) {
+                    throw new IllegalArgumentException("coral reef field is missing from Blueprint: " + fieldId);
+                }
+            }
+        }
+        for (FeaturePlan plan : plans) {
+            if ((plan.kind() == TerrainIntentV2.FeatureKind.CORAL_REEF)
+                    != coralReefPlansById.containsKey(plan.featureId())) {
+                throw new IllegalArgumentException(
+                        "coral reef plan presence does not match feature kind: " + plan.featureId());
+            }
+        }
         for (FjordPlanV2 fjordPlan : fjordPlans) {
             FeaturePlan featurePlan = plansById.get(fjordPlan.featureId());
             if (featurePlan == null || featurePlan.kind() != TerrainIntentV2.FeatureKind.FJORD
@@ -1453,7 +1582,9 @@ public record WorldBlueprintV2(
             case WATERFALL_LIP, WATERFALL_BASE -> featureKind == TerrainIntentV2.FeatureKind.WATERFALL;
             case MARINE_CONNECTION -> featureKind == TerrainIntentV2.FeatureKind.DELTA
                     || featureKind == TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK
-                    || featureKind == TerrainIntentV2.FeatureKind.FJORD;
+                    || featureKind == TerrainIntentV2.FeatureKind.FJORD
+                    || featureKind == TerrainIntentV2.FeatureKind.MANGROVE_WETLAND
+                    || featureKind == TerrainIntentV2.FeatureKind.CORAL_REEF;
         };
     }
 
@@ -1466,6 +1597,8 @@ public record WorldBlueprintV2(
             case LAKE_SPILL -> featureKind == TerrainIntentV2.FeatureKind.LAKE;
             case DELTA_MOUTH -> featureKind == TerrainIntentV2.FeatureKind.DELTA;
             case TIDAL_CONNECTION -> featureKind == TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK;
+            case MANGROVE_TIDAL_LINK -> featureKind == TerrainIntentV2.FeatureKind.MANGROVE_WETLAND;
+            case REEF_LAGOON_PASS -> featureKind == TerrainIntentV2.FeatureKind.CORAL_REEF;
             case FJORD_CONNECTION -> featureKind == TerrainIntentV2.FeatureKind.FJORD;
             case WATERFALL_LIP_BASE -> featureKind == TerrainIntentV2.FeatureKind.WATERFALL;
         };

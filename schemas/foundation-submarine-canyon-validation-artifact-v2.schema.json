@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/foundation-submarine-canyon-validation-artifact-v2.schema.json",
+  "title": "LandformCraft V2-9-09 submarine-canyon foundation validation artifact",
+  "description": "Strict, version-frozen v2 contract for the V2-9-09 submarine-canyon foundation validation artifact. Validation evidence only; it never authorizes generation or world mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "contractVersion", "canyonFeatureId", "metrics", "issues", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "contractVersion": { "const": "foundation-submarine-canyon-validation-artifact-v1" },
+    "canyonFeatureId": { "type": "string", "maxLength": 64 },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "issues": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/issue" } },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "headContained", "outletContained", "slopeCrossingOk", "downGradientOk",
+        "floorDepthOk", "fluidSolidConflictFree", "wholeTileOk", "budgetOk"
+      ],
+      "properties": {
+        "headContained": { "type": "boolean" },
+        "outletContained": { "type": "boolean" },
+        "slopeCrossingOk": { "type": "boolean" },
+        "downGradientOk": { "type": "boolean" },
+        "floorDepthOk": { "type": "boolean" },
+        "fluidSolidConflictFree": { "type": "boolean" },
+        "wholeTileOk": { "type": "boolean" },
+        "budgetOk": { "type": "boolean" }
+      }
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleId", "message"],
+      "properties": {
+        "ruleId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "message": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    }
+  }
+}

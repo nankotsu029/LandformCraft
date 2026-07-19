@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-settle-verify-policy-v2.schema.json",
+  "title": "LandformCraft V2-6-07 Release 2 placement settle/verify policy",
+  "description": "Strict, version-frozen v2 contract for the V2-6-07 Release 2 placement settle/verify policy. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policyVersion", "maximumSettleTicks", "quiescenceTicks", "settleTimeoutMillis",
+    "maximumBlocksPerVerifySlice", "maximumQueuedVerifySlices", "maximumEffectEnvelopeBlocks",
+    "rejectOutOfEnvelopeUpdates", "rejectSampledVerify", "budget"
+  ],
+  "properties": {
+    "policyVersion": {"const": "release-2-placement-settle-verify-policy-v1"},
+    "maximumSettleTicks": {"type": "integer", "minimum": 1, "maximum": 200},
+    "quiescenceTicks": {"type": "integer", "minimum": 1, "maximum": 32},
+    "settleTimeoutMillis": {"type": "integer", "minimum": 1, "maximum": 120000},
+    "maximumBlocksPerVerifySlice": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "maximumQueuedVerifySlices": {"type": "integer", "minimum": 1, "maximum": 2048},
+    "maximumEffectEnvelopeBlocks": {"type": "integer", "minimum": 1},
+    "rejectOutOfEnvelopeUpdates": {"const": true},
+    "rejectSampledVerify": {"const": true},
+    "budget": {"$ref": "#/$defs/budget"}
+  },
+  "$defs": {
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumScannedBlocks", "maximumContinuityFindings",
+        "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "release-2-placement-settle-verify-budget-v1"},
+        "maximumScannedBlocks": {"type": "integer", "minimum": 1},
+        "maximumContinuityFindings": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+      }
+    }
+  }
+}

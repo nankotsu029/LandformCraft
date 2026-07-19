@@ -1,0 +1,58 @@
+{
+  "intentVersion": 2,
+  "intentId": "spring-orphan-v2",
+  "theme": "V2-10-10 surface SPRING orphan fixture missing EMPTIES_INTO river",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "host-plain",
+      "kind": "PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      },
+      "parameters": {
+        "baseElevationAboveDatumBlocks": { "min": 2, "max": 4 },
+        "microReliefBlocks": { "min": 1, "max": 3 },
+        "groundwaterHandoffDepthBlocks": { "min": 4, "max": 8 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "spring-orphan-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "spring-head",
+      "kind": "SPRING",
+      "geometry": {
+        "type": "POINT",
+        "point": [0.5, 0.5]
+      },
+      "parameters": {
+        "outflowRadiusBlocks": { "min": 3, "max": 5 },
+        "dischargeBlocks": { "min": 80, "max": 120 },
+        "supportRadiusBlocks": { "min": 4, "max": 8 }
+      },
+      "priority": 16,
+      "provenance": { "source": "MANUAL", "sourceId": "spring-orphan-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "spring-supported-by-plain",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:spring-head",
+      "to": "feature:host-plain",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "ALLUVIAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "RIVER_CORRIDOR" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "spring-orphan-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

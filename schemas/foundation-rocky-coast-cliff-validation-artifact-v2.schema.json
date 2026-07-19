@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/foundation-rocky-coast-cliff-validation-artifact-v2.schema.json",
+  "title": "LandformCraft V2-9-06 rocky-coast/sea-cliff foundation validation artifact",
+  "description": "Strict, version-frozen v2 contract for the V2-9-06 rocky-coast/sea-cliff foundation validation artifact. Validation evidence only; it never authorizes generation or world mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "contractVersion", "rockyCoastFeatureId", "seaCliffFeatureId",
+    "metrics", "issues", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "contractVersion": { "const": "foundation-rocky-coast-cliff-validation-artifact-v1" },
+    "rockyCoastFeatureId": { "type": "string", "maxLength": 64 },
+    "seaCliffFeatureId": { "type": "string", "maxLength": 64 },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "issues": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/issue" } },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "rockShelfPresent", "cliffFacePresent", "talusPresent", "notchPresent",
+        "shoreSideOk", "hostAabbOk", "coastTransitionOk",
+        "surfaceVolumeOwnershipOk", "haloBudgetOk"
+      ],
+      "properties": {
+        "rockShelfPresent": { "type": "boolean" },
+        "cliffFacePresent": { "type": "boolean" },
+        "talusPresent": { "type": "boolean" },
+        "notchPresent": { "type": "boolean" },
+        "shoreSideOk": { "type": "boolean" },
+        "hostAabbOk": { "type": "boolean" },
+        "coastTransitionOk": { "type": "boolean" },
+        "surfaceVolumeOwnershipOk": { "type": "boolean" },
+        "haloBudgetOk": { "type": "boolean" }
+      }
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleId", "message"],
+      "properties": {
+        "ruleId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "message": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    }
+  }
+}

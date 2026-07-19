@@ -45,16 +45,23 @@ public final class ReleaseCoreVerifierV2 {
     }
 
     public ReleaseCoreVerificationV2 verify(Path path, CancellationToken cancellationToken) throws IOException {
+        try (VerifiedReleaseViewV2 view = openVerified(path, cancellationToken)) {
+            return view.verification();
+        }
+    }
+
+    public VerifiedReleaseViewV2 openVerified(Path path, CancellationToken cancellationToken) throws IOException {
         Objects.requireNonNull(path, "path");
         Objects.requireNonNull(cancellationToken, "cancellationToken");
         cancellationToken.throwIfCancellationRequested();
         Path normalized = path.toAbsolutePath().normalize();
         if (Files.isDirectory(normalized, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(normalized)) {
-            return verifyDirectory(normalized, cancellationToken);
+            ReleaseCoreVerificationV2 verification = verifyDirectory(normalized, cancellationToken);
+            return new VerifiedReleaseViewV2(normalized, verification, false);
         }
         if (Files.isRegularFile(normalized, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(normalized)
                 && normalized.getFileName().toString().endsWith(".zip")) {
-            return verifyZip(normalized, cancellationToken);
+            return openVerifiedZip(normalized, cancellationToken);
         }
         throw new IOException("Release format 2 input must be a non-symbolic directory or .zip file: " + path);
     }
@@ -118,19 +125,22 @@ public final class ReleaseCoreVerifierV2 {
         }
     }
 
-    private ReleaseCoreVerificationV2 verifyZip(Path zip, CancellationToken cancellationToken) throws IOException {
+    private VerifiedReleaseViewV2 openVerifiedZip(Path zip, CancellationToken cancellationToken) throws IOException {
         if (Files.size(zip) > limits.maximumZipBytes()) {
             throw new IOException("Release format 2 ZIP exceeds its compressed byte budget");
         }
         Path parent = Objects.requireNonNull(zip.getParent(), "ZIP must have a parent directory");
         Path staging = Files.createTempDirectory(parent, ".release-v2-verify-");
+        boolean opened = false;
         try {
             extractZip(zip, staging, cancellationToken);
             ReleaseCoreVerificationV2 result = verifyDirectory(staging, cancellationToken);
-            return new ReleaseCoreVerificationV2(zip, result.manifest(), result.verifiedFiles(),
-                    result.verifiedBytes());
+            opened = true;
+            return VerifiedReleaseViewV2.owned(zip, staging, result);
         } finally {
-            deleteTree(staging);
+            if (!opened) {
+                deleteTree(staging);
+            }
         }
     }
 

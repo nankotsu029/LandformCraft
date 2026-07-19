@@ -33,7 +33,7 @@ public final class WaterConditionFieldModulesV2 {
     private final ModuleDescriptorV2 descriptor = new ModuleDescriptorV2(
             MODULE_ID,
             MODULE_VERSION,
-            ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+            ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
             List.of(),
             List.of(ClimateFieldModulesV2.FINAL_MOISTURE_FIELD),
             PROVIDED,

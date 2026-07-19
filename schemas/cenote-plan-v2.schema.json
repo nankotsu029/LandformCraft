@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/cenote-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-03 cenote COMPOSITE_PRESET plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-03 cenote COMPOSITE_PRESET plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "presetId", "contractVersion", "sinkholeFeatureId", "sinkholePlanChecksum",
+    "caveNetworkFeatureId", "caveNetworkCanonicalChecksum", "fluidBodyId", "floodedHookFeatureId",
+    "materialHandoffId", "supportRadiusXZ", "estimatedWorkUnits", "geometryChecksum",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "presetId": { "$ref": "#/$defs/slug" },
+    "contractVersion": { "const": "cenote-preset-contract-v1" },
+    "sinkholeFeatureId": { "$ref": "#/$defs/slug" },
+    "sinkholePlanChecksum": { "$ref": "#/$defs/checksum" },
+    "caveNetworkFeatureId": { "$ref": "#/$defs/slug" },
+    "caveNetworkCanonicalChecksum": { "$ref": "#/$defs/checksum" },
+    "fluidBodyId": { "$ref": "#/$defs/slug" },
+    "floodedHookFeatureId": { "type": "string", "maxLength": 64 },
+    "materialHandoffId": { "const": "karst-limestone-handoff" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 2, "maximum": 64 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

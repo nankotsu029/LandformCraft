@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-containment-evidence-v2.schema.json",
+  "title": "LandformCraft V2-6-05 Release 2 placement containment evidence",
+  "description": "Strict, version-frozen v2 contract for the V2-6-05 Release 2 placement containment evidence. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidenceVersion", "containmentContractVersion", "policy", "placementId", "operationId",
+    "worldId", "placementPlanBinding", "envelopeBinding", "snapshotBinding",
+    "unionEffectEnvelope", "findings", "scanStats", "verdict", "createdAt", "canonicalChecksum"
+  ],
+  "properties": {
+    "evidenceVersion": {"const": 1},
+    "containmentContractVersion": {"const": "release-2-placement-containment-v1"},
+    "policy": {"$ref": "#/$defs/policy"},
+    "placementId": {"type": "string", "format": "uuid"},
+    "operationId": {"type": "string", "format": "uuid"},
+    "worldId": {"type": "string", "format": "uuid"},
+    "placementPlanBinding": {"$ref": "#/$defs/placementPlanBinding"},
+    "envelopeBinding": {"$ref": "#/$defs/envelopeBinding"},
+    "snapshotBinding": {"$ref": "#/$defs/snapshotBinding"},
+    "unionEffectEnvelope": {"$ref": "#/$defs/aabb"},
+    "findings": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "scanStats": {"$ref": "#/$defs/scanStats"},
+    "verdict": {"const": "CONTAINED"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyVersion", "catalogVersion", "fluidSupportRadiusXZ", "fluidSupportRadiusY",
+        "gravityFallBlocks", "neighborUpdateRadius", "budget"
+      ],
+      "properties": {
+        "policyVersion": {"const": "release-2-placement-containment-policy-v1"},
+        "catalogVersion": {"const": "release-2-placement-block-physics-catalog-v1"},
+        "fluidSupportRadiusXZ": {"type": "integer", "minimum": 0, "maximum": 256},
+        "fluidSupportRadiusY": {"type": "integer", "minimum": 0, "maximum": 256},
+        "gravityFallBlocks": {"type": "integer", "minimum": 0, "maximum": 256},
+        "neighborUpdateRadius": {"type": "integer", "minimum": 0, "maximum": 256},
+        "budget": {"$ref": "#/$defs/policyBudget"}
+      }
+    },
+    "policyBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumScannedBlocks", "maximumCacheEntries",
+        "maximumBfsNodes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "release-2-placement-containment-budget-v1"},
+        "maximumScannedBlocks": {"type": "integer", "minimum": 1},
+        "maximumCacheEntries": {"type": "integer", "minimum": 1},
+        "maximumBfsNodes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "minY", "minZ", "maxX", "maxY", "maxZ"],
+      "properties": {
+        "minX": {"type": "integer"},
+        "minY": {"type": "integer"},
+        "minZ": {"type": "integer"},
+        "maxX": {"type": "integer"},
+        "maxY": {"type": "integer"},
+        "maxZ": {"type": "integer"}
+      }
+    },
+    "placementPlanBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourcePlacementPlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourcePlacementPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-containment-plan-binding-v1"}
+      }
+    },
+    "envelopeBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceEnvelopePlanChecksum", "sourceMutationEnvelopeChecksum",
+        "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceEnvelopePlanChecksum": {"$ref": "#/$defs/checksum"},
+        "sourceMutationEnvelopeChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-containment-envelope-binding-v1"}
+      }
+    },
+    "snapshotBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceSnapshotPlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceSnapshotPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-containment-snapshot-binding-v1"}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findingId", "rule", "physicsClass", "detail", "evidenceHash"],
+      "properties": {
+        "findingId": {"type": "string", "minLength": 1, "maxLength": 64},
+        "rule": {
+          "type": "string",
+          "enum": [
+            "CLASSIFICATION",
+            "FLUID_CLOSURE",
+            "GRAVITY_SUPPORT",
+            "NEIGHBOR_RADIUS",
+            "BOUNDARY_SEAL",
+            "PHYSICS_CLASS_DECLARATION"
+          ]
+        },
+        "physicsClass": {
+          "type": "string",
+          "enum": ["SOLID", "AIR", "FLUID", "GRAVITY", "NEIGHBOR"]
+        },
+        "detail": {"type": "string", "minLength": 1, "maxLength": 256},
+        "evidenceHash": {"$ref": "#/$defs/checksum"}
+      }
+    },
+    "scanStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scannedBlocks", "cacheEntries", "cacheHits", "bfsNodes",
+        "fluidComponents", "gravityBlocks", "neighborBlocks"
+      ],
+      "properties": {
+        "scannedBlocks": {"type": "integer", "minimum": 0},
+        "cacheEntries": {"type": "integer", "minimum": 0},
+        "cacheHits": {"type": "integer", "minimum": 0},
+        "bfsNodes": {"type": "integer", "minimum": 0},
+        "fluidComponents": {"type": "integer", "minimum": 0},
+        "gravityBlocks": {"type": "integer", "minimum": 0},
+        "neighborBlocks": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

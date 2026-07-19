@@ -1,0 +1,60 @@
+{
+  "intentVersion": 2,
+  "intentId": "ice-sheet-positive-v2",
+  "theme": "V2-10-01 ICE_SHEET ice foundation with plain bed contact",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "host-plain",
+      "kind": "PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95], [0.05, 0.05]]]
+      },
+      "parameters": {
+        "baseElevationAboveDatumBlocks": { "min": 4, "max": 8 },
+        "microReliefBlocks": { "min": 1, "max": 2 },
+        "groundwaterHandoffDepthBlocks": { "min": 2, "max": 4 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "ice-sheet-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "continental-ice",
+      "kind": "ICE_SHEET",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.2, 0.2], [0.8, 0.2], [0.8, 0.8], [0.2, 0.8], [0.2, 0.2]]]
+      },
+      "parameters": {
+        "thicknessBlocks": { "min": 12, "max": 16 },
+        "halfWidthBlocks": { "min": 10, "max": 12 },
+        "flowAzimuthDegrees": 180,
+        "climatePreset": "COLD_MARITIME",
+        "meltwaterHandoffFeatureIdHint": ""
+      },
+      "priority": 35,
+      "provenance": { "source": "MANUAL", "sourceId": "ice-sheet-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "ice-supported-by-plain",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:continental-ice",
+      "to": "feature:host-plain",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_MARITIME", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "ice-sheet-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

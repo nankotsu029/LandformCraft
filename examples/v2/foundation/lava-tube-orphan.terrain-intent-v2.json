@@ -1,0 +1,77 @@
+{
+  "intentVersion": 2,
+  "intentId": "lava-tube-orphan-v2",
+  "theme": "V2-10-07 LAVA_TUBE orphan fixture missing WITHIN volcanic cone",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "cone-core",
+      "kind": "VOLCANIC_CONE",
+      "geometry": {
+        "type": "POINT",
+        "point": [0.5, 0.5]
+      },
+      "parameters": {
+        "baseRadiusBlocks": { "min": 20, "max": 28 },
+        "summitHeightBlocksAboveSea": { "min": 16, "max": 24 },
+        "craterRadiusBlocks": { "min": 4, "max": 6 },
+        "craterFloorDepthBlocks": { "min": 4, "max": 6 },
+        "radialDrainage01": { "min": 0.3, "max": 0.6 }
+      },
+      "priority": 18,
+      "provenance": { "source": "MANUAL", "sourceId": "lava-tube-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "crater-rim",
+      "kind": "VOLCANIC_CALDERA",
+      "geometry": {
+        "type": "POINT",
+        "point": [0.5, 0.5]
+      },
+      "parameters": {
+        "rimRadiusBlocks": 8,
+        "rimReliefBlocks": 4,
+        "craterFloorDepthBlocks": 4,
+        "breachDirection": "SOUTH_EAST"
+      },
+      "priority": 19,
+      "provenance": { "source": "MANUAL", "sourceId": "lava-tube-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "lava-tube-main",
+      "kind": "LAVA_TUBE",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.5, 0.5], [0.55, 0.52], [0.58, 0.54]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "tubeRadiusBlocks": { "min": 3, "max": 4 },
+        "roofClearanceBlocks": { "min": 3, "max": 4 },
+        "supportRadiusBlocks": { "min": 4, "max": 6 }
+      },
+      "priority": 20,
+      "provenance": { "source": "MANUAL", "sourceId": "lava-tube-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "tube-originates-at-caldera",
+      "kind": "ORIGINATES_AT",
+      "from": "feature:lava-tube-main",
+      "to": "feature:crater-rim",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "BASALTIC_VOLCANIC", "climatePreset": "WARM_MARITIME", "ecologyPreset": "VOLCANIC_SUCCESSION" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "lava-tube-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

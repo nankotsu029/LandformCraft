@@ -1,0 +1,59 @@
+{
+  "intentVersion": 2,
+  "intentId": "seamount-out-of-basin-v2",
+  "theme": "V2-10-04 SEAMOUNT point outside ocean basin host (negative)",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "deep-basin",
+      "kind": "OCEAN_BASIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [[0.15, 0.15], [0.85, 0.15], [0.85, 0.85], [0.15, 0.85], [0.15, 0.15]]
+        ]
+      },
+      "parameters": {
+        "maxDepthBlocksBelowSea": { "min": 40, "max": 48 },
+        "floorReliefBlocks": { "min": 2, "max": 4 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "seamount-negative-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "offshore-knoll",
+      "kind": "SEAMOUNT",
+      "geometry": {
+        "type": "POINT",
+        "point": [0.05, 0.05]
+      },
+      "parameters": {
+        "baseRadiusBlocks": { "min": 8, "max": 12 },
+        "reliefBlocks": { "min": 12, "max": 16 },
+        "summitDepthBlocksBelowSea": { "min": 28, "max": 32 }
+      },
+      "priority": 25,
+      "provenance": { "source": "MANUAL", "sourceId": "seamount-negative-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "seamount-within-basin",
+      "kind": "WITHIN",
+      "from": "feature:offshore-knoll",
+      "to": "feature:deep-basin",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "COASTAL_SEDIMENT", "climatePreset": "TEMPERATE_HUMID", "ecologyPreset": "COASTAL_SCRUB" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "seamount-negative-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

@@ -1,0 +1,19 @@
+package com.github.nankotsu029.landformcraft.generator.v2.volume.water;
+
+public enum UndergroundLakeFailureCodeV2 {
+    UNKNOWN_KERNEL,
+    BUDGET_EXCEEDED,
+    ORPHAN_BASIN,
+    NOT_REACHABLE_FROM_ENTRANCE,
+    NETWORK_CONTAINMENT_FAILED,
+    UNCONTAINED_FLUID,
+    LEAKING_FLUID,
+    MISSING_AIR_CAVITY,
+    DOUBLE_FLUID_OWNER,
+    CARVE_AS_FLUID_CORRUPTION,
+    THIN_ROOF,
+    SURFACE_BREAKTHROUGH,
+    RIM_FAILURE,
+    BINDING_MISMATCH,
+    HOST_MISMATCH
+}

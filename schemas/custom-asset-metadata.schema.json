@@ -1,6 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/custom-asset-metadata.schema.json",
+  "title": "LandformCraft Custom Asset Metadata",
+  "description": "Strict, frozen v1 contract for the Custom Asset Metadata. Rejects unknown fields, versions and encodings instead of falling back.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "assetId", "type", "minecraftVersion", "anchorX", "anchorY", "anchorZ", "allowedRotations", "placementKind", "maximumSlope", "waterAllowed"],

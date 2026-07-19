@@ -22,20 +22,31 @@ public final class ProviderJsonSupport {
     }
 
     public static JsonNode terrainIntentSchema(ObjectMapper mapper) {
-        try (InputStream input = ProviderJsonSupport.class
-                .getResourceAsStream("/schemas/terrain-intent.schema.json")) {
+        return providerCompatibleSchema(mapper, "/schemas/terrain-intent.schema.json", "terrain intent");
+    }
+
+    /** Provider-subset of TerrainIntent v2. Local revalidation still uses the full Schema. */
+    public static JsonNode terrainIntentV2Schema(ObjectMapper mapper) {
+        return providerCompatibleSchema(
+                mapper, "/schemas/terrain-intent-v2.schema.json", "terrain intent v2");
+    }
+
+    private static JsonNode providerCompatibleSchema(
+            ObjectMapper mapper, String resourcePath, String label
+    ) {
+        try (InputStream input = ProviderJsonSupport.class.getResourceAsStream(resourcePath)) {
             if (input == null) {
-                throw new IllegalStateException("terrain intent schema resource is missing");
+                throw new IllegalStateException(label + " schema resource is missing");
             }
             JsonNode schema = mapper.readTree(input);
             if (schema == null || !schema.isObject()) {
-                throw new IllegalStateException("terrain intent schema must be an object");
+                throw new IllegalStateException(label + " schema must be an object");
             }
             JsonNode compatible = schema.deepCopy();
             removeUnsupportedConstraints(compatible);
             return compatible;
         } catch (IOException exception) {
-            throw new IllegalStateException("failed to load terrain intent schema", exception);
+            throw new IllegalStateException("failed to load " + label + " schema", exception);
         }
     }
 

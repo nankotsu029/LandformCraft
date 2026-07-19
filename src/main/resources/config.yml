@@ -44,6 +44,23 @@ placement:
   # Empty allow-list means all worlds except denied-worlds. Policy is captured at startup.
   allowed-worlds: []
   denied-worlds: []
+  release2:
+    # Smoke-sized Paper placement ceiling (WE／FAWE smoke evidence). Catalog SUPPORTED is V2-6-18,
+    # promoted for the surface-2_5d prefix by V2-11-01. V2-11-02 clamps these values to the
+    # Feature Support Catalog hard limit (64): a larger value is rejected at startup and can never
+    # widen normal placement.
+    measured-candidate-max-width: 64
+    measured-candidate-max-length: 64
+    # Re-measurement-only escape hatch for V2-11-04 (500x500) and V2-11-05 (1000x1000).
+    # Keep disabled on every normal server. Enabling it requires all of: this flag, an isolated
+    # world that holds nothing you care about, and a CONSOLE/RCON operator — an in-game player can
+    # never place an unmeasured dimension. Admitting a size here does not make it SUPPORTED;
+    # catalog promotion stays with V2-11-06 and its measurement evidence.
+    measurement-profile:
+      enabled: false
+      isolated-world: ""
+      max-width: 0
+      max-length: 0
 
 worldedit:
   # Either WorldEdit or FAWE may satisfy the WorldEdit API at runtime. Do not install both.

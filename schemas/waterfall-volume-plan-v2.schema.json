@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/waterfall-volume-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-13 WATERFALL volume plan contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-13 WATERFALL volume plan contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "waterfallVolumeContractVersion", "featureId", "kernel", "fallNode",
+    "lipCenter", "baseCenter", "columnRadiusMillionths", "behindFall", "plungePool",
+    "fluidBodyId", "aabb", "sdfPlanBinding", "csgPlanBinding", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "waterfallVolumeContractVersion": {"const": "waterfall-volume-contract-v1"},
+    "featureId": {"$ref": "#/$defs/qualified"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "fallNode": {"$ref": "#/$defs/fallNode"},
+    "lipCenter": {"$ref": "#/$defs/vec3"},
+    "baseCenter": {"$ref": "#/$defs/vec3"},
+    "columnRadiusMillionths": {"type": "integer", "minimum": 1000000, "maximum": 32000000},
+    "behindFall": {"$ref": "#/$defs/behindFall"},
+    "plungePool": {"$ref": "#/$defs/plungePool"},
+    "fluidBodyId": {"$ref": "#/$defs/qualified"},
+    "aabb": {"$ref": "#/$defs/aabb"},
+    "sdfPlanBinding": {"$ref": "#/$defs/sdfBinding"},
+    "csgPlanBinding": {"$ref": "#/$defs/csgBinding"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "millionths": {"type": "integer", "minimum": -100000000000000, "maximum": 100000000000000},
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/millionths"},
+        "yMillionths": {"$ref": "#/$defs/millionths"},
+        "zMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": {"$ref": "#/$defs/millionths"},
+        "minYMillionths": {"$ref": "#/$defs/millionths"},
+        "minZMillionths": {"$ref": "#/$defs/millionths"},
+        "maxXMillionths": {"$ref": "#/$defs/millionths"},
+        "maxYMillionths": {"$ref": "#/$defs/millionths"},
+        "maxZMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernelVersion", "minimumColumnSamples", "minimumPoolSamples",
+        "minimumBehindClearanceSamples", "maximumRadiusMillionths", "maximumDescriptorSamples"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "waterfall-volume-v1"},
+        "minimumColumnSamples": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "minimumPoolSamples": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "minimumBehindClearanceSamples": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "maximumRadiusMillionths": {"type": "integer", "minimum": 1000000, "maximum": 32000000},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000}
+      }
+    },
+    "fallNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationKind", "fallNodeId", "waterfallFeatureId", "sourceGeometryChecksum"],
+      "properties": {
+        "relationKind": {"const": "BOUND_TO_FALL"},
+        "fallNodeId": {"$ref": "#/$defs/qualified"},
+        "waterfallFeatureId": {"$ref": "#/$defs/qualified"},
+        "sourceGeometryChecksum": {"$ref": "#/$defs/checksum"}
+      }
+    },
+    "behindFall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["center", "halfExtentsMillionths", "cornerRadiusMillionths"],
+      "properties": {
+        "center": {"$ref": "#/$defs/vec3"},
+        "halfExtentsMillionths": {"$ref": "#/$defs/vec3"},
+        "cornerRadiusMillionths": {"type": "integer", "minimum": 0, "maximum": 32000000}
+      }
+    },
+    "plungePool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["center", "radiusMillionths", "waterSurfaceYBlocks"],
+      "properties": {
+        "center": {"$ref": "#/$defs/vec3"},
+        "radiusMillionths": {"type": "integer", "minimum": 2000000, "maximum": 32000000},
+        "waterSurfaceYBlocks": {"type": "integer", "minimum": -512, "maximum": 512}
+      }
+    },
+    "sdfBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "waterfall-volume-sdf-binding-v1"}
+      }
+    },
+    "csgBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "waterfall-volume-csg-binding-v1"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "estimatedCanonicalBytes", "maximumCanonicalBytes",
+        "maximumWorkingBytes", "maximumDescriptorSamples", "maximumFluidIntervalsPerColumn"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "waterfall-volume-budget-v1"},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 49152},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000},
+        "maximumFluidIntervalsPerColumn": {"type": "integer", "minimum": 1, "maximum": 8}
+      }
+    }
+  }
+}

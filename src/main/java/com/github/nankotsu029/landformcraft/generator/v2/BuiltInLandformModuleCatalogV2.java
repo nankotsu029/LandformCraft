@@ -18,6 +18,8 @@ import com.github.nankotsu029.landformcraft.generator.v2.hydrology.river.Hydrolo
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.waterfall.HydrologyWaterfallModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.canyon.LandformCanyonModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.fjord.LandformFjordModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.mangrove.LandformMangroveModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.landform.reef.LandformCoralReefModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.mountain.LandformMountainModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.landform.volcanic.LandformVolcanicModuleV2;
 import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalValidationPreviewModuleV2;
@@ -59,6 +61,8 @@ public final class BuiltInLandformModuleCatalogV2 {
     private static final HydrologyLakeModuleV2 HYDROLOGY_LAKE_MODULE = new HydrologyLakeModuleV2();
     private static final LandformCanyonModuleV2 LANDFORM_CANYON_MODULE = new LandformCanyonModuleV2();
     private static final LandformFjordModuleV2 LANDFORM_FJORD_MODULE = new LandformFjordModuleV2();
+    private static final LandformMangroveModuleV2 LANDFORM_MANGROVE_MODULE = new LandformMangroveModuleV2();
+    private static final LandformCoralReefModuleV2 LANDFORM_CORAL_REEF_MODULE = new LandformCoralReefModuleV2();
     private static final LandformMountainModuleV2 LANDFORM_MOUNTAIN_MODULE = new LandformMountainModuleV2();
     private static final LandformVolcanicModuleV2 LANDFORM_VOLCANIC_MODULE = new LandformVolcanicModuleV2();
     private static final HydrologyWaterfallModuleV2 HYDROLOGY_WATERFALL_MODULE = new HydrologyWaterfallModuleV2();
@@ -95,6 +99,12 @@ public final class BuiltInLandformModuleCatalogV2 {
                     HydrologyTidalModuleV2.STAGE_ID,
                     List.of(CoastalTransitionModuleV2.STAGE_ID)),
             new WorldBlueprintV2.StageDescriptor(
+                    LandformMangroveModuleV2.STAGE_ID,
+                    List.of(HydrologyTidalModuleV2.STAGE_ID)),
+            new WorldBlueprintV2.StageDescriptor(
+                    LandformCoralReefModuleV2.STAGE_ID,
+                    List.of(CoastalTransitionModuleV2.STAGE_ID)),
+            new WorldBlueprintV2.StageDescriptor(
                     LandformFjordModuleV2.STAGE_ID,
                     List.of(CoastalTransitionModuleV2.STAGE_ID)),
             new WorldBlueprintV2.StageDescriptor(
@@ -113,6 +123,8 @@ public final class BuiltInLandformModuleCatalogV2 {
                             HydrologyWaterfallModuleV2.STAGE_ID,
                             HydrologyDeltaModuleV2.STAGE_ID,
                             HydrologyTidalModuleV2.STAGE_ID,
+                            LandformMangroveModuleV2.STAGE_ID,
+                            LandformCoralReefModuleV2.STAGE_ID,
                             LandformFjordModuleV2.STAGE_ID,
                             LandformMountainModuleV2.STAGE_ID,
                             LandformVolcanicModuleV2.STAGE_ID)),
@@ -172,6 +184,8 @@ public final class BuiltInLandformModuleCatalogV2 {
             HYDROLOGY_WATERFALL_MODULE.descriptor(),
             HYDROLOGY_DELTA_MODULE.descriptor(),
             HYDROLOGY_TIDAL_MODULE.descriptor(),
+            LANDFORM_MANGROVE_MODULE.descriptor(),
+            LANDFORM_CORAL_REEF_MODULE.descriptor(),
             LANDFORM_FJORD_MODULE.descriptor(),
             LANDFORM_MOUNTAIN_MODULE.descriptor(),
             LANDFORM_VOLCANIC_MODULE.descriptor(),
@@ -254,6 +268,10 @@ public final class BuiltInLandformModuleCatalogV2 {
 
     public LandformFjordModuleV2 landformFjordModule() {
         return LANDFORM_FJORD_MODULE;
+    }
+
+    public LandformMangroveModuleV2 landformMangroveModule() {
+        return LANDFORM_MANGROVE_MODULE;
     }
 
     public LandformMountainModuleV2 landformMountainModule() {
@@ -366,6 +384,8 @@ public final class BuiltInLandformModuleCatalogV2 {
         result.put(TerrainIntentV2.FeatureKind.WATERFALL, HydrologyWaterfallModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.DELTA, HydrologyDeltaModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK, HydrologyTidalModuleV2.MODULE_ID);
+        result.put(TerrainIntentV2.FeatureKind.MANGROVE_WETLAND, LandformMangroveModuleV2.MODULE_ID);
+        result.put(TerrainIntentV2.FeatureKind.CORAL_REEF, LandformCoralReefModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.FJORD, LandformFjordModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.ALPINE_MOUNTAIN_RANGE, LandformMountainModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.GLACIAL_MOUNTAIN_RANGE, LandformMountainModuleV2.MODULE_ID);
@@ -383,6 +403,8 @@ public final class BuiltInLandformModuleCatalogV2 {
                         && kind != TerrainIntentV2.FeatureKind.WATERFALL)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.DELTA)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK)
+                .filter(kind -> kind != TerrainIntentV2.FeatureKind.MANGROVE_WETLAND)
+                .filter(kind -> kind != TerrainIntentV2.FeatureKind.CORAL_REEF)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.FJORD)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.ALPINE_MOUNTAIN_RANGE)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.GLACIAL_MOUNTAIN_RANGE)

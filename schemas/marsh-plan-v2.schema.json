@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/marsh-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-05 marsh foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-05 marsh foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "rings", "selectedHydroperiodBlocks",
+    "selectedWetnessMillionths", "selectedOpenWaterShareMillionths",
+    "selectedMicroReliefBlocks", "groundwaterMinDepthBlocks",
+    "minY", "maxY", "waterLevel", "width", "length",
+    "marshMaskFieldId", "openWaterFieldId", "microReliefFieldId", "wetnessFieldId",
+    "hydroperiodFieldId", "fluidOwnershipFieldId", "solidOwnershipFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "rings": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/ring" } },
+    "selectedHydroperiodBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "selectedWetnessMillionths": { "type": "integer", "minimum": 200000, "maximum": 1000000 },
+    "selectedOpenWaterShareMillionths": { "type": "integer", "minimum": 0, "maximum": 700000 },
+    "selectedMicroReliefBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+    "groundwaterMinDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "marshMaskFieldId": { "const": "foundation.marsh.mask" },
+    "openWaterFieldId": { "const": "foundation.marsh.open-water" },
+    "microReliefFieldId": { "const": "foundation.marsh.micro-relief" },
+    "wetnessFieldId": { "const": "foundation.marsh.wetness" },
+    "hydroperiodFieldId": { "const": "foundation.marsh.hydroperiod" },
+    "fluidOwnershipFieldId": { "const": "foundation.marsh.fluid-ownership" },
+    "solidOwnershipFieldId": { "const": "foundation.marsh.solid-ownership" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "vertex": {
+      "type": "object", "additionalProperties": false,
+      "required": ["xMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ring": {
+      "type": "object", "additionalProperties": false,
+      "required": ["vertices"],
+      "properties": {
+        "vertices": {
+          "type": "array", "minItems": 4, "maxItems": 2048,
+          "items": { "$ref": "#/$defs/vertex" }
+        }
+      }
+    }
+  }
+}

@@ -280,7 +280,7 @@ class FjordGeneratorV2Test {
                         new TerrainIntentV2.Point2(100_000, 990_000),
                         new TerrainIntentV2.Point2(100_000, 100_000)))),
                 brokenWall
-                        ? new TerrainIntentV2.NoParameters()
+                        ? defaultMangroveParameters()
                         : new TerrainIntentV2.MountainParameters(
                                 new TerrainIntentV2.IntRange(3, 3),
                                 new TerrainIntentV2.IntRange(4, 4),
@@ -352,6 +352,12 @@ class FjordGeneratorV2Test {
                 intent,
                 new WorldBlueprintV2.Bounds(width, length, -64, 255, 63),
                 "a".repeat(64));
+    }
+
+    private static TerrainIntentV2.MangroveWetlandParameters defaultMangroveParameters() {
+        return new TerrainIntentV2.MangroveWetlandParameters(
+                new TerrainIntentV2.IntRange(2, 3),
+                new TerrainIntentV2.FixedRange(200_000, 400_000));
     }
 
     private record Fixture(TerrainIntentV2 intent, FjordPlanV2 plan) {

@@ -57,7 +57,9 @@ class BoundedHydrologyReconcilerV2Test {
                 fixture("diagnostic/scenarios/delta.terrain-intent-v2.json",
                         HydrologyReconciliationPlanV2.ConstraintKind.DELTA_MOUTH),
                 fixture("diagnostic/scenarios/mangrove-wetland.terrain-intent-v2.json",
-                        HydrologyReconciliationPlanV2.ConstraintKind.TIDAL_CONNECTION),
+                        HydrologyReconciliationPlanV2.ConstraintKind.MANGROVE_TIDAL_LINK),
+                fixture("diagnostic/scenarios/coral-reef.terrain-intent-v2.json",
+                        HydrologyReconciliationPlanV2.ConstraintKind.REEF_LAGOON_PASS),
                 fixture("diagnostic/scenarios/fjord.terrain-intent-v2.json",
                         HydrologyReconciliationPlanV2.ConstraintKind.FJORD_CONNECTION),
                 fixture("diagnostic/scenarios/canyon-waterfall.terrain-intent-v2.json",
@@ -91,7 +93,7 @@ class BoundedHydrologyReconcilerV2Test {
 
         LakePlanV2 lake = openLakePlan();
         HydrologyReconciliationPlanV2 lakePlan = codec.sealHydrologyReconciliationPlan(compiler.compile(
-                HYDROLOGY_CHECKSUM, List.of(), List.of(lake), List.of(), List.of(), List.of(), List.of(),
+                HYDROLOGY_CHECKSUM, List.of(), List.of(lake), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
                 HydrologyReconciliationPlanV2.MAXIMUM_WORK_UNITS,
                 HydrologyReconciliationPlanV2.MAXIMUM_WORKING_BYTES,
                 HydrologyReconciliationPlanV2.MAXIMUM_ARTIFACT_BYTES));
@@ -269,7 +271,7 @@ class BoundedHydrologyReconcilerV2Test {
 
         HydrologyReconciliationException budget = assertThrows(HydrologyReconciliationException.class,
                 () -> compiler.compile(HYDROLOGY_CHECKSUM, List.of(), List.of(), List.of(), List.of(),
-                        List.of(), List.of(), 100L, 8_191L, 4_096L));
+                        List.of(), List.of(), List.of(), List.of(), 100L, 8_191L, 4_096L));
         assertEquals("v2.hydrology-reconciliation-budget", budget.ruleId());
         assertThrows(IllegalArgumentException.class, () -> new HydrologyReconciliationPlanV2(
                 HydrologyReconciliationPlanV2.VERSION,

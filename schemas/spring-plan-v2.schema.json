@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/spring-plan-v2.schema.json",
+  "title": "LandformCraft V2-10-10 surface spring foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-10-10 surface spring foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId",
+    "outletSurfaceFeatureId", "outletSurfaceGeometryChecksum", "outletRelationId",
+    "riverFeatureId", "riverPlanChecksum", "riverSourceNodeId", "downstreamReachId", "riverRelationId",
+    "hydrologyNodeId", "hydrologyNodeKind",
+    "openingXMillionths", "openingYMillionths", "openingZMillionths", "sourceBedYMillionths",
+    "sourceDischargeBlocks", "dischargeClass", "outflowRadiusBlocks",
+    "sourceMaskFieldId", "outflowMaskFieldId", "ownershipFieldId", "continuityFieldId", "reachabilityFieldId",
+    "supportRadiusXZ", "estimatedWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "outletSurfaceFeatureId": { "$ref": "#/$defs/slug" },
+    "outletSurfaceGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "outletRelationId": { "$ref": "#/$defs/slug" },
+    "riverFeatureId": { "$ref": "#/$defs/slug" },
+    "riverPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "riverSourceNodeId": { "$ref": "#/$defs/qualified" },
+    "downstreamReachId": { "$ref": "#/$defs/qualified" },
+    "riverRelationId": { "$ref": "#/$defs/slug" },
+    "hydrologyNodeId": { "$ref": "#/$defs/qualified" },
+    "hydrologyNodeKind": { "const": "SPRING" },
+    "openingXMillionths": { "type": "integer", "minimum": 0 },
+    "openingYMillionths": { "type": "integer", "minimum": 0 },
+    "openingZMillionths": { "type": "integer", "minimum": 0 },
+    "sourceBedYMillionths": { "type": "integer", "minimum": 0 },
+    "sourceDischargeBlocks": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "dischargeClass": { "enum": ["SMALL", "MEDIUM", "LARGE"] },
+    "outflowRadiusBlocks": { "type": "integer", "minimum": 1, "maximum": 16 },
+    "sourceMaskFieldId": { "const": "foundation.spring.source-mask" },
+    "outflowMaskFieldId": { "const": "foundation.spring.outflow-mask" },
+    "ownershipFieldId": { "const": "foundation.spring.ownership" },
+    "continuityFieldId": { "const": "foundation.spring.continuity" },
+    "reachabilityFieldId": { "const": "foundation.spring.reachability" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 2, "maximum": 32 },
+    "estimatedWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

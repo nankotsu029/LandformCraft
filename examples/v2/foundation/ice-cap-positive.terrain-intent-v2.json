@@ -1,0 +1,63 @@
+{
+  "intentVersion": 2,
+  "intentId": "ice-cap-positive-v2",
+  "theme": "V2-10-01 ICE_CAP ice foundation with mountain bed contact",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "host-range",
+      "kind": "MOUNTAIN_RANGE",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.2, 0.2], [0.5, 0.5], [0.8, 0.8]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "peakCount": { "min": 3, "max": 3 },
+        "ridgeHalfWidthBlocks": { "min": 28, "max": 32 },
+        "maxReliefBlocks": { "min": 20, "max": 24 },
+        "saddleCount": { "min": 2, "max": 2 },
+        "spurCount": 2,
+        "passCount": 1,
+        "foothillBandBlocks": 16,
+        "valleyTransitionBandBlocks": 8
+      },
+      "priority": 25,
+      "provenance": { "source": "MANUAL", "sourceId": "ice-cap-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "summit-ice",
+      "kind": "ICE_CAP",
+      "geometry": { "type": "POINT", "point": [0.5, 0.5] },
+      "parameters": {
+        "thicknessBlocks": { "min": 10, "max": 14 },
+        "halfWidthBlocks": { "min": 8, "max": 10 },
+        "flowAzimuthDegrees": 90,
+        "climatePreset": "COLD_ALPINE",
+        "meltwaterHandoffFeatureIdHint": ""
+      },
+      "priority": 35,
+      "provenance": { "source": "MANUAL", "sourceId": "ice-cap-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "ice-supported-by-range",
+      "kind": "SUPPORTED_BY",
+      "from": "feature:summit-ice",
+      "to": "feature:host-range",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "GLACIATED_HARD_ROCK", "climatePreset": "COLD_ALPINE", "ecologyPreset": "SUBALPINE_FJORD" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "ice-cap-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

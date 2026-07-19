@@ -322,8 +322,10 @@ public record HydrologyReconciliationArtifactV2(
             case LAKE_SPILL -> 1;
             case DELTA_MOUTH -> 2;
             case TIDAL_CONNECTION -> 3;
-            case FJORD_CONNECTION -> 4;
-            case WATERFALL_LIP_BASE -> 5;
+            case MANGROVE_TIDAL_LINK -> 4;
+            case REEF_LAGOON_PASS -> 5;
+            case FJORD_CONNECTION -> 6;
+            case WATERFALL_LIP_BASE -> 7;
         };
     }
 

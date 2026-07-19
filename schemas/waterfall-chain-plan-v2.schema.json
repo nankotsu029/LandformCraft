@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/waterfall-chain-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-13 WATERFALL_CHAIN composite preset plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-13 WATERFALL_CHAIN composite preset plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "chainId", "contractVersion", "riverFeatureId", "riverPlanChecksum",
+    "waterfallNodeIds", "plungePools", "totalDropMillionths", "waterfallCount",
+    "supportRadiusXZ", "estimatedGraphWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "chainId": { "$ref": "#/$defs/slug" },
+    "contractVersion": { "const": "waterfall-chain-preset-contract-v1" },
+    "riverFeatureId": { "$ref": "#/$defs/slug" },
+    "riverPlanChecksum": { "$ref": "#/$defs/checksum" },
+    "waterfallNodeIds": {
+      "type": "array", "minItems": 2, "maxItems": 8,
+      "items": { "$ref": "#/$defs/slug" }
+    },
+    "plungePools": {
+      "type": "array", "minItems": 2, "maxItems": 8,
+      "items": { "$ref": "#/$defs/plungePoolRef" }
+    },
+    "totalDropMillionths": { "type": "integer", "minimum": 1000000 },
+    "waterfallCount": { "type": "integer", "minimum": 2, "maximum": 8 },
+    "supportRadiusXZ": { "type": "integer", "minimum": 2, "maximum": 64 },
+    "estimatedGraphWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "plungePoolRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["childId", "waterfallNodeId", "radiusBlocks", "depthBlocks"],
+      "properties": {
+        "childId": { "$ref": "#/$defs/slug" },
+        "waterfallNodeId": { "$ref": "#/$defs/slug" },
+        "radiusBlocks": { "type": "integer", "minimum": 2, "maximum": 32 },
+        "depthBlocks": { "type": "integer", "minimum": 1, "maximum": 16 }
+      }
+    }
+  }
+}

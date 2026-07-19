@@ -139,7 +139,7 @@ public final class ReleaseHydrologyPublisherV2 {
         }
     }
 
-    private HydrologySnapshot inspectHydrology(
+    HydrologySnapshot inspectHydrology(
             HydrologyReleaseSourceV2 source,
             String blueprintChecksum,
             CancellationToken token
@@ -207,7 +207,7 @@ public final class ReleaseHydrologyPublisherV2 {
                 bytes);
     }
 
-    private List<ReleaseArtifactDescriptorV2> copyHydrology(
+    List<ReleaseArtifactDescriptorV2> copyHydrology(
             Path staging,
             HydrologyReleaseSourceV2 source,
             HydrologySnapshot snapshot,
@@ -364,7 +364,7 @@ public final class ReleaseHydrologyPublisherV2 {
         }
     }
 
-    private record HydrologySnapshot(
+    record HydrologySnapshot(
             HydrologyPlanV2 plan,
             HydrologyRoutingArtifactV2 routing,
             HydrologyReconciliationPlanV2 reconciliationPlan,

@@ -27,7 +27,7 @@ public final class GeologyFoundationModuleV2 {
     private final ModuleDescriptorV2 descriptor = new ModuleDescriptorV2(
             MODULE_ID,
             MODULE_VERSION,
-            ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+            ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
             List.of(),
             List.of(),
             FIELDS,

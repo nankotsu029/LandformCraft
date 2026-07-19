@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/archipelago-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-07 archipelago foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-07 archipelago foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "islands", "saddles", "dominantIslandIndex",
+    "minDryLandGapBlocks", "selectedSubmarineSaddleDepthBlocks",
+    "minY", "maxY", "waterLevel", "width", "length",
+    "massMaskFieldId", "saddleFieldId", "dominanceFieldId", "gapFieldId", "solidOwnershipFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits", "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "islands": { "type": "array", "minItems": 2, "maxItems": 64, "items": { "$ref": "#/$defs/islandMass" } },
+    "saddles": { "type": "array", "maxItems": 4096, "items": { "$ref": "#/$defs/saddle" } },
+    "dominantIslandIndex": { "type": "integer", "minimum": 0 },
+    "minDryLandGapBlocks": { "type": "integer", "minimum": 4, "maximum": 64 },
+    "selectedSubmarineSaddleDepthBlocks": { "type": "integer", "minimum": 4, "maximum": 64 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "massMaskFieldId": { "const": "foundation.archipelago.mass-mask" },
+    "saddleFieldId": { "const": "foundation.archipelago.saddle" },
+    "dominanceFieldId": { "const": "foundation.archipelago.dominance" },
+    "gapFieldId": { "const": "foundation.archipelago.gap" },
+    "solidOwnershipFieldId": { "const": "foundation.archipelago.solid-ownership" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "islandMass": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pointId", "centerXMillionths", "centerZMillionths", "radiusBlocks", "summitHeightBlocksAboveSea"],
+      "properties": {
+        "pointId": { "$ref": "#/$defs/slug" },
+        "centerXMillionths": { "type": "integer", "minimum": 0 },
+        "centerZMillionths": { "type": "integer", "minimum": 0 },
+        "radiusBlocks": { "type": "integer", "minimum": 8, "maximum": 256 },
+        "summitHeightBlocksAboveSea": { "type": "integer", "minimum": 8, "maximum": 256 }
+      }
+    },
+    "saddle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fromPointId", "toPointId", "depthBlocks"],
+      "properties": {
+        "fromPointId": { "$ref": "#/$defs/slug" },
+        "toPointId": { "$ref": "#/$defs/slug" },
+        "depthBlocks": { "type": "integer", "minimum": 4, "maximum": 64 }
+      }
+    }
+  }
+}

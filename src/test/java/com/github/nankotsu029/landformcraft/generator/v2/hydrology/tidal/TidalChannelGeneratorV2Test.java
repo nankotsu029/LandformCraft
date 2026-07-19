@@ -273,7 +273,7 @@ class TidalChannelGeneratorV2Test {
                         new TerrainIntentV2.Point2(960_000, 1_000_000),
                         new TerrainIntentV2.Point2(80_000, 1_000_000),
                         new TerrainIntentV2.Point2(50_000, 100_000)))),
-                new TerrainIntentV2.NoParameters(),
+                defaultMangroveParameters(),
                 0,
                 TerrainIntentV2.Provenance.confirmedManual("tidal-test"));
         TerrainIntentV2 intent = new TerrainIntentV2(
@@ -371,6 +371,12 @@ class TidalChannelGeneratorV2Test {
                     window.rawValueAt(TidalChannelGeneratorV2.TidalField.DEPTH_CORRIDOR, x, z),
                     window.rawValueAt(TidalChannelGeneratorV2.TidalField.MARINE_CONNECTION, x, z));
         };
+    }
+
+    private static TerrainIntentV2.MangroveWetlandParameters defaultMangroveParameters() {
+        return new TerrainIntentV2.MangroveWetlandParameters(
+                new TerrainIntentV2.IntRange(2, 3),
+                new TerrainIntentV2.FixedRange(200_000, 400_000));
     }
 
     private record Fixture(TerrainIntentV2 intent, TidalChannelPlanV2 tidalPlan) {

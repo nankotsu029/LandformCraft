@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/placement-reservation-plan-v2.schema.json",
+  "title": "LandformCraft V2-6-03 Release 2 region/disk reservation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-6-03 Release 2 region/disk reservation plan. Read and written by the Release 2 placement lifecycle with strict read-back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "reservationContractVersion", "placementId", "operationId", "worldId",
+    "operation", "actor", "placementPlanBinding", "envelopeBinding", "regions", "diskLease",
+    "leaseState", "createdAt", "expiresAt", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "reservationContractVersion": {"const": "release-2-placement-reservation-contract-v1"},
+    "placementId": {"type": "string", "format": "uuid"},
+    "operationId": {"type": "string", "format": "uuid"},
+    "worldId": {"type": "string", "format": "uuid"},
+    "operation": {"$ref": "#/$defs/operation"},
+    "actor": {"$ref": "#/$defs/actor"},
+    "placementPlanBinding": {"$ref": "#/$defs/placementPlanBinding"},
+    "envelopeBinding": {"$ref": "#/$defs/envelopeBinding"},
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/regionLease"}
+    },
+    "diskLease": {"$ref": "#/$defs/diskLease"},
+    "leaseState": {"$ref": "#/$defs/leaseState"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "operation": {"enum": ["APPLY", "UNDO", "RECOVERY_ROLLBACK", "RECOVERY_ACCEPT"]},
+    "leaseState": {"enum": ["PLANNED", "ACTIVE", "RECOVERY_REQUIRED"]},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {"enum": ["PLAYER", "CONSOLE", "SYSTEM"]},
+        "id": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "minY", "minZ", "maxX", "maxY", "maxZ"],
+      "properties": {
+        "minX": {"type": "integer"},
+        "minY": {"type": "integer"},
+        "minZ": {"type": "integer"},
+        "maxX": {"type": "integer"},
+        "maxY": {"type": "integer"},
+        "maxZ": {"type": "integer"}
+      }
+    },
+    "placementPlanBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourcePlacementPlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourcePlacementPlanChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-reservation-plan-binding-v1"}
+      }
+    },
+    "envelopeBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceEnvelopePlanChecksum", "sourceMutationEnvelopeChecksum",
+        "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceEnvelopePlanChecksum": {"$ref": "#/$defs/checksum"},
+        "sourceMutationEnvelopeChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "release-2-placement-reservation-envelope-binding-v1"}
+      }
+    },
+    "regionLease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tileId", "tileIndex", "region"],
+      "properties": {
+        "tileId": {"type": "string", "pattern": "^tile-x[0-9]+-z[0-9]+$"},
+        "tileIndex": {"type": "integer", "minimum": 0, "maximum": 1023},
+        "region": {"$ref": "#/$defs/aabb"}
+      }
+    },
+    "diskLease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["placementId", "fileStoreKey", "reservedBytes"],
+      "properties": {
+        "placementId": {"type": "string", "format": "uuid"},
+        "fileStoreKey": {"type": "string", "minLength": 1, "maxLength": 512},
+        "reservedBytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "maximumRegions", "maximumStoreEntries", "maximumDiskBytes",
+        "estimatedCanonicalBytes", "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "release-2-placement-reservation-budget-v1"},
+        "maximumRegions": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "maximumStoreEntries": {"type": "integer", "minimum": 1, "maximum": 4096},
+        "maximumDiskBytes": {"type": "integer", "minimum": 1},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+      }
+    }
+  }
+}

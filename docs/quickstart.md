@@ -31,13 +31,24 @@ Java 21とPaper 1.21.11を用意し、`LandformCraft-0.9.0-beta.1.jar`とWorldEd
 
 ## 3. Paperへ移す
 
-Release directoryを `plugins/LandformCraft/data/exports/rocky-coast-001/<release-id>` にchecksumを保ったままコピーします。別サーバーへZIPで移した場合はCLI `verify`を再実行してから展開してください。
+§2で作ったRelease directoryを `plugins/LandformCraft/data/exports/sandy-coast-001/<release-id>` にchecksumを保ったままコピーします。別サーバーへZIPで移した場合はCLI `verify`を再実行してから展開してください。
 
 ```text
-/lfc apply plan rocky-coast-001/<release-id> world 0 64 0
+/lfc apply plan sandy-coast-001/<release-id> world 0 64 0
 ```
 
-planはworldを変更しません。表示されたplacement ID、範囲、disk見積もりを確認し、同じplayerまたはCONSOLEで表示tokenを使います。クリックは入力欄へcopyするだけで自動実行されません。
+planはworldを変更しません。表示されたplacement ID、範囲、disk見積もりを確認し、発行されたconfirmation tokenで実行します。
+
+confirmation tokenはactor、placement、reservationに紐づく1回用の値です。
+
+* tokenはTab補完しません。playerのchatに出るtokenのクリックは入力欄へcopyするだけで、自動実行されません。
+* CONSOLEとRCONの出力はPaperのserver logへ複製されるため、非playerには**tokenをchatへ表示しません**。確認コマンド全文をowner-onlyのfile（`plugins/LandformCraft/data/confirmations/<key>.command`）へ保存し、console上ではそのpathだけを表示します。10分有効・1回用で、消費に成功するとfileは破棄されます。
+* CONSOLE／RCONで実行するときは、このfileを読んで中の確認コマンドをそのまま実行します。tokenをlogやchatへ貼り直さないでください。
+
+```text
+/lfc apply plan sandy-coast-001/<release-id> world 0 64 0
+[LandformCraft] 確認コマンドをlogへ出力せず保存しました（10分有効・1回用）: plugins/LandformCraft/data/confirmations/<key>.command
+```
 
 ```text
 /lfc apply execute <placement-id> <token>

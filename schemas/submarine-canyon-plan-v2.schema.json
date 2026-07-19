@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/submarine-canyon-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-09 submarine-canyon foundation plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-09 submarine-canyon foundation plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "featureId", "shelfFeatureId", "slopeFeatureId", "basinFeatureId",
+    "headRelationId", "crossingRelationId", "outletRelationId", "crossSection",
+    "terraceCount", "terraceWidthBlocks", "centerline", "totalArcLengthMillionths",
+    "selectedFloorWidthBlocks", "selectedRimWidthBlocks", "selectedAdditionalCarveDepthBlocks",
+    "minY", "maxY", "waterLevel", "width", "length",
+    "maskFieldId", "floorDepthFieldId", "ownershipFieldId", "hostHandoffFieldId", "fluidColumnHintFieldId",
+    "supportRadiusXZ", "estimatedRasterWorkUnits",
+    "geometryChecksum", "shelfGeometryChecksum", "slopeGeometryChecksum", "basinGeometryChecksum",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "featureId": { "$ref": "#/$defs/slug" },
+    "shelfFeatureId": { "$ref": "#/$defs/slug" },
+    "slopeFeatureId": { "$ref": "#/$defs/slug" },
+    "basinFeatureId": { "$ref": "#/$defs/slug" },
+    "headRelationId": { "$ref": "#/$defs/slug" },
+    "crossingRelationId": { "$ref": "#/$defs/slug" },
+    "outletRelationId": { "$ref": "#/$defs/slug" },
+    "crossSection": { "enum": ["V", "U", "TERRACED_V", "TERRACED_U"] },
+    "terraceCount": { "type": "integer", "minimum": 0, "maximum": 4 },
+    "terraceWidthBlocks": { "type": "integer", "minimum": 0, "maximum": 32 },
+    "centerline": {
+      "type": "array", "minItems": 2, "maxItems": 8192,
+      "items": { "$ref": "#/$defs/centerlineSample" }
+    },
+    "totalArcLengthMillionths": { "type": "integer", "minimum": 1000000 },
+    "selectedFloorWidthBlocks": { "type": "integer", "minimum": 2, "maximum": 64 },
+    "selectedRimWidthBlocks": { "type": "integer", "minimum": 4, "maximum": 256 },
+    "selectedAdditionalCarveDepthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "minY": { "type": "integer" },
+    "maxY": { "type": "integer" },
+    "waterLevel": { "type": "integer" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "maskFieldId": { "const": "foundation.submarine-canyon.mask" },
+    "floorDepthFieldId": { "const": "foundation.submarine-canyon.floor-depth" },
+    "ownershipFieldId": { "const": "foundation.submarine-canyon.ownership" },
+    "hostHandoffFieldId": { "const": "foundation.submarine-canyon.host-handoff" },
+    "fluidColumnHintFieldId": { "const": "foundation.submarine-canyon.fluid-column-hint" },
+    "supportRadiusXZ": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "estimatedRasterWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "shelfGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "slopeGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "basinGeometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "centerlineSample": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "sequence", "xMillionths", "zMillionths", "arcLengthMillionths",
+        "hostRole", "floorDepthBlocksBelowSea"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "xMillionths": { "type": "integer", "minimum": 0 },
+        "zMillionths": { "type": "integer", "minimum": 0 },
+        "arcLengthMillionths": { "type": "integer", "minimum": 0 },
+        "hostRole": { "enum": ["HEAD_SHELF", "SLOPE_CROSSING", "OUTLET_BASIN"] },
+        "floorDepthBlocksBelowSea": { "type": "integer", "minimum": 1, "maximum": 512 }
+      }
+    }
+  }
+}

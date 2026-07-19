@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/sea-cave-plan-v2.schema.json",
+  "title": "LandformCraft V2-5-09 SEA_CAVE plan contract",
+  "description": "Strict, version-frozen v2 contract for the V2-5-09 SEA_CAVE plan contract. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "seaCaveContractVersion", "featureId", "kernel", "hostCliff",
+    "marineBoundary", "chamber", "fluidBody", "aabb", "surfaceHeightBlocks",
+    "sdfPlanBinding", "csgPlanBinding", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": {"const": 1},
+    "seaCaveContractVersion": {"const": "sea-cave-contract-v1"},
+    "featureId": {"$ref": "#/$defs/qualified"},
+    "kernel": {"$ref": "#/$defs/kernel"},
+    "hostCliff": {"$ref": "#/$defs/hostCliff"},
+    "marineBoundary": {"$ref": "#/$defs/marineBoundary"},
+    "chamber": {"$ref": "#/$defs/chamber"},
+    "fluidBody": {"$ref": "#/$defs/fluidBody"},
+    "aabb": {"$ref": "#/$defs/aabb"},
+    "surfaceHeightBlocks": {"type": "integer", "minimum": -512, "maximum": 512},
+    "sdfPlanBinding": {"$ref": "#/$defs/sdfBinding"},
+    "csgPlanBinding": {"$ref": "#/$defs/csgBinding"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "canonicalChecksum": {"$ref": "#/$defs/checksum"}
+  },
+  "$defs": {
+    "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "qualified": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "millionths": {"type": "integer", "minimum": -100000000000000, "maximum": 100000000000000},
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMillionths", "yMillionths", "zMillionths"],
+      "properties": {
+        "xMillionths": {"$ref": "#/$defs/millionths"},
+        "yMillionths": {"$ref": "#/$defs/millionths"},
+        "zMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minXMillionths", "minYMillionths", "minZMillionths",
+        "maxXMillionths", "maxYMillionths", "maxZMillionths"
+      ],
+      "properties": {
+        "minXMillionths": {"$ref": "#/$defs/millionths"},
+        "minYMillionths": {"$ref": "#/$defs/millionths"},
+        "minZMillionths": {"$ref": "#/$defs/millionths"},
+        "maxXMillionths": {"$ref": "#/$defs/millionths"},
+        "maxYMillionths": {"$ref": "#/$defs/millionths"},
+        "maxZMillionths": {"$ref": "#/$defs/millionths"}
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernelVersion", "minimumRoofBlocks", "minimumOpeningBlocks",
+        "maximumRadiusMillionths", "maximumDescriptorSamples"
+      ],
+      "properties": {
+        "kernelVersion": {"const": "sea-cave-v1"},
+        "minimumRoofBlocks": {"type": "integer", "minimum": 1, "maximum": 64},
+        "minimumOpeningBlocks": {"type": "integer", "minimum": 1, "maximum": 32},
+        "maximumRadiusMillionths": {"type": "integer", "minimum": 1000000, "maximum": 20000000},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000}
+      }
+    },
+    "hostCliff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationKind", "hostCliffFeatureId", "seawardFace", "hostAabb"],
+      "properties": {
+        "relationKind": {"const": "CARVES_FLANK_OF"},
+        "hostCliffFeatureId": {"$ref": "#/$defs/qualified"},
+        "seawardFace": {"enum": ["NORTH", "EAST", "SOUTH", "WEST"]},
+        "hostAabb": {"$ref": "#/$defs/aabb"}
+      }
+    },
+    "marineBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationKind", "marineBoundaryId", "seaLevelYBlocks"],
+      "properties": {
+        "relationKind": {"const": "EMPTIES_INTO"},
+        "marineBoundaryId": {"const": "boundary.sea"},
+        "seaLevelYBlocks": {"type": "integer", "minimum": -512, "maximum": 512}
+      }
+    },
+    "chamber": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["openingCenter", "inlandCenter", "radiusMillionths"],
+      "properties": {
+        "openingCenter": {"$ref": "#/$defs/vec3"},
+        "inlandCenter": {"$ref": "#/$defs/vec3"},
+        "radiusMillionths": {"type": "integer", "minimum": 2000000, "maximum": 20000000}
+      }
+    },
+    "fluidBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fluidBodyId", "waterSurfaceYBlocks"],
+      "properties": {
+        "fluidBodyId": {"$ref": "#/$defs/qualified"},
+        "waterSurfaceYBlocks": {"type": "integer", "minimum": -512, "maximum": 512}
+      }
+    },
+    "sdfBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "sea-cave-sdf-binding-v1"}
+      }
+    },
+    "csgBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingVersion", "sourceArtifactChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": {"const": 1},
+        "sourceArtifactChecksum": {"$ref": "#/$defs/checksum"},
+        "bindingContractVersion": {"const": "sea-cave-csg-binding-v1"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budgetVersion", "estimatedCanonicalBytes", "maximumCanonicalBytes",
+        "maximumWorkingBytes", "maximumDescriptorSamples", "maximumFluidIntervalsPerColumn"
+      ],
+      "properties": {
+        "budgetVersion": {"const": "sea-cave-budget-v1"},
+        "estimatedCanonicalBytes": {"type": "integer", "minimum": 1},
+        "maximumCanonicalBytes": {"type": "integer", "minimum": 1, "maximum": 49152},
+        "maximumWorkingBytes": {"type": "integer", "minimum": 1},
+        "maximumDescriptorSamples": {"type": "integer", "minimum": 1, "maximum": 64000},
+        "maximumFluidIntervalsPerColumn": {"type": "integer", "minimum": 1, "maximum": 8}
+      }
+    }
+  }
+}

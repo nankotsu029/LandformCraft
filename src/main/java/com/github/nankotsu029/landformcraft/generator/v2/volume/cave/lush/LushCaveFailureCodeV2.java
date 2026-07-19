@@ -1,0 +1,16 @@
+package com.github.nankotsu029.landformcraft.generator.v2.volume.cave.lush;
+
+public enum LushCaveFailureCodeV2 {
+    UNKNOWN_KERNEL,
+    BUDGET_EXCEEDED,
+    ORPHAN_CHAMBER,
+    NOT_REACHABLE_FROM_ENTRANCE,
+    NETWORK_CONTAINMENT_FAILED,
+    TOO_DRY,
+    WET_SURFACE_INELIGIBLE,
+    THIN_ROOF,
+    SURFACE_BREAKTHROUGH,
+    HARD_CLEARANCE_CONFLICT,
+    BINDING_MISMATCH,
+    HOST_MISMATCH
+}

@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/macro-land-water-topology-plan-v2.schema.json",
+  "title": "LandformCraft V2-9-12 macro land-water topology plan",
+  "description": "Strict, version-frozen v2 contract for the V2-9-12 macro land-water topology plan. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "topologyId", "contractVersion", "width", "length",
+    "landWaterMaskFieldId", "zoneLabelFieldId", "regionIndexFieldId",
+    "regions", "adjacencies", "containments", "zoneBindings",
+    "minimumIsthmusWidthBlocks", "minimumStraitWidthBlocks", "supportRadiusXZ",
+    "estimatedGraphWorkUnits", "estimatedRasterCells",
+    "geometryChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "topologyId": { "$ref": "#/$defs/slug" },
+    "contractVersion": { "const": "macro-land-water-topology-contract-v1" },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "landWaterMaskFieldId": { "const": "foundation.topology.land-water-mask" },
+    "zoneLabelFieldId": {
+      "anyOf": [
+        { "const": "" },
+        { "const": "foundation.topology.zone-label" }
+      ]
+    },
+    "regionIndexFieldId": { "const": "foundation.topology.region-index" },
+    "regions": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/region" } },
+    "adjacencies": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/adjacency" } },
+    "containments": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/containment" } },
+    "zoneBindings": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/zoneBinding" } },
+    "minimumIsthmusWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "minimumStraitWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "supportRadiusXZ": { "type": "integer", "minimum": 0, "maximum": 32 },
+    "estimatedGraphWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
+    "estimatedRasterCells": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "geometryChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "medium": { "enum": ["LAND", "WATER"] },
+    "macroRegionKind": {
+      "enum": [
+        "BAY", "COVE", "HEADLAND", "PENINSULA", "ISTHMUS", "STRAIT",
+        "ENCLOSED_BASIN", "COASTAL_EMBAYMENT", "UNLABELED_LAND", "UNLABELED_WATER"
+      ]
+    },
+    "region": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "regionId", "kind", "medium", "cellCount",
+        "minX", "minZ", "maxX", "maxZ", "centroidX", "centroidZ", "minNeckWidthBlocks"
+      ],
+      "properties": {
+        "regionId": { "$ref": "#/$defs/slug" },
+        "kind": { "$ref": "#/$defs/macroRegionKind" },
+        "medium": { "$ref": "#/$defs/medium" },
+        "cellCount": { "type": "integer", "minimum": 1 },
+        "minX": { "type": "integer", "minimum": 0 },
+        "minZ": { "type": "integer", "minimum": 0 },
+        "maxX": { "type": "integer", "minimum": 0 },
+        "maxZ": { "type": "integer", "minimum": 0 },
+        "centroidX": { "type": "integer", "minimum": 0 },
+        "centroidZ": { "type": "integer", "minimum": 0 },
+        "minNeckWidthBlocks": { "type": "integer", "minimum": 0, "maximum": 1000 }
+      }
+    },
+    "adjacency": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "edgeId", "firstRegionId", "secondRegionId",
+        "sharedEdgeLengthBlocks", "minContactWidthBlocks"
+      ],
+      "properties": {
+        "edgeId": { "$ref": "#/$defs/slug" },
+        "firstRegionId": { "$ref": "#/$defs/slug" },
+        "secondRegionId": { "$ref": "#/$defs/slug" },
+        "sharedEdgeLengthBlocks": { "type": "integer", "minimum": 1 },
+        "minContactWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 1000 }
+      }
+    },
+    "containment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["parentRegionId", "childRegionId"],
+      "properties": {
+        "parentRegionId": { "$ref": "#/$defs/slug" },
+        "childRegionId": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "zoneBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["label", "kind", "regionId"],
+      "properties": {
+        "label": { "type": "integer", "minimum": 1, "maximum": 65534 },
+        "kind": { "$ref": "#/$defs/macroRegionKind" },
+        "regionId": { "$ref": "#/$defs/slug" }
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "intentVersion": 2,
+  "intentId": "plateau-escarpment-slice-v2",
+  "theme": "V2-10-06 plateau/escarpment foundation vertical slice with transition band",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "mesa-cap",
+      "kind": "PLATEAU",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0.2, 0.2], [0.8, 0.2], [0.8, 0.8], [0.2, 0.8], [0.2, 0.2]]]
+      },
+      "parameters": {
+        "capElevationBlocks": { "min": 24, "max": 32 },
+        "capReliefBlocks": { "min": 0, "max": 4 },
+        "profile": "MESA",
+        "escarpmentTransitionBandBlocks": 8
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "plateau-escarpment-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    },
+    {
+      "id": "cap-rim-scarp",
+      "kind": "ESCARPMENT",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [[0.2, 0.8], [0.5, 0.8], [0.8, 0.8]],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "scarpHeightBlocks": { "min": 16, "max": 32 },
+        "talusWidthBlocks": { "min": 4, "max": 8 },
+        "floorDropBlocks": { "min": 8, "max": 16 },
+        "dropSide": "SOUTH",
+        "plateauTransitionBandBlocks": 8
+      },
+      "priority": 20,
+      "provenance": { "source": "MANUAL", "sourceId": "plateau-escarpment-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [
+    {
+      "id": "plateau-escarpment-overlap",
+      "kind": "OVERLAPS",
+      "from": "feature:mesa-cap",
+      "to": "feature:cap-rim-scarp",
+      "strength": "HARD",
+      "transition": { "transitionVersion": 1, "profile": "PRIORITY_BLEND", "bandBlocks": 8 }
+    }
+  ],
+  "constraints": [],
+  "environment": { "geologyPreset": "SEDIMENTARY_PLATEAU", "climatePreset": "SEMI_ARID", "ecologyPreset": "SPARSE_SHRUBLAND" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "plateau-escarpment-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

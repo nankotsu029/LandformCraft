@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/feature-material-profile-plan-v2.schema.json",
+  "title": "LandformCraft V2-4-12 feature material profile overlay",
+  "description": "Strict, version-frozen v2 contract for the V2-4-12 feature material profile overlay. Compiled offline from TerrainIntent v2 and re-read with strict validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planVersion", "profileContractVersion", "materialProfileBinding", "geologyBinding",
+    "volcanicBindings", "canyonBindings", "catalog", "resolutionRules", "conflictRules",
+    "kernel", "budget", "canonicalChecksum"
+  ],
+  "properties": {
+    "planVersion": { "const": 1 },
+    "profileContractVersion": { "const": "feature-material-profile-contract-v1" },
+    "materialProfileBinding": { "$ref": "#/$defs/materialProfileBinding" },
+    "geologyBinding": { "$ref": "#/$defs/geologyBinding" },
+    "volcanicBindings": {
+      "type": "array", "maxItems": 16,
+      "items": { "$ref": "#/$defs/featureGeometryBinding" }
+    },
+    "canyonBindings": {
+      "type": "array", "maxItems": 16,
+      "items": { "$ref": "#/$defs/featureGeometryBinding" }
+    },
+    "catalog": { "$ref": "#/$defs/catalog" },
+    "resolutionRules": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": { "$ref": "#/$defs/resolutionRule" }
+    },
+    "conflictRules": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": { "$ref": "#/$defs/conflictRule" }
+    },
+    "kernel": { "$ref": "#/$defs/kernel" },
+    "budget": { "$ref": "#/$defs/budget" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "qualified": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "featureKind": { "enum": ["VOLCANIC", "CANYON"] },
+    "featureClass": {
+      "enum": [
+        "VOLCANIC_BASALT_EXPOSED", "VOLCANIC_TUFF_EXPOSED", "VOLCANIC_ASH_EXPOSED",
+        "CANYON_STRATA_EXPOSED", "CANYON_TALUS", "CANYON_FLOOR_SEDIMENT"
+      ]
+    },
+    "materialProfileBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bindingVersion", "sourceMaterialProfilePlanChecksum", "bindingContractVersion"],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceMaterialProfilePlanChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "feature-material-material-profile-binding-v1" }
+      }
+    },
+    "geologyBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "bindingVersion", "sourceGeologyPlanChecksum", "sourceLithologyPlanChecksum",
+        "sourceStrataPlanChecksum", "bindingContractVersion"
+      ],
+      "properties": {
+        "bindingVersion": { "const": 1 },
+        "sourceGeologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "sourceLithologyPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "sourceStrataPlanChecksum": { "$ref": "#/$defs/checksum" },
+        "bindingContractVersion": { "const": "feature-material-geology-binding-v1" }
+      }
+    },
+    "featureGeometryBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["featureKind", "featureId", "geometryChecksum"],
+      "properties": {
+        "featureKind": { "$ref": "#/$defs/featureKind" },
+        "featureId": { "$ref": "#/$defs/slug" },
+        "geometryChecksum": { "$ref": "#/$defs/checksum" }
+      }
+    },
+    "catalogEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "classId", "classCode", "featureKind"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/featureClass" },
+        "classId": { "$ref": "#/$defs/qualified" },
+        "classCode": { "type": "integer", "minimum": 7, "maximum": 12 },
+        "featureKind": { "$ref": "#/$defs/featureKind" }
+      }
+    },
+    "catalogBudget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["budgetVersion", "maximumEntries", "maximumCanonicalBytes"],
+      "properties": {
+        "budgetVersion": { "const": "feature-material-catalog-budget-v1" },
+        "maximumEntries": { "const": 6 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1024, "maximum": 16384 }
+      }
+    },
+    "catalog": {
+      "type": "object", "additionalProperties": false,
+      "required": ["catalogVersion", "catalogId", "catalogContractVersion", "entries", "budget"],
+      "properties": {
+        "catalogVersion": { "const": 1 },
+        "catalogId": { "const": "landformcraft.builtin-feature-material-profile" },
+        "catalogContractVersion": { "const": "builtin-feature-material-profile-catalog-v1" },
+        "entries": {
+          "type": "array", "minItems": 6, "maxItems": 6,
+          "items": { "$ref": "#/$defs/catalogEntry" }
+        },
+        "budget": { "$ref": "#/$defs/catalogBudget" }
+      }
+    },
+    "resolutionRule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleOrder", "ruleId", "mergeOperator", "applicableFeatureKinds"],
+      "properties": {
+        "ruleOrder": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "ruleId": {
+          "enum": [
+            "BASE_FROM_MATERIAL_PROFILE", "VOLCANIC_ZONE_OVERRIDE",
+            "CANYON_ZONE_OVERRIDE", "FEATURE_WETNESS_HINT"
+          ]
+        },
+        "mergeOperator": { "enum": ["BASE_ASSIGNMENT", "CONDITIONAL_OVERRIDE"] },
+        "applicableFeatureKinds": {
+          "type": "array", "maxItems": 2,
+          "items": { "$ref": "#/$defs/featureKind" }
+        }
+      }
+    },
+    "conflictRule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ruleOrder", "ruleId", "mergeOperator", "winner", "loser"],
+      "properties": {
+        "ruleOrder": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "ruleId": {
+          "enum": ["CANYON_WINS_OVER_VOLCANIC", "REJECT_UNKNOWN_FEATURE_CLAIM"]
+        },
+        "mergeOperator": { "enum": ["PRIORITY_OVERRIDE", "REJECT"] },
+        "winner": { "$ref": "#/$defs/featureKind" },
+        "loser": { "$ref": "#/$defs/featureKind" }
+      }
+    },
+    "kernel": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "kernelVersion", "volcanicBasaltMinReliefMillionths", "volcanicTuffMinReliefMillionths",
+        "volcanicAshMaxReliefMillionths", "volcanicShoreBandBlocks",
+        "canyonTalusMaxWallHeightMillionths", "featureWetnessThresholdRaw",
+        "minimumRaw", "maximumRaw"
+      ],
+      "properties": {
+        "kernelVersion": { "const": "feature-material-profile-fixed-v1" },
+        "volcanicBasaltMinReliefMillionths": { "type": "integer", "minimum": 0 },
+        "volcanicTuffMinReliefMillionths": { "type": "integer", "minimum": 0 },
+        "volcanicAshMaxReliefMillionths": { "type": "integer", "minimum": 0 },
+        "volcanicShoreBandBlocks": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "canyonTalusMaxWallHeightMillionths": { "type": "integer", "minimum": 1 },
+        "featureWetnessThresholdRaw": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "minimumRaw": { "const": 0 },
+        "maximumRaw": { "const": 1000 }
+      }
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "budgetVersion", "globalCellCount", "resolutionRuleCount", "conflictRuleCount",
+        "volcanicBindingCount", "canyonBindingCount", "estimatedCpuWorkUnits",
+        "estimatedRetainedBytes", "maximumWindowSize", "maximumWorkingBytes",
+        "maximumCanonicalBytes"
+      ],
+      "properties": {
+        "budgetVersion": { "const": "feature-material-budget-v1" },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "resolutionRuleCount": { "const": 4 },
+        "conflictRuleCount": { "const": 2 },
+        "volcanicBindingCount": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "canyonBindingCount": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 32000000 },
+        "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "maximumWindowSize": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "maximumWorkingBytes": { "type": "integer", "minimum": 1, "maximum": 4194304 },
+        "maximumCanonicalBytes": { "type": "integer", "minimum": 1, "maximum": 49152 }
+      }
+    }
+  }
+}
