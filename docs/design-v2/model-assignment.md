@@ -118,8 +118,8 @@ Effort列はClaude Codeの`--effort`相当（Antigravity/Codexは各ツールの
 |---|---|---|---|---|
 | V2-11-02 | R2 dimension guard／measurement profile（P0） | Claude Opus 4.8 | High | Antigravity＋（admission/security部）Codex Terra XH |
 | V2-11-03 | Docs／Schema／example consistency sync | Claude Sonnet 5 | High | Antigravity |
-| V2-11-04 | 500×500実測（専用高memoryホスト、実機） | Cursor Pro＋人間 | — | Claude Sonnet 5（telemetry／ログ分析） |
-| V2-11-05 | 1000×1000実測（専用高memoryホスト、実機） | Cursor Pro＋人間 | — | Claude Sonnet 5（telemetry／ログ分析） |
+| V2-11-04 | 500×500実測（専用高memoryホスト、FAWE 2.15.2／`run-fawe`単独） | Cursor Pro＋人間 | — | Claude Sonnet 5（telemetry／ログ分析） |
+| V2-11-05 | 1000×1000実測（専用高memoryホスト、FAWE 2.15.2／`run-fawe`単独） | Cursor Pro＋人間 | — | Claude Sonnet 5（telemetry／ログ分析） |
 | V2-11-06 | Measured dimension catalog promotion | Claude Sonnet 5 | High | Antigravity＋人間 |
 
 ### Track A後続: V2-12 V2 production path／v1 migration（7、2026-07-20再監査で追加）

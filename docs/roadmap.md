@@ -8,7 +8,7 @@
 
 | Track | 対象 | 状態 | 次のTask |
 |---|---|---|---|
-| A コア地形 | V2-4 Environment → V2-5 Sparse volume → V2-6 Placement → V2-11 Capability promotion | V2-6完了（19/21、`V2-6-16`／`17`無効化、`V2-6-21` P0再完了 2026-07-20、[Phase gate audit](design-v2/audits/v2-6-phase-gate.md)）、V2-11進行中（3/6、`V2-11-01`〜`V2-11-03`完了 2026-07-20） | `V2-11-04`（500×500再実測、P1） |
+| A コア地形 | V2-4 Environment → V2-5 Sparse volume → V2-6 Placement → V2-11 Capability promotion | V2-6完了（19/21、`V2-6-16`／`17`無効化、`V2-6-21` P0再完了 2026-07-20、[Phase gate audit](design-v2/audits/v2-6-phase-gate.md)）、V2-11進行中（5/6、`V2-11-01`〜`V2-11-05`完了 2026-07-20） | `V2-11-06`（実測寸法 catalog 昇格、P1） |
 | B 画像忠実性 | V2-7 Image fidelity（抽出→draft→明示昇格→競合解決） | 進行中（1/7） | `V2-7-02` |
 | C スケール | V2-8 Scale-up（LARGE 3000×3000 offline） | 進行中（1/8） | `V2-8-02` |
 | D 地形基盤拡張 | V2-9 Terrain foundation（`V2-6-01`／`V2-6-02`＋`V2-8-01` ScaleAdmission、V2-6／V2-8完了は待たない） | 完了（14/14、[Phase gate audit](design-v2/audits/v2-9-phase-gate.md)） | 完了 |
@@ -94,7 +94,7 @@ Track A内の依存順は `V2-0 → V2-1 → V2-2 → V2-3 → V2-4 → V2-5 →
 | A | V2-6 Placement | 完了（19/21、`V2-6-16`／`17`無効化） | Release 2を安全に配置・復旧可能にする | [Phase gate audit](design-v2/audits/v2-6-phase-gate.md)（effect envelope、snapshot-all、canonical apply、settle/full verify、WE／FAWE smoke、v1回帰） |
 | B | V2-7 Image fidelity | 進行中（1/7） | 通常画像・スケッチをdraft＋明示昇格で直接制約へ変換する | 抽出決定性、provenance連鎖、多入力競合解決、source差分metric |
 | C | V2-8 Scale-up | 進行中（1/8） | LARGE（3000×3000）のoffline streaming生成を成立させる | 寸法policy統一、LARGE予算実測、resume／部分再生成、分割export |
-| A | V2-11 Capability promotion | 進行中（3/6、`V2-6-19`監査で追加、2026-07-20再監査で拡張） | V2-6 gate完了後のPaper apply `SUPPORTED`昇格（`V2-11-01`完了）、dimension guard／measurement profile（`V2-11-02`完了）、docs／Schema同期（`V2-11-03`完了）、500／1000再実測、実測寸法昇格 | `V2-11-01`〜`V2-11-06` |
+| A | V2-11 Capability promotion | 進行中（5/6、`V2-6-19`監査で追加、2026-07-20再監査で拡張） | V2-6 gate完了後のPaper apply `SUPPORTED`昇格（`V2-11-01`完了）、dimension guard／measurement profile（`V2-11-02`完了）、docs／Schema同期（`V2-11-03`完了）、500再実測（`V2-11-04`完了）、1000再実測（`V2-11-05`完了）、実測寸法昇格 | `V2-11-01`〜`V2-11-06` |
 | A | V2-12 V2 production path／v1 migration | 未着手（0/7、2026-07-20再監査で追加） | v2正式経路化（export／CLI／Paper／migration tool）とv1 deprecation→削除・名称正規化による完全移行 | `V2-12-07`（Phase gate） |
 | D | V2-9 Terrain foundation | 完了（14/14）、[V2-9 Phase gate audit](design-v2/audits/v2-9-phase-gate.md) | surface/coast/island/marine/volume connection/macro/river graphの基盤を縦に追加する | [Task Index](design-v2/task-index.md) `V2-9-01`〜`V2-9-14` |
 | E | V2-10 Deferred terrain families | 完了（11/11）、[V2-10 Phase gate audit](design-v2/audits/v2-10-phase-gate.md) | glacial、karst、advanced marine/river、dry land、lava tube、island/reef、SPRING、OXBOWを段階化した | [Task Index](design-v2/task-index.md) `V2-10-01`〜`V2-10-11` |
@@ -205,6 +205,10 @@ V2-0〜V2-5のAcceptance gateは完了済みで、完了状態を戻さない。
 
 `V2-11-03`（2026-07-20完了）はdocs／Schema／example consistency syncである。2026-07-20全体再監査のP2指摘を、実装を正として文書・Schema側へ同期した。Quickstart §2が生成する`sandy-coast-001`を§3が`rocky-coast-001`として配置していた誤記を修正し、confirmation tokenの実装（`ConsoleConfirmationFileStore`）に合わせてCONSOLE／RCONではtokenをchatへ出さず、確認コマンド全文をowner-onlyの`data/confirmations/<key>.command`（10分有効・1回用、消費後破棄）へ保存してpathだけを表示する運用を追記した。`roadmap.md#terrain-generation-v2`への参照3件（architecture／limitations／terrain-design-guide）は見出し変更で解決しなくなっていたため、roadmapへ明示anchorを置いて復旧し、`DocsLinkConsistencyTest`が全Markdownの相対link・anchorを機械検査するようにした。Schemaは`custom-asset-catalog-entry`／`custom-asset-metadata`へ`title`を、残り139件へ`description`を追加し（validation semanticsは不変）、`SchemaContractTest`がtitle／description presenceを固定する。監査で唯一共通検証から漏れていた`feature-support-catalog-v2.schema.json`は、漏れていた間にdriftして5 Paper能力列が`const: UNSUPPORTED`のままとなり`V2-11-01`昇格後のsealed exampleと125件矛盾していた。schemaを`supportLevel` enumへ同期（昇格evidenceの強制は従来どおり`FeatureSupportCatalogConsistencyVerifierV2`が正本）したうえで`StructuredDataValidator`のbundleへ加え、`FeatureSupportCatalogCodecV2.read`が共通strict検証を通すようにした。inventory-driven検査として、schemaはdisk＝bundle＝packaged resourceの集合一致を、exampleは`examples/`配下178 documentがsource／docsから必ず参照されることを固定し、参照の無かった14 example（azure-coast results 3、custom-asset metadata、mountain-stream request、diagnostic scenarios 3、hydrology skeleton 2、environment validation artifact、operations 3）を`SchemaContractTest`のstrict読取corpusへ加えた。契約version、canonical checksum、昇格範囲（`surface-2_5d`×64×64）は変更していない。次は`V2-11-04`である。
 
+`V2-11-04`（2026-07-20完了）は500×500 Paper再実測である。無効化済み`V2-6-16`の後継として、Gradle `runServer`を使わず`run-fawe/`のpaperclip単独JVM＋RCON＋server PID単独telemetryで、**FAWE 2.15.2のみ**（WorldEdit plugin禁止）のmeasurement profile（ceiling 500×500）上にsolid surface Release `v2-11-04-measure-500`を配置した。Pass1／Pass2ともplan→confirm→snapshot-all→apply→settle→full effect-envelope verify→`APPLIED`→Undo→`UNDONE`を完走（wall ≈ 621／627 s、peak RSS ≈ 6.08 GiB、Xmx 6G）。Undo baseline安定化のためenvelopeをstone-sealし、Paper `forceload`はblock column座標で指定する（chunk index誤解だとfillがunloadになる）。Pass間は稼働中store削除を避けPaper再起動後にplacementを掃除した。plan→SIGKILL→restartのrecovery観察とv1 help／doctor smokeも記録した。catalog寸法は64×64のまま（昇格は`V2-11-06`）。証拠は [audit](design-v2/audits/v2-11-04-fawe-500-measurement.md)／[evidence](design-v2/audits/v2-11-04-fawe-500-measurement-evidence.md)。
+
+`V2-11-05`（2026-07-20完了）は1000×1000 Paper再実測である。無効化済み`V2-6-17`の後継として、`V2-11-04`と同一のFAWE 2.15.2／`run-fawe`単独JVM＋RCON＋PID telemetry手法でsolid surface Release `v2-11-05-measure-1000`（64 tiles）をPass1／Pass2とも`APPLIED`→full effect-envelope verify→`UNDONE`まで完走した（wall ≈ 6342／6436 s、peak RSS ≈ 6.02 GiB、Xmx 8G／Xms 2G）。Paperの単一`forceload`上限256 chunksを避けてstrip keep-loadし、confirm完了はjournalの`SNAPSHOT_COMPLETE`を正とした。MEDIUM envelope（〜2M overrides）で`Map.copyOf`→`MapN`がconfirm／Undo準備を長時間ブロックする欠陥を実測で検出し、`PlacementExpectedBlockResolverV2`／Undo／Rollbackを`Collections.unmodifiableMap`へ修正した。disk admission超過なし、plan→SIGKILL recoveryとv1 help／doctorも記録。catalog寸法は64×64のまま（昇格は`V2-11-06`）。証拠は [audit](design-v2/audits/v2-11-05-fawe-1000-measurement.md)／[evidence](design-v2/audits/v2-11-05-fawe-1000-measurement-evidence.md)。次は`V2-11-06`である。
+
 `V2-7-01`（2026-07-17完了）では`format.v2.constraint.extract`へ`image-land-water-extract-v1`のinteger-only抽出core、`ExtractedMaskDraftV2`（semantic checksum付きdraft）、trusted ceiling付きadmission、行単位cancelを実装し、golden分類・決定性（repeat/thread/locale/timezone）・全拒否経路を`ImageLandWaterExtractorV2Test`で検証した。CLI/Paper/Requestへは未接続で、hard constraint化には明示昇格（V2-7-04）を必須とする。次は`V2-7-02`である。
 
 `V2-8-01`（2026-07-17完了）では`model.v2.scale`のscale class（SMALL/MEDIUM/LARGE≤3072）、version凍結defaultsを持つ`ScaleProfileV2`、canonical row-major `TilePlanV2`、`core.v2.scale.ScaleAdmissionV2`（`scale-admission-v1`）を実装し、3000×3000=576 tileのgolden分解・決定性・全failure codeを`TilePlanV2Test`/`ScaleAdmissionV2Test`で検証した。既存の分散寸法検査とv1・全checksumは不変で、LARGE生成は未実装である。次は`V2-8-02`である。
@@ -268,7 +272,7 @@ V2-2〜V2-10の詳細なTask Scope、非Scope、test、決定性／memory／secu
 | A | V2-4 | 15 | 完了（15/15） | 完了 | `V2-4-15` |
 | A | V2-5 | 18 | 完了（18/18） | 完了 | `V2-5-18` |
 | A | V2-6 | 21 | 完了（19/21、`V2-6-16`／`17`無効化） | 完了 | `V2-6-19`（完了） |
-| A | V2-11 | 6 | 進行中（3/6） | `V2-11-04` | — |
+| A | V2-11 | 6 | 進行中（5/6） | `V2-11-06` | — |
 | A | V2-12 | 7 | 未着手（0/7） | `V2-12-01` | `V2-12-07` |
 | B | V2-7 | 7 | 進行中（1/7） | `V2-7-02` | `V2-7-07` |
 | C | V2-8 | 8 | 進行中（1/8） | `V2-8-02` | `V2-8-08` |

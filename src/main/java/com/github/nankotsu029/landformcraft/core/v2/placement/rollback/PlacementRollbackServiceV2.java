@@ -27,6 +27,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
@@ -371,7 +372,8 @@ public final class PlacementRollbackServiceV2 implements AutoCloseable {
                 }
             }
         }
-        transaction.baseline = Map.copyOf(baseline);
+        // Exclusive HashMap — avoid Map.copyOf/MapN for MEDIUM envelopes (V2-11-05: ~2M entries).
+        transaction.baseline = Collections.unmodifiableMap(baseline);
         transaction.baselineChecksum = HexFormat.of().formatHex(digest.digest());
     }
 

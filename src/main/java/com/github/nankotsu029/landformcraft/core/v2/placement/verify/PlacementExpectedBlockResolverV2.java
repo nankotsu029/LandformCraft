@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
@@ -41,8 +42,12 @@ public final class PlacementExpectedBlockResolverV2 {
         this.blockSource = Objects.requireNonNull(blockSource, "blockSource");
         this.baseline = Objects.requireNonNull(baseline, "baseline");
         MutationMaps maps = resolveMutations();
-        this.mutationOverrides = Map.copyOf(maps.overrides());
-        this.mutationOverlayOrdinals = Map.copyOf(maps.ordinals());
+        // Wrap the exclusively-owned HashMaps. Map.copyOf → ImmutableCollections.MapN is
+        // pathologically expensive for MEDIUM envelopes (V2-11-05: ~2M mutation overrides
+        // stalled confirm for >12 minutes on a dedicated measurement host). Callers never
+        // mutate these maps after construction.
+        this.mutationOverrides = Collections.unmodifiableMap(maps.overrides());
+        this.mutationOverlayOrdinals = Collections.unmodifiableMap(maps.ordinals());
     }
 
     public String expectedAt(int x, int y, int z) {
