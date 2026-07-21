@@ -169,7 +169,8 @@ class PlacementPlanCompilerV2Test {
     @Test
     void leavesV1PlacementJournalCodecUnchanged() throws IOException {
         var v1 = new com.github.nankotsu029.landformcraft.format.LandformDataCodec();
-        var journal = v1.readPlacementJournal(Path.of("examples/placement-journal.json"));
+        var journal = v1.readPlacementJournal(Path.of(
+                "src/main/resources/legacy/v1/fixtures/placement-journal.json"));
         assertEquals(1, journal.schemaVersion());
         assertEquals(com.github.nankotsu029.landformcraft.model.PlacementState.PLANNED, journal.state());
     }

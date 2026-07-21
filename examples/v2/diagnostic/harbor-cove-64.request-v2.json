@@ -1,0 +1,70 @@
+{
+  "requestVersion": 2,
+  "requestId": "harbor-cove-64",
+  "bounds": {
+    "width": 64,
+    "length": 64,
+    "minY": 32,
+    "maxY": 72,
+    "waterLevel": 50
+  },
+  "prompt": "Generate the deterministic 64x64 Harbor Cove fixture (sandy beach, harbor basin, breakwater harbor, rocky cape) used by the V2-12-03 v2 command-path end-to-end test.",
+  "referenceImages": [],
+  "constraintMaps": [
+    {
+      "sourceId": "constraint-source:coast-mask",
+      "file": "maps/harbor-cove-64-land-water-u8.png",
+      "expectedSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "expectedWidth": 64,
+      "expectedLength": 64,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": {
+          "x": 0,
+          "z": 0,
+          "width": 64,
+          "length": 64
+        }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "labels": [
+          {
+            "sample": 0,
+            "label": "water"
+          },
+          {
+            "sample": 1,
+            "label": "land"
+          }
+        ],
+        "noData": {
+          "mode": "FORBIDDEN"
+        }
+      }
+    }
+  ],
+  "generation": {
+    "globalSeed": 827413,
+    "tileSize": 64
+  },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  }
+}

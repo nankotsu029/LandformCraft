@@ -40,6 +40,5 @@ Operator / date: agent / 2026-07-20
 ## Non-claims
 
 - Catalog dimension limit remains 64×64（昇格は`V2-11-06`）
-- 1000×1000 not measured（`V2-11-05`）
 - WorldEdit 7.3.19 profile not required for this Task
 - LARGE / V2-8 streaming not claimed

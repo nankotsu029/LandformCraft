@@ -61,7 +61,7 @@
 
 同じ理由で、火山の火口と溶岩、氷河、珊瑚礁、mesaの層状地質、峡谷のoverhang、地下河川、巨大樹、密林、海中洞窟も専用生成としては未対応です。砂丘、fjord、delta、雪山、渓谷、潮だまりは既存のzoneとtopologyで外形を近似できますが、固有の地質・植生・流体挙動までは再現しません。
 
-`examples/mountain-stream` は山、谷、川、湖、岩礁海岸、小規模構造物を組み合わせる入力例です。滝、洞窟、樹木、水色、白波、魚、particleなど、現在のIntent/生成器にない要求は実現されないため、完成品質のfixtureではなく拡張要件の例として扱ってください。
+`src/main/resources/legacy/v1/fixtures/mountain-stream` はv1移行回帰用のpackaged fixtureです。新規生成のexampleではなく、滝、洞窟、樹木、水色、白波、魚、particleなどがv1で変換不能だったことをmigration reportで固定するために維持しています。新規設計は`examples/v2/`を使ってください。
 
 ## 画像から生成する
 

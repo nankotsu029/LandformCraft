@@ -83,7 +83,7 @@ final class LandformCraftSuggestions {
             Collection<String> allowedWorlds,
             List<String> coordinates
     ) {
-        if (args.length < 2 || !args[0].equalsIgnoreCase("r2")) {
+        if (args.length < 2 || !args[0].equalsIgnoreCase("v2")) {
             return List.of();
         }
         List<String> candidates = new ArrayList<>();

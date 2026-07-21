@@ -187,6 +187,17 @@ public final class Release2PlacementApplicationServiceV2 implements AutoCloseabl
         return true;
     }
 
+    /**
+     * The recovery-backed cleanup port retention uses (V2-12-10). Production wires this into
+     * {@code Release2RetentionServiceV2} so snapshot cleanup deletes only retention-window state
+     * through the same recovery planner the placement lifecycle already owns, instead of a deferred
+     * port that throws.
+     */
+    public com.github.nankotsu029.landformcraft.core.v2.operations.RetentionCleanupPortV2
+            retentionCleanupPort() {
+        return com.github.nankotsu029.landformcraft.core.v2.operations.RetentionCleanupPortV2.from(recovery);
+    }
+
     public CompletionStage<PreparedPlanV2> plan(PlanRequestV2 request) {
         Objects.requireNonNull(request, "request");
         return submit(() -> prepare(request));

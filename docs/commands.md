@@ -1,28 +1,187 @@
 # コマンドリファレンス
 
-## Release 2明示配置（V2-6-21）
+## v2 production command（V2-12-06）
 
-Release 2は既存Release 1の`apply`／`undo`／`apply recover`と混同しないよう、必ず`r2` rootを使います。inputは`plugins/LandformCraft/data/releases-v2/`からの安全な相対directory／ZIP pathです。
+V2-12-06でv1 production commandと暫定aliasを削除し、v2を唯一のproduction commandにしました。
+
+* Paper: `/lfc <verb>` は恒久的な明示形 `/lfc v2 <verb>` と同じです。
+* CLI: `lfc <verb>` は恒久的な明示形 `lfc v2 <verb>` と同じです。
+* `/lfc v2 <verb>`（Paper）／`lfc v2 <verb>`（CLI）は明示形として恒久的に使えます。
+
+version中立の維持verbは version を問わず使えます: `help`／`version`／`doctor`／`ops`（Paper）／`asset`／`selection`（Paper）。`asset` は v2 等価物が無いため既定面に維持されます（ADR 0035 D10 / K3）。
+
+
+`git tag` が存在しないため、D5 deprecation window条件1の代替判定「v1経路にしか存在しない利用可能機能はゼロ」を [再監査](design-v2/audits/v2-12-05-v1-to-v2-coverage-audit-rerun.md) で確認済みです。
+
+inputは`plugins/LandformCraft/data/releases-v2/`（配置）および`plugins/LandformCraft/data/v2/`（offline verb）からの安全な相対pathです。絶対path、`..`、backslash、symlinkは拒否されます。
+
+### Paper
 
 ```text
-/lfc r2 plan <release-path> <world> <x> <y> <z>
-/lfc r2 confirm <placement-id> <token>
-/lfc r2 execute <placement-id>
-/lfc r2 status <placement-id>
+/lfc v2 request validate|info <generation-request-v2.json>
+/lfc v2 request list
+/lfc v2 request create <request-id>
+/lfc v2 request bounds <request-id> <width> <length> <min-y> <max-y> <water-level>
+/lfc v2 request selection <request-id>
+/lfc v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width> <length>
+/lfc v2 request prompt <request-id>
+/lfc v2 design <import|fixture|openai|anthropic> <request-v2.json> <intent-or-model> [designs-root]
+/lfc v2 generate <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
+/lfc v2 export   <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
+/lfc v2 preview  <release-directory-or-zip>
 
-/lfc r2 undo-plan <placement-id>
-/lfc r2 undo-execute <placement-id> <token>
+/lfc v2 export plan   <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
+/lfc v2 export create <plan-id> <token>
+/lfc v2 job status|cancel <job-id>
+/lfc v2 job list
+/lfc v2 candidate list <request-id>
+/lfc v2 candidate info <job-id>
 
-/lfc r2 recover-diagnose <placement-id>
-/lfc r2 recover-plan <rollback|accept> <placement-id>
-/lfc r2 recover-execute <rollback|accept> <placement-id> <token>
+/lfc v2 place plan <release-path> <world> <x> <y> <z>
+/lfc v2 place confirm <placement-id> <token>
+/lfc v2 place execute <placement-id>
+/lfc v2 status <placement-id>
+
+/lfc v2 undo plan <placement-id>
+/lfc v2 undo execute <placement-id> <token>
+
+/lfc v2 recover diagnose <placement-id>
+/lfc v2 recover plan <rollback|accept> <placement-id>
+/lfc v2 recover execute <rollback|accept> <placement-id> <token>
+
+/lfc v2 retention plan <placement-id>
+/lfc v2 retention execute <placement-id> <plan-id> <token>
+/lfc v2 retention status <placement-id>
 ```
+
+### CLI
+
+```text
+lfc v2 request validate|info <generation-request-v2.json>
+lfc v2 request list
+lfc v2 request create <request-id>
+lfc v2 request bounds <request-id> <width> <length> <min-y> <max-y> <water-level>
+lfc v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width> <length>
+lfc v2 request prompt <request-id> <prompt...>
+lfc v2 design <import|fixture|openai|anthropic> <request-v2.json> <intent-or-model> [designs-root]
+lfc v2 generate <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
+lfc v2 export   <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
+lfc v2 preview  <release-directory-or-zip>
+
+lfc v2 job status|cancel <job-id>
+lfc v2 job list
+lfc v2 candidate list <request-id>
+lfc v2 candidate info <job-id>
+
+lfc v2 journal-verify <placement-journal-v2.json>
+lfc v2 recovery inspect <journal|plan> <placement-journal-or-recovery-plan-v2.json>
+
+lfc v2 migrate inspect <intent|design|release> <v1-source>
+lfc v2 migrate apply   <intent|design|release> <v1-source> <output-root> <migration-id> <strict|accept-lossy>
+```
+
+`place`／`status`／`undo`／`recover` はliveなworldを伴うためPaper専用です。CLIから呼ぶと安定code `V2_PAPER_ONLY` で拒否されます。`migrate` は逆にoperator workstation上のlegacy asset pathを読むためCLI専用で、Paperから呼ぶと安定code `V2_CLI_ONLY` で拒否されます（tab completionにも現れません）。既存v1 artifactは`migrate`またはread-only legacy verifierからだけ扱います。
+
+### v2 request authoring（V2-12-08）
+
+`create`／`bounds`／`selection`／`constraint-map`／`prompt`／`list` はv2 requestを**作成・編集**します。`V2-12-05`のカバレッジ監査で、v1にはあった request authoring がv2に無い（F1）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。`validate`／`info` の意味は従来どおりで、**pathを引数に取ります**。
+
+保存先はPaperが`plugins/LandformCraft/data/v2/requests/<request-id>.request-v2.json`、CLIが`<--data-dir>/v2/requests/<request-id>.request-v2.json`です。`request-id` はlowercaseのportable slug（`[a-z0-9][a-z0-9._-]{0,63}`）で、pathは受け取りません。作成・編集は毎回strict schemaで検証してからatomicに publish するため、途中状態のrequestは残りません。
+
+| verb | 動作 |
+|---|---|
+| `create <id>` | 既定bounds（128×128、y -32..160、water 62）、既定prompt、seed 0、tileSize 64、constraint map 0件でrequestを作成します。同じIDが既にあれば**上書きせず失敗**します |
+| `bounds <id> <w> <l> <min-y> <max-y> <water>` | 範囲を置換します。`water` は新しい範囲へclampされます |
+| `selection <id>` | **Paper専用**。operatorの現在のWorldEdit選択範囲からwidth／length／min-y／max-yを取り込みます。保存済みwater levelは維持（新範囲へclamp）されます。CLIから呼ぶと`V2_PAPER_ONLY`です |
+| `constraint-map <id> <slug> <file> <sha256> <w> <l>` | `surface-2_5d` exportが要求する land/water constraint map source を1件宣言します（既存の宣言は置換）。形式はU8 grayscale・north-west原点・east/south軸・pixel中心・回転／反転なし・全面crop・`0=water` `1=land`・no-data禁止に固定です。これ以外の形式は手書きJSONのままとし、推測しません |
+| `prompt <id>` / `prompt <id> <text...>` | Paperは**次のchat 1件**をpromptとして保存します（5分で失効、`cancel`で取消）。CLIは引数のtextを保存します。いずれもcredentialに見えるtextは拒否します |
+| `list` | 保存済みrequest IDを決定的な順序で列挙します |
+
+permissionは`landformcraft.v2.request.create`（作成）と`landformcraft.v2.request.edit`（`bounds`／`selection`／`constraint-map`／`prompt`）、read系（`validate`／`info`／`list`）は従来どおり`landformcraft.v2.request`です。
+
+authoringからexportまでの最短経路は次のとおりです。`export`はrequestの`requestId`と intentの`intentId`が一致することを要求します。
+
+```text
+lfc v2 request create harbor-cove-64
+lfc v2 request bounds harbor-cove-64 64 64 32 72 50
+lfc v2 request constraint-map harbor-cove-64 coast-mask maps/coast-u8.png <sha256> 64 64
+lfc v2 request prompt harbor-cove-64 A sheltered cove with a stone breakwater.
+lfc v2 export <上記request path> <intent path> <exports-root> <release-id> water 54 46
+```
+
+### v2 retention／read-onlyなplacement state確認（V2-12-10）
+
+`V2-12-05`のカバレッジ監査で、v1にあった`cleanup`／`journal-verify`／`recovery`（read-only）に相当するv2運用機能がcommandへ未接続だった（F2）ため接続しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。retention policyそのものは変更していません。
+
+| verb | surface | 動作 |
+|---|---|---|
+| `retention plan <placement-id>` | Paper | そのplacementのapplied journalからplan＋journalを読み、recovery plannerが**retention window内**と判定したsnapshotのbyte総量を示す1回限りの確認token（10分失効、actor束縛）を発行します。v1 `cleanup plan`相当 |
+| `retention execute <placement-id> <plan-id> <token>` | Paper | tokenを消費して該当snapshotを削除します。削除対象はrecovery cleanup planが列挙したwindow外terminal snapshotだけです |
+| `retention status <placement-id>` | Paper | journal stateとsnapshot byte使用量を表示します |
+| `journal-verify <placement-journal-v2.json>` | CLI | v2 placement journalをstrict検証します（v1 `journal-verify`相当）。read-only |
+| `recovery inspect <journal\|plan> <artifact.json>` | CLI | journal state（`RECOVERY_REQUIRED`含む）またはrecovery planのclassificationをread-onlyで表示します（v1 `recovery status\|diagnose`のread-only視点） |
+
+`retention`は実行中serverのplacement stateを読み、snapshot state（world blockではありません）を削除するためPaper専用です（`landformcraft.v2.retention`権限）。`journal-verify`／`recovery inspect`は明示したartifact fileだけを読みworldを変更しないためCLI専用で、Paperからは安定code`V2_CLI_ONLY`になります。**v2 recoveryの実行系**（`recover diagnose|plan|execute`）は従来どおりPaper専用で、`recovery inspect`（CLI read-only）とはverb token（`recover`／`recovery`）で区別されます。
+
+retentionが実際に削除できるのはplacement統合が有効なruntimeだけです（統合が無ければretention対象のsnapshotも存在しません）。CLIには`recovery list`（全placement列挙）はありません。列挙はoffline store走査を要し、v2の「明示path・非推測」方針（`v2 verify`／`v2 preview`と同じく明示artifactを取る）に反するため、CLIは明示artifactのinspectだけを提供します。Paper起動時のrestart-state点検が列挙相当を担います。
+
+### v2 job／candidate／二段階export（V2-12-09）
+
+`V2-12-05`のカバレッジ監査で、v1にあった非同期job→candidate→確認付きexportの運用がv2に無い（F3）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。**既存の単発`v2 export`／`v2 generate`は同期実行のまま変更していません。**
+
+| verb | 動作 |
+|---|---|
+| `export plan <request> <intent> <exports-root> <release-id> <land\|water> <land-y> <water-y>` | **Paper専用**。exportを予約し、staging用のfree diskをadmitしてから**1回限りの確認token**を発行します。tokenはactorとplan、そしてrequest／intent／release-id／ZIP有無のdigestに束縛されます |
+| `export create <plan-id> <token>` | **Paper専用**。tokenを消費して非同期job をqueueし、job IDを返します。plan作成後にrequestかintentが編集されていればdigestが一致せず拒否されます |
+| `job status <job-id>` | job の現在の状態。状態は遷移ごとに永続化されるため、再起動後も読めます |
+| `job cancel <job-id>` | job を取り消します。cancel token・Future cancel・interrupt・job stateが連動し、publisherのatomic move（commit point）より前に観測されるため、**取り消されたjobはReleaseを公開しません** |
+| `job list` | 保存済みjobをjob ID順で列挙します |
+| `candidate list <request-id>` | そのrequestの**公開済み**job（＝v2のcandidate）をjob ID順で列挙します |
+| `candidate info <job-id>` | 1件のjob snapshotを表示します |
+
+state は `QUEUED` → `RUNNING` → `PUBLISHED`／`CANCELLED`／`FAILED` で、後ろ3つは終端です。終端jobへの再cancelは状態を返すだけで、新しい遷移を作りません。
+
+`export plan`／`create` がPaper専用なのは、planが実行中のserver processに存在し、確認したjobも同じprocessで走るためです。CLIから呼ぶと安定code `V2_PAPER_ONLY` になります。`job`／`candidate` はjob storeが永続的なため両surfaceから読めますが、CLIの`job cancel`は**別processで走っているworkerには届かず**、durableなsnapshotを`CANCELLED`にするだけです（v1 CLIの`job cancel`と同じ性質です）。
+
+job storeはPaperが`plugins/LandformCraft/data/v2/jobs/`、CLIが`<--data-dir>/v2/jobs/`です。job IDはcanonicalなlowercase UUIDのみで、短縮形・大文字・traversalは拒否されます。保持上限は4096件で、超過するとjobをqueueせずに拒否します。未確認planの上限は256件、tokenの有効期間は10分です。permissionは`landformcraft.v2.job`と`landformcraft.v2.candidate`です。
+
+新しいSchemaは`generation-job-v2.schema.json`（example: `examples/v2/job/export-job-v2.json`）です。v1の`generation-job.schema.json`は凍結されたままで、拡張も再利用もしていません。
+
+`generate` は `export` のZIP無し版（strict Release directoryのみ）です。`<land|water> <land-y> <water-y>` はcoastal featureが所有しないcellのbaselineで、推測しないため必須です（`V2-12-02`）。
+
+### v1→v2 migration（V2-12-04）
+
+既存v1資産をv2 artifactへ変換する明示操作です。自動一括migrationは行わず、1回につき1資産だけを、operatorが種別・source・出力先・loss方針を明示して変換します。
+
+| source kind | 読むもの |
+|---|---|
+| `intent` | v1 `terrain-intent.json` |
+| `design` | v1 design package directory（`<designs-root>/<request-id>/<job-id>`） |
+| `release` | Release format 1 のdirectoryまたは`.zip` |
+
+出力は`<output-root>/<migration-id>/`のmigration bundleで、`migration-report-v2.json`と、Release 2 design package（`designs/<request-id>/<job-id>/`）、bundle全体の`checksums.sha256`からなります。publishはstaging→strict read-back→atomic move→published read-backで、途中失敗時に中途半端な成果物は残りません。sourceは読むだけで一切変更されず、既存の`<migration-id>`があれば上書きせず失敗します。同じsourceからは常に同じbundleが出ます（job UUIDとtimestampをsource digestとv1 auditから導出するため）。
+
+`inspect` はdry-runで、reportを表示するだけで出力先には何も書きません。
+
+**変換されないもの**（loss policy）: v1 intentは`theme`以外に位置・形状を持たず、v2 Featureはnormalized geometryを要求します。したがってtopology、seaSides、landRatio、relief、coastline、water、zone、structureは**v2 intentへ移されず、reportへ1件ずつ理由付きで列挙**されます。推測してFeatureを作ることはしません。Release 1のtile schematic、structures、assets、previewは、v2 Blueprintのmodule／stage／field descriptorを持たないため変換対象外で、移行後のintentから`lfc v2 export`で作り直します。
+
+このためほぼ全てのv1資産はlossyです。`apply` の最終引数で `strict`（1件でも非対応があれば拒否）か `accept-lossy`（reportの内容を承知のうえ実行）を明示する必要があり、既定でlossy変換が通ることはありません。
+
+移行されたintentは`provenance.source = UPGRADED_V1`／`confirmationState = UNCONFIRMED`、design packageは`pathKind = IMPORT`を持ちます。geometryは通常のv2 design stageで追加してください。
+
+失敗は安定code（`V2_UNKNOWN_VERB`／`V2_UNKNOWN_OPERATION`／`V2_USAGE`／`V2_PAPER_ONLY`／`V2_CLI_ONLY`／`V2_PERMISSION_DENIED`／`V2_UNAVAILABLE`）と `v2CorrelationId` を伴います。
+
+### v1退役後の互換command
+
+v1 production commandと暫定aliasはV2-12-06で削除しました。既存v1 intent／design package／Release 1は`migrate inspect|apply`が内部のread-only legacy verifierでstrict検証します。`asset`（K3）、`doctor`／`job`／`recovery`／`version`／`help`（K4）、`ops`／`selection`（version中立）も維持しています。退役時の1対1対応表は [V2-12-06 evidence](design-v2/audits/v2-12-06-v1-retirement-evidence.md#command-replacement-inventory) にあります。
+
+## Release 2明示配置（V2-6-21）
 
 `plan`はstrict Release verify、tile/physics分類、effect envelope、region/disk reservation、actor-bound token発行までで、worldを変更しません。`confirm`がtokenを消費してsnapshot-allとcontainmentを完了します。`execute`はcanonical apply→bounded settle→full exact verifyを実行し、失敗時は逆順rollbackを試みます。曖昧な状態は`RECOVERY_REQUIRED`のままで、`recover-diagnose`が許可しないactionを実行できません。prepared／confirmed／appliedのoperation contextはstage commit markerを最後にfsync＋atomic publishし、main journalより先にdurable化します。
 
-permissionは`landformcraft.r2.plan`、`.confirm`、`.execute`、`.status`、`.undo`、`.recovery`です。WorldEdit 7.3.19／FAWE 2.15.2実機smoke（64×64）とV2-6 Phase gate（`V2-6-19`）まで検証済みで、`V2-11-01`によりcatalog上の`paper_apply`（および`post_apply_validation`／`snapshot`／`rollback`／`restart_recovery`）は`surface-2_5d` capabilityのSANDY_BEACH／BREAKWATER_HARBOR／HARBOR_BASIN／ROCKY_CAPEだけ、64×64以内で`SUPPORTED`です。他featureのPaper適用は`EXPERIMENTAL`または`UNSUPPORTED`であり、64×64を超える寸法は未測定のため拒否されます。
+permissionは`landformcraft.v2.plan`、`.confirm`、`.execute`、`.status`、`.undo`、`.recovery`（offline verbは`.request`／`.request.create`／`.request.edit`／`.design`／`.export`／`.preview`／`.job`／`.candidate`／`.retention`／`.recovery`）です。WorldEdit 7.3.19／FAWE 2.15.2実機smoke（64×64）とV2-6 Phase gate（`V2-6-19`）まで検証済みで、`V2-11-01`によりcatalog上の`paper_apply`（および`post_apply_validation`／`snapshot`／`rollback`／`restart_recovery`）は`surface-2_5d` capabilityのSANDY_BEACH／BREAKWATER_HARBOR／HARBOR_BASIN／ROCKY_CAPEだけが`SUPPORTED`です。寸法は`V2-11-06`で実測evidenceの範囲まで昇格し、FAWE 2.15.2では1000×1000以内（`V2-11-04`／`V2-11-05`実測）、WorldEdit 7.3.19では64×64以内です。他featureのPaper適用は`EXPERIMENTAL`または`UNSUPPORTED`であり、runtime上限を超える寸法は未測定のため拒否されます。既定configの上限は保守的に64×64で、引き上げは運用者の明示設定です（[admin-guide.md](admin-guide.md)）。
 
-R2 commandはpermissionに加えてserver operatorであるPlayer、CONSOLE、RCONだけを受理します。command block／proxied・unknown sender／非operatorは拒否し、plan対象worldは`world-policy.allowed`／`denied`を実行時に再検査します。deny worldと存在しないworldはworld mutation前にstable errorで失敗します。Tab補完はpermissionとworld policyを反映し、confirmation tokenを一切候補へ出しません。
+v2／r2の配置commandはpermissionに加えてserver operatorであるPlayer、CONSOLE、RCONだけを受理します。command block／proxied・unknown sender／非operatorは拒否し、plan対象worldは`world-policy.allowed`／`denied`を実行時に再検査します。deny worldと存在しないworldはworld mutation前にstable errorで失敗します。Tab補完はpermissionとworld policyを反映し、confirmation tokenを一切候補へ出しません。
 
 ## Paper
 

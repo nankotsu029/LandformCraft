@@ -102,7 +102,10 @@ tasks {
         minecraftVersion("1.21.11")
         // Lock to the same Paper build used by V2-6-14 WorldEdit smoke evidence.
         build(132)
-        jvmArgs("-Xms2G", "-Xmx2G")
+        // Default stays 2G for light smoke; coastal V2-12-03 needs more headroom for the
+        // ~495k-block GRAVITY effect envelope — override with LANDFORMCRAFT_RUNSERVER_XMX.
+        val xmx = System.getenv("LANDFORMCRAFT_RUNSERVER_XMX") ?: "2G"
+        jvmArgs("-Xms2G", "-Xmx$xmx")
     }
 
     // V2-6-15: FAWE-only isolated profile. Do not point default runServer at run-fawe/.

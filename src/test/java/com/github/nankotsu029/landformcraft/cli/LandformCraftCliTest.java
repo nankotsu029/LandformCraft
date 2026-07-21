@@ -1,6 +1,7 @@
 package com.github.nankotsu029.landformcraft.cli;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -9,108 +10,60 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/** V2-12-06 CLI retirement boundary. */
 class LandformCraftCliTest {
     @Test
-    void helpGroupsCommandsByPurposeAndListsSupportedOperations() {
-        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+    void helpListsOnlyTheV2AndMaintainedSurfaces() {
+        Result result = run("--help");
 
-        int exitCode = LandformCraftCli.run(
-                new String[]{"--help"},
-                new PrintStream(outputBytes, true, StandardCharsets.UTF_8),
-                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)
-        );
-
-        assertEquals(0, exitCode);
-        String help = outputBytes.toString(StandardCharsets.UTF_8);
-        assertTrue(help.contains("共通オプション:"));
-        assertTrue(help.contains("設計・生成:"));
-        assertTrue(help.contains("Release・検証:"));
-        assertTrue(help.contains("管理:"));
-        assertTrue(help.contains("generate <request.yml>"));
-        assertTrue(help.contains("export <request.yml>"));
-        assertTrue(help.contains("verify <release-directory-or-zip>"));
-        assertTrue(help.contains("journal-verify <placement-journal.json>"));
-        assertTrue(help.contains("design <import|fixture>"));
-        assertTrue(help.contains("design <openai|anthropic>"));
-        assertTrue(help.contains("design-verify <design-directory>"));
+        assertEquals(0, result.exitCode());
+        assertTrue(result.output().contains("request validate|info"));
+        assertTrue(result.output().contains("journal-verify <placement-journal-v2.json>"));
+        assertTrue(result.output().contains("migrate inspect"));
+        assertFalse(result.output().contains("--v1"));
+        assertFalse(result.output().contains("非推奨のv1経路"));
     }
 
     @Test
-    void returnsUsageErrorForUnknownCommand() {
-        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
-
-        int exitCode = LandformCraftCli.run(
-                new String[]{"unknown"},
-                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8),
-                new PrintStream(errorBytes, true, StandardCharsets.UTF_8)
-        );
-
-        assertEquals(2, exitCode);
-        assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("Unknown command"));
+    void removedCommandRootsFailClosed() {
+        assertEquals(2, run("unknown").exitCode());
+        assertEquals(2, run("--v1", "unknown").exitCode());
+        assertEquals(2, run("r2", "status", "id").exitCode());
+        assertTrue(run("--v1", "unknown").error().contains("V2_UNKNOWN_VERB"));
     }
 
     @Test
-    void verifiesPlacementJournalExample() {
-        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+    void verifiesTheV2PlacementJournal() {
+        Result result = run("v2", "journal-verify",
+                "examples/v2/placement/placement-journal-v2.json");
 
-        int exitCode = LandformCraftCli.run(
-                new String[]{"journal-verify", "examples/placement-journal.json"},
-                new PrintStream(outputBytes, true, StandardCharsets.UTF_8),
-                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)
-        );
-
-        assertEquals(0, exitCode);
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("state: PLANNED"));
+        assertEquals(0, result.exitCode(), result.error());
+        assertTrue(result.output().contains("state: PLANNED"));
     }
 
     @Test
-    void reportsInvalidPlacementJournalWithoutThrowing(@org.junit.jupiter.api.io.TempDir Path directory)
-            throws java.io.IOException {
+    void corruptedV2PlacementJournalFailsClosed(@TempDir Path directory) throws Exception {
         Path invalid = directory.resolve("invalid.json");
-        Files.writeString(invalid, Files.readString(Path.of("examples/placement-journal.json"))
-                .replace("\"state\": \"PLANNED\"", "\"state\": \"BROKEN\""));
-        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        Files.writeString(invalid, "{\"journalVersion\":1}");
 
-        int exitCode = LandformCraftCli.run(
-                new String[]{"journal-verify", invalid.toString()},
-                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8),
-                new PrintStream(errorBytes, true, StandardCharsets.UTF_8)
-        );
+        Result result = run("v2", "journal-verify", invalid.toString());
 
-        assertEquals(1, exitCode);
-        assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("Journal verification failed"));
+        assertEquals(1, result.exitCode());
     }
 
-    @Test
-    void importsAndVerifiesDesignArtifact(@org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
-        Path designs = directory.resolve("designs");
-        Path jobs = directory.resolve("jobs");
-        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
-
-        int designExit = LandformCraftCli.run(
-                new String[]{
-                        "design", "import", "examples/rocky-coast/request.yml",
-                        "examples/rocky-coast/terrain-intent.json", designs.toString(), jobs.toString()
-                },
-                new PrintStream(outputBytes, true, StandardCharsets.UTF_8),
-                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)
-        );
-        Path artifact;
-        try (var requestDirectories = Files.list(designs.resolve("rocky-coast-001"))) {
-            artifact = requestDirectories.filter(Files::isDirectory).findFirst().orElseThrow();
+    private static Result run(String... args) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        int code;
+        try (PrintStream output = new PrintStream(out, true, StandardCharsets.UTF_8);
+             PrintStream error = new PrintStream(err, true, StandardCharsets.UTF_8)) {
+            code = LandformCraftCli.run(args, output, error);
         }
-
-        int verifyExit = LandformCraftCli.run(
-                new String[]{"design-verify", artifact.toString()},
-                new PrintStream(outputBytes, true, StandardCharsets.UTF_8),
-                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)
-        );
-
-        assertEquals(0, designExit);
-        assertEquals(0, verifyExit);
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("Published verified design"));
-        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("Verified design"));
+        return new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
     }
+
+    private record Result(int exitCode, String output, String error) { }
 }

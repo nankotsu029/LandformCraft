@@ -3,9 +3,10 @@ package com.github.nankotsu029.landformcraft.model.v2.placement;
 import com.github.nankotsu029.landformcraft.model.v2.catalog.PlacementDimensionLimitV2;
 
 /**
- * Paper placement dimension ceiling for Release 2. Default admits smoke-sized layouts only
- * (WE／FAWE smoke evidence). Catalog {@code SUPPORTED} promotion is V2-6-18; unmeasured sizes
- * such as 500／1000 must not be admitted without a new measurement Task.
+ * Paper placement dimension ceiling for Release 2. The ceiling is whatever the detected runtime
+ * has actually measured: 64x64 on WorldEdit 7.3.19 (V2-6-14/15 smoke) and 1000x1000 on
+ * FAWE 2.15.2 (V2-11-04 500x500, V2-11-05 1000x1000, published by V2-11-06). Anything above the
+ * runtime ceiling is unmeasured and must not be admitted without a new measurement Task.
  */
 public record Release2MeasuredDimensionGateV2(int maximumWidth, int maximumLength) {
     public static final String CONFIG_WIDTH_KEY = "placement.release2.measured-candidate-max-width";
@@ -16,30 +17,60 @@ public record Release2MeasuredDimensionGateV2(int maximumWidth, int maximumLengt
         return new Release2MeasuredDimensionGateV2(Integer.MAX_VALUE, Integer.MAX_VALUE);
     }
 
-    /** Normal-operation ceiling, always the Feature Support Catalog hard limit (V2-11-02). */
+    /**
+     * Measured ceiling for a runtime. FAWE 2.15.2 carries the V2-11-04/V2-11-05 evidence up to
+     * 1000x1000; every other runtime stays at the 64x64 size measured on both runtimes.
+     */
+    public static int measuredCeilingFor(boolean fastAsyncWorldEdit) {
+        return fastAsyncWorldEdit
+                ? PlacementDimensionLimitV2.MEASURED_MAXIMUM
+                : PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM;
+    }
+
+    /** Conservative normal-operation ceiling: the size measured on every supported runtime. */
     public static Release2MeasuredDimensionGateV2 production() {
-        return new Release2MeasuredDimensionGateV2(
+        return production(false,
                 PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM,
                 PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM);
     }
 
+    /** Normal-operation ceiling for the detected runtime, at its full measured size. */
+    public static Release2MeasuredDimensionGateV2 production(boolean fastAsyncWorldEdit) {
+        int ceiling = measuredCeilingFor(fastAsyncWorldEdit);
+        return production(fastAsyncWorldEdit, ceiling, ceiling);
+    }
+
     /**
-     * Normal-operation ceiling from configuration. V2-11-02 clamps configuration to the catalog
-     * hard limit so no setting can widen the production ceiling; above-limit dimensions are only
-     * reachable through the explicit measurement profile.
+     * Normal-operation ceiling from configuration, for a runtime without the above-smoke
+     * measurement evidence.
      */
     public static Release2MeasuredDimensionGateV2 production(int configuredWidth, int configuredLength) {
-        requireWithinCatalog(configuredWidth, CONFIG_WIDTH_KEY);
-        requireWithinCatalog(configuredLength, CONFIG_LENGTH_KEY);
+        return production(false, configuredWidth, configuredLength);
+    }
+
+    /**
+     * Normal-operation ceiling from configuration. V2-11-02 clamps configuration to the measured
+     * ceiling so no setting can widen the production ceiling past real evidence; V2-11-06 makes
+     * that ceiling runtime-dependent. Above-limit dimensions stay reachable only through the
+     * explicit measurement profile.
+     */
+    public static Release2MeasuredDimensionGateV2 production(
+            boolean fastAsyncWorldEdit, int configuredWidth, int configuredLength) {
+        int ceiling = measuredCeilingFor(fastAsyncWorldEdit);
+        requireWithinCatalog(configuredWidth, CONFIG_WIDTH_KEY, ceiling);
+        requireWithinCatalog(configuredLength, CONFIG_LENGTH_KEY, ceiling);
         return new Release2MeasuredDimensionGateV2(configuredWidth, configuredLength);
     }
 
-    private static void requireWithinCatalog(int value, String key) {
-        if (value < 1 || value > PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM) {
+    private static void requireWithinCatalog(int value, String key, int ceiling) {
+        if (value < 1 || value > ceiling) {
             throw new IllegalArgumentException(
-                    key + " must be between 1 and the Feature Support Catalog hard limit "
+                    key + " must be between 1 and the measured ceiling for this runtime "
+                            + ceiling
+                            + " (unmeasured dimensions require the V2-11-02 measurement profile;"
+                            + " sizes above "
                             + PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM
-                            + " (unmeasured dimensions require the V2-11-02 measurement profile)");
+                            + " are measured on FAWE 2.15.2 only)");
         }
     }
 
@@ -59,7 +90,7 @@ public record Release2MeasuredDimensionGateV2(int maximumWidth, int maximumLengt
                             + width + "x" + length
                             + " exceed measured candidate ceiling "
                             + maximumWidth + "x" + maximumLength
-                            + " (smoke-sized evidence only; catalog SUPPORTED is V2-6-18)");
+                            + " (measured evidence only; catalog dimensions are V2-11-06)");
         }
     }
 }

@@ -1,6 +1,6 @@
 # 地形Feature Taxonomy
 
-> Status: V2-0〜V2-5のoffline gate、V2-9／V2-10 Phase gate、`V2-6-18` Feature Support Catalog、および`V2-6-19` V2-6 Phase gate（[audit](audits/v2-6-phase-gate.md)）まで完了した。能力別supportの正本は`FeatureSupportCatalogV2`（`examples/v2/catalog/feature-support-catalog-v2.json`）である。Paper能力列は`UNSUPPORTED`のまま（実機evidence範囲での昇格は`V2-11-01`）、Paper寸法hard limitはsmoke実測の64×64。500／1000実測Taskは無効化済み。次のTrack A Taskは`V2-11-01`。詳細は [V2-9 Phase gate audit](audits/v2-9-phase-gate.md)、[V2-10 Phase gate audit](audits/v2-10-phase-gate.md)、[Gap監査](../audits/terrain-feature-gap-audit-2026-07-18.md) を参照する。
+> Status: V2-0〜V2-5のoffline gate、V2-9／V2-10 Phase gate、`V2-6-18` Feature Support Catalog、および`V2-6-19` V2-6 Phase gate（[audit](audits/v2-6-phase-gate.md)）まで完了した。能力別supportの正本は`FeatureSupportCatalogV2`（`examples/v2/catalog/feature-support-catalog-v2.json`）である。Paper能力列は`V2-11-01`が実機evidence範囲で昇格し、Paper寸法上限は`V2-11-06`が`V2-11-04`／`V2-11-05`のFAWE実測範囲（1000×1000。WorldEdit単独は64×64）へ昇格した。次のTrack A Taskは`V2-12-01`。詳細は [V2-9 Phase gate audit](audits/v2-9-phase-gate.md)、[V2-10 Phase gate audit](audits/v2-10-phase-gate.md)、[Gap監査](../audits/terrain-feature-gap-audit-2026-07-18.md) を参照する。
 
 ## 1. 目的
 
@@ -53,7 +53,7 @@ support:
 | `UNSUPPORTED` | 実装がない、または意図的に利用を許可しない。 |
 | `NOT_APPLICABLE` | そのroleの性質上、その能力を適用しない。未実装の言い換えには使わない。 |
 
-`paper_apply`、`post_apply_validation`、`snapshot`、`rollback`、`restart_recovery`は、`V2-11-01`（2026-07-20完了）で実機evidenceの範囲だけを`SUPPORTED`へ昇格した。昇格対象はsmoke実測済みの`surface-2_5d` Release capability prefixを持つ4 entry（SANDY_BEACH、BREAKWATER_HARBOR、HARBOR_BASIN、ROCKY_CAPE）であり、runtimeは`paper-1.21.11+worldedit-7.3.19|fawe-2.15.2`、寸法は64×64 hard limit内に限る。`hydrology-plan`／`environment-fields`／`sparse-volume` prefixの21 entryはprefixごとの実機smokeが無いため5列とも`EXPERIMENTAL`のままであり、Release capabilityを持たないV2-9／V2-10 foundation entryは`UNSUPPORTED`のままである（共通canonical placement streamを共有していても、export接続前にPaper能力を昇格させない）。snapshot-all基盤やWE／FAWE smokeだけの完了を、evidenceの無いprefixのFeature能力へ波及させない。Paper寸法hard limitはsmoke実測の64×64であり、500／1000は未測定（再実測は`V2-11-04`／`V2-11-05`、昇格は`V2-11-06`）である。正本は`V2-6-18` catalog（`BuiltInFeatureSupportCatalogV2`）、証拠は`V2-6-14`／`V2-6-15` smokeと [V2-6 Phase gate audit](audits/v2-6-phase-gate.md) である。
+`paper_apply`、`post_apply_validation`、`snapshot`、`rollback`、`restart_recovery`は、`V2-11-01`（2026-07-20完了）で実機evidenceの範囲だけを`SUPPORTED`へ昇格した。昇格対象はsmoke実測済みの`surface-2_5d` Release capability prefixを持つ4 entry（SANDY_BEACH、BREAKWATER_HARBOR、HARBOR_BASIN、ROCKY_CAPE）であり、runtimeは`paper-1.21.11+worldedit-7.3.19|fawe-2.15.2`、寸法は実測上限内（FAWE 2.15.2で1000×1000、WorldEdit 7.3.19で64×64。`V2-11-06`）に限る。`hydrology-plan`／`environment-fields`／`sparse-volume` prefixの21 entryはprefixごとの実機smokeが無いため5列とも`EXPERIMENTAL`のままであり、Release capabilityを持たないV2-9／V2-10 foundation entryは`UNSUPPORTED`のままである（共通canonical placement streamを共有していても、export接続前にPaper能力を昇格させない）。snapshot-all基盤やWE／FAWE smokeだけの完了を、evidenceの無いprefixのFeature能力へ波及させない。Paper寸法上限は`V2-11-06`（2026-07-20完了）が`V2-11-04`（500×500）／`V2-11-05`（1000×1000）のFAWE 2.15.2実測evidenceだけを根拠に1000×1000へ昇格した。この寸法evidenceはFAWE単独であり、WorldEdit 7.3.19単独runtimeの production ceilingは64×64のまま、1000超（LARGE含む）は未実測として拒否する。feature集合は`V2-11-01`の4 entryから広げていない。正本は`V2-6-18` catalog（`BuiltInFeatureSupportCatalogV2`）、証拠は`V2-6-14`／`V2-6-15` smokeと [V2-6 Phase gate audit](audits/v2-6-phase-gate.md) である。
 
 ### 1.2 Role contract
 

@@ -63,42 +63,42 @@ class LandformCraftSuggestionsTest {
         assertEquals(
                 List.of("confirm", "execute", "plan", "recover-diagnose", "recover-execute",
                         "recover-plan", "status", "undo-execute", "undo-plan"),
-                completeRelease2(new String[]{"r2", ""},
+                completeRelease2(new String[]{"v2", ""},
                         true, true, true, true, true, true)
         );
         assertEquals(
                 List.of("plan"),
-                completeRelease2(new String[]{"r2", ""},
+                completeRelease2(new String[]{"v2", ""},
                         true, false, false, false, false, false)
         );
         assertEquals(
                 List.of("world"),
-                completeRelease2(new String[]{"r2", "plan", "coast/release-001", "wo"},
+                completeRelease2(new String[]{"v2", "plan", "coast/release-001", "wo"},
                         true, false, false, false, false, false)
         );
         assertEquals(
                 List.of(IDS.getFirst()),
-                completeRelease2(new String[]{"r2", "execute", "111"},
+                completeRelease2(new String[]{"v2", "execute", "111"},
                         false, false, true, false, false, false)
         );
         assertEquals(
                 List.of("rollback"),
-                completeRelease2(new String[]{"r2", "recover-plan", "ro"},
+                completeRelease2(new String[]{"v2", "recover-plan", "ro"},
                         false, false, false, false, false, true)
         );
         assertEquals(
                 List.of(),
-                completeRelease2(new String[]{"r2", "confirm", IDS.getFirst(), ""},
+                completeRelease2(new String[]{"v2", "confirm", IDS.getFirst(), ""},
                         false, true, false, false, false, false)
         );
         assertEquals(
                 List.of(),
-                completeRelease2(new String[]{"r2", "undo-execute", IDS.getFirst(), ""},
+                completeRelease2(new String[]{"v2", "undo-execute", IDS.getFirst(), ""},
                         false, false, false, false, true, false)
         );
         assertEquals(
                 List.of(),
-                completeRelease2(new String[]{"r2", "recover-execute", "rollback",
+                completeRelease2(new String[]{"v2", "recover-execute", "rollback",
                                 IDS.getFirst(), ""},
                         false, false, false, false, false, true)
         );

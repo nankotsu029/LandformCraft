@@ -114,7 +114,7 @@ public final class GenerationExecutors implements AutoCloseable {
         });
     }
 
-    public <T> CompletableFuture<T> supplyGeneration(GenerationTask<T> task) {
+    public <T> CompletableFuture<T> supplyGeneration(CancellableTask<T> task) {
         Objects.requireNonNull(task, "task");
         if (closed.get()) {
             return rejectedFuture("executors are closed");
@@ -132,6 +132,12 @@ public final class GenerationExecutors implements AutoCloseable {
 
     public boolean isShutdown() {
         return closed.get();
+    }
+
+    /** CPU-heavy task that observes the executor-owned cancellation token at bounded intervals. */
+    @FunctionalInterface
+    public interface CancellableTask<T> {
+        T run(CancellationToken cancellationToken);
     }
 
     public boolean isTerminated() {

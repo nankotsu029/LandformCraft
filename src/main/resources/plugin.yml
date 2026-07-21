@@ -42,12 +42,21 @@ permissions:
       landformcraft.undo.plan: true
       landformcraft.undo.execute: true
       landformcraft.recovery: true
-      landformcraft.r2.plan: true
-      landformcraft.r2.confirm: true
-      landformcraft.r2.execute: true
-      landformcraft.r2.status: true
-      landformcraft.r2.undo: true
-      landformcraft.r2.recovery: true
+      landformcraft.v2.plan: true
+      landformcraft.v2.confirm: true
+      landformcraft.v2.execute: true
+      landformcraft.v2.status: true
+      landformcraft.v2.undo: true
+      landformcraft.v2.recovery: true
+      landformcraft.v2.request: true
+      landformcraft.v2.request.create: true
+      landformcraft.v2.request.edit: true
+      landformcraft.v2.design: true
+      landformcraft.v2.export: true
+      landformcraft.v2.preview: true
+      landformcraft.v2.job: true
+      landformcraft.v2.candidate: true
+      landformcraft.v2.retention: true
       landformcraft.asset.read: true
       landformcraft.asset.manage: true
       landformcraft.cleanup: true
@@ -123,23 +132,50 @@ permissions:
   landformcraft.recovery:
     description: Diagnoses and explicitly resolves RECOVERY_REQUIRED placements.
     default: op
-  landformcraft.r2.plan:
-    description: Strictly verifies and plans an explicit Release 2 placement.
+  landformcraft.v2.plan:
+    description: Strictly verifies and plans a Release 2 placement (/lfc v2 place plan).
     default: op
-  landformcraft.r2.confirm:
+  landformcraft.v2.confirm:
     description: Consumes a bound Release 2 confirmation and snapshots all effect envelopes.
     default: op
-  landformcraft.r2.execute:
+  landformcraft.v2.execute:
     description: Applies, settles, fully verifies, and rolls back a confirmed Release 2 placement.
     default: op
-  landformcraft.r2.status:
+  landformcraft.v2.status:
     description: Reads strict Release 2 placement journal status.
     default: op
-  landformcraft.r2.undo:
+  landformcraft.v2.undo:
     description: Prepares or executes operation-bound Release 2 Undo.
     default: op
-  landformcraft.r2.recovery:
+  landformcraft.v2.recovery:
     description: Diagnoses and explicitly resolves ambiguous Release 2 placement state.
+    default: op
+  landformcraft.v2.request:
+    description: Strictly validates, inspects, and lists v2 generation requests.
+    default: op
+  landformcraft.v2.request.create:
+    description: Creates a v2 generation request with default bounds.
+    default: op
+  landformcraft.v2.request.edit:
+    description: Edits a v2 generation request (bounds, WorldEdit selection, prompt).
+    default: op
+  landformcraft.v2.design:
+    description: Creates a v2 Design Package through the explicit design paths.
+    default: op
+  landformcraft.v2.export:
+    description: Runs the production Release 2 export path (/lfc v2 generate|export).
+    default: op
+  landformcraft.v2.preview:
+    description: Reads the sealed diagnostic preview index of a verified Release 2.
+    default: op
+  landformcraft.v2.job:
+    description: Inspects and cancels asynchronous v2 export jobs.
+    default: op
+  landformcraft.v2.candidate:
+    description: Lists and inspects published v2 exports (candidates) of a request.
+    default: op
+  landformcraft.v2.retention:
+    description: Plans and executes Release 2 retention snapshot cleanup.
     default: op
   landformcraft.asset.read:
     description: Validates and reads restricted custom assets.

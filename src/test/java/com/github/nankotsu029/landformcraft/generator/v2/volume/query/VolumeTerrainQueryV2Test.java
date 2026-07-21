@@ -4,7 +4,6 @@ import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.generator.v2.TerrainBlockResolver;
 import com.github.nankotsu029.landformcraft.generator.v2.TerrainQuery;
 import com.github.nankotsu029.landformcraft.generator.v2.V1TerrainBlockResolver;
-import com.github.nankotsu029.landformcraft.generator.v2.V1TerrainQueryAdapter;
 import com.github.nankotsu029.landformcraft.model.v2.volume.VolumeCsgPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.volume.VolumeSdfPrimitivePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.volume.VolumeSdfPrimitiveV2;
@@ -28,7 +27,7 @@ class VolumeTerrainQueryV2Test {
     private static final String ZERO = "0".repeat(64);
 
     @Test
-    void baseOnlyMatchesUnderlyingQueryAndV1AdapterContract() throws Exception {
+    void baseOnlyMatchesUnderlyingQueryContract() {
         TerrainQuery base = flatBase(0, 0, 8, 8, 0, 31, 10, 15);
         VolumeTerrainQueryV2 query = new VolumeTerrainQueryV2(base);
         assertEquals(TerrainQuery.QUERY_KERNEL_COLUMN_V1, query.queryKernelVersion());
@@ -46,17 +45,11 @@ class VolumeTerrainQueryV2Test {
             }
         }
 
-        // v1 adapter regression: wrapping does not change resolver stream for base-only.
-        Path request = Path.of("examples/request.valid.json");
-        if (java.nio.file.Files.exists(request)) {
-            // Keep optional; primary v1 golden suite remains V1TerrainAdapterTest / CompatibilityGolden.
-        }
         TerrainBlockResolver resolver = new V1TerrainBlockResolver(query);
         assertEquals("minecraft:stone", resolver.blockStateAt(0, 5, 0));
         assertEquals("minecraft:grass_block", resolver.blockStateAt(0, 10, 0));
         assertEquals("minecraft:water", resolver.blockStateAt(0, 12, 0));
         assertEquals("minecraft:air", resolver.blockStateAt(0, 20, 0));
-        assertEquals(V1TerrainQueryAdapter.SUPPORTED_GENERATOR_VERSION, "3.0.0-phase6");
     }
 
     @Test

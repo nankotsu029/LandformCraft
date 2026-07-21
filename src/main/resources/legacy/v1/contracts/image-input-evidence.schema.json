@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/image-input-evidence.schema.json",
+  "title": "LandformCraft ImageInputEvidence",
+  "description": "Strict, frozen v1 contract for the ImageInputEvidence. Rejects unknown fields, versions and encodings instead of falling back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "requestId", "normalizationVersion", "providerId", "providerResponseId",
+    "promptVersion", "images", "consistencyChecks", "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "requestId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+    "normalizationVersion": { "const": "image-normalization-v1" },
+    "providerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "providerResponseId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "promptVersion": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "images": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/image" }
+    },
+    "consistencyChecks": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/consistencyCheck" }
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+    },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "imageRole": {
+      "enum": [
+        "MOOD_REFERENCE", "TOP_DOWN_SKETCH", "HEIGHT_REFERENCE", "ZONE_REFERENCE",
+        "MATERIAL_REFERENCE", "STRUCTURE_REFERENCE"
+      ]
+    },
+    "coordinateMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "horizontalAxis", "verticalAxis", "targetWidth", "targetLength"],
+      "properties": {
+        "origin": { "const": "TOP_LEFT" },
+        "horizontalAxis": { "const": "POSITIVE_X_EAST" },
+        "verticalAxis": { "const": "POSITIVE_Z_SOUTH" },
+        "targetWidth": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "targetLength": { "type": "integer", "minimum": 1, "maximum": 1000 }
+      }
+    },
+    "edgeWaterRatios": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["NORTH", "EAST", "SOUTH", "WEST"],
+      "properties": {
+        "NORTH": { "type": "number", "minimum": 0, "maximum": 1 },
+        "EAST": { "type": "number", "minimum": 0, "maximum": 1 },
+        "SOUTH": { "type": "number", "minimum": 0, "maximum": 1 },
+        "WEST": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index", "imageId", "sourceFile", "role", "providerSubmitted", "validationStatus", "sourceMediaType", "sourceBytes", "sourceWidth",
+        "sourceHeight", "sourceChecksum", "normalizedMediaType", "normalizedBytes",
+        "normalizedWidth", "normalizedHeight", "normalizedChecksum", "metadataDetected",
+        "exifOrientation", "transformations", "coordinateMappings", "edgeWaterRatios"
+      ],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0, "maximum": 15 },
+        "imageId": { "type": "string", "pattern": "^image-[0-9]{2}$" },
+        "sourceFile": { "$ref": "#/$defs/safePath" },
+        "role": { "$ref": "#/$defs/imageRole" },
+        "providerSubmitted": { "type": "boolean" },
+        "validationStatus": { "const": "VERIFIED" },
+        "sourceMediaType": { "enum": ["image/png", "image/jpeg"] },
+        "sourceBytes": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+        "sourceWidth": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "sourceHeight": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "sourceChecksum": { "$ref": "#/$defs/checksum" },
+        "normalizedMediaType": { "const": "image/png" },
+        "normalizedBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "normalizedWidth": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "normalizedHeight": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "normalizedChecksum": { "$ref": "#/$defs/checksum" },
+        "metadataDetected": { "type": "boolean" },
+        "exifOrientation": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "transformations": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "DECODED", "COLOR_SPACE_NORMALIZED", "ORIENTATION_NORMALIZED", "METADATA_STRIPPED", "PNG_REENCODED",
+              "TOP_DOWN_COORDINATES_NORMALIZED"
+            ]
+          }
+        },
+        "coordinateMappings": {
+          "type": "array",
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/coordinateMapping" }
+        },
+        "edgeWaterRatios": {
+          "oneOf": [
+            { "$ref": "#/$defs/edgeWaterRatios" },
+            { "type": "object", "maxProperties": 0 }
+          ]
+        }
+      }
+    },
+    "consistencyCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceFile", "side", "expected", "observedWaterRatio", "status"],
+      "properties": {
+        "sourceFile": { "$ref": "#/$defs/safePath" },
+        "side": { "enum": ["NORTH", "EAST", "SOUTH", "WEST"] },
+        "expected": { "enum": ["SEA", "LAND"] },
+        "observedWaterRatio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "status": { "enum": ["CONSISTENT", "INCONCLUSIVE"] }
+      }
+    }
+  }
+}

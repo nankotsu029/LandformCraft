@@ -77,26 +77,29 @@ class SchemaContractTest {
             assertEquals("https://json-schema.org/draft/2020-12/schema", root.path("$schema").asText());
         }
         LandformDataCodec codec = new LandformDataCodec();
-        codec.readGenerationRequest(Path.of("examples/rocky-coast/request.yml"));
-        codec.readGenerationRequest(Path.of("examples/mountain-stream/request.yml"));
+        Path legacyFixtures = Path.of("src/main/resources/legacy/v1/fixtures");
+        codec.readGenerationRequest(legacyFixtures.resolve("rocky-coast/request.yml"));
+        codec.readGenerationRequest(legacyFixtures.resolve("mountain-stream/request.yml"));
         codec.readCustomAssetMetadata(Path.of("examples/custom-asset/metadata.json"));
-        codec.readTerrainIntent(Path.of(
-                "examples/azure-coast/results/38834796-183d-45ff-a567-6ee80cb9b243/terrain-intent.json"));
-        codec.readDesignAudit(Path.of(
-                "examples/azure-coast/results/38834796-183d-45ff-a567-6ee80cb9b243/audit.json"));
-        codec.readImageInputEvidence(Path.of(
-                "examples/azure-coast/results/38834796-183d-45ff-a567-6ee80cb9b243/image-evidence.json"));
-        codec.readTerrainIntent(Path.of("examples/rocky-coast/terrain-intent.json"));
+        codec.readTerrainIntent(legacyFixtures.resolve(
+                "azure-coast/results/38834796-183d-45ff-a567-6ee80cb9b243/terrain-intent.json"));
+        codec.readDesignAudit(legacyFixtures.resolve(
+                "azure-coast/results/38834796-183d-45ff-a567-6ee80cb9b243/audit.json"));
+        codec.readImageInputEvidence(legacyFixtures.resolve(
+                "azure-coast/results/38834796-183d-45ff-a567-6ee80cb9b243/image-evidence.json"));
+        codec.readTerrainIntent(legacyFixtures.resolve("rocky-coast/terrain-intent.json"));
         codec.readGenerationRequest(Path.of("examples/phase6-structures/request.yml"));
         codec.readTerrainIntent(Path.of("examples/phase6-structures/terrain-intent.json"));
-        codec.readExportManifest(Path.of("examples/release-manifest.json"));
-        codec.readPlacementJournal(Path.of("examples/placement-journal.json"));
-        codec.readDesignAudit(Path.of("examples/design-audit.json"));
-        codec.readGenerationJob(Path.of("examples/generation-job.json"));
+        codec.readExportManifest(legacyFixtures.resolve("release-manifest.json"));
+        codec.readPlacementJournal(legacyFixtures.resolve("placement-journal.json"));
+        codec.readDesignAudit(legacyFixtures.resolve("design-audit.json"));
+        codec.readGenerationJob(legacyFixtures.resolve("generation-job.json"));
         codec.readImageInputEvidence(Path.of("examples/image-input-evidence.json"));
         var v2 = new com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec();
         v2.readGenerationRequest(Path.of("examples/v2/diagnostic/azure-coast.request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json"));
+        v2.readGenerationRequest(Path.of("examples/v2/diagnostic/harbor-cove-64.request-v2.json"));
+        v2.readTerrainIntent(Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/manual-constraint-island/request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/manual-constraint-island/terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/scenarios/lush-cave.terrain-intent-v2.json"));
@@ -200,6 +203,11 @@ class SchemaContractTest {
         v2.readPlacementVerifyEvidence(Path.of("examples/v2/placement/placement-verify-evidence-v2.json"));
         v2.readPlacementUndoPlan(Path.of("examples/v2/placement/placement-undo-plan-v2.json"));
         v2.readPlacementRecoveryPlan(Path.of("examples/v2/placement/placement-recovery-plan-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.migration.LegacyMigrationReportCodecV2()
+                .read(Path.of("examples/v2/migration/migration-report-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.job.ExportJobCodecV2()
+                .read(Path.of("examples/v2/job/export-job-v2.json"));
+        v2.readTerrainIntent(Path.of("examples/v2/migration/mountain-stream.terrain-intent-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.design.DesignPackageCodecV2()
                 .readAudit(Path.of("examples/v2/design/design-audit-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.design.DesignPackageCodecV2()
@@ -217,7 +225,7 @@ class SchemaContractTest {
                 "examples/v2/operations/release-2-retention-cleanup-plan-v2.json",
                 mapper.readTree(Path.of("examples/v2/operations/release-2-retention-cleanup-plan-v2.json").toFile()));
         var assets = codec.readRequiredAssets(Path.of("examples/required-assets.json"));
-        var placements = codec.readStructurePlacements(Path.of("examples/structure-placements.json"));
+        var placements = codec.readStructurePlacements(legacyFixtures.resolve("structure-placements.json"));
         var catalog = new com.github.nankotsu029.landformcraft.structure.BuiltInStructureAssetCatalog();
         assets.assets().forEach(asset -> assertEquals(
                 catalog.requireById(asset.assetId()).semanticChecksum(), asset.semanticChecksum()));
@@ -327,26 +335,27 @@ class SchemaContractTest {
 
     @Test
     void schemaEnumsStayInSyncWithJavaEnums() throws Exception {
-        JsonNode request = mapper.readTree(Path.of("schemas/generation-request.schema.json").toFile());
+        Path legacy = Path.of("src/main/resources/legacy/v1/contracts");
+        JsonNode request = mapper.readTree(legacy.resolve("generation-request.schema.json").toFile());
         assertEquals(enumNames(ReferenceImageRole.class),
                 values(request.at("/$defs/referenceImage/properties/role/enum")));
 
-        JsonNode job = mapper.readTree(Path.of("schemas/generation-job.schema.json").toFile());
+        JsonNode job = mapper.readTree(legacy.resolve("generation-job.schema.json").toFile());
         assertEquals(enumNames(GenerationStage.class), values(job.at("/properties/stage/enum")));
 
         JsonNode evidence = mapper.readTree(Path.of("schemas/image-input-evidence.schema.json").toFile());
         assertEquals(enumNames(ImageTransformation.class),
                 values(evidence.at("/$defs/image/properties/transformations/items/enum")));
 
-        JsonNode placement = mapper.readTree(Path.of("schemas/placement-journal.schema.json").toFile());
+        JsonNode placement = mapper.readTree(legacy.resolve("placement-journal.schema.json").toFile());
         assertEquals(enumNames(PlacementState.class), values(placement.at("/properties/state/enum")));
         assertEquals(enumNames(PlacementTileState.class), values(placement.at("/$defs/tile/properties/state/enum")));
 
-        JsonNode intent = mapper.readTree(Path.of("schemas/terrain-intent.schema.json").toFile());
+        JsonNode intent = mapper.readTree(legacy.resolve("terrain-intent.schema.json").toFile());
         assertEquals(enumNames(StructureType.class), values(intent.at("/$defs/structure/properties/type/enum")));
         JsonNode assets = mapper.readTree(Path.of("schemas/required-assets.schema.json").toFile());
         assertEquals(enumNames(StructureType.class), values(assets.at("/$defs/structureType/enum")));
-        JsonNode structures = mapper.readTree(Path.of("schemas/structure-placements.schema.json").toFile());
+        JsonNode structures = mapper.readTree(legacy.resolve("structure-placements.schema.json").toFile());
         assertEquals(enumNames(StructureType.class), values(structures.at("/$defs/placement/properties/type/enum")));
 
         JsonNode hydrology = mapper.readTree(Path.of("schemas/hydrology-plan-v2.schema.json").toFile());

@@ -8,21 +8,35 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Built-in Feature Support Catalog data for V2-6-18, promoted by V2-11-01.
+ * Built-in Feature Support Catalog data for V2-6-18, promoted by V2-11-01 and V2-11-06.
  * Evidence sources: Gap audit profiles, V2-2〜V2-5 offline gates, V2-9/V2-10 phase gates,
- * WE/FAWE smoke evidence (surface-2_5d at 64x64), V2-6 phase gate audit. Paper capability
- * columns are SUPPORTED only for the smoke-evidenced surface-2_5d prefix; the other Release
- * capability prefixes stay EXPERIMENTAL until per-prefix real-machine smoke, and entries
- * without a Release capability stay UNSUPPORTED.
+ * WE/FAWE smoke evidence (surface-2_5d at 64x64), V2-6 phase gate audit, and the V2-11-04
+ * (500x500) / V2-11-05 (1000x1000) FAWE measurements. Paper capability columns are SUPPORTED
+ * only for the smoke-evidenced surface-2_5d prefix; the other Release capability prefixes stay
+ * EXPERIMENTAL until per-prefix real-machine smoke, and entries without a Release capability
+ * stay UNSUPPORTED. V2-11-06 widens the published dimension ceiling only, never the feature set.
  */
 public final class BuiltInFeatureSupportCatalogV2 {
     public static final String DECISION_ID = "v2-6-18-final-supported-catalog";
     public static final String PROMOTION_DECISION_ID = "v2-11-01-paper-capability-promotion";
+    public static final String MEASURED_DIMENSION_DECISION_ID =
+            "v2-11-06-measured-dimension-promotion";
     public static final String REQUIRED_RUNTIME =
             "paper-1.21.11+worldedit-7.3.19|fawe-2.15.2";
 
+    /**
+     * Runtime that carries the above-smoke dimension evidence. V2-11-04/05 ran FAWE 2.15.2 only,
+     * so a WorldEdit-only server keeps the 64x64 production ceiling (V2-11-06).
+     */
+    public static final String MEASURED_DIMENSION_RUNTIME = "fawe-2.15.2";
+
     /** Capability prefixes with real-machine placement smoke evidence (V2-6-14/15, 64x64). */
     public static final Set<String> PAPER_SMOKE_EVIDENCED_CAPABILITIES = Set.of("surface-2_5d");
+
+    /** Evidence links for the V2-11-06 dimension promotion. */
+    public static final String MEASURED_DIMENSION_EVIDENCE =
+            "docs/design-v2/audits/v2-11-04-fawe-500-measurement.md"
+                    + " + docs/design-v2/audits/v2-11-05-fawe-1000-measurement.md";
 
     private BuiltInFeatureSupportCatalogV2() {
     }
@@ -32,14 +46,15 @@ public final class BuiltInFeatureSupportCatalogV2 {
         return new FeatureSupportCatalogV2(
                 FeatureSupportCatalogV2.VERSION,
                 FeatureSupportCatalogV2.CONTRACT_VERSION,
-                PlacementDimensionLimitV2.smokeMeasured(),
+                PlacementDimensionLimitV2.measured(),
                 entries(),
                 List.of("ATOLL", "BARRIER_ISLAND", "CENOTE", "ICE_FJORD", "WATERFALL_CHAIN"),
                 List.of(
-                        "paper_apply/post_apply/snapshot/rollback/restart_recovery SUPPORTED only for the smoke-evidenced surface-2_5d prefix at the 64x64 hard limit (V2-11-01)",
+                        "paper_apply/post_apply/snapshot/rollback/restart_recovery SUPPORTED only for the smoke-evidenced surface-2_5d prefix, up to the published 1000x1000 measured limit (V2-11-01 features, V2-11-06 dimensions)",
                         "hydrology-plan/environment-fields/sparse-volume Paper columns are EXPERIMENTAL until per-prefix real-machine smoke (new Task ID required for SUPPORTED)",
                         "V2-9/V2-10 foundation features share the canonical placement stream (V2-6 evidence inheritance) but have no Release capability; their Paper columns stay UNSUPPORTED until export connection",
-                        "500x500 and 1000x1000 Paper apply are unmeasured (V2-6-16/17 CANCELLED)",
+                        "dimensions above 64x64 are measured on fawe-2.15.2 only (V2-11-04 500x500, V2-11-05 1000x1000); a WorldEdit-only runtime keeps the 64x64 production ceiling",
+                        "dimensions above 1000x1000 remain unmeasured and are rejected before any world mutation (LARGE/V2-8 streaming is not claimed)",
                         "lifecycleStatus is display-only and must not decide capability support"),
                 List.of(
                         "OCEAN_TRENCH", "MID_OCEAN_RIDGE", "SUBMARINE_VOLCANO",
@@ -88,9 +103,10 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
                 "surface-2_5d",
                 REQUIRED_RUNTIME,
-                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md",
+                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md + "
+                        + MEASURED_DIMENSION_EVIDENCE,
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the 64x64 smoke evidence (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the measured 1000x1000 limit (features V2-11-01, dimensions V2-11-06); above 64x64 the evidence is fawe-2.15.2 only")));
         result.add(entry(
                 "BREAKWATER_HARBOR",
                 "SF16",
@@ -101,9 +117,10 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
                 "surface-2_5d",
                 REQUIRED_RUNTIME,
-                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md",
+                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md + "
+                        + MEASURED_DIMENSION_EVIDENCE,
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the 64x64 smoke evidence (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the measured 1000x1000 limit (features V2-11-01, dimensions V2-11-06); above 64x64 the evidence is fawe-2.15.2 only")));
         result.add(entry(
                 "HARBOR_BASIN",
                 "SF16",
@@ -114,9 +131,10 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
                 "surface-2_5d",
                 REQUIRED_RUNTIME,
-                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md",
+                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md + "
+                        + MEASURED_DIMENSION_EVIDENCE,
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the 64x64 smoke evidence (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the measured 1000x1000 limit (features V2-11-01, dimensions V2-11-06); above 64x64 the evidence is fawe-2.15.2 only")));
         result.add(entry(
                 "ROCKY_CAPE",
                 "SF16",
@@ -127,9 +145,10 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
                 "surface-2_5d",
                 REQUIRED_RUNTIME,
-                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md",
+                "v2-6-14/15 smoke evidence + docs/design-v2/audits/v2-6-phase-gate.md + "
+                        + MEASURED_DIMENSION_EVIDENCE,
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the 64x64 smoke evidence (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns SUPPORTED within the measured 1000x1000 limit (features V2-11-01, dimensions V2-11-06); above 64x64 the evidence is fawe-2.15.2 only")));
         result.add(entry(
                 "MEANDERING_RIVER",
                 "SF16",
@@ -142,7 +161,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "LAKE",
                 "SF16",
@@ -155,7 +174,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "CANYON",
                 "SF16",
@@ -168,7 +187,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "WATERFALL",
                 "SF16",
@@ -181,7 +200,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "DELTA",
                 "SF16",
@@ -194,7 +213,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "TIDAL_CHANNEL_NETWORK",
                 "SF16",
@@ -207,7 +226,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "FJORD",
                 "SF16",
@@ -220,7 +239,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "ALPINE_MOUNTAIN_RANGE",
                 "SF16",
@@ -233,7 +252,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "GLACIAL_MOUNTAIN_RANGE",
                 "SF16",
@@ -246,7 +265,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "VOLCANIC_ARCHIPELAGO",
                 "SF16",
@@ -259,7 +278,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "MANGROVE_WETLAND",
                 "SF16",
@@ -272,7 +291,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "CORAL_REEF",
                 "SF16",
@@ -285,7 +304,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "",
                 "docs/design-v2/audits + V2-2/3/4 phase gates",
                 List.of(
-                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "LAGOON",
                 "CP4",
@@ -352,7 +371,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 List.of(
                         "Plan-level volume generator; public Intent stays EXPERIMENTAL/diagnostic",
                         "May host child connectors",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "LUSH_CAVE",
                 "VE4",
@@ -366,7 +385,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "Plan-level volume generator; public Intent stays EXPERIMENTAL/diagnostic",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "OVERHANG",
                 "VE4",
@@ -380,7 +399,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "Plan-level volume generator; public Intent stays EXPERIMENTAL/diagnostic",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "SKY_ISLAND_GROUP",
                 "VE4",
@@ -394,7 +413,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "Plan-level volume generator; public Intent stays EXPERIMENTAL/diagnostic",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "UNDERGROUND_LAKE",
                 "VP3",
@@ -408,7 +427,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "No public FeatureKind; plan-level API only",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "SEA_CAVE",
                 "VP3",
@@ -422,7 +441,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "No public FeatureKind; plan-level API only",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "NATURAL_ARCH",
                 "VP3",
@@ -436,7 +455,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "No public FeatureKind; plan-level API only",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "WATERFALL_VOLUME",
                 "OVL1",
@@ -450,7 +469,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "VOLUME_OVERLAY bound to surface WATERFALL; not a FeatureKind",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "VOLUME_LOCAL_ENVIRONMENT",
                 "COMP1",
@@ -464,7 +483,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "docs/design-v2/audits/v2-5-phase-gate.md",
                 List.of(
                         "COMPONENT; must not become a FeatureKind",
-                        "Paper columns EXPERIMENTAL: /lfc r2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
+                        "Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)")));
         result.add(entry(
                 "PLAIN",
                 "FND9",

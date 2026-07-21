@@ -48,6 +48,12 @@ public final class PaperRelease2PlacementServiceV2 implements AutoCloseable {
         return application.isRelease2Path();
     }
 
+    /** Recovery-backed cleanup port for retention wiring (V2-12-10). */
+    public com.github.nankotsu029.landformcraft.core.v2.operations.RetentionCleanupPortV2
+            retentionCleanupPort() {
+        return application.retentionCleanupPort();
+    }
+
     public CompletionStage<Release2PlacementApplicationServiceV2.PreparedPlanV2> plan(
             String releasePath,
             String worldName,

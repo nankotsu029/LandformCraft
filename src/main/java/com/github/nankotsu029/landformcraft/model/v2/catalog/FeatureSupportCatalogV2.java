@@ -38,12 +38,13 @@ public record FeatureSupportCatalogV2(
             throw new IllegalArgumentException("unknown feature support catalog contract version");
         }
         Objects.requireNonNull(placementDimensionLimit, "placementDimensionLimit");
-        if (placementDimensionLimit.maximumWidth() > PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM
-                || placementDimensionLimit.maximumLength() > PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM) {
+        if (placementDimensionLimit.maximumWidth() > PlacementDimensionLimitV2.MEASURED_MAXIMUM
+                || placementDimensionLimit.maximumLength() > PlacementDimensionLimitV2.MEASURED_MAXIMUM) {
             throw new IllegalArgumentException(
-                    "placementDimensionLimit exceeds smoke-measured ceiling "
-                            + PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM
-                            + " (V2-6-16/17 cancelled; unmeasured sizes cannot be catalogued)");
+                    "placementDimensionLimit exceeds measured ceiling "
+                            + PlacementDimensionLimitV2.MEASURED_MAXIMUM
+                            + " (V2-11-04/05 measured 500x500 and 1000x1000 on FAWE 2.15.2;"
+                            + " larger sizes are unmeasured and cannot be catalogued)");
         }
         entries = CatalogValidationV2.sorted(
                 entries, "entries", MAXIMUM_ENTRIES, Comparator.comparing(FeatureSupportEntryV2::entryId));

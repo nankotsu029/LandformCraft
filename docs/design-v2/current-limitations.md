@@ -1,6 +1,15 @@
 # 現行実装の制約と再設計の出発点
 
-> Status: 設計調査。現行v1の制約は継続する。V2-0〜V2-5は各offline Phase gateを完了し、対象featureとRelease 2 capabilityをoffline `SUPPORTED`にした。V2-6は`V2-6-19`のRC audit／Phase gateまで完了し（[audit](audits/v2-6-phase-gate.md)）、配置安全経路とWorldEdit／FAWE実機smoke、能力別support catalog、Paper寸法hard limit（64×64）を固定した。`V2-11-01`（2026-07-20完了）がPaper 5能力列をsmoke実測済み`surface-2_5d`の4 entry（SANDY_BEACH／BREAKWATER_HARBOR／HARBOR_BASIN／ROCKY_CAPE）×64×64以内だけ`SUPPORTED`へ昇格し、他prefixは`EXPERIMENTAL`、Release capability未接続のfoundation entryは`UNSUPPORTED`、未測定500／1000は昇格対象外である。Track Aの次は`V2-11-02`である。詳細は [Task Index](task-index.md)、進捗は [docs/roadmap.md](../roadmap.md) を正本とする。
+> Status: V2-12-06でv1 production writer／generator／placement／commandを削除し、v1はpackaged legacy read／verify／migrate境界とimmutable goldenへ隔離した。productionで通常利用できるRelease 2は`surface-2_5d`の実測済み4 entryに限られ、FAWE 2.15.2は1000×1000、WorldEdit 7.3.19単独は64×64、1000超は未測定で拒否する。Track Aの次は`V2-12-07`である。
+
+`V2-12-02`のproduction export経路（`core.v2.export`）には次の既知の境界がある。いずれも推測fallbackを避けるためのfail closedであり、緩和は後続Taskで行う。
+
+- **対象capabilityは`surface-2_5d`だけ**である。`hydrology-plan`／`environment-fields`／`sparse-volume`のproduction export経路は未接続で、既存のcapability別publisherを直接呼ぶ必要がある。
+- **V2-2の4 coastal contributorが全て必要**である。sealed coastal transition planがSANDY_BEACH／HARBOR_BASIN／BREAKWATER_HARBOR／ROCKY_CAPEを1個ずつ持たない場合、部分集合を推測補完せずrejectする。
+- **coastal featureが所有しないcellのbaselineは生成しない。** land-waterと地表高は`SurfaceBaselineV2`として呼び出し側が宣言する。汎用base landformはV2-9 foundation側の契約であり、export経路は独自の地形を発明しない。
+- **desired constraint fieldはcomposition結果をsealしたものである。** 外部由来のHARD land-water maskをbundleとして持ち込んで束縛する経路（画像由来maskの直接binding）は`V2-7`／`V2-12-04`の入力側Taskに残る。
+- **LARGE（1024超）は拒否する。** V2-8のstreaming gateが閉じるまでexportしない。
+- **CLI／Paper command接続は`V2-12-03`で解消済み**で、`V2-12-05`から既定v2である。ただし本production export serviceが扱うのは`surface-2_5d`だけであり、未接続capabilityを推測してworld mutationへ流さない。詳細は [Task Index](task-index.md)、進捗は [docs/roadmap.md](../roadmap.md) を正本とする。
 
 ## 1. 調査範囲と判断基準
 
@@ -38,7 +47,7 @@
 
 ## 3. TerrainIntent v1の表現限界
 
-[TerrainIntent.java](../../src/main/java/com/github/nankotsu029/landformcraft/model/TerrainIntent.java) と [terrain-intent.schema.json](../../schemas/terrain-intent.schema.json) が持つ地形情報は、`topology`、`seaSides`、`landRatio`、全域共通のrelief、海岸集約値、水系個数、coarse zone、少数structureに限られる。
+[TerrainIntent.java](../../src/main/java/com/github/nankotsu029/landformcraft/model/TerrainIntent.java) と [terrain-intent.schema.json](../../src/main/resources/legacy/v1/contracts/terrain-intent.schema.json) が持つ地形情報は、`topology`、`seaSides`、`landRatio`、全域共通のrelief、海岸集約値、水系個数、coarse zone、少数structureに限られる。
 
 | 現行要素 | 実際に表せること | 表せないこと |
 |---|---|---|
@@ -51,9 +60,9 @@
 | `TerrainZone` | 9方向の希望位置とscore強度 | polygon、穴、重なり、境界、優先度、局所parameter |
 | `StructureIntent` | built-in 8 typeの個数と希望zone | 任意asset ID、地形規模のbreakwater、正確な経路 |
 
-重大な点として、`theme`、`bayCount`、`capeCount`、`shallowShelfWidth` は現行generatorの形状計算から参照されない。Schemaに存在し保存されても、生成結果へ直接効かない。`areaShare` も実現面積ではなく、[LogicalLayoutGenerator.java](../../src/main/java/com/github/nankotsu029/landformcraft/generator/LogicalLayoutGenerator.java) のGaussian zone scoreの係数である。
+重大な点として、`theme`、`bayCount`、`capeCount`、`shallowShelfWidth` は現行generatorの形状計算から参照されない。Schemaに存在し保存されても、生成結果へ直接効かない。`areaShare` も実現面積ではなく、retired v1 `LogicalLayoutGenerator` のGaussian zone scoreの係数である。
 
-`examples/azure-coast/request.yml` は砂浜幅、中央の曲線防波堤、湾内外の深度、岩礁cape、zone間遷移を詳細に指定する。しかし生成済みv1 Intentでは `SANDY_BEACH`、`ROCKY_COAST`、`CLIFFS` などへ圧縮され、曲線、幅、接続、断面を保持できていない。`examples/mountain-stream` の滝、段瀑、滝壺、植生、岩種も同じ理由でtheme以上の生成契約にならない。
+`src/main/resources/legacy/v1/fixtures/azure-coast/request.yml` は砂浜幅、中央の曲線防波堤、湾内外の深度、岩礁cape、zone間遷移を詳細に指定する。しかし生成済みv1 Intentでは `SANDY_BEACH`、`ROCKY_COAST`、`CLIFFS` などへ圧縮され、曲線、幅、接続、断面を保持できていない。`src/main/resources/legacy/v1/fixtures/mountain-stream` の滝、段瀑、滝壺、植生、岩種も同じ理由でtheme以上の生成契約にならない。
 
 ## 4. WorldBlueprint v1はコンパイル済みIRではない
 
@@ -64,13 +73,13 @@ schemaVersion / requestId / bounds / intent / seed
 tileSize / logicalResolution / generatorVersion
 ```
 
-[BlueprintCompiler.java](../../src/main/java/com/github/nankotsu029/landformcraft/core/BlueprintCompiler.java) が行う主処理は、requestとIntentのSchema version一致、candidate seed導出、最大辺に応じた64または128のlogical resolution選択である。land-water mask、curve、feature dependency、drainage、地質、気候、volume、validation targetへの意味的compileはない。
+retired v1 `BlueprintCompiler` が行う主処理は、requestとIntentのSchema version一致、candidate seed導出、最大辺に応じた64または128のlogical resolution選択である。land-water mask、curve、feature dependency、drainage、地質、気候、volume、validation targetへの意味的compileはない。
 
 したがって現行 `WorldBlueprint` は「検証済み入力をgeneratorへ渡す固定bundle」ではあるが、「生成途中の意味を保持する実行計画」ではない。v2ではこの責務を根本的に変える必要がある。
 
 ## 5. 現行generatorの実態
 
-[TerrainGenerator.java](../../src/main/java/com/github/nankotsu029/landformcraft/generator/TerrainGenerator.java) と [TerrainPlan.java](../../src/main/java/com/github/nankotsu029/landformcraft/model/TerrainPlan.java) の中心表現は次である。
+retired v1 `TerrainGenerator` と [TerrainPlan.java](../../src/main/java/com/github/nankotsu029/landformcraft/model/TerrainPlan.java) の中心表現は次である。
 
 ```text
 heightMap[x,z]          int
@@ -108,7 +117,7 @@ bedrock → stone → 固定3層subsoil → surface → waterまたはair
 
 ## 7. 地質・気候・生態・素材は意味場になっていない
 
-[SurfaceMaterial.java](../../src/main/java/com/github/nankotsu029/landformcraft/model/SurfaceMaterial.java) は `GRASS/SAND/STONE/GRAVEL/MUD/SNOW` の6値だけである。[TerrainGenerator.materialAt](../../src/main/java/com/github/nankotsu029/landformcraft/generator/TerrainGenerator.java) は水深、傾斜、zone、maxY付近、1本のwetness noiseからこの6値を選ぶ。
+[SurfaceMaterial.java](../../src/main/java/com/github/nankotsu029/landformcraft/model/SurfaceMaterial.java) は `GRASS/SAND/STONE/GRAVEL/MUD/SNOW` の6値だけである。retired v1 `TerrainGenerator.materialAt` は水深、傾斜、zone、maxY付近、1本のwetness noiseからこの6値を選ぶ。
 
 現状には次がない。
 
@@ -122,11 +131,11 @@ bedrock → stone → 固定3層subsoil → surface → waterまたはair
 
 ## 8. v1では画像が直接制約になっていない
 
-[ReferenceImageProcessor.java](../../src/main/java/com/github/nankotsu029/landformcraft/validation/ReferenceImageProcessor.java) は、path、symlink、magic、byte、pixel、frame、EXIF、metadataを厳格に扱う優れた入力境界を持つ。ただしpixelの利用先はProviderである。
+retired v1 `ReferenceImageProcessor` は、path、symlink、magic、byte、pixel、frame、EXIF、metadataを厳格に扱う優れた入力境界を持つ。ただしpixelの利用先はProviderである。
 
 - `TOP_DOWN_SKETCH` だけがboundsへの座標対応と四辺のwater ratioを持つ。
 - `HEIGHT_REFERENCE`、`ZONE_REFERENCE`、`MATERIAL_REFERENCE` はAIへのrole説明であり、generator fieldへdecodeされない。
-- [GenerationApplicationService.java](../../src/main/java/com/github/nankotsu029/landformcraft/core/GenerationApplicationService.java) はgenerate時にrequestとIntentだけを読み、画像を読まない。
+- retired v1 `GenerationApplicationService` はgenerate時にrequestとIntentだけを読み、画像を読まない。
 - Design Packageは画像binaryを保存せず、Release v1にもconstraint artifactはない。
 
 したがって画像は `画像 → AI要約 → TerrainIntent v1` で情報が圧縮され、正確なmask、curve、height guideとして再現性の入力にならない。
@@ -161,8 +170,8 @@ bedrock → stone → 固定3層subsoil → surface → waterまたはair
 - 現行96 MiB推定は「3 int grid + 1 byte grid」前提で、新しいfieldやvolumeを含まない。
 - 固定margin 16は大河川、delta、侵食kernel、3D featureすべてに共通利用できない。
 - Release format 1はartifact集合を固定しており、field sidecarや追加previewを収容できない。
-- 現行v1配置はtileごとにsnapshot直後にapplyする。v2はV2-6-04で全effect envelopeのsnapshot-allを、V2-6-05でcontainmentを、V2-6-06でcanonical applyを、V2-6-07でbounded settle／full verifyを実装したが、rollback／Undo／Recoveryとpublic接続は未完了である。
-- full cuboid verifyはPaper main thread上の大規模scanとなるため、500/1000角の実world計測が現行betaでも未完了である。
+- 現行v1配置はtileごとにsnapshot直後にapplyする。v2はV2-6-04〜V2-6-10でsnapshot-all、containment、canonical apply、bounded settle／full verify、rollback／Undo／Recoveryを実装し、V2-6-21とV2-12-03〜05でpublic接続と既定v2 routingまで完了した。
+- full cuboid verifyはPaper main thread上の大規模scanとなるため長時間を要する（1000角で壁時計約1.8 h、peak RSS約6 GiB）。`V2-11-04`／`V2-11-05`のFAWE単独実測を経て`V2-11-06`が500／1000角をcatalog `SUPPORTED`へ昇格したが、この寸法evidenceはFAWE 2.15.2単独であり、WorldEdit 7.3.19単独runtimeは64×64のままである。
 
 ## 11. 既存テストから引き継ぐべき品質基準
 

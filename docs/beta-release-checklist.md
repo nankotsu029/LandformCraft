@@ -49,7 +49,7 @@
 ### Release 2 RC audit（V2-6-19）
 
 - [x] V2-6 Phase gate（`PlacementPhaseGateV2Test`＋full clean test／build 909 tests；[audit](design-v2/audits/v2-6-phase-gate.md)）
-- 注: gate自体は能力を昇格しない。昇格は`V2-11-01`（2026-07-20完了）が行い、catalog `paper_apply`ほか4 Paper列が`SUPPORTED`になるのは`surface-2_5d`の4 entry×64×64以内に限られる。この昇格は本checklistの他のBeta blockerを閉じない。
+- 注: gate自体は能力を昇格しない。昇格は`V2-11-01`（2026-07-20完了）が行い、catalog `paper_apply`ほか4 Paper列が`SUPPORTED`になるのは`surface-2_5d`の4 entryに限られる。寸法は`V2-11-06`（2026-07-20完了）がFAWE 2.15.2実測（`V2-11-04`／`V2-11-05`）の範囲で1000×1000へ昇格した（WorldEdit単独は64×64）。いずれの昇格も本checklistの他のBeta blockerを閉じない。
 
 ## Paper＋FAWE 2.15.2
 

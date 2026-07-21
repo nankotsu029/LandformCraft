@@ -10,9 +10,9 @@ import com.github.nankotsu029.landformcraft.model.TilePlan;
 import com.github.nankotsu029.landformcraft.model.ValidationIssue;
 import com.github.nankotsu029.landformcraft.model.ValidationResult;
 import com.github.nankotsu029.landformcraft.model.ValidationSeverity;
-import com.github.nankotsu029.landformcraft.generator.StructurePlanner;
 import com.github.nankotsu029.landformcraft.structure.BuiltInStructureAssetCatalog;
 import com.github.nankotsu029.landformcraft.structure.StructureAsset;
+import com.github.nankotsu029.landformcraft.structure.StructureRotation;
 import com.github.nankotsu029.landformcraft.structure.StructurePlacementKind;
 
 import java.util.ArrayList;
@@ -129,7 +129,7 @@ public final class TerrainValidator {
         int centerWater = 0;
         for (int localZ = 0; localZ < asset.length(); localZ++) {
             for (int localX = 0; localX < asset.width(); localX++) {
-                var rotated = StructurePlanner.rotate(asset, placement.rotation(), localX, localZ);
+                var rotated = StructureRotation.rotate(asset, placement.rotation(), localX, localZ);
                 int x = placement.anchorX() + rotated.x();
                 int z = placement.anchorZ() + rotated.z();
                 boolean wet = plan.waterDepthMap().get(x, z) > 0;

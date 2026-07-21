@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.zip.ZipFile;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,10 +34,12 @@ class PluginArtifactTest {
                     "com/github/nankotsu029/landformcraft/core/GenerationExecutors.class"
             ));
             assertNotNull(zipFile.getEntry(
-                    "com/github/nankotsu029/landformcraft/ai/openai/OpenAiTerrainDesignProvider.class"
+                    "com/github/nankotsu029/landformcraft/ai/openai/OpenAiTerrainDesignProviderV2.class"
             ));
-            assertNotNull(zipFile.getEntry("schemas/design-audit.schema.json"));
-            assertNotNull(zipFile.getEntry("schemas/generation-job.schema.json"));
+            assertNull(zipFile.getEntry("schemas/design-audit.schema.json"));
+            assertNull(zipFile.getEntry("schemas/generation-job.schema.json"));
+            assertNotNull(zipFile.getEntry("legacy/v1/contracts/design-audit.schema.json"));
+            assertNotNull(zipFile.getEntry("legacy/v1/contracts/generation-job.schema.json"));
 
             String pluginYaml;
             try (var input = zipFile.getInputStream(zipFile.getEntry("plugin.yml"))) {
@@ -46,11 +49,11 @@ class PluginArtifactTest {
             assertTrue(pluginYaml.contains("api-version: '1.21.11'"));
             assertTrue(pluginYaml.contains("landformcraft:"));
             assertTrue(pluginYaml.contains("FastAsyncWorldEdit"));
-            assertTrue(pluginYaml.contains("landformcraft.apply.plan:"));
-            assertTrue(pluginYaml.contains("landformcraft.apply.execute:"));
-            assertTrue(pluginYaml.contains("landformcraft.undo.plan:"));
-            assertTrue(pluginYaml.contains("landformcraft.undo.execute:"));
-            assertTrue(pluginYaml.contains("landformcraft.recovery:"));
+            assertTrue(pluginYaml.contains("landformcraft.v2.plan:"));
+            assertTrue(pluginYaml.contains("landformcraft.v2.execute:"));
+            assertTrue(pluginYaml.contains("landformcraft.v2.undo:"));
+            assertTrue(pluginYaml.contains("landformcraft.v2.recovery:"));
+            assertTrue(!pluginYaml.contains("landformcraft.r2."));
 
             boolean containsProvidedDependency = zipFile.stream()
                     .map(entry -> entry.getName())
@@ -66,7 +69,8 @@ class PluginArtifactTest {
         Process process = new ProcessBuilder(
                 java.toString(), "-cp", pluginJar.toString(),
                 "com.github.nankotsu029.landformcraft.cli.LandformCraftCli",
-                "journal-verify", Path.of("examples/placement-journal.json").toAbsolutePath().toString()
+                "v2", "journal-verify",
+                Path.of("examples/v2/placement/placement-journal-v2.json").toAbsolutePath().toString()
         ).redirectErrorStream(true).start();
         String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "theme": "荒い岩礁と遠浅の砂浜が共存する海岸",
+  "topology": "COAST_WITH_RIVER",
+  "seaSides": ["EAST"],
+  "landRatio": 0.48,
+  "relief": {
+    "minimum": 0.1,
+    "average": 0.42,
+    "maximum": 0.82
+  },
+  "coastline": {
+    "irregularity": 0.58,
+    "bayCount": 3,
+    "capeCount": 2
+  },
+  "water": {
+    "riverCount": 1,
+    "lakeCount": 0,
+    "maximumSeaDepth": 24,
+    "shallowShelfWidth": 35
+  },
+  "zones": [
+    {
+      "id": "southern-beach",
+      "type": "SANDY_BEACH",
+      "preferredArea": "SOUTH",
+      "areaShare": 0.28
+    },
+    {
+      "id": "northern-rocks",
+      "type": "ROCKY_COAST",
+      "preferredArea": "NORTH_EAST",
+      "areaShare": 0.32
+    }
+  ],
+  "structures": [
+    {
+      "type": "SMALL_PIER",
+      "count": 2,
+      "preferredZone": "southern-beach"
+    }
+  ]
+}

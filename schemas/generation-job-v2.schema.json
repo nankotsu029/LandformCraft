@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/generation-job-v2.schema.json",
+  "title": "LandformCraft v2 export job snapshot (v2)",
+  "description": "Durable record of one asynchronous v2 Release 2 export job: which request and release it produces, which of the two export forms it runs, its lifecycle state and progress, and the last operator-facing message. Written on every transition so job status survives a restart. This is a v2 contract in its own right and does not extend the frozen v1 generation-job schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "jobVersion", "jobId", "requestId", "releaseId", "kind", "state",
+    "progressMillionths", "updatedAt", "message"
+  ],
+  "properties": {
+    "jobVersion": {
+      "description": "Export job contract version. Unknown values are rejected.",
+      "type": "integer",
+      "const": 2
+    },
+    "jobId": {
+      "description": "Canonical lowercase UUID of this job. Also the file name, so it can never resolve outside the job store.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "requestId": {
+      "description": "requestId of the v2 generation request this job exports. Release format 2 manifests carry no request identity, so this field is what makes request-scoped candidate enumeration possible.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "releaseId": {
+      "description": "Release identifier this job publishes under the exports root.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "kind": {
+      "description": "GENERATE publishes the strict Release directory only; EXPORT also publishes the ZIP and verifies placement eligibility.",
+      "type": "string",
+      "enum": ["GENERATE", "EXPORT"]
+    },
+    "state": {
+      "description": "Lifecycle state. PUBLISHED, CANCELLED and FAILED are terminal; a CANCELLED job never published a Release.",
+      "type": "string",
+      "enum": ["QUEUED", "RUNNING", "PUBLISHED", "CANCELLED", "FAILED"]
+    },
+    "progressMillionths": {
+      "description": "Coarse progress in millionths. Integer so a snapshot never depends on floating point formatting.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "updatedAt": {
+      "description": "Canonical UTC instant of the last transition.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "message": {
+      "description": "Operator-facing description of the last transition. Never contains an absolute path or a confirmation token.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    }
+  }
+}

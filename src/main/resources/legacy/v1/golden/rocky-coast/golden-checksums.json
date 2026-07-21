@@ -1,0 +1,10 @@
+{
+  "archiveVersion": 1,
+  "scenario": "rocky-coast",
+  "generatorVersion": "3.0.0-phase6",
+  "sourceSha256": "c33699bdee23d5c3168ee396c870adc03dccd23d8ae54bb78882596eabf2afbd",
+  "canonicalIntentSha256": "9d482b33bcf721c9f8b065ef5050bb926cfe3b251ee857c5bb42dba2c72f1708",
+  "canonicalBlueprintSha256": "e19a9585c34ae6ade4b6e84f466664645ec07c2326faea7921b6c8d698a9046f",
+  "terrainPlanSha256": "8c1990af04be2f3de9c8bcd7ca6e522780f620c8bc052e04302dbfc8e0d45cfb",
+  "blockStreamSha256": "f7d37be8e2c8b5758bd62513cc134373f775d5e2e60a08e5db74ec2961962220"
+}

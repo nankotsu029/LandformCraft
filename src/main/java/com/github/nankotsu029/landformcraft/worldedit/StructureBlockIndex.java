@@ -1,11 +1,11 @@
 package com.github.nankotsu029.landformcraft.worldedit;
 
-import com.github.nankotsu029.landformcraft.generator.StructurePlanner;
 import com.github.nankotsu029.landformcraft.model.StructurePlan;
 import com.github.nankotsu029.landformcraft.model.TerrainPlan;
 import com.github.nankotsu029.landformcraft.model.TilePlan;
 import com.github.nankotsu029.landformcraft.structure.BuiltInStructureAssetCatalog;
 import com.github.nankotsu029.landformcraft.structure.StructureAsset;
+import com.github.nankotsu029.landformcraft.structure.StructureRotation;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +21,7 @@ final class StructureBlockIndex {
             StructureAsset asset = catalog.requireById(placement.assetId());
             validatePlacementAsset(placement, asset);
             for (var block : asset.blocks()) {
-                var rotated = StructurePlanner.rotate(asset, placement.rotation(), block.x(), block.z());
+                var rotated = StructureRotation.rotate(asset, placement.rotation(), block.x(), block.z());
                 int worldX = placement.anchorX() + rotated.x();
                 int worldZ = placement.anchorZ() + rotated.z();
                 int baseY = placement.terrainFollowing()

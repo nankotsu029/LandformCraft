@@ -1,21 +1,20 @@
 package com.github.nankotsu029.landformcraft.paper;
 
-import com.github.nankotsu029.landformcraft.core.PlacementApplicationService;
-import com.github.nankotsu029.landformcraft.core.PreparedPlacement;
-import com.github.nankotsu029.landformcraft.core.PaperWorkflowService;
-import com.github.nankotsu029.landformcraft.core.SnapshotCleanupService;
+import com.github.nankotsu029.landformcraft.core.GenerationExecutors;
+import com.github.nankotsu029.landformcraft.core.v2.DiagnosticBlueprintCompilerV2;
+import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandErrorCodeV2;
+import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandRouteV2;
+import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandRouterV2;
+import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandVerbV2;
+import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
+import com.github.nankotsu029.landformcraft.model.v2.job.ExportJobSnapshotV2;
+import com.github.nankotsu029.landformcraft.core.v2.command.V2WorkflowServiceV2;
 import com.github.nankotsu029.landformcraft.core.CustomAssetService;
 import com.github.nankotsu029.landformcraft.core.DoctorService;
 import com.github.nankotsu029.landformcraft.core.LandformException;
 import com.github.nankotsu029.landformcraft.core.LandformErrorCode;
-import com.github.nankotsu029.landformcraft.core.BlueprintCompiler;
 import com.github.nankotsu029.landformcraft.core.v2.operations.OperationalMetricsCollectorV2;
 import com.github.nankotsu029.landformcraft.cli.LandformCraftCli;
-import com.github.nankotsu029.landformcraft.format.Sha256;
-import com.github.nankotsu029.landformcraft.model.ActorIdentity;
-import com.github.nankotsu029.landformcraft.model.ConfirmationAction;
-import com.github.nankotsu029.landformcraft.model.PlacementJournal;
-import com.github.nankotsu029.landformcraft.model.PlacementState;
 import com.github.nankotsu029.landformcraft.worldedit.IncompleteSelectionException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -56,15 +55,12 @@ import java.util.Map;
 public final class LandformCraftCommand implements CommandExecutor, TabCompleter, Listener {
     private static final String ROOT = "/landformcraft ";
 
-    private final PlacementApplicationService placements;
     private final PaperRelease2PlacementServiceV2 release2Placements;
-    private final PaperPlacementUndoServiceV2 release2Undo;
-    private final PaperPlacementRecoveryServiceV2 release2Recovery;
     private final PaperOperationalOperationsServiceV2 release2Operations;
+    private final PaperV2WorkflowServiceV2 v2Workflow;
     private final PaperWorldEditSelectionService selections;
     private final PaperMainThreadDispatcher dispatcher;
-    private final PaperWorkflowService workflow;
-    private final SnapshotCleanupService cleanup;
+    private final GenerationExecutors executors;
     private final CustomAssetService assets;
     private final Path dataRoot;
     private final ConsoleConfirmationFileStore consoleConfirmations;
@@ -76,95 +72,23 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     private volatile List<String> releaseDirectories = List.of();
 
     public LandformCraftCommand(
-            PlacementApplicationService placements,
-            PaperWorldEditSelectionService selections,
-            PaperMainThreadDispatcher dispatcher,
-            PaperWorkflowService workflow,
-            SnapshotCleanupService cleanup,
-            CustomAssetService assets,
-            Path dataRoot,
-            String pluginVersion,
-            String worldEditStatus
-    ) {
-        this(placements, null, null, null, selections, dispatcher, workflow, cleanup, assets, dataRoot,
-                pluginVersion, worldEditStatus);
-    }
-
-    public LandformCraftCommand(
-            PlacementApplicationService placements,
-            PaperPlacementUndoServiceV2 release2Undo,
-            PaperWorldEditSelectionService selections,
-            PaperMainThreadDispatcher dispatcher,
-            PaperWorkflowService workflow,
-            SnapshotCleanupService cleanup,
-            CustomAssetService assets,
-            Path dataRoot,
-            String pluginVersion,
-            String worldEditStatus
-    ) {
-        this(placements, release2Undo, null, null, selections, dispatcher, workflow, cleanup, assets,
-                dataRoot, pluginVersion, worldEditStatus);
-    }
-
-    public LandformCraftCommand(
-            PlacementApplicationService placements,
-            PaperPlacementUndoServiceV2 release2Undo,
-            PaperPlacementRecoveryServiceV2 release2Recovery,
-            PaperWorldEditSelectionService selections,
-            PaperMainThreadDispatcher dispatcher,
-            PaperWorkflowService workflow,
-            SnapshotCleanupService cleanup,
-            CustomAssetService assets,
-            Path dataRoot,
-            String pluginVersion,
-            String worldEditStatus
-    ) {
-        this(placements, release2Undo, release2Recovery, null, selections, dispatcher, workflow, cleanup,
-                assets, dataRoot, pluginVersion, worldEditStatus);
-    }
-
-    public LandformCraftCommand(
-            PlacementApplicationService placements,
-            PaperPlacementUndoServiceV2 release2Undo,
-            PaperPlacementRecoveryServiceV2 release2Recovery,
-            PaperOperationalOperationsServiceV2 release2Operations,
-            PaperWorldEditSelectionService selections,
-            PaperMainThreadDispatcher dispatcher,
-            PaperWorkflowService workflow,
-            SnapshotCleanupService cleanup,
-            CustomAssetService assets,
-            Path dataRoot,
-            String pluginVersion,
-            String worldEditStatus
-    ) {
-        this(placements, null, release2Undo, release2Recovery, release2Operations, selections,
-                dispatcher, workflow, cleanup, assets, dataRoot, pluginVersion, worldEditStatus);
-    }
-
-    public LandformCraftCommand(
-            PlacementApplicationService placements,
             PaperRelease2PlacementServiceV2 release2Placements,
-            PaperPlacementUndoServiceV2 release2Undo,
-            PaperPlacementRecoveryServiceV2 release2Recovery,
             PaperOperationalOperationsServiceV2 release2Operations,
+            PaperV2WorkflowServiceV2 v2Workflow,
             PaperWorldEditSelectionService selections,
             PaperMainThreadDispatcher dispatcher,
-            PaperWorkflowService workflow,
-            SnapshotCleanupService cleanup,
+            GenerationExecutors executors,
             CustomAssetService assets,
             Path dataRoot,
             String pluginVersion,
             String worldEditStatus
     ) {
-        this.placements = placements;
+        this.v2Workflow = v2Workflow;
         this.release2Placements = release2Placements;
-        this.release2Undo = release2Undo;
-        this.release2Recovery = release2Recovery;
         this.release2Operations = release2Operations;
         this.selections = selections;
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
-        this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.cleanup = Objects.requireNonNull(cleanup, "cleanup");
+        this.executors = Objects.requireNonNull(executors, "executors");
         this.assets = Objects.requireNonNull(assets, "assets");
         this.dataRoot = Objects.requireNonNull(dataRoot, "dataRoot").toAbsolutePath().normalize();
         this.consoleConfirmations = new ConsoleConfirmationFileStore(
@@ -201,42 +125,10 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 handleOps(sender, args);
                 return true;
             }
-            if (args.length >= 2 && args[0].equalsIgnoreCase("r2")) {
-                handleRelease2(sender, args);
-                return true;
-            }
-            if (args.length >= 2 && args[0].equalsIgnoreCase("request")) {
-                handleRequest(sender, args);
-                return true;
-            }
-            if (args.length >= 2 && args[0].equalsIgnoreCase("design")) {
-                handleDesign(sender, args);
-                return true;
-            }
-            if (args.length == 2 && args[0].equalsIgnoreCase("generate")) {
-                requirePermission(sender, "landformcraft.generate");
-                UUID jobId = workflow.startGenerate(uuid(args[1]));
-                sender.sendMessage(detail("Job ID", jobId.toString()));
-                return true;
-            }
-            if (args.length == 3 && args[0].equalsIgnoreCase("job")) {
-                handleJob(sender, args);
-                return true;
-            }
-            if (args.length >= 2 && args[0].equalsIgnoreCase("candidate")) {
-                handleCandidate(sender, args);
-                return true;
-            }
-            if (args.length >= 2 && args[0].equalsIgnoreCase("export")) {
-                handleExport(sender, args);
-                return true;
-            }
+            // Maintained, version-neutral verbs stay on the default surface regardless of the v1/v2
+            // switch (ADR 0035 D10: asset=K3, selection=K2).
             if (args.length >= 2 && args[0].equalsIgnoreCase("asset")) {
                 handleAsset(sender, args);
-                return true;
-            }
-            if (args.length >= 2 && args[0].equalsIgnoreCase("cleanup")) {
-                handleCleanup(sender, args);
                 return true;
             }
             if (args.length == 1 && args[0].equalsIgnoreCase("selection")) {
@@ -245,57 +137,26 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 requirePlayer(sender, player -> reportSelection(sender, player));
                 return true;
             }
-            if (args.length == 7 && args[0].equalsIgnoreCase("apply")
-                    && args[1].equalsIgnoreCase("plan")) {
-                requirePermission(sender, "landformcraft.apply.plan");
-                requirePlacementAvailable();
-                reportPrepared(sender, placements.plan(
-                        args[2], args[3], integer(args[4]), integer(args[5]), integer(args[6]), actor(sender)
-                ), "apply execute");
+            // The explicit v2 root remains the stable version-qualified alias.
+            if (args[0].equalsIgnoreCase(V2CommandVerbV2.ROOT)) {
+                handleV2(sender, args);
                 return true;
             }
-            if (args.length == 4 && args[0].equalsIgnoreCase("apply")
-                    && args[1].equalsIgnoreCase("execute")) {
-                requirePermission(sender, "landformcraft.apply.execute");
-                requirePlacementAvailable();
-                reportJournal(sender, placements.execute(uuid(args[2]), args[3], actor(sender)),
-                        () -> discardConsoleConfirmation("apply-execute-" + uuid(args[2])));
-                return true;
-            }
-            if (args.length == 3 && args[0].equalsIgnoreCase("apply")
-                    && args[1].equalsIgnoreCase("status")) {
-                requirePermission(sender, "landformcraft.apply.status");
-                requirePlacementAvailable();
-                reportJournal(sender, placements.status(uuid(args[2])));
-                return true;
-            }
-            if (args.length == 3 && args[0].equalsIgnoreCase("apply")
-                    && args[1].equalsIgnoreCase("undo")) {
-                requirePermission(sender, "landformcraft.undo.plan");
-                requirePlacementAvailable();
-                reportPrepared(sender, placements.prepareUndo(uuid(args[2]), actor(sender)), "undo execute");
-                return true;
-            }
-            if (args.length == 4 && args[0].equalsIgnoreCase("undo")
-                    && args[1].equalsIgnoreCase("execute")) {
-                requirePermission(sender, "landformcraft.undo.execute");
-                requirePlacementAvailable();
-                reportJournal(sender, placements.undo(uuid(args[2]), args[3], actor(sender)),
-                        () -> discardConsoleConfirmation("undo-execute-" + uuid(args[2])));
-                return true;
-            }
-            if (args.length >= 4 && args[0].equalsIgnoreCase("apply")
-                    && args[1].equalsIgnoreCase("recover")) {
-                handleRecovery(sender, args);
-                return true;
-            }
+            // Default surface is v2 (ADR 0035 D5). `/lfc <verb>` is an alias for `/lfc v2 <verb>`.
+            handleV2(sender, prependV2Root(args));
+            return true;
         } catch (IllegalArgumentException | LandformException exception) {
             sendFailure(sender, exception);
             return true;
         }
-        sendError(sender, "コマンドの形式が正しくありません。");
-        showHelp(sender, label);
-        return true;
+    }
+
+    /** Rewrites {@code <verb> …} to {@code v2 <verb> …} so the default surface routes through v2. */
+    private static String[] prependV2Root(String[] args) {
+        String[] rooted = new String[args.length + 1];
+        rooted[0] = V2CommandVerbV2.ROOT;
+        System.arraycopy(args, 0, rooted, 1, args.length);
+        return rooted;
     }
 
     @Override
@@ -307,38 +168,23 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     ) {
         refreshCompletionCaches();
         if (args.length == 1) {
+            String prefix = args[0].toLowerCase(Locale.ROOT);
             List<String> roots = new java.util.ArrayList<>();
+            // Maintained, version-neutral verbs.
             addIfAllowed(roots, sender, "landformcraft.help", "help");
             addIfAllowed(roots, sender, "landformcraft.version", "version");
             addIfAllowed(roots, sender, "landformcraft.doctor", "doctor");
             addIfAllowed(roots, sender, "landformcraft.doctor", "ops");
-            if (release2Placements != null && Release2CommandSecurityV2.isEligibleOperator(sender)
-                    && (sender.hasPermission("landformcraft.r2.plan")
-                    || sender.hasPermission("landformcraft.r2.confirm")
-                    || sender.hasPermission("landformcraft.r2.execute")
-                    || sender.hasPermission("landformcraft.r2.status")
-                    || sender.hasPermission("landformcraft.r2.undo")
-                    || sender.hasPermission("landformcraft.r2.recovery"))) {
-                roots.add("r2");
-            }
-            addIfAllowed(roots, sender, "landformcraft.request.list", "request");
-            addIfAllowed(roots, sender, "landformcraft.design.verify", "design");
-            addIfAllowed(roots, sender, "landformcraft.generate", "generate");
-            addIfAllowed(roots, sender, "landformcraft.job.status", "job");
-            addIfAllowed(roots, sender, "landformcraft.candidate.read", "candidate");
-            addIfAllowed(roots, sender, "landformcraft.export.verify", "export");
             addIfAllowed(roots, sender, "landformcraft.asset.read", "asset");
-            addIfAllowed(roots, sender, "landformcraft.cleanup", "cleanup");
             addIfAllowed(roots, sender, "landformcraft.selection", "selection");
-            if (sender.hasPermission("landformcraft.apply.plan")
-                    || sender.hasPermission("landformcraft.apply.status")
-                    || sender.hasPermission("landformcraft.recovery")) {
-                roots.add("apply");
+            // Default surface is v2 (ADR 0035 D5): offer the v2 verb tokens directly.
+            roots.addAll(V2CommandRouterV2.complete(
+                    new String[] {V2CommandVerbV2.ROOT, prefix},
+                    V2CommandVerbV2.Surface.PAPER, verb -> allowsV2Verb(sender, verb)));
+            // Explicit version prefixes.
+            if (anyV2VerbAllowed(sender)) {
+                roots.add(V2CommandVerbV2.ROOT);
             }
-            if (sender.hasPermission("landformcraft.undo.execute")) {
-                roots.add("undo");
-            }
-            String prefix = args[0].toLowerCase(Locale.ROOT);
             return roots.stream().filter(value -> value.startsWith(prefix)).distinct().sorted().toList();
         }
         Collection<String> worlds = Bukkit.getWorlds().stream().map(world -> world.getName()).toList();
@@ -348,38 +194,34 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                         Integer.toString(player.getLocation().getBlockY()),
                         Integer.toString(player.getLocation().getBlockZ())
                 ) : List.of("0", "0", "0");
-        if (args[0].equalsIgnoreCase("r2")) {
-            if (release2Placements == null || !Release2CommandSecurityV2.isEligibleOperator(sender)) {
-                return List.of();
-            }
-            List<String> allowedWorlds = worlds.stream()
-                    .filter(release2Placements::allowsWorld)
-                    .toList();
-            return LandformCraftSuggestions.completeRelease2(
-                    args,
-                    sender.hasPermission("landformcraft.r2.plan"),
-                    sender.hasPermission("landformcraft.r2.confirm"),
-                    sender.hasPermission("landformcraft.r2.execute"),
-                    sender.hasPermission("landformcraft.r2.status"),
-                    sender.hasPermission("landformcraft.r2.undo"),
-                    sender.hasPermission("landformcraft.r2.recovery"),
-                    placementIds,
-                    releaseDirectories,
-                    allowedWorlds,
-                    coordinates);
+        // Explicit v2, or the default surface (which is v2): route completion through the v2
+        // router. For the default surface, prepend the implicit v2 root.
+        boolean explicitV2Root = args[0].equalsIgnoreCase(V2CommandVerbV2.ROOT);
+        String[] v2Args = explicitV2Root ? args : prependV2Root(args);
+        List<String> verbs = V2CommandRouterV2.complete(
+                v2Args, V2CommandVerbV2.Surface.PAPER, verb -> allowsV2Verb(sender, verb));
+        if (!verbs.isEmpty()) {
+            return verbs;
         }
-        return LandformCraftSuggestions.complete(
-                args,
-                sender.hasPermission("landformcraft.selection"),
-                sender.hasPermission("landformcraft.apply.plan")
-                        || sender.hasPermission("landformcraft.apply.execute"),
-                sender.hasPermission("landformcraft.undo.plan")
-                        || sender.hasPermission("landformcraft.undo.execute"),
+        if (release2Placements == null || !Release2CommandSecurityV2.isEligibleOperator(sender)) {
+            return List.of();
+        }
+        List<String> allowedWorlds = worlds.stream()
+                .filter(release2Placements::allowsWorld)
+                .toList();
+        String[] placement = placementCompletionArguments(v2Args);
+        return placement.length == 0 ? List.of() : LandformCraftSuggestions.completeRelease2(
+                placement,
+                allowsV2Verb(sender, V2CommandVerbV2.PLACE_PLAN),
+                allowsV2Verb(sender, V2CommandVerbV2.PLACE_CONFIRM),
+                allowsV2Verb(sender, V2CommandVerbV2.PLACE_EXECUTE),
+                allowsV2Verb(sender, V2CommandVerbV2.STATUS),
+                allowsV2Verb(sender, V2CommandVerbV2.UNDO_PLAN),
+                allowsV2Verb(sender, V2CommandVerbV2.RECOVER_DIAGNOSE),
                 placementIds,
                 releaseDirectories,
-                worlds,
-                coordinates
-        );
+                allowedWorlds,
+                coordinates);
     }
 
     private void refreshCompletionCaches() {
@@ -388,14 +230,8 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         if (current > now || !nextCompletionRefresh.compareAndSet(current, now + TimeUnit.SECONDS.toNanos(10))) {
             return;
         }
-        if (placements != null) {
-            placements.placementIds()
-                    .thenAccept(ids -> ids.forEach(id -> placementIds.add(id.toString())))
-                    .exceptionally(failure -> null);
-            placements.releaseDirectories()
-                    .thenAccept(directories -> releaseDirectories = directories)
-                    .exceptionally(failure -> null);
-        }
+        // IDs are populated from plan/status responses. Filesystem discovery stays off the Paper
+        // main thread and is intentionally not required for correct command execution.
     }
 
     private void reportSelection(CommandSender sender, Player player) {
@@ -431,8 +267,8 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         sender.sendMessage(prefix("◆", NamedTextColor.AQUA)
                 .append(Component.text("LandformCraft version", NamedTextColor.AQUA)));
         sender.sendMessage(detail("Plugin", pluginVersion));
-        sender.sendMessage(detail("Generator", BlueprintCompiler.GENERATOR_VERSION));
-        sender.sendMessage(detail("Schema", "1"));
+        sender.sendMessage(detail("Generator", DiagnosticBlueprintCompilerV2.GENERATOR_VERSION));
+        sender.sendMessage(detail("Schema", "2"));
         sender.sendMessage(detail("Minecraft", "1.21.11"));
         sender.sendMessage(detail("Paper", Bukkit.getVersion()));
         sender.sendMessage(detail("WorldEdit / FAWE", worldEditStatus));
@@ -440,7 +276,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
 
     private void reportDoctor(CommandSender sender) {
         sendPending(sender, "read-only診断を実行しています…");
-        report(sender, workflow.io(() -> {
+        report(sender, executors.supplyIo(() -> {
             try {
                 return new DoctorService().inspect(dataRoot, "Paper " + Bukkit.getVersion());
             } catch (java.io.IOException exception) {
@@ -452,20 +288,16 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             sender.sendMessage(detail("WorldEdit / FAWE", worldEditStatus));
             sender.sendMessage(detail("Release 2 Undo path",
                     release2Placements != null && release2Placements.isRelease2Path()
-                            ? "available (/lfc r2 undo-plan|undo-execute)"
-                            : release2Undo != null && release2Undo.isRelease2Path()
-                            ? "available (PlacementUndoApplicationServiceV2)"
-                            : "v1 only (Release 2 service not injected)"));
+                            ? "available (/lfc undo plan|execute; explicit root: /lfc v2 undo …)"
+                            : "not injected"));
             sender.sendMessage(detail("Release 2 application path",
                     release2Placements != null && release2Placements.isRelease2Path()
-                            ? "available (explicit /lfc r2 lifecycle)"
+                            ? "available (default /lfc place lifecycle; explicit root: /lfc v2 place …)"
                             : "not injected"));
             sender.sendMessage(detail("Release 2 Recovery path",
                     release2Placements != null && release2Placements.isRelease2Path()
-                            ? "available (/lfc r2 recover-diagnose|recover-plan|recover-execute)"
-                            : release2Recovery != null && release2Recovery.isRelease2Path()
-                            ? "available (PlacementRecoveryApplicationServiceV2)"
-                            : "v1 only (Release 2 service not injected)"));
+                            ? "available (/lfc recover diagnose|plan|execute)"
+                            : "not injected"));
             sender.sendMessage(detail("Release 2 ops path",
                     release2Operations != null && release2Operations.isRelease2Path()
                             ? "available (OperationalOperationsServiceV2)"
@@ -481,215 +313,10 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         });
     }
 
-    private void handleRequest(CommandSender sender, String[] args) {
-        switch (args[1].toLowerCase(Locale.ROOT)) {
-            case "create" -> {
-                requirePermission(sender, "landformcraft.request.create");
-                requireLength(args, 3, "request create <request-id>");
-                reportRequest(sender, workflow.createRequest(args[2]));
-            }
-            case "bounds" -> {
-                requirePermission(sender, "landformcraft.request.edit");
-                if (args.length == 4 && args[2].equalsIgnoreCase("selection")) {
-                    requirePlacementAvailable();
-                    requirePlayer(sender, player -> selections.selection(player).thenCompose(bounds ->
-                            workflow.requestInfo(args[3]).thenCompose(current -> workflow.setBounds(
-                                    args[3], inclusive(bounds.minimumX(), bounds.maximumX()),
-                                    inclusive(bounds.minimumZ(), bounds.maximumZ()),
-                                    bounds.minimumY(), bounds.maximumY(),
-                                    Math.max(bounds.minimumY(), Math.min(bounds.maximumY(),
-                                            current.bounds().waterLevel()))
-                            ))).whenComplete((value, failure) -> dispatcher.run(() -> {
-                                if (failure != null) {
-                                    sendFailure(sender, failure);
-                                } else {
-                                    sendRequest(sender, value);
-                                }
-                            })));
-                } else {
-                    requireLength(args, 9,
-                            "request bounds <id> <minX> <minY> <minZ> <maxX> <maxY> <maxZ>");
-                    int minX = integer(args[3]);
-                    int minY = integer(args[4]);
-                    int minZ = integer(args[5]);
-                    int maxX = integer(args[6]);
-                    int maxY = integer(args[7]);
-                    int maxZ = integer(args[8]);
-                    reportRequest(sender, workflow.requestInfo(args[2]).thenCompose(current ->
-                            workflow.setBounds(args[2], inclusive(minX, maxX), inclusive(minZ, maxZ),
-                                    minY, maxY, Math.max(minY, Math.min(maxY, current.bounds().waterLevel())))));
-                }
-            }
-            case "prompt" -> {
-                requirePermission(sender, "landformcraft.request.edit");
-                requireLength(args, 3, "request prompt <request-id>");
-                requirePlayer(sender, player -> {
-                    prompts.put(player.getUniqueId(), new PromptSession(args[2], Instant.now().plus(Duration.ofMinutes(5))));
-                    sender.sendMessage(Component.text(
-                            "次のチャット1件をpromptとして保存します（5分で失効、cancelで取消）。秘密情報は入力しないでください。",
-                            NamedTextColor.YELLOW));
-                });
-            }
-            case "validate", "info" -> {
-                requirePermission(sender, "landformcraft.request.validate");
-                requireLength(args, 3, "request " + args[1] + " <request-id>");
-                reportRequest(sender, workflow.requestInfo(args[2]));
-            }
-            case "list" -> {
-                requirePermission(sender, "landformcraft.request.list");
-                requireLength(args, 2, "request list");
-                report(sender, workflow.requestList(), values -> values.forEach(value ->
-                        sender.sendMessage(detail("Request", value.requestId()))));
-            }
-            default -> throw new IllegalArgumentException("未知のrequest subcommandです: " + args[1]);
-        }
-    }
-
-    @EventHandler
-    public void onPromptChat(AsyncChatEvent event) {
-        PromptSession session = prompts.remove(event.getPlayer().getUniqueId());
-        if (session == null) {
-            return;
-        }
-        event.setCancelled(true);
-        if (!Instant.now().isBefore(session.expiresAt())) {
-            dispatcher.run(() -> sendWarning(event.getPlayer(), "prompt入力は期限切れです。"));
-            return;
-        }
-        String prompt = PlainTextComponentSerializer.plainText().serialize(event.message()).strip();
-        if (prompt.equalsIgnoreCase("cancel")) {
-            dispatcher.run(() -> sendWarning(event.getPlayer(), "prompt入力を取り消しました。"));
-            return;
-        }
-        workflow.setPrompt(session.requestId(), prompt).whenComplete((value, failure) ->
-                dispatcher.run(() -> {
-                    if (failure != null) {
-                        sendFailure(event.getPlayer(), failure);
-                    } else {
-                        sendRequest(event.getPlayer(), value);
-                    }
-                }));
-    }
-
-    private void handleDesign(CommandSender sender, String[] args) {
-        String operation = args[1].toLowerCase(Locale.ROOT);
-        if (operation.equals("create")) {
-            requirePermission(sender, "landformcraft.design.create");
-            requireLength(args, 5, "design create <request-id> <openai|anthropic> <model-id>");
-            UUID id = workflow.startDesign(args[2], args[3].toLowerCase(Locale.ROOT), args[4]);
-            sender.sendMessage(detail("Job ID", id.toString()));
-        } else if (operation.equals("import") || operation.equals("fixture")) {
-            requirePermission(sender, "landformcraft.design.import");
-            requireLength(args, 4, "design " + operation + " <request-id> <relative-json-path>");
-            UUID id = workflow.startDesign(args[2], operation, args[3]);
-            sender.sendMessage(detail("Job ID", id.toString()));
-        } else if (operation.equals("status")) {
-            requirePermission(sender, "landformcraft.job.status");
-            requireLength(args, 3, "design status <job-id>");
-            reportJob(sender, workflow.jobStatus(uuid(args[2])));
-        } else if (operation.equals("info") || operation.equals("verify")) {
-            requirePermission(sender, "landformcraft.design.verify");
-            requireLength(args, 3, "design " + operation + " <design-id>");
-            report(sender, workflow.designInfo(uuid(args[2])), value -> {
-                sender.sendMessage(detail("Design ID", value.audit().jobId().toString()));
-                sender.sendMessage(detail("Request", value.audit().requestId()));
-                sender.sendMessage(detail("Provider / model", value.audit().providerId() + " / "
-                        + value.audit().modelId()));
-                sender.sendMessage(detail("verified files", Integer.toString(value.verifiedFiles())));
-            });
-        } else {
-            throw new IllegalArgumentException("未知のdesign subcommandです: " + operation);
-        }
-    }
-
-    private void handleJob(CommandSender sender, String[] args) {
-        if (args[1].equalsIgnoreCase("status")) {
-            requirePermission(sender, "landformcraft.job.status");
-            reportJob(sender, workflow.jobStatus(uuid(args[2])));
-        } else if (args[1].equalsIgnoreCase("cancel")) {
-            requirePermission(sender, "landformcraft.job.cancel");
-            reportJob(sender, workflow.cancel(uuid(args[2])));
-        } else {
-            throw new IllegalArgumentException("jobはstatusまたはcancelです。");
-        }
-    }
-
-    private void handleCandidate(CommandSender sender, String[] args) {
-        requirePermission(sender, "landformcraft.candidate.read");
-        if (args[1].equalsIgnoreCase("list")) {
-            requireLength(args, 3, "candidate list <request-id>");
-            report(sender, workflow.candidates(args[2]), values -> values.forEach(value ->
-                    sender.sendMessage(detail("Candidate", value.toString()))));
-            return;
-        }
-        requireLength(args, 3, "candidate <info|preview|validate> <candidate-id>");
-        UUID id = uuid(args[2]);
-        if (!(args[1].equalsIgnoreCase("info") || args[1].equalsIgnoreCase("preview")
-                || args[1].equalsIgnoreCase("validate"))) {
-            throw new IllegalArgumentException("未知のcandidate subcommandです。");
-        }
-        CompletionStage<List<Path>> inspection = args[1].equalsIgnoreCase("preview")
-                ? workflow.candidatePreview(id)
-                : args[1].equalsIgnoreCase("validate")
-                ? workflow.candidateValidate(id) : workflow.candidateInfo(id);
-        report(sender, inspection, files -> {
-            sender.sendMessage(detail("Candidate", id.toString()));
-            sender.sendMessage(detail("candidate directory",
-                    dataRoot.resolve("candidates").resolve(id.toString()).toString()));
-            for (Path file : files) {
-                try {
-                    sender.sendMessage(detail(file.getFileName().toString(), Sha256.file(file)));
-                } catch (java.io.IOException exception) {
-                    sendFailure(sender, exception);
-                }
-            }
-        });
-    }
-
-    private void handleExport(CommandSender sender, String[] args) {
-        switch (args[1].toLowerCase(Locale.ROOT)) {
-            case "plan" -> {
-                requirePermission(sender, "landformcraft.export.plan");
-                requireLength(args, 3, "export plan <candidate-id>");
-                var prepared = workflow.planExport(uuid(args[2]), actor(sender));
-                sender.sendMessage(detail("Export plan ID", prepared.planId().toString()));
-                String command = ROOT + "export create " + prepared.planId() + " " + prepared.confirmationToken();
-                sender.sendMessage(confirmationDelivery(sender, "export-" + prepared.planId(), command));
-            }
-            case "create" -> {
-                requirePermission(sender, "landformcraft.export.execute");
-                requireLength(args, 4, "export create <export-plan-id> <token>");
-                sender.sendMessage(detail("Job ID", workflow.startExport(uuid(args[2]), args[3], actor(sender)).toString()));
-                discardConsoleConfirmation("export-" + uuid(args[2]));
-            }
-            case "status" -> {
-                requirePermission(sender, "landformcraft.job.status");
-                requireLength(args, 3, "export status <job-id>");
-                reportJob(sender, workflow.jobStatus(uuid(args[2])));
-            }
-            case "verify", "info" -> {
-                requirePermission(sender, "landformcraft.export.verify");
-                requireLength(args, 3, "export " + args[1] + " <request/release-id>");
-                report(sender, workflow.verifyRelease(args[2]), value -> {
-                    sender.sendMessage(detail("Release request", value.manifest().requestId()));
-                    sender.sendMessage(detail("verified files / tiles", value.verifiedFiles() + " / "
-                            + value.verifiedTiles()));
-                });
-            }
-            case "list" -> {
-                requirePermission(sender, "landformcraft.export.verify");
-                requireLength(args, 2, "export list");
-                report(sender, workflow.releases(), values -> values.forEach(value ->
-                        sender.sendMessage(detail("Release", value))));
-            }
-            default -> throw new IllegalArgumentException("未知のexport subcommandです: " + args[1]);
-        }
-    }
-
     private void handleAsset(CommandSender sender, String[] args) {
         boolean mutating = args[1].equalsIgnoreCase("import") || args[1].equalsIgnoreCase("remove");
         requirePermission(sender, mutating ? "landformcraft.asset.manage" : "landformcraft.asset.read");
-        report(sender, workflow.io(() -> {
+        report(sender, executors.supplyIo(() -> {
             try {
                 return switch (args[1].toLowerCase(Locale.ROOT)) {
                     case "list" -> assets.list();
@@ -715,36 +342,6 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         }), value -> sender.sendMessage(detail("Asset", value.toString())));
     }
 
-    private void handleCleanup(CommandSender sender, String[] args) {
-        if (args[1].equalsIgnoreCase("plan")) {
-            requirePermission(sender, "landformcraft.cleanup");
-            requireLength(args, 2, "cleanup plan");
-            report(sender, cleanup.plan(actor(sender)), prepared -> {
-                sender.sendMessage(detail("Cleanup plan", prepared.plan().planId().toString()));
-                sender.sendMessage(detail("placements / bytes", prepared.plan().entries().size() + " / "
-                        + prepared.plan().totalBytes()));
-                String command = ROOT + "cleanup execute " + prepared.plan().planId() + " "
-                        + prepared.confirmationToken();
-                sender.sendMessage(confirmationDelivery(
-                        sender, "cleanup-" + prepared.plan().planId(), command));
-            });
-        } else if (args[1].equalsIgnoreCase("execute")) {
-            requirePermission(sender, "landformcraft.cleanup");
-            requireLength(args, 4, "cleanup execute <plan-id> <token>");
-            report(sender, cleanup.execute(uuid(args[2]), args[3], actor(sender)), value -> {
-                sender.sendMessage(detail("deleted bytes", Long.toString(value.totalBytes())));
-                discardConsoleConfirmation("cleanup-" + uuid(args[2]));
-            });
-        } else if (args[1].equalsIgnoreCase("status")) {
-            requirePermission(sender, "landformcraft.cleanup");
-            requireLength(args, 2, "cleanup status");
-            report(sender, cleanup.status(), values -> sender.sendMessage(detail(
-                    "cleanup plans", Integer.toString(values.size()))));
-        } else {
-            throw new IllegalArgumentException("cleanupはplan、execute、statusです。");
-        }
-    }
-
     private void handleOps(CommandSender sender, String[] args) {
         requirePermission(sender, "landformcraft.doctor");
         if (release2Operations == null || !release2Operations.isRelease2Path()) {
@@ -752,11 +349,11 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         }
         String operation = args[1].toLowerCase(Locale.ROOT);
         if (operation.equals("metrics")) {
-            report(sender, workflow.io(() -> {
+            report(sender, executors.supplyIo(() -> {
                 try {
                     return release2Operations.captureMetrics(
                             OperationalMetricsCollectorV2.PlacementStageCountsV2.zeros(),
-                            0L, 0L, 0, actor(sender).canonical());
+                            0L, 0L, 0, actorOf(sender));
                 } catch (java.io.IOException exception) {
                     throw new java.io.UncheckedIOException(exception);
                 }
@@ -770,14 +367,14 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         if (operation.equals("diagnose")) {
             requireLength(args, 3, "ops diagnose <correlation-id>");
             UUID correlationId = uuid(args[2]);
-            report(sender, workflow.io(() -> {
+            report(sender, executors.supplyIo(() -> {
                 try {
                     boolean openai = System.getenv("OPENAI_API_KEY") != null
                             && !System.getenv("OPENAI_API_KEY").isBlank();
                     boolean anthropic = System.getenv("ANTHROPIC_API_KEY") != null
                             && !System.getenv("ANTHROPIC_API_KEY").isBlank();
                     return release2Operations.diagnose(
-                            correlationId, openai, anthropic, actor(sender).canonical());
+                            correlationId, openai, anthropic, actorOf(sender));
                 } catch (java.io.IOException exception) {
                     throw new java.io.UncheckedIOException(exception);
                 }
@@ -792,6 +389,305 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         throw new IllegalArgumentException("opsはmetrics、diagnoseです。");
     }
 
+    /**
+     * Official v2 command path (ADR 0035 D5, V2-12-03).
+     * Routing, arity, and permission nodes are shared with the CLI through {@link V2CommandRouterV2}.
+     */
+    private void handleV2(CommandSender sender, String[] args) {
+        V2CommandRouteV2 route = V2CommandRouterV2.route(args, V2CommandVerbV2.Surface.PAPER);
+        if (!route.accepted()) {
+            throw new IllegalArgumentException(route.errorCode().orElseThrow().name() + ": "
+                    + route.message() + " [v2CorrelationId=" + route.correlationId() + "]");
+        }
+        V2CommandVerbV2 verb = route.requireVerb();
+        requireV2Permission(sender, verb, route);
+        String[] tokens = route.arguments().toArray(String[]::new);
+        if (verb.placementOperation() != null) {
+            handleRelease2(sender, placementArguments(verb, tokens));
+            return;
+        }
+        if (v2Workflow == null) {
+            throw new IllegalStateException(V2CommandErrorCodeV2.V2_UNAVAILABLE.name()
+                    + ": the offline v2 workflow is not available on this runtime [v2CorrelationId="
+                    + route.correlationId() + "]");
+        }
+        switch (verb) {
+            case REQUEST_VALIDATE, REQUEST_INFO -> report(sender, v2Workflow.inspectRequest(tokens[3]),
+                    inspected -> reportMap(sender, route, inspected));
+            case DESIGN -> report(sender, v2Workflow.design(tokens[2], tokens[3], tokens[4]), artifacts -> {
+                sender.sendMessage(detail("requestId", artifacts.audit().requestId()));
+                sender.sendMessage(detail("provider", artifacts.audit().providerId()));
+                sender.sendMessage(detail("intent checksum", artifacts.audit().intentChecksum()));
+                sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+            });
+            case GENERATE, EXPORT -> report(sender, v2Workflow.export(
+                    tokens[2], tokens[3], tokens[5],
+                    V2WorkflowServiceV2.baseline(tokens[6], tokens[7], tokens[8]),
+                    verb == V2CommandVerbV2.EXPORT),
+                    result -> reportMap(sender, route, V2WorkflowServiceV2.summarize(result)));
+            case PREVIEW -> report(sender, v2Workflow.inspectPreviews(tokens[2]),
+                    previews -> reportMap(sender, route, previews));
+            case REQUEST_CREATE -> report(sender, v2Workflow.createRequest(tokens[3]),
+                    request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_BOUNDS -> report(sender, v2Workflow.setBounds(tokens[3],
+                    integer(tokens[4]), integer(tokens[5]), integer(tokens[6]),
+                    integer(tokens[7]), integer(tokens[8])),
+                    request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_CONSTRAINT_MAP -> report(sender, v2Workflow.setConstraintMap(tokens[3],
+                    tokens[4], tokens[5], tokens[6], integer(tokens[7]), integer(tokens[8])),
+                    request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_SELECTION -> applySelectionBounds(sender, route, tokens[3]);
+            case REQUEST_PROMPT -> beginV2PromptCapture(sender, route, tokens[3]);
+            case EXPORT_PLAN -> report(sender, v2Workflow.planExport(tokens[3], tokens[4], tokens[6],
+                    V2WorkflowServiceV2.baseline(tokens[7], tokens[8], tokens[9]), true, actorOf(sender)),
+                    prepared -> {
+                        sender.sendMessage(detail("Export plan ID", prepared.planId().toString()));
+                        sender.sendMessage(detail("releaseId", prepared.releaseId()));
+                        sender.sendMessage(detail("expires", prepared.expiresAt().toString()));
+                        sender.sendMessage(confirmationDelivery(sender,
+                                "v2-export-" + prepared.planId(),
+                                ROOT + "v2 export create " + prepared.planId() + " "
+                                        + prepared.confirmationToken()));
+                        sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+                    });
+            case EXPORT_CREATE -> report(sender,
+                    v2Workflow.createExport(tokens[3], tokens[4], actorOf(sender)), snapshot -> {
+                        reportJobSnapshot(sender, route, snapshot);
+                        discardConsoleConfirmation("v2-export-" + tokens[3]);
+                    });
+            case JOB_STATUS -> report(sender, v2Workflow.jobStatus(tokens[3]),
+                    snapshot -> reportJobSnapshot(sender, route, snapshot));
+            case JOB_CANCEL -> report(sender, v2Workflow.cancelJob(tokens[3]),
+                    snapshot -> reportJobSnapshot(sender, route, snapshot));
+            case JOB_LIST -> report(sender, v2Workflow.listJobs(), snapshots -> {
+                snapshots.forEach(snapshot -> sender.sendMessage(
+                        detail("Job", snapshot.jobId() + " " + snapshot.state().name())));
+                sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+            });
+            case CANDIDATE_LIST -> report(sender, v2Workflow.candidates(tokens[3]), snapshots -> {
+                snapshots.forEach(snapshot -> sender.sendMessage(
+                        detail("Candidate", snapshot.jobId() + " -> " + snapshot.releaseId())));
+                sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+            });
+            case CANDIDATE_INFO -> report(sender, v2Workflow.jobStatus(tokens[3]),
+                    snapshot -> reportJobSnapshot(sender, route, snapshot));
+            case RETENTION_PLAN, RETENTION_EXECUTE, RETENTION_STATUS -> handleV2Retention(sender, route, verb, tokens);
+            case REQUEST_LIST -> report(sender, v2Workflow.listRequests(), ids -> {
+                ids.forEach(id -> sender.sendMessage(detail("Request", id)));
+                sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+            });
+            default -> throw new IllegalStateException("unroutable v2 verb: " + verb);
+        }
+    }
+
+    /**
+     * Reports one authored v2 request (V2-12-08), including the workspace-relative argument the
+     * operator hands to {@code /lfc v2 design} and {@code /lfc v2 export}, so authoring and
+     * generation connect without anyone typing a filesystem path.
+     */
+    private void reportAuthoredRequest(
+            CommandSender sender, V2CommandRouteV2 route, GenerationRequestV2 request
+    ) {
+        sender.sendMessage(detail("requestId", request.requestId()));
+        sender.sendMessage(detail("bounds", request.bounds().width() + "x" + request.bounds().length()
+                + " y" + request.bounds().minY() + ".." + request.bounds().maxY()
+                + " water=" + request.bounds().waterLevel()));
+        sender.sendMessage(detail("constraint maps", Integer.toString(request.constraintMaps().size())));
+        sender.sendMessage(detail("argument", v2Workflow.requestArgument(request.requestId())));
+        sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+    }
+
+    /**
+     * Takes the request's horizontal and vertical extent from the operator's current WorldEdit
+     * selection. The stored water level is preserved (clamped into the new range), matching the v1
+     * {@code request bounds selection} behaviour.
+     */
+    private void applySelectionBounds(CommandSender sender, V2CommandRouteV2 route, String requestId) {
+        requirePlacementAvailable();
+        requirePlayer(sender, player -> selections.selection(player)
+                .thenCompose(bounds -> v2Workflow.setBoundsFromSelection(
+                        requestId,
+                        bounds.maximumX() - bounds.minimumX() + 1,
+                        bounds.maximumZ() - bounds.minimumZ() + 1,
+                        bounds.minimumY(),
+                        bounds.maximumY()))
+                .whenComplete((value, failure) -> dispatcher.run(() -> {
+                    if (failure != null) {
+                        sendFailure(sender, failure);
+                    } else {
+                        reportAuthoredRequest(sender, route, value);
+                    }
+                })));
+    }
+
+    /**
+     * Arms the chat capture that stores the operator's next message as the v2 prompt. The session
+     * expires and can be cancelled exactly like the v1 form; the store additionally refuses text that
+     * resembles a credential.
+     */
+    private void beginV2PromptCapture(CommandSender sender, V2CommandRouteV2 route, String requestId) {
+        requirePlayer(sender, player -> {
+            prompts.put(player.getUniqueId(), new PromptSession(
+                    requestId, Instant.now().plus(Duration.ofMinutes(5))));
+            sender.sendMessage(Component.text(
+                    "次のチャット1件をv2 requestのpromptとして保存します（5分で失効、cancelで取消）。"
+                            + "秘密情報は入力しないでください。", NamedTextColor.YELLOW));
+            sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+        });
+    }
+
+    @EventHandler
+    public void onPromptChat(AsyncChatEvent event) {
+        PromptSession session = prompts.remove(event.getPlayer().getUniqueId());
+        if (session == null) {
+            return;
+        }
+        event.setCancelled(true);
+        if (!Instant.now().isBefore(session.expiresAt())) {
+            dispatcher.run(() -> sendWarning(event.getPlayer(), "prompt入力は期限切れです。"));
+            return;
+        }
+        String prompt = PlainTextComponentSerializer.plainText().serialize(event.message()).strip();
+        if (prompt.equalsIgnoreCase("cancel")) {
+            dispatcher.run(() -> sendWarning(event.getPlayer(), "prompt入力を取り消しました。"));
+            return;
+        }
+        v2Workflow.setPrompt(session.requestId(), prompt).whenComplete((value, failure) ->
+                dispatcher.run(() -> {
+                    if (failure != null) {
+                        sendFailure(event.getPlayer(), failure);
+                    } else {
+                        sendPromptStored(event.getPlayer(), value);
+                    }
+                }));
+    }
+
+    /**
+     * Retention snapshot cleanup (V2-12-10), the v2 equivalent of the v1 {@code cleanup} verb. The
+     * placement's applied journal supplies both the plan and journal the retention service needs, so
+     * cleanup deletes only retention-window snapshot state through the recovery planner. Requires the
+     * Release 2 placement path; without it there is nothing to clean.
+     */
+    private void handleV2Retention(
+            CommandSender sender, V2CommandRouteV2 route, V2CommandVerbV2 verb, String[] tokens
+    ) {
+        if (release2Placements == null || !release2Placements.isRelease2Path()
+                || release2Operations == null || !release2Operations.isRelease2Path()) {
+            throw new IllegalStateException(V2CommandErrorCodeV2.V2_UNAVAILABLE.name()
+                    + ": Release 2 retention is unavailable on this runtime [v2CorrelationId="
+                    + route.correlationId() + "]");
+        }
+        UUID placementId = uuid(tokens[3]);
+        switch (verb) {
+            case RETENTION_STATUS -> report(sender, release2Placements.status(placementId), journal -> {
+                sender.sendMessage(detail("placementId", journal.plan().placementId().toString()));
+                sender.sendMessage(detail("state", journal.state().name()));
+                sender.sendMessage(detail("snapshot bytes", Long.toString(journal.snapshotBytesUsed())));
+                sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+            });
+            case RETENTION_PLAN -> report(sender, release2Placements.status(placementId)
+                    .thenApply(journal -> {
+                        try {
+                            return release2Operations.planRetention(
+                                    journal.plan(), journal, actorV2(sender), () -> false);
+                        } catch (java.io.IOException exception) {
+                            throw new java.io.UncheckedIOException(exception);
+                        }
+                    }), prepared -> {
+                        sender.sendMessage(detail("Retention plan ID", prepared.plan().planId().toString()));
+                        sender.sendMessage(detail("reclaimable bytes",
+                                Long.toString(prepared.recoveryPlan().totalBytes())));
+                        String command = ROOT + "v2 retention execute " + placementId + " "
+                                + prepared.plan().planId() + " " + prepared.confirmationToken();
+                        sender.sendMessage(confirmationDelivery(sender,
+                                "v2-retention-" + prepared.plan().planId(), command));
+                        sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+                    });
+            case RETENTION_EXECUTE -> {
+                UUID planId = uuid(tokens[4]);
+                String token = tokens[5];
+                report(sender, release2Placements.status(placementId)
+                        .thenApply(journal -> {
+                            try {
+                                return release2Operations.executeRetention(planId, token,
+                                        actorV2(sender), journal.plan(), journal, () -> false);
+                            } catch (java.io.IOException exception) {
+                                throw new java.io.UncheckedIOException(exception);
+                            }
+                        }), executed -> {
+                            sender.sendMessage(detail("Retention plan ID", executed.planId().toString()));
+                            sender.sendMessage(detail("executed", Boolean.toString(executed.executed())));
+                            discardConsoleConfirmation("v2-retention-" + planId);
+                            sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+                        });
+            }
+            default -> throw new IllegalStateException("not a retention verb: " + verb);
+        }
+    }
+
+    /** Reports one v2 export job snapshot (V2-12-09). Never echoes a confirmation token. */
+    private void reportJobSnapshot(
+            CommandSender sender, V2CommandRouteV2 route, ExportJobSnapshotV2 snapshot
+    ) {
+        sender.sendMessage(detail("Job ID", snapshot.jobId()));
+        sender.sendMessage(detail("requestId / releaseId",
+                snapshot.requestId() + " / " + snapshot.releaseId()));
+        sender.sendMessage(detail("kind / state", snapshot.kind().name() + " / " + snapshot.state().name()));
+        sender.sendMessage(detail("progress", snapshot.progressMillionths() + "/1000000"));
+        sender.sendMessage(detail("updatedAt", snapshot.updatedAt()));
+        sender.sendMessage(detail("message", snapshot.message()));
+        sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+    }
+
+    /** Stable actor string an export plan and its confirmation are bound to. */
+    private static String actorOf(CommandSender sender) {
+        if (sender instanceof Player player) {
+            return "PLAYER:" + player.getUniqueId();
+        }
+        if (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender) {
+            return "CONSOLE";
+        }
+        throw new IllegalArgumentException("この操作はPlayerまたはCONSOLE identityからだけ実行できます。");
+    }
+
+    /** Confirms a captured v2 prompt without echoing it back into chat. */
+    private void sendPromptStored(CommandSender sender, GenerationRequestV2 request) {
+        sender.sendMessage(detail("requestId", request.requestId()));
+        sender.sendMessage(detail("prompt length", Integer.toString(request.prompt().length())));
+    }
+
+    private void reportMap(
+            CommandSender sender, V2CommandRouteV2 route, java.util.Map<String, Object> values
+    ) {
+        values.forEach((key, value) -> sender.sendMessage(detail(key, String.valueOf(value))));
+        sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+    }
+
+    /**
+     * Rebuilds the {@code v2 <operation> ...} argument vector {@link #handleRelease2} still consumes,
+     * so the placement lifecycle keeps exactly one implementation across both command spellings.
+     */
+    private static String[] placementArguments(V2CommandVerbV2 verb, String[] canonical) {
+        int skip = verb.operation() == null ? 2 : 3;
+        String[] placement = new String[canonical.length - skip + 2];
+        placement[0] = V2CommandVerbV2.ROOT;
+        placement[1] = verb.placementOperation();
+        System.arraycopy(canonical, skip, placement, 2, canonical.length - skip);
+        return placement;
+    }
+
+    /** Requires the canonical permission node introduced by ADR 0035 D4. */
+    private static void requireV2Permission(
+            CommandSender sender, V2CommandVerbV2 verb, V2CommandRouteV2 route
+    ) {
+        if (sender.hasPermission(verb.permission())) {
+            return;
+        }
+        throw new IllegalArgumentException(V2CommandErrorCodeV2.V2_PERMISSION_DENIED.name()
+                + ": 権限がありません: " + verb.permission()
+                + " [v2CorrelationId=" + route.correlationId() + "]");
+    }
+
     private void handleRelease2(CommandSender sender, String[] args) {
         Release2CommandSecurityV2.requireOperator(sender);
         if (release2Placements == null || !release2Placements.isRelease2Path()) {
@@ -800,8 +696,8 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         String operation = args[1].toLowerCase(Locale.ROOT);
         switch (operation) {
             case "plan" -> {
-                requirePermission(sender, "landformcraft.r2.plan");
-                requireLength(args, 7, "r2 plan <release-path> <world> <x> <y> <z>");
+                requirePermission(sender, "landformcraft.v2.plan");
+                requireLength(args, 7, "v2 plan <release-path> <world> <x> <y> <z>");
                 report(sender, release2Placements.plan(
                         args[2], args[3], integer(args[4]), integer(args[5]), integer(args[6]),
                         actorV2(sender)), prepared -> {
@@ -816,28 +712,28 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                     mirrorOperatorMessage(sender, idLine);
                     mirrorOperatorMessage(sender, stateLine);
                     mirrorOperatorMessage(sender, effectLine);
-                    String next = ROOT + "r2 confirm " + id + " " + prepared.confirmationToken();
-                    sender.sendMessage(confirmationDelivery(sender, "r2-confirm-" + id, next));
+                    String next = ROOT + "v2 place confirm " + id + " " + prepared.confirmationToken();
+                    sender.sendMessage(confirmationDelivery(sender, "v2-confirm-" + id, next));
                 });
             }
             case "confirm" -> {
-                requirePermission(sender, "landformcraft.r2.confirm");
-                requireLength(args, 4, "r2 confirm <placement-id> <token>");
+                requirePermission(sender, "landformcraft.v2.confirm");
+                requireLength(args, 4, "v2 confirm <placement-id> <token>");
                 report(sender, release2Placements.confirm(uuid(args[2]), args[3], actorV2(sender)), confirmed -> {
-                    discardConsoleConfirmation("r2-confirm-" + uuid(args[2]));
+                    discardConsoleConfirmation("v2-confirm-" + uuid(args[2]));
                     Component stateLine = detail("state", confirmed.journal().state().name());
                     sender.sendMessage(stateLine);
                     mirrorOperatorMessage(sender, stateLine);
                     Component nextLine = Component.text(
-                            ROOT + "r2 execute " + args[2], NamedTextColor.YELLOW)
-                            .clickEvent(ClickEvent.suggestCommand(ROOT + "r2 execute " + args[2]));
+                            ROOT + "v2 place execute " + args[2], NamedTextColor.YELLOW)
+                            .clickEvent(ClickEvent.suggestCommand(ROOT + "v2 place execute " + args[2]));
                     sender.sendMessage(nextLine);
                     mirrorOperatorMessage(sender, nextLine);
                 });
             }
             case "execute" -> {
-                requirePermission(sender, "landformcraft.r2.execute");
-                requireLength(args, 3, "r2 execute <placement-id>");
+                requirePermission(sender, "landformcraft.v2.execute");
+                requireLength(args, 3, "v2 execute <placement-id>");
                 report(sender, release2Placements.execute(uuid(args[2]), actorV2(sender)), executed -> {
                     Component stateLine = detail("state", executed.journal().state().name());
                     Component outcomeLine = detail("outcome", executed.outcome());
@@ -853,8 +749,8 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 });
             }
             case "status" -> {
-                requirePermission(sender, "landformcraft.r2.status");
-                requireLength(args, 3, "r2 status <placement-id>");
+                requirePermission(sender, "landformcraft.v2.status");
+                requireLength(args, 3, "v2 status <placement-id>");
                 report(sender, release2Placements.status(uuid(args[2])), journal -> {
                     Component idLine = detail("Release 2 Placement ID",
                             journal.plan().placementId().toString());
@@ -869,38 +765,38 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 });
             }
             case "undo-plan" -> {
-                requirePermission(sender, "landformcraft.r2.undo");
-                requireLength(args, 3, "r2 undo-plan <placement-id>");
+                requirePermission(sender, "landformcraft.v2.undo");
+                requireLength(args, 3, "v2 undo-plan <placement-id>");
                 report(sender, release2Placements.prepareUndo(uuid(args[2]), actorV2(sender)), prepared -> {
-                    String next = ROOT + "r2 undo-execute " + args[2] + " " + prepared.plaintextToken();
+                    String next = ROOT + "v2 undo execute " + args[2] + " " + prepared.plaintextToken();
                     Component stateLine = detail("state", prepared.preparedJournal().state().name());
                     sender.sendMessage(stateLine);
                     mirrorOperatorMessage(sender, stateLine);
-                    sender.sendMessage(confirmationDelivery(sender, "r2-undo-" + uuid(args[2]), next));
+                    sender.sendMessage(confirmationDelivery(sender, "v2-undo-" + uuid(args[2]), next));
                 });
             }
             case "undo-execute" -> {
-                requirePermission(sender, "landformcraft.r2.undo");
-                requireLength(args, 4, "r2 undo-execute <placement-id> <token>");
+                requirePermission(sender, "landformcraft.v2.undo");
+                requireLength(args, 4, "v2 undo-execute <placement-id> <token>");
                 report(sender, release2Placements.executeUndo(
                         uuid(args[2]), args[3], actorV2(sender)), undone -> {
-                    discardConsoleConfirmation("r2-undo-" + uuid(args[2]));
+                    discardConsoleConfirmation("v2-undo-" + uuid(args[2]));
                     Component stateLine = detail("state", undone.undoneJournal().state().name());
                     sender.sendMessage(stateLine);
                     mirrorOperatorMessage(sender, stateLine);
                 });
             }
             case "recover-diagnose" -> {
-                requirePermission(sender, "landformcraft.r2.recovery");
-                requireLength(args, 3, "r2 recover-diagnose <placement-id>");
+                requirePermission(sender, "landformcraft.v2.recovery");
+                requireLength(args, 3, "v2 recover-diagnose <placement-id>");
                 report(sender, release2Placements.diagnoseRecovery(uuid(args[2])), diagnosis -> {
                     sender.sendMessage(detail("classification", diagnosis.classification().name()));
                     diagnosis.findings().forEach(finding -> sender.sendMessage(detail("finding", finding)));
                 });
             }
             case "recover-plan" -> {
-                requirePermission(sender, "landformcraft.r2.recovery");
-                requireLength(args, 4, "r2 recover-plan <rollback|accept> <placement-id>");
+                requirePermission(sender, "landformcraft.v2.recovery");
+                requireLength(args, 4, "v2 recover-plan <rollback|accept> <placement-id>");
                 var action = switch (args[2].toLowerCase(Locale.ROOT)) {
                     case "rollback" -> com.github.nankotsu029.landformcraft.model.v2.placement
                             .PlacementRecoveryActionV2.ROLLBACK;
@@ -910,30 +806,30 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 };
                 report(sender, release2Placements.prepareRecovery(
                         uuid(args[3]), action, actorV2(sender)), prepared -> {
-                    String next = ROOT + "r2 recover-execute " + args[2].toLowerCase(Locale.ROOT)
+                    String next = ROOT + "v2 recover execute " + args[2].toLowerCase(Locale.ROOT)
                             + " " + args[3] + " " + prepared.plaintextToken();
                     sender.sendMessage(detail("classification",
                             prepared.recoveryPlan().classification().name()));
                     sender.sendMessage(confirmationDelivery(sender,
-                            "r2-recover-" + args[2].toLowerCase(Locale.ROOT) + "-" + uuid(args[3]),
+                            "v2-recover-" + args[2].toLowerCase(Locale.ROOT) + "-" + uuid(args[3]),
                             next));
                 });
             }
             case "recover-execute" -> {
-                requirePermission(sender, "landformcraft.r2.recovery");
+                requirePermission(sender, "landformcraft.v2.recovery");
                 requireLength(args, 5,
-                        "r2 recover-execute <rollback|accept> <placement-id> <token>");
+                        "v2 recover-execute <rollback|accept> <placement-id> <token>");
                 if (args[2].equalsIgnoreCase("rollback")) {
                     report(sender, release2Placements.executeRecoveryRollback(
                             uuid(args[3]), args[4], actorV2(sender)), rolledBack -> {
-                        discardConsoleConfirmation("r2-recover-rollback-" + uuid(args[3]));
+                        discardConsoleConfirmation("v2-recover-rollback-" + uuid(args[3]));
                         sender.sendMessage(detail("state",
                                 rolledBack.rolledBackJournal().state().name()));
                     });
                 } else if (args[2].equalsIgnoreCase("accept")) {
                     report(sender, release2Placements.executeRecoveryAccept(
                             uuid(args[3]), args[4], actorV2(sender)), accepted -> {
-                        discardConsoleConfirmation("r2-recover-accept-" + uuid(args[3]));
+                        discardConsoleConfirmation("v2-recover-accept-" + uuid(args[3]));
                         sender.sendMessage(detail("state",
                                 accepted.acceptedJournal().state().name()));
                     });
@@ -942,7 +838,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 }
             }
             default -> throw new IllegalArgumentException(
-                    "r2はplan、confirm、execute、status、undo-plan、undo-execute、"
+                    "v2はplan、confirm、execute、status、undo-plan、undo-execute、"
                             + "recover-diagnose、recover-plan、recover-executeです。");
         }
     }
@@ -950,60 +846,6 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     private static com.github.nankotsu029.landformcraft.model.v2.placement.PlacementPlanV2.PlacementActorV2
             actorV2(CommandSender sender) {
         return Release2CommandSecurityV2.actor(sender);
-    }
-
-    private void handleRecovery(CommandSender sender, String[] args) {
-        requirePermission(sender, "landformcraft.recovery");
-        requirePlacementAvailable();
-        String operation = args[2].toLowerCase(Locale.ROOT);
-        if (operation.equals("status")) {
-            requireLength(args, 4, "apply recover status <placement-id>");
-            reportJournal(sender, placements.status(uuid(args[3])));
-        } else if (operation.equals("diagnose")) {
-            requireLength(args, 4, "apply recover diagnose <placement-id>");
-            report(sender, placements.diagnoseRecovery(uuid(args[3]), actor(sender)), value -> {
-                sender.sendMessage(detail("classification", value.report().classification().name()));
-                value.report().tileFindings().forEach(issue -> sendWarning(sender, issue));
-                if (!value.confirmationToken().isEmpty()) {
-                    String next = value.action() == ConfirmationAction.RECOVERY_ACCEPT ? "accept" : "rollback";
-                    String command = ROOT + "apply recover " + next + " " + args[3] + " "
-                            + value.confirmationToken();
-                    sender.sendMessage(confirmationDelivery(sender,
-                            "apply-recover-" + next + "-" + uuid(args[3]), command));
-                }
-            });
-        } else if (operation.equals("rollback") || operation.equals("accept")) {
-            requireLength(args, 5, "apply recover " + operation + " <placement-id> <token>");
-            reportJournal(sender, operation.equals("rollback")
-                    ? placements.recoverRollback(uuid(args[3]), args[4], actor(sender))
-                    : placements.recoverAccept(uuid(args[3]), args[4], actor(sender)),
-                    () -> discardConsoleConfirmation(
-                            "apply-recover-" + operation + "-" + uuid(args[3])));
-        } else {
-            throw new IllegalArgumentException("未知のrecovery操作です。");
-        }
-    }
-
-    private void reportRequest(CommandSender sender,
-                               CompletionStage<com.github.nankotsu029.landformcraft.model.GenerationRequest> stage) {
-        report(sender, stage, value -> sendRequest(sender, value));
-    }
-
-    private static void sendRequest(CommandSender sender,
-                                    com.github.nankotsu029.landformcraft.model.GenerationRequest value) {
-        sender.sendMessage(detail("Request", value.requestId()));
-        sender.sendMessage(detail("bounds", value.bounds().width() + " × " + value.bounds().length()
-                + ", Y " + value.bounds().minY() + ".." + value.bounds().maxY()));
-        sender.sendMessage(detail("images", Integer.toString(value.images().size())));
-    }
-
-    private void reportJob(CommandSender sender,
-                           CompletionStage<com.github.nankotsu029.landformcraft.model.GenerationJobSnapshot> stage) {
-        report(sender, stage, value -> {
-            sender.sendMessage(detail("Job ID", value.jobId().toString()));
-            sender.sendMessage(detail("stage / progress", value.stage() + " / " + value.progress()));
-            sender.sendMessage(detail("message", value.message()));
-        });
     }
 
     private <T> void report(CommandSender sender, CompletionStage<T> stage, java.util.function.Consumer<T> success) {
@@ -1064,116 +906,38 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         mirrorOperatorText(sender, PlainTextComponentSerializer.plainText().serialize(message));
     }
 
-    private void reportPrepared(
-            CommandSender sender,
-            CompletionStage<PreparedPlacement> stage,
-            String nextCommand
-    ) {
-        sendPending(sender, "配置計画を検証しています…");
-        stage.whenComplete((prepared, failure) -> dispatcher.run(() -> {
-            if (failure != null) {
-                sendFailure(sender, failure);
-                return;
-            }
-            UUID id = prepared.journal().plan().placementId();
-            placementIds.add(id.toString());
-            boolean undo = prepared.journal().confirmationAction() == ConfirmationAction.UNDO;
-            sender.sendMessage(prefix("✔", NamedTextColor.GREEN).append(Component.text(
-                    undo ? "Undoの準備が完了しました。" : "配置計画の検証が完了しました。",
-                    NamedTextColor.GREEN
-            )));
-            sender.sendMessage(detail("Placement ID", id.toString()));
-            sender.sendMessage(detail("reserved bytes", Long.toString(prepared.journal().reservedBytes())));
-            sender.sendMessage(detail("actor", prepared.journal().confirmationActor().canonical()));
-            sender.sendMessage(detail("inclusive bounds", coordinate(
-                    prepared.journal().plan().minimumX(), prepared.journal().plan().minimumY(),
-                    prepared.journal().plan().minimumZ()) + " .. " + coordinate(
-                    prepared.journal().plan().maximumX(), prepared.journal().plan().maximumY(),
-                    prepared.journal().plan().maximumZ())));
-            sender.sendMessage(Component.text("  ワールドはまだ変更されていません。確認期限は10分です。",
-                    NamedTextColor.WHITE));
-            String confirmation = ROOT + nextCommand + " " + id + " " + prepared.confirmationToken();
-            if (sender instanceof Player) {
-                sender.sendMessage(Component.text("  実行候補: ", NamedTextColor.GRAY)
-                        .append(Component.text(confirmation, NamedTextColor.YELLOW)
-                                .decorate(TextDecoration.UNDERLINED)
-                                .clickEvent(ClickEvent.suggestCommand(confirmation))
-                                .hoverEvent(HoverEvent.showText(Component.text(
-                                        "クリックしてチャット入力欄へコピー（自動実行はしません）",
-                                        NamedTextColor.AQUA
-                                )))));
-            } else {
-                sender.sendMessage(Component.text("  実行候補: ", NamedTextColor.GRAY)
-                        .append(confirmationDelivery(sender,
-                                nextCommand.replace(' ', '-') + "-" + id, confirmation)));
-            }
-        }));
-    }
-
-    private void reportJournal(CommandSender sender, CompletionStage<PlacementJournal> stage) {
-        reportJournal(sender, stage, () -> { });
-    }
-
-    private void reportJournal(
-            CommandSender sender,
-            CompletionStage<PlacementJournal> stage,
-            Runnable onSuccess
-    ) {
-        sendPending(sender, "Placementの状態を更新しています…");
-        stage.whenComplete((journal, failure) -> dispatcher.run(() -> {
-            if (failure != null) {
-                sendFailure(sender, failure);
-                return;
-            }
-            onSuccess.run();
-            placementIds.add(journal.plan().placementId().toString());
-            NamedTextColor color = journal.state() == PlacementState.RECOVERY_REQUIRED
-                    ? NamedTextColor.RED
-                    : journal.state() == PlacementState.APPLIED || journal.state() == PlacementState.UNDONE
-                    ? NamedTextColor.GREEN : NamedTextColor.AQUA;
-            sender.sendMessage(prefix("✔", color).append(Component.text(
-                    "Placement: " + stateLabel(journal.state()), color
-            )));
-            sender.sendMessage(detail("Placement ID", journal.plan().placementId().toString()));
-            sender.sendMessage(detail("詳細", journal.message()));
-        }));
-    }
-
     private void showHelp(CommandSender sender, String label) {
         sender.sendMessage(prefix("◆", NamedTextColor.AQUA)
                 .append(Component.text("コマンド一覧", NamedTextColor.AQUA)));
-        helpSection(sender, "確認");
+        helpSection(sender, "確認（version中立）");
         help(sender, "/" + label + " selection", "WorldEditの選択範囲を表示");
-        help(sender, "/" + label + " version | doctor | ops …", "version表示／read-only診断／運用metrics");
-        helpSection(sender, "設計・生成");
-        help(sender, "/" + label + " request …", "request作成・範囲・prompt・検証・一覧");
-        help(sender, "/" + label + " design … | generate <design-id> | job …", "設計と非同期生成");
-        help(sender, "/" + label + " candidate … | export …", "候補確認とRelease作成・検証");
-        helpSection(sender, "配置・復旧");
-        help(sender, "/" + label + " apply plan <release> <world> <x> <y> <z>", "配置を検証（変更なし）");
-        help(sender, "/" + label + " apply execute <id> <token>", "確認済み配置を実行");
-        help(sender, "/" + label + " apply status <id>", "配置状態を表示");
-        help(sender, "/" + label + " apply undo <id>", "Undoを準備（変更なし）");
-        help(sender, "/" + label + " undo execute <id> <token>", "確認済みUndoを実行");
-        help(sender, "/" + label + " apply recover … | cleanup …", "復旧診断／snapshot cleanup");
+        help(sender, "/" + label + " version | doctor | ops … | asset …",
+                "version表示／read-only診断／運用metrics／asset管理");
+        helpSection(sender, "設計・生成（既定v2）");
+        if (v2Workflow != null) {
+            help(sender, "/" + label + " request create|bounds|selection|constraint-map|prompt|list …",
+                    "v2 requestを作成・編集・列挙");
+            help(sender, "/" + label + " request validate|info <request-v2.json>",
+                    "v2 requestを厳密に検証");
+            help(sender, "/" + label + " design <import|fixture|openai|anthropic> …",
+                    "v2 Design Packageを作成");
+            help(sender, "/" + label + " generate|export <request> <intent> <exports-root> <release-id> "
+                    + "<land|water> <land-y> <water-y>", "Release 2を公開（exportはZIP付き）");
+            help(sender, "/" + label + " export plan|create … | job … | candidate …",
+                    "確認付き非同期exportとjob／candidate操作");
+            help(sender, "/" + label + " preview <release>", "検証済みReleaseのpreview indexを表示");
+        }
         if (release2Placements != null && release2Placements.isRelease2Path()) {
-            help(sender, "/" + label + " r2 plan|confirm|execute|status …",
-                    "Release 2専用の配置lifecycle（v1と明示分離）");
-            help(sender, "/" + label + " r2 undo-plan|undo-execute …",
-                    "Release 2 operation-bound Undo");
-            help(sender, "/" + label + " r2 recover-diagnose|recover-plan|recover-execute …",
+            helpSection(sender, "配置・復旧（既定v2）");
+            help(sender, "/" + label + " place plan|confirm|execute …",
+                    "Release 2の配置lifecycle");
+            help(sender, "/" + label + " status <id> | undo plan|execute …",
+                    "Release 2の状態確認とoperation-bound Undo");
+            help(sender, "/" + label + " recover diagnose|plan|execute … | retention …",
                     "Release 2の保守的Recovery");
         }
-        if (release2Undo != null && release2Undo.isRelease2Path()) {
-            sender.sendMessage(Component.text(
-                    "  Release 2 Undoは PaperPlacementUndoServiceV2（isRelease2Path）経由です。",
-                    NamedTextColor.GRAY));
-        }
-        if (release2Recovery != null && release2Recovery.isRelease2Path()) {
-            sender.sendMessage(Component.text(
-                    "  Release 2 復旧は PaperPlacementRecoveryServiceV2（isRelease2Path）経由です。",
-                    NamedTextColor.GRAY));
-        }
+        helpSection(sender, "明示root");
+        help(sender, "/" + label + " v2 <verb> …", "既定v2経路の恒久的な明示形");
         if (release2Operations != null && release2Operations.isRelease2Path()) {
             sender.sendMessage(Component.text(
                     "  Release 2 opsは PaperOperationalOperationsServiceV2（metrics／diagnose）経由です。",
@@ -1241,7 +1005,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     }
 
     private void requirePlacementAvailable() {
-        if (placements == null || selections == null) {
+        if (release2Placements == null || selections == null) {
             throw new LandformException(LandformErrorCode.CONFIG_INVALID,
                     "WorldEdit / FAWE placement integration is unavailable.", "paper-placement", "",
                     "integration", "Enable exactly one supported WorldEdit implementation and restart Paper.");
@@ -1260,16 +1024,6 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             throw new IllegalArgumentException("選択範囲は各水平軸1..1000である必要があります。");
         }
         return Math.toIntExact(value);
-    }
-
-    private static ActorIdentity actor(CommandSender sender) {
-        if (sender instanceof Player player) {
-            return ActorIdentity.player(player.getUniqueId());
-        }
-        if (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender) {
-            return ActorIdentity.console();
-        }
-        throw new IllegalArgumentException("この操作はPlayerまたはCONSOLE identityからだけ実行できます。");
     }
 
     private static void requirePlayer(CommandSender sender, java.util.function.Consumer<Player> action) {
@@ -1291,6 +1045,50 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         if (!sender.hasPermission(permission)) {
             throw new IllegalArgumentException("権限がありません: " + permission);
         }
+    }
+
+    private static boolean allowsV2Verb(CommandSender sender, V2CommandVerbV2 verb) {
+        return sender.hasPermission(verb.permission());
+    }
+
+    private boolean anyV2VerbAllowed(CommandSender sender) {
+        for (V2CommandVerbV2 verb : V2CommandVerbV2.values()) {
+            if (verb.surface() == V2CommandVerbV2.Surface.PAPER
+                    && (release2Placements == null
+                        || !Release2CommandSecurityV2.isEligibleOperator(sender))) {
+                continue;
+            }
+            if (verb.surface() != V2CommandVerbV2.Surface.PAPER && v2Workflow == null) {
+                continue;
+            }
+            if (allowsV2Verb(sender, verb)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Maps a partially typed canonical {@code v2 ...} argument vector onto the placement
+     * {@code v2 <operation> ...} shape so the existing argument-level suggester keeps working.
+     * Returns an empty array when the tokens do not (yet) name a placement verb.
+     */
+    private static String[] placementCompletionArguments(String[] args) {
+        if (args.length < 2) return new String[0];
+        String verb = args[1].toLowerCase(Locale.ROOT);
+        for (V2CommandVerbV2 candidate : V2CommandVerbV2.values()) {
+            if (candidate.placementOperation() == null || !candidate.verb().equals(verb)) continue;
+            int skip = candidate.operation() == null ? 2 : 3;
+            if (candidate.operation() != null
+                    && (args.length < 3 || !args[2].equalsIgnoreCase(candidate.operation()))) {
+                continue;
+            }
+            if (args.length < skip) return new String[0];
+            String[] placement = new String[args.length - skip + 2];
+            placement[0] = V2CommandVerbV2.ROOT;
+            placement[1] = candidate.placementOperation();
+            System.arraycopy(args, skip, placement, 2, args.length - skip);
+            return placement;
+        }
+        return new String[0];
     }
 
     private static void addIfAllowed(
@@ -1327,17 +1125,4 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     }
 
     private record PromptSession(String requestId, Instant expiresAt) { }
-
-    private static String stateLabel(PlacementState state) {
-        return switch (state) {
-            case PLANNED -> "配置待ち";
-            case APPLYING -> "配置中";
-            case APPLIED -> "配置完了";
-            case ROLLING_BACK -> "ロールバック中";
-            case ROLLED_BACK -> "ロールバック完了";
-            case UNDOING -> "Undo中";
-            case UNDONE -> "Undo完了";
-            case RECOVERY_REQUIRED -> "手動復旧が必要";
-        };
-    }
 }

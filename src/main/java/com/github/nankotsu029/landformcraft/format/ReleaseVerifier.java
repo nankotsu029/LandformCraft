@@ -220,7 +220,7 @@ public final class ReleaseVerifier {
             return new ReleaseVerification(zip, verification.manifest(),
                     verification.verifiedFiles(), verification.verifiedTiles());
         } finally {
-            deleteTree(temporary);
+            FileTreeOperations.deleteTree(temporary);
         }
     }
 
@@ -357,29 +357,4 @@ public final class ReleaseVerifier {
         return path;
     }
 
-    public static void deleteTree(Path root) throws IOException {
-        if (!Files.exists(root)) {
-            return;
-        }
-        List<Path> paths = new ArrayList<>();
-        try (var stream = Files.walk(root)) {
-            stream.forEach(paths::add);
-        }
-        paths.sort(java.util.Comparator.reverseOrder());
-        IOException failure = null;
-        for (Path path : paths) {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException exception) {
-                if (failure == null) {
-                    failure = exception;
-                } else {
-                    failure.addSuppressed(exception);
-                }
-            }
-        }
-        if (failure != null) {
-            throw failure;
-        }
-    }
 }

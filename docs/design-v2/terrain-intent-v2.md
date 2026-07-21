@@ -200,7 +200,7 @@ Constraint
 
 ### 8.1 Beach + breakwater + rocky cape
 
-この例は既存 [Azure Coast request](../../examples/azure-coast/request.yml) の400×400、water Y=50、max Y=64を前提とする。幅や高さのhard rangeはそのbounds内で実現可能な値にしている。港口endpointの中心間は0.0875×400=35 blocksで、両armのcrest幅7 blocksを差し引く `CLEAR_EDGE_TO_EDGE` は28 blocksになる。
+この例は既存 [Azure Coast request](../../src/main/resources/legacy/v1/fixtures/azure-coast/request.yml) の400×400、water Y=50、max Y=64を前提とする。幅や高さのhard rangeはそのbounds内で実現可能な値にしている。港口endpointの中心間は0.0875×400=35 blocksで、両armのcrest幅7 blocksを差し引く `CLEAR_EDGE_TO_EDGE` は28 blocksになる。
 
 ```json
 {

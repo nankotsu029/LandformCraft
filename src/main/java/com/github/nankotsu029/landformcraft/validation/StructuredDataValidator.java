@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Validates already parsed input against bundled immutable Draft 2020-12 schemas. */
@@ -164,8 +165,32 @@ public final class StructuredDataValidator {
             "operational-audit-event-v2.schema.json",
             "release-2-retention-cleanup-plan-v2.schema.json",
             "feature-support-catalog-v2.schema.json",
+            "generation-job-v2.schema.json",
+            "migration-report-v2.schema.json",
             "world-blueprint-v2.schema.json"
     );
+    private static final Set<String> LEGACY_V1_SCHEMAS = Set.of(
+            "terrain-intent.schema.json",
+            "world-blueprint.schema.json",
+            "generation-request.schema.json",
+            "generation-job.schema.json",
+            "design-audit.schema.json",
+            "export-manifest.schema.json",
+            "placement-journal.schema.json",
+            "placement-safety-state.schema.json",
+            "snapshot-cleanup-plan.schema.json",
+            "structure-placements.schema.json"
+    );
+
+    /**
+     * Isolated resource root for v1 contracts (ADR 0035 D2b, R7).
+     *
+     * <p>{@code V2-12-06} removes the v1 schemas from the active {@code schemas/} inventory and keeps
+     * an immutable copy here so the migration-only readers can still strict-read existing user
+     * assets from the packaged JAR alone. The copy is staged by {@code V2-12-04} so the migration
+     * path already resolves against it, and this loader prefers whichever copy exists.</p>
+     */
+    private static final String LEGACY_V1_CONTRACT_ROOT = "/legacy/v1/contracts/";
 
     private final SchemaRegistry registry;
     private final Map<String, Schema> schemas = new ConcurrentHashMap<>();
@@ -181,9 +206,11 @@ public final class StructuredDataValidator {
         );
     }
 
-    /** File names of every schema bundled into the JAR, so inventory tests can compare against disk. */
+    /** Active public schema inventory. Legacy contracts are intentionally excluded (ADR 0035 R7). */
     public static List<String> bundledSchemaFiles() {
-        return BUNDLED_SCHEMAS;
+        return BUNDLED_SCHEMAS.stream()
+                .filter(schema -> !LEGACY_V1_SCHEMAS.contains(schema))
+                .toList();
     }
 
     public void validate(String schemaFile, String documentName, JsonNode document) {
@@ -225,12 +252,20 @@ public final class StructuredDataValidator {
     }
 
     private static String readSchemaResource(String schemaFile) {
-        String resource = "/schemas/" + schemaFile;
+        String active = readResourceOrNull("/schemas/" + schemaFile);
+        if (active != null) {
+            return active;
+        }
+        String legacy = readResourceOrNull(LEGACY_V1_CONTRACT_ROOT + schemaFile);
+        if (legacy != null) {
+            return legacy;
+        }
+        throw new IllegalStateException("schema resource not found: " + schemaFile);
+    }
+
+    private static String readResourceOrNull(String resource) {
         try (InputStream input = StructuredDataValidator.class.getResourceAsStream(resource)) {
-            if (input == null) {
-                throw new IllegalStateException("schema resource not found: " + resource);
-            }
-            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            return input == null ? null : new String(input.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException exception) {
             throw new IllegalStateException("failed to read schema resource: " + resource, exception);
         }

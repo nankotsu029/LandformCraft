@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v1/required-assets.schema.json",
+  "title": "LandformCraft Required Structure Assets",
+  "description": "Strict, frozen v1 contract for the Required Structure Assets. Rejects unknown fields, versions and encodings instead of falling back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "minecraftVersion", "assets"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "minecraftVersion": { "type": "string", "pattern": "^1\\.21\\.[0-9]{1,2}$" },
+    "assets": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/asset" }
+    }
+  },
+  "$defs": {
+    "structureType": {
+      "enum": [
+        "SMALL_PIER", "SMALL_BRIDGE", "FISHING_HUT", "STONE_RUIN",
+        "PATH", "RETAINING_WALL", "STONE_STEPS", "FENCE"
+      ]
+    },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId", "type", "minecraftVersion", "semanticChecksum", "file", "fileChecksum",
+        "width", "height", "length"
+      ],
+      "properties": {
+        "assetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "type": { "$ref": "#/$defs/structureType" },
+        "minecraftVersion": { "type": "string", "pattern": "^1\\.21\\.[0-9]{1,2}$" },
+        "semanticChecksum": { "$ref": "#/$defs/checksum" },
+        "file": {
+          "type": "string",
+          "pattern": "^assets/schematics/[a-z0-9][a-z0-9._-]{0,63}\\.schem$"
+        },
+        "fileChecksum": { "$ref": "#/$defs/checksum" },
+        "width": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "height": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    }
+  }
+}

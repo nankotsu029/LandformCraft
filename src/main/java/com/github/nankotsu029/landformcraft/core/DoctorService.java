@@ -1,8 +1,8 @@
 package com.github.nankotsu029.landformcraft.core;
 
-import com.github.nankotsu029.landformcraft.format.LandformDataCodec;
-import com.github.nankotsu029.landformcraft.model.GenerationStage;
-import com.github.nankotsu029.landformcraft.model.PlacementState;
+import com.github.nankotsu029.landformcraft.core.v2.job.ExportJobStoreV2;
+import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
+import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementJournalStateV2;
 
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -10,11 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Locale;
 
 /** Performs bounded, read-only or temporary-file diagnostics without revealing secret values. */
 public final class DoctorService {
-    private final LandformDataCodec codec = new LandformDataCodec();
+    private final LandformV2DataCodec codec = new LandformV2DataCodec();
 
     public DoctorReport inspect(Path dataDirectory, String runtime) throws IOException {
         Path root = dataDirectory.toAbsolutePath().normalize();
@@ -25,8 +24,8 @@ public final class DoctorService {
         boolean writable = Files.isWritable(root);
         boolean atomicMove = checkAtomicMove(root);
         long usable = Files.getFileStore(root).getUsableSpace();
-        int runningJobs = countRunningJobs(root.resolve("jobs"));
-        int recovery = countRecovery(root.resolve("placements"));
+        int runningJobs = countRunningJobs(root.resolve("v2").resolve("jobs"));
+        int recovery = countRecovery(root.resolve("placement-v2"));
         ArrayList<String> warnings = new ArrayList<>();
         if (!writable) {
             warnings.add("data directory is not writable");
@@ -44,20 +43,10 @@ public final class DoctorService {
     }
 
     private int countRunningJobs(Path jobs) throws IOException {
-        if (!Files.isDirectory(jobs)) {
-            return 0;
-        }
         int count = 0;
-        try (var files = Files.list(jobs)) {
-            for (Path file : files.filter(value -> value.getFileName().toString().endsWith(".json")).toList()) {
-                if (Files.isSymbolicLink(file)) {
-                    continue;
-                }
-                GenerationStage stage = codec.readGenerationJob(file).stage();
-                if (stage != GenerationStage.READY && stage != GenerationStage.FAILED
-                        && stage != GenerationStage.CANCELLED) {
-                    count++;
-                }
+        for (var snapshot : new ExportJobStoreV2(jobs).list()) {
+            if (!snapshot.state().terminal()) {
+                count++;
             }
         }
         return count;
@@ -68,10 +57,12 @@ public final class DoctorService {
             return 0;
         }
         int count = 0;
-        try (var files = Files.list(placements)) {
-            for (Path file : files.filter(value -> value.getFileName().toString().endsWith(".json")).toList()) {
+        try (var files = Files.walk(placements, 2)) {
+            for (Path file : files.filter(value -> value.getFileName().toString().endsWith("journal.json"))
+                    .filter(Files::isRegularFile).toList()) {
                 if (!Files.isSymbolicLink(file)
-                        && codec.readPlacementJournalCompatible(file).state() == PlacementState.RECOVERY_REQUIRED) {
+                        && codec.readPlacementJournal(file).state()
+                        == PlacementJournalStateV2.RECOVERY_REQUIRED) {
                     count++;
                 }
             }

@@ -47,17 +47,25 @@ public final class FeatureSupportCatalogConsistencyVerifierV2 {
         List<String> failures = new ArrayList<>();
         codec.verifyChecksum(catalog);
 
+        // V2-11-06: the published limit is exactly the measured maximum (V2-11-04 500x500 and
+        // V2-11-05 1000x1000 on FAWE 2.15.2). Measured sizes must be admitted and anything above
+        // the largest measurement must stay rejected.
         if (catalog.placementDimensionLimit().maximumWidth()
-                != PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM
+                != PlacementDimensionLimitV2.MEASURED_MAXIMUM
                 || catalog.placementDimensionLimit().maximumLength()
-                != PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM) {
-            failures.add("placementDimensionLimit must equal smoke-measured 64x64");
+                != PlacementDimensionLimitV2.MEASURED_MAXIMUM) {
+            failures.add("placementDimensionLimit must equal measured "
+                    + PlacementDimensionLimitV2.MEASURED_MAXIMUM + "x"
+                    + PlacementDimensionLimitV2.MEASURED_MAXIMUM);
         }
         if (catalog.rejectsUnmeasuredPaperPromotion(500, 500)
-                && catalog.rejectsUnmeasuredPaperPromotion(1000, 1000)) {
-            // expected
-        } else {
-            failures.add("catalog must reject unmeasured 500/1000 Paper promotion dimensions");
+                || catalog.rejectsUnmeasuredPaperPromotion(1000, 1000)) {
+            failures.add("catalog must admit the measured 500/1000 Paper dimensions (V2-11-06)");
+        }
+        if (!catalog.rejectsUnmeasuredPaperPromotion(
+                PlacementDimensionLimitV2.MEASURED_MAXIMUM + 1,
+                PlacementDimensionLimitV2.MEASURED_MAXIMUM)) {
+            failures.add("catalog must reject dimensions above the measured maximum");
         }
 
         Set<TerrainIntentV2.FeatureKind> covered = EnumSet.noneOf(TerrainIntentV2.FeatureKind.class);
@@ -83,6 +91,15 @@ public final class FeatureSupportCatalogConsistencyVerifierV2 {
                 if (!entry.evidenceRef().contains("smoke")) {
                     failures.add("paper_apply SUPPORTED without smoke evidence link: "
                             + entry.entryId());
+                }
+                // V2-11-06: a published limit above the smoke size additionally requires the
+                // measurement audits on the promoted entries themselves.
+                if (catalog.placementDimensionLimit().maximumWidth()
+                        > PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM
+                        && !entry.evidenceRef().contains(
+                                BuiltInFeatureSupportCatalogV2.MEASURED_DIMENSION_EVIDENCE)) {
+                    failures.add("paper_apply SUPPORTED above the smoke size without the"
+                            + " V2-11-04/V2-11-05 measurement evidence link: " + entry.entryId());
                 }
             }
             if (paperApply != FeatureSupportLevelV2.UNSUPPORTED
@@ -153,15 +170,29 @@ public final class FeatureSupportCatalogConsistencyVerifierV2 {
                 catalog.placementDimensionLimit().maximumWidth(),
                 catalog.placementDimensionLimit().maximumLength());
         try {
-            gate.requireAdmitted(64, 64);
+            gate.requireAdmitted(
+                    PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM,
+                    PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM);
+            gate.requireAdmitted(
+                    PlacementDimensionLimitV2.MEASURED_MAXIMUM,
+                    PlacementDimensionLimitV2.MEASURED_MAXIMUM);
         } catch (RuntimeException exception) {
-            failures.add("dimension gate must admit smoke size: " + exception.getMessage());
+            failures.add("dimension gate must admit measured sizes: " + exception.getMessage());
         }
         try {
-            gate.requireAdmitted(65, 64);
-            failures.add("dimension gate must reject above smoke size");
+            gate.requireAdmitted(
+                    PlacementDimensionLimitV2.MEASURED_MAXIMUM + 1,
+                    PlacementDimensionLimitV2.MEASURED_MAXIMUM);
+            failures.add("dimension gate must reject above the measured maximum");
         } catch (IllegalArgumentException ignored) {
             // expected
+        }
+        // The above-smoke evidence is FAWE-only: a runtime without it stays clamped to 64x64.
+        if (Release2MeasuredDimensionGateV2.measuredCeilingFor(false)
+                != PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM
+                || Release2MeasuredDimensionGateV2.measuredCeilingFor(true)
+                != PlacementDimensionLimitV2.MEASURED_MAXIMUM) {
+            failures.add("runtime measured ceiling must match the catalog evidence split");
         }
 
         if (catalog.entries().size() > FeatureSupportCatalogV2.MAXIMUM_ENTRIES) {

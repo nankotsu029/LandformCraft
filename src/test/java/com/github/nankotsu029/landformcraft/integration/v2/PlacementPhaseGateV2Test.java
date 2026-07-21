@@ -108,6 +108,11 @@ class PlacementPhaseGateV2Test {
                 assertEquals(BuiltInFeatureSupportCatalogV2.REQUIRED_RUNTIME,
                         entry.requiredRuntime(), entry.entryId());
                 assertTrue(entry.evidenceRef().contains("smoke"), entry.entryId());
+                // V2-11-06: promoted entries carry the measurement audits behind the published
+                // above-smoke dimension ceiling.
+                assertTrue(entry.evidenceRef().contains(
+                        BuiltInFeatureSupportCatalogV2.MEASURED_DIMENSION_EVIDENCE),
+                        entry.entryId());
             }
         }
         assertEquals(4, catalog.entries().stream()
@@ -115,13 +120,14 @@ class PlacementPhaseGateV2Test {
                         == FeatureSupportLevelV2.SUPPORTED)
                 .count());
 
-        // The unmeasured 500/1000 dimensions stay rejected; only the smoke-measured 64x64 limit
-        // is admitted (V2-6-16/17 CANCELLED).
-        assertEquals(PlacementDimensionLimitV2.smokeMeasured(), catalog.placementDimensionLimit());
+        // V2-11-06: the measured 500x500 (V2-11-04) and 1000x1000 (V2-11-05) dimensions are
+        // published; everything above the largest measurement stays rejected.
+        assertEquals(PlacementDimensionLimitV2.measured(), catalog.placementDimensionLimit());
         assertTrue(catalog.placementDimensionLimit().admits(64, 64));
-        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(65, 64));
-        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(500, 500));
-        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(1_000, 1_000));
+        assertTrue(catalog.placementDimensionLimit().admits(500, 500));
+        assertTrue(catalog.placementDimensionLimit().admits(1_000, 1_000));
+        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(1_001, 1_000));
+        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(3_072, 3_072));
 
         // The sealed example is byte-stable against the built-in catalog data.
         FeatureSupportCatalogCodecV2 catalogCodec = new FeatureSupportCatalogCodecV2();
@@ -170,7 +176,7 @@ class PlacementPhaseGateV2Test {
         try {
             Locale.setDefault(Locale.forLanguageTag("tr-TR"));
             TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Chatham"));
-            second = runLifecycle(root.resolve("run-b"), 1, 1, 8);
+            second = runLifecycle(root.resolve("run-b"), 4, 1, 8);
         } finally {
             Locale.setDefault(previousLocale);
             TimeZone.setDefault(previousZone);
@@ -189,14 +195,23 @@ class PlacementPhaseGateV2Test {
         }
     }
 
-    private LifecycleOutcome runLifecycle(Path root, int cpu, int io, int queue) throws Exception {
+    /**
+     * The runtime-profile knob is {@code generationParallelism} (1 vs 4 workers). {@code
+     * ioConcurrency} is fail-fast admission, not a determinism dimension: at 1 permit a transient
+     * second I/O submission inside the lifecycle is rejected outright, so it stays above the
+     * lifecycle's overlap.
+     */
+    private LifecycleOutcome runLifecycle(
+            Path root, int ioConcurrency, int generationParallelism, int queue
+    ) throws Exception {
         Path releases = root.resolve("releases");
         EnvironmentReleaseFixtureV2.Fixture fixture =
                 EnvironmentReleaseFixtureV2.build(root.resolve("source"));
         ReleaseSurfaceArtifactsV2 release = new ReleaseSurfacePublisherV2().publish(
                 releases, "phase-gate", fixture.source().hydrology().surface(), false, () -> false);
         FakeWorld gateway = new FakeWorld("minecraft:stone");
-        GenerationExecutors executors = GenerationExecutors.create(cpu, io, queue);
+        GenerationExecutors executors = GenerationExecutors.create(
+                ioConcurrency, generationParallelism, queue);
         Release2PlacementApplicationServiceV2 service = new Release2PlacementApplicationServiceV2(
                 releases, root.resolve("state"), executors, gateway, Clock.systemUTC(),
                 64L * 1024L * 1024L);

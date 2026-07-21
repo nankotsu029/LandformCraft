@@ -49,5 +49,4 @@ forceload add <blockX> <blockZ> [<toBlockX> <toBlockZ>]
 ## 3. Non-claims
 
 - Catalog `SUPPORTED` 寸法は 64×64 のまま（昇格は `V2-11-06`）
-- 1000×1000 は `V2-11-05`
 - WorldEdit 単独 profile は本 Task の必須 Scope 外

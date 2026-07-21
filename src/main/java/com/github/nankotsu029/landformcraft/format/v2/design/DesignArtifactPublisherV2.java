@@ -1,6 +1,6 @@
 package com.github.nankotsu029.landformcraft.format.v2.design;
 
-import com.github.nankotsu029.landformcraft.format.ReleaseVerifier;
+import com.github.nankotsu029.landformcraft.format.FileTreeOperations;
 import com.github.nankotsu029.landformcraft.format.Sha256;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
@@ -90,11 +90,11 @@ public final class DesignArtifactPublisherV2 {
                         verification.draftEvidence()
                 );
             } catch (IOException | RuntimeException exception) {
-                ReleaseVerifier.deleteTree(target);
+                FileTreeOperations.deleteTree(target);
                 throw exception;
             }
         } finally {
-            ReleaseVerifier.deleteTree(temporary);
+            FileTreeOperations.deleteTree(temporary);
         }
     }
 

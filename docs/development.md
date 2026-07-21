@@ -15,13 +15,13 @@
 ./gradlew test
 ./gradlew shadowJar
 ./gradlew run --args="--help"
-./gradlew run --args="validate examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json"
-./gradlew run --args="generate examples/phase6-structures/request.yml examples/phase6-structures/terrain-intent.json build/phase6-preview"
-./gradlew run --args="export examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/phase2-exports"
-./gradlew run --args="verify build/phase2-exports/rocky-coast-001/<release-id>.zip"
-./gradlew run --args="journal-verify examples/placement-journal.json"
-./gradlew run --args="design import examples/rocky-coast/request.yml examples/rocky-coast/terrain-intent.json build/phase5-designs build/phase5-jobs"
-./gradlew run --args="design-verify build/phase5-designs/rocky-coast-001/<job-id>"
+./gradlew run --args="request validate examples/v2/diagnostic/harbor-cove-64.request-v2.json"
+./gradlew run --args="generate examples/v2/diagnostic/harbor-cove-64.request-v2.json examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json build/exports harbor-cove-64 water 54 46"
+./gradlew run --args="export examples/v2/diagnostic/harbor-cove-64.request-v2.json examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json build/exports harbor-cove-64 water 54 46"
+./gradlew run --args="preview build/exports/harbor-cove-64"
+./gradlew run --args="journal-verify examples/v2/placement/placement-journal-v2.json"
+./gradlew run --args="design import examples/v2/diagnostic/harbor-cove-64.request-v2.json examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json build/designs-v2"
+./gradlew run --args="migrate inspect release <release-1-directory-or-zip>"
 ./gradlew runServer
 ```
 

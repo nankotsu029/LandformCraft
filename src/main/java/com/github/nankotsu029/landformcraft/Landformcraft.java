@@ -1,14 +1,8 @@
 package com.github.nankotsu029.landformcraft;
 
 import com.github.nankotsu029.landformcraft.core.GenerationExecutors;
-import com.github.nankotsu029.landformcraft.core.FilePlacementJournalRepository;
-import com.github.nankotsu029.landformcraft.core.PlacementApplicationService;
-import com.github.nankotsu029.landformcraft.core.PaperWorkflowService;
 import com.github.nankotsu029.landformcraft.core.ProviderSettings;
-import com.github.nankotsu029.landformcraft.core.SnapshotCleanupService;
 import com.github.nankotsu029.landformcraft.core.CustomAssetService;
-import com.github.nankotsu029.landformcraft.core.DiskBudgetPolicy;
-import com.github.nankotsu029.landformcraft.core.PolicyPlacementWorldGateway;
 import com.github.nankotsu029.landformcraft.core.WorldAccessPolicy;
 import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.core.v2.operations.OperationalAuditLogV2;
@@ -21,6 +15,7 @@ import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementJournalV
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementPlanV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.Release2DiskBudgetV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.Release2PlacementOperationStoreV2;
+import com.github.nankotsu029.landformcraft.model.v2.catalog.PlacementDimensionLimitV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.Release2MeasuredDimensionGateV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.Release2MeasurementProfileV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.Release2PlacementDimensionPolicyV2;
@@ -30,9 +25,9 @@ import com.github.nankotsu029.landformcraft.paper.PaperMainThreadDispatcher;
 import com.github.nankotsu029.landformcraft.paper.PaperOperationalOperationsServiceV2;
 import com.github.nankotsu029.landformcraft.paper.PaperPlacementWorldGatewayV2;
 import com.github.nankotsu029.landformcraft.paper.PaperRelease2PlacementServiceV2;
-import com.github.nankotsu029.landformcraft.paper.PaperWorldEditPlacementGateway;
+import com.github.nankotsu029.landformcraft.paper.PaperTerrainDesignProviderFactoryV2;
+import com.github.nankotsu029.landformcraft.paper.PaperV2WorkflowServiceV2;
 import com.github.nankotsu029.landformcraft.paper.PaperWorldEditSelectionService;
-import com.github.nankotsu029.landformcraft.paper.PaperTerrainDesignProviderFactory;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -49,9 +44,7 @@ import java.util.Objects;
 public final class Landformcraft extends JavaPlugin {
     private GenerationExecutors executors;
     private PaperMainThreadDispatcher mainThreadDispatcher;
-    private PlacementApplicationService placementService;
     private PaperRelease2PlacementServiceV2 release2PlacementService;
-    private PaperWorkflowService workflowService;
 
     @Override
     public void onEnable() {
@@ -95,14 +88,6 @@ public final class Landformcraft extends JavaPlugin {
             release2PlacementService.close();
             release2PlacementService = null;
         }
-        if (placementService != null) {
-            placementService.stopAcceptingMutations();
-            placementService = null;
-        }
-        if (workflowService != null) {
-            workflowService.close();
-            workflowService = null;
-        }
         if (mainThreadDispatcher != null) {
             mainThreadDispatcher.close();
             mainThreadDispatcher = null;
@@ -127,76 +112,36 @@ public final class Landformcraft extends JavaPlugin {
         PluginCommand command = Objects.requireNonNull(getCommand("landformcraft"),
                 "landformcraft command is missing from plugin.yml");
         Path storageRoot = resolveStorageRoot();
-        FilePlacementJournalRepository repository = new FilePlacementJournalRepository(
-                storageRoot.resolve("placements"), executors
-        );
         Clock clock = Clock.systemUTC();
         ProviderSettings providers = providerSettings();
-        PaperWorkflowService workflow = new PaperWorkflowService(
-                storageRoot, executors,
-                new PaperTerrainDesignProviderFactory(storageRoot.resolve("imports"), executors, providers, clock),
-                clock);
-        workflowService = workflow;
-        SnapshotCleanupService cleanup = new SnapshotCleanupService(
-                storageRoot.resolve("snapshots"), storageRoot.resolve("cleanup-plans"), repository,
-                executors, clock, requireRange(getConfig().getInt("retention.days", 30), 1, 36_500,
-                "retention.days"));
         CustomAssetService assets = new CustomAssetService(
                 storageRoot.resolve("imports"), storageRoot.resolve("assets"),
                 storageRoot.resolve("exports"), clock);
 
         Plugin official = getServer().getPluginManager().getPlugin("WorldEdit");
         Plugin fawe = getServer().getPluginManager().getPlugin("FastAsyncWorldEdit");
-
-        if (official != null
-                && official.isEnabled()
-                && fawe != null
-                && fawe.isEnabled()
+        if (official != null && official.isEnabled() && fawe != null && fawe.isEnabled()
                 && official != fawe) {
-            throw new IllegalStateException(
-                    "WorldEdit and FAWE must not be enabled together"
-            );
+            throw new IllegalStateException("WorldEdit and FAWE must not be enabled together");
         }
-
         Plugin integration = fawe != null && fawe.isEnabled()
                 ? fawe
-                : official != null && official.isEnabled()
-                ? official
-                : null;
-
-        boolean worldEditEnabled = getConfig().getBoolean("worldedit.enabled", true);
-        boolean placementEnabled = worldEditEnabled && integration != null;
-
-        String integrationStatus = !worldEditEnabled
+                : official != null && official.isEnabled() ? official : null;
+        boolean placementEnabled = getConfig().getBoolean("worldedit.enabled", true)
+                && integration != null;
+        String integrationStatus = !getConfig().getBoolean("worldedit.enabled", true)
                 ? "disabled by config"
                 : integration == null
                 ? "not detected"
-                : integration.getName() + " "
-                + integration.getPluginMeta().getVersion();
-        PlacementApplicationService placements = null;
+                : integration.getName() + " " + integration.getPluginMeta().getVersion();
+
         PaperWorldEditSelectionService selections = null;
         PaperRelease2PlacementServiceV2 release2Placements = null;
         if (placementEnabled) {
             WorldAccessPolicy worldAccessPolicy = new WorldAccessPolicy(
                     getConfig().getStringList("placement.allowed-worlds"),
                     getConfig().getStringList("placement.denied-worlds"));
-            placements = new PlacementApplicationService(
-                    storageRoot.resolve("exports"), storageRoot.resolve("snapshots"), executors, repository,
-                    new PolicyPlacementWorldGateway(
-                            new PaperWorldEditPlacementGateway(mainThreadDispatcher, executors),
-                            worldAccessPolicy),
-                    clock,
-                    new DiskBudgetPolicy(
-                            requireLongRange(getConfig().getLong("disk.minimum-free-bytes", 536_870_912L),
-                                    0L, Long.MAX_VALUE, "disk.minimum-free-bytes"),
-                            requireLongRange(getConfig().getLong("disk.maximum-snapshot-bytes", 8_589_934_592L),
-                                    1L, Long.MAX_VALUE, "disk.maximum-snapshot-bytes"),
-                            requireLongRange(getConfig().getLong("disk.safety-margin-bytes", 268_435_456L),
-                                    0L, Long.MAX_VALUE, "disk.safety-margin-bytes")
-                    )
-            );
             selections = new PaperWorldEditSelectionService(mainThreadDispatcher);
-            placementService = placements;
             try {
                 release2Placements = new PaperRelease2PlacementServiceV2(
                         new Release2PlacementApplicationServiceV2(
@@ -206,7 +151,7 @@ public final class Landformcraft extends JavaPlugin {
                                 new PaperPlacementWorldGatewayV2(mainThreadDispatcher),
                                 clock,
                                 release2DiskBudget(),
-                                release2DimensionPolicy(),
+                                release2DimensionPolicy(integration == fawe),
                                 Release2PlacementOperationStoreV2.WriteFaultInjectorV2.none()),
                         worldAccessPolicy);
                 release2PlacementService = release2Placements;
@@ -214,31 +159,31 @@ public final class Landformcraft extends JavaPlugin {
                 throw new IllegalStateException("Release 2 placement storage initialization failed", exception);
             }
         } else {
-            getLogger().warning("WorldEdit/FAWE placement integration is unavailable; non-placement commands remain active.");
+            getLogger().warning(
+                    "WorldEdit/FAWE placement integration is unavailable; non-placement commands remain active.");
         }
+
         OperationalAuditLogV2 operationsAudit = new OperationalAuditLogV2(storageRoot);
+        RetentionCleanupPortV2 retentionPort = release2Placements != null
+                ? release2Placements.retentionCleanupPort()
+                : deferredRetentionCleanupPort();
         Release2RetentionServiceV2 retention = new Release2RetentionServiceV2(
-                deferredRetentionCleanupPort(), operationsAudit, Clock.systemUTC());
-        PaperOperationalOperationsServiceV2 release2Operations = new PaperOperationalOperationsServiceV2(
-                new OperationalOperationsServiceV2(executors, storageRoot, retention));
+                retentionPort, operationsAudit, clock);
+        PaperOperationalOperationsServiceV2 release2Operations =
+                new PaperOperationalOperationsServiceV2(
+                        new OperationalOperationsServiceV2(executors, storageRoot, retention));
+        PaperV2WorkflowServiceV2 v2Workflow = new PaperV2WorkflowServiceV2(
+                executors,
+                new PaperTerrainDesignProviderFactoryV2(executors, providers, clock),
+                storageRoot.resolve("v2"));
         LandformCraftCommand commandHandler = new LandformCraftCommand(
-                placements, release2Placements, null, null, release2Operations,
-                selections, mainThreadDispatcher, workflow,
-                cleanup, assets, storageRoot, getPluginMeta().getVersion(), integrationStatus
-        );
+                release2Placements, release2Operations, v2Workflow, selections,
+                mainThreadDispatcher, executors, assets, storageRoot,
+                getPluginMeta().getVersion(), integrationStatus);
         command.setExecutor(commandHandler);
         command.setTabCompleter(commandHandler);
         getServer().getPluginManager().registerEvents(commandHandler, this);
-        if (placements != null) {
-            placements.recoverInterrupted().whenComplete((recovered, failure) ->
-                    mainThreadDispatcher.run(() -> {
-                        if (failure != null) {
-                            getLogger().severe("Could not inspect placement recovery journals: " + failure.getMessage());
-                        } else if (!recovered.isEmpty()) {
-                            getLogger().warning(recovered.size() + " interrupted placement(s) require recovery inspection.");
-                        }
-                    }));
-        }
+
         if (release2Placements != null) {
             release2Placements.inspectRestartState().whenComplete((ambiguous, failure) ->
                     mainThreadDispatcher.run(() -> {
@@ -253,10 +198,8 @@ public final class Landformcraft extends JavaPlugin {
         }
     }
 
-    /**
-     * Release 2 disk budget from the operator settings. Before V2-11-02 only
-     * {@code disk.maximum-snapshot-bytes} reached the Release 2 path.
-     */
+    /** Release 2 disk budget from the operator settings. */
+
     private Release2DiskBudgetV2 release2DiskBudget() {
         return new Release2DiskBudgetV2(
                 requireLongRange(getConfig().getLong("disk.minimum-free-bytes", 536_870_912L),
@@ -268,15 +211,20 @@ public final class Landformcraft extends JavaPlugin {
     }
 
     /**
-     * V2-11-02 dimension policy. The normal-operation ceiling is clamped at startup to the
-     * Feature Support Catalog hard limit, so an over-limit configuration value is rejected here
-     * instead of silently widening placement. Above-limit layouts require the explicitly enabled
-     * measurement profile (isolated world plus CONSOLE/RCON operator), which stays off by default.
+     * V2-11-02 dimension policy, with the V2-11-06 runtime-dependent ceiling. The
+     * normal-operation ceiling is clamped at startup to the dimension actually measured on the
+     * detected runtime (1000 on FAWE 2.15.2, 64 otherwise), so an over-limit configuration value
+     * is rejected here instead of silently widening placement beyond evidence. Above-limit
+     * layouts require the explicitly enabled measurement profile (isolated world plus
+     * CONSOLE/RCON operator), which stays off by default.
      */
-    private Release2PlacementDimensionPolicyV2 release2DimensionPolicy() {
+    private Release2PlacementDimensionPolicyV2 release2DimensionPolicy(boolean fastAsyncWorldEdit) {
         Release2MeasuredDimensionGateV2 productionGate = Release2MeasuredDimensionGateV2.production(
-                getConfig().getInt(Release2MeasuredDimensionGateV2.CONFIG_WIDTH_KEY, 64),
-                getConfig().getInt(Release2MeasuredDimensionGateV2.CONFIG_LENGTH_KEY, 64));
+                fastAsyncWorldEdit,
+                getConfig().getInt(Release2MeasuredDimensionGateV2.CONFIG_WIDTH_KEY,
+                        PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM),
+                getConfig().getInt(Release2MeasuredDimensionGateV2.CONFIG_LENGTH_KEY,
+                        PlacementDimensionLimitV2.SMOKE_MEASURED_MAXIMUM));
         Release2MeasurementProfileV2 profile = Release2MeasurementProfileV2.disabled();
         if (getConfig().getBoolean(Release2MeasurementProfileV2.CONFIG_ENABLED_KEY, false)) {
             profile = Release2MeasurementProfileV2.forIsolatedWorld(

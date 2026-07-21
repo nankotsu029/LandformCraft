@@ -268,6 +268,8 @@ baseline invariant、cross-feature rule、feature-specific metric、hard/soft co
 
 previewはregistryから1枚ずつ生成し、index manifestへ宣言する。exportは最終 `TerrainBlockResolver(x,y,z)` からtileごとにstreamする。
 
+`V2-12-02`以降、このStage 12までのorchestrationは`core.v2.export`の`Release2ExportApplicationServiceV2`がproduction APIとして所有する。request＋design intentを入力に、constraint field sidecar、Blueprint、validation、preview、`TilePlanV2`幾何のtileを生成し、`ReleaseSurfacePublisherV2`のstaging→strict read-back→atomic publishへ渡して、strict verifierとplacement eligibilityを通った結果だけをsealする。coastal featureが所有しないcellのbaselineは推測せず、呼び出し側が`SurfaceBaselineV2`で宣言する。
+
 ## 4. Stage I/O表
 
 | Stage | 主なread | 主なwrite | 実行scope |

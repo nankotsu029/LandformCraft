@@ -1,0 +1,31 @@
+{
+  "evidenceVersion": "v2-12-06-drain-evidence-v1",
+  "task": "V2-12-06",
+  "decisionDate": "2026-07-21",
+  "status": "PASS",
+  "resolution": "NEUTRAL_ARCHIVE",
+  "unresolvedCount": 0,
+  "reports": [
+    {
+      "dataRootLabel": "paper-worldedit-runtime",
+      "archiveId": "v2-12-06-20260721",
+      "entryCount": 214,
+      "totalBytes": 244620,
+      "inventorySha256": "cbc68cb5e4fca57107664646b0e729a71830241eb02f14da9b3d2c80af214786",
+      "unresolvedCount": 0,
+      "status": "PASS"
+    },
+    {
+      "dataRootLabel": "paper-fawe-runtime",
+      "archiveId": "v2-12-06-20260721",
+      "entryCount": 22,
+      "totalBytes": 20560,
+      "inventorySha256": "f1d7474b465d10c31f8d1bf3b55a125705ba797db86cd16af6e0bacec0db3157",
+      "unresolvedCount": 0,
+      "status": "PASS"
+    }
+  ],
+  "sourceStateModified": false,
+  "archiveReadBackVerified": true,
+  "notes": "Full checksum-indexed inventories are stored inside the corresponding neutral archives; repository evidence intentionally records labels and digests rather than operator paths."
+}

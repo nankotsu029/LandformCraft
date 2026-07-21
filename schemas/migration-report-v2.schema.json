@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/migration-report-v2.schema.json",
+  "title": "LandformCraft v1 to v2 migration report (v2)",
+  "description": "Record of one explicit v1 asset migration: the source kind, version and checksum, the published v2 design package identity, the v1 fields that were carried over exactly, and every v1 element that was deliberately not carried because v2 cannot express it without inventing position, shape, relation or geology.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reportVersion", "migrationId", "sourceKind", "sourceSchemaVersion", "sourceDigest",
+    "sourceCanonicalChecksum", "targetRequestId", "targetJobId", "targetIntentVersion",
+    "targetIntentChecksum", "mappedFields", "unmappedElements", "status"
+  ],
+  "properties": {
+    "reportVersion": {
+      "description": "Migration report contract version. Unknown values are rejected.",
+      "type": "integer",
+      "const": 1
+    },
+    "migrationId": {
+      "description": "Operator-chosen portable identifier of this migration bundle.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "sourceKind": {
+      "description": "Which v1 asset kind was read.",
+      "type": "string",
+      "enum": ["V1_TERRAIN_INTENT", "V1_DESIGN_PACKAGE", "V1_RELEASE"]
+    },
+    "sourceSchemaVersion": {
+      "description": "schemaVersion declared by the v1 source contract.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "sourceDigest": {
+      "description": "SHA-256 byte digest of the canonical v1 source document, used when the source contract defines no canonical checksum.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceCanonicalChecksum": {
+      "description": "Canonical checksum defined by the v1 contract itself, or the empty string when the contract defines none.",
+      "type": "string",
+      "pattern": "^(?:[0-9a-f]{64})?$"
+    },
+    "targetRequestId": {
+      "description": "requestId of the published v2 design package.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "targetJobId": {
+      "description": "Deterministic job UUID of the published v2 design package, derived from the source digest.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "targetIntentVersion": {
+      "description": "intentVersion of the produced TerrainIntent v2.",
+      "type": "integer",
+      "const": 2
+    },
+    "targetIntentChecksum": {
+      "description": "SHA-256 of the produced terrain-intent-v2.json file.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "mappedFields": {
+      "description": "v1 contract fields carried into the v2 intent exactly, sorted and unique.",
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "unmappedElements": {
+      "description": "v1 elements deliberately left out of the v2 intent, each with the reason v2 cannot express it without inference.",
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["elementId", "sourceField", "reason"],
+        "properties": {
+          "elementId": {
+            "description": "Stable identifier of the element, for example zone:mountain-source.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "sourceField": {
+            "description": "v1 contract field the element came from.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "reason": {
+            "description": "Why the element was not carried into v2.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        }
+      }
+    },
+    "status": {
+      "description": "DRY_RUN when nothing was written outside the tool's temporary directory, PUBLISHED after an atomic publish and re-verification.",
+      "type": "string",
+      "enum": ["DRY_RUN", "PUBLISHED"]
+    }
+  }
+}

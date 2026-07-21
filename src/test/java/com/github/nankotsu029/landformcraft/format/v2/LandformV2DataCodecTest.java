@@ -73,7 +73,8 @@ class LandformV2DataCodecTest {
         TerrainIntentVersionDispatcher dispatcher = new TerrainIntentVersionDispatcher();
 
         assertInstanceOf(VersionedTerrainIntent.V1.class,
-                dispatcher.read(Path.of("examples/rocky-coast/terrain-intent.json")));
+                dispatcher.read(Path.of(
+                        "src/main/resources/legacy/v1/fixtures/rocky-coast/terrain-intent.json")));
         assertInstanceOf(VersionedTerrainIntent.V2.class, dispatcher.read(COASTAL));
 
         String v2 = Files.readString(COASTAL);

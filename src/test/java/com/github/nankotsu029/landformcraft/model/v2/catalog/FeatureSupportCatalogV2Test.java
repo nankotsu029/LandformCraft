@@ -34,8 +34,10 @@ class FeatureSupportCatalogV2Test {
     void builtInCatalogCoversEveryFeatureKindAndThirteenCapabilities() {
         FeatureSupportCatalogV2 catalog = verifier.requireConsistentBuiltIn();
         assertEquals(1, catalog.catalogVersion());
-        assertEquals(64, catalog.placementDimensionLimit().maximumWidth());
-        assertEquals(64, catalog.placementDimensionLimit().maximumLength());
+        assertEquals(PlacementDimensionLimitV2.MEASURED_MAXIMUM,
+                catalog.placementDimensionLimit().maximumWidth());
+        assertEquals(PlacementDimensionLimitV2.MEASURED_MAXIMUM,
+                catalog.placementDimensionLimit().maximumLength());
         assertEquals(TerrainIntentV2.FeatureKind.values().length,
                 catalog.entries().stream().filter(FeatureSupportEntryV2::hasFeatureKind).count());
         for (FeatureSupportEntryV2 entry : catalog.entries()) {
@@ -105,18 +107,49 @@ class FeatureSupportCatalogV2Test {
                 tamperedCatalog, new BuiltInLandformModuleCatalogV2().modules());
         assertTrue(failures.stream().anyMatch(failure ->
                 failure.contains("smoke-evidenced capability prefix")), failures.toString());
+        // V2-11-06: a catalog may publish at most the measured maximum (1000x1000, FAWE).
         assertThrows(IllegalArgumentException.class, () -> new FeatureSupportCatalogV2(
                 FeatureSupportCatalogV2.VERSION,
                 FeatureSupportCatalogV2.CONTRACT_VERSION,
-                new PlacementDimensionLimitV2(500, 500),
+                new PlacementDimensionLimitV2(
+                        PlacementDimensionLimitV2.MEASURED_MAXIMUM + 1,
+                        PlacementDimensionLimitV2.MEASURED_MAXIMUM),
                 catalog.entries(),
                 catalog.availablePresets(),
                 catalog.unsupportedDiagnostics(),
                 catalog.deferredDiagnostics(),
                 catalog.canonicalChecksum()));
-        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(500, 500));
-        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(1000, 1000));
+        assertFalse(catalog.rejectsUnmeasuredPaperPromotion(500, 500));
+        assertFalse(catalog.rejectsUnmeasuredPaperPromotion(1000, 1000));
         assertFalse(catalog.rejectsUnmeasuredPaperPromotion(64, 64));
+        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(1001, 1000));
+        assertTrue(catalog.rejectsUnmeasuredPaperPromotion(3072, 3072));
+
+        // A promoted entry that drops the V2-11-04/V2-11-05 measurement link fails the verifier
+        // while the published ceiling is above the smoke size.
+        FeatureSupportEntryV2 beachWithoutMeasurement = new FeatureSupportEntryV2(
+                beach.entryId(), beach.profileId(), beach.primaryRole(), beach.allowedUsages(),
+                beach.support(), beach.featureKindName(), beach.lifecycleStatus(),
+                beach.requiredReleaseCapability(), beach.requiredRuntime(),
+                "v2-6-14/15 smoke evidence only", beach.notes());
+        List<FeatureSupportEntryV2> withoutMeasurement = new ArrayList<>();
+        for (FeatureSupportEntryV2 entry : catalog.entries()) {
+            withoutMeasurement.add(
+                    entry.entryId().equals(beach.entryId()) ? beachWithoutMeasurement : entry);
+        }
+        List<String> measurementFailures = new FeatureSupportCatalogConsistencyVerifierV2().verify(
+                codec.seal(new FeatureSupportCatalogV2(
+                        FeatureSupportCatalogV2.VERSION,
+                        FeatureSupportCatalogV2.CONTRACT_VERSION,
+                        catalog.placementDimensionLimit(),
+                        withoutMeasurement,
+                        catalog.availablePresets(),
+                        catalog.unsupportedDiagnostics(),
+                        catalog.deferredDiagnostics(),
+                        "0".repeat(64))),
+                new BuiltInLandformModuleCatalogV2().modules());
+        assertTrue(measurementFailures.stream().anyMatch(failure ->
+                failure.contains("measurement evidence link")), measurementFailures.toString());
     }
 
     @Test

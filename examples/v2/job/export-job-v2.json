@@ -1,0 +1,11 @@
+{
+  "jobVersion": 2,
+  "jobId": "6f1d9e2a-3c4b-4a7d-8e51-2b9c7d0a4f63",
+  "requestId": "harbor-cove-64",
+  "releaseId": "harbor-cove-64-r1",
+  "kind": "EXPORT",
+  "state": "PUBLISHED",
+  "progressMillionths": 1000000,
+  "updatedAt": "2026-07-21T00:00:00Z",
+  "message": "published verified Release 2 container"
+}

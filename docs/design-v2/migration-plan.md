@@ -1,6 +1,6 @@
 # v1からv2への移行計画
 
-> Status: V2-0〜V2-5の互換・offline Phase gateを完了した。`V2-6-01`〜`V2-6-13`でplacement safetyからRecovery、hardening、operationsまでを固定し、`V2-6-20`／`V2-6-21`でstrict sourceとPaper lifecycleを実装し、`V2-6-14`／`V2-6-15`でWorldEdit 7.3.19およびFAWE 2.15.2実機smokeを完了し、`V2-6-18`で能力別Feature Support CatalogとPaper寸法hard limit（64×64）を固定し、`V2-6-19`のRC auditでV2-6 Phase gateを閉じた（[audit](audits/v2-6-phase-gate.md)）。v1契約と既定CLI／Paper commandは変更せず、R2は`/lfc r2`へ分離したままである。Paper能力列と未測定500／1000は`SUPPORTED`にせず（昇格は`V2-11-01`）、`V2-6-19`のRC監査後もv1完全撤去の条件は満たさないため、explicit version dispatchを維持する（§15）。Track Aの次は`V2-11-01`である（`V2-6-16`／`17`無効化）。
+> Status: V2-12-06を完了し、v2を唯一のproduction writer／generator／placement／通常command経路とした。v1 production codeはADR 0035 D2a R1〜R8の範囲だけ削除し、既存v1 artifact向けのpackaged legacy read／verify／migrate、immutable golden、custom asset catalogは維持する。Track Aの次は`V2-12-07`である。
 
 ## 1. 移行原則
 
@@ -139,6 +139,24 @@ upgrade toolはlossless migrationではない。v1に位置／形／接続情報
 
 upgrade出力はすべて新IDを持ち、推測値を `SOFT` とprovenanceへ記録する。hardに昇格する前にユーザー確認を要求する。upgrade warningが0であるかのように表示しない。
 
+### 実装状況（`V2-12-04`、2026-07-20）— 上記「自動変換できるもの」との差異
+
+**未解決の正本間差異があり、実装は保守側に倒してある。** `V2-12-04`が実装した`LegacyMigrationApplicationServiceV2`が写すのは `schemaVersion` と `theme` だけで、上記「自動変換できるもの」のうち topology／seaSides／zone／relief／landRatio／water／structure は**v2 intentへ入れず、migration reportへ1件ずつ理由付きで列挙する**。
+
+理由は、現在の`TerrainIntentV2`契約では上記listが実装不能なためである。
+
+- `TerrainIntentV2.Feature` は `Geometry` を必須にし、geometry自体にstrengthを持たない。したがって「soft region候補」は書けず、書けば具体的なpolygon／splineという位置の主張になる。v1のzoneは`preferredArea`（8方位＋CENTER＋ANY）と`areaShare`しか持たないため、そのgeometryはこちらが発明することになる。
+- `MetricRangeConstraint` の `subject` は `feature:<id>` を要求する。featureが無ければ relief／landRatio／water のmetric rangeも書けない。
+- `StructureRequest` は `preferredFeatureId` を要求する。v1のstructureはzoneを指すため、featureが無ければ移せない。
+
+差異のある正本は次のとおりである。
+
+- 本節の「自動変換できるもの」: 推測値を`SOFT`＋provenanceとして書き出す方針。
+- `docs/design-v2/task-index.md` `V2-12-04` Scope: 「v1から欠落した位置・形状・関係・地質をhard constraintへ推測補完しない — **欠落はdraft／未指定のまま**」。Gateは「変換にhard constraint推測が必要なら停止する」。
+- AGENTS.md §6: 「v1から欠落した位置、形状、関係、地質をhard constraintとして補完しない」。
+
+`V2-12-04`は後2者（Scope／Gate／AGENTS）に従い、欠落を未指定のまま残してreportへ出す実装とした。本節の方針を採るには、geometryにstrengthまたはcandidate表現を導入する`TerrainIntentV2`契約変更が必要であり、それは`V2-12-04`のScope外である。**この差異は本Taskでは解消しておらず、方針決定が必要である。**
+
 ## 7. Release format 2
 
 概念構成:
@@ -199,9 +217,9 @@ snapshot scope拡大はdiskと時間へ直接影響するため、Release 2のes
 
 ## 9. CLI／Paper／Provider
 
-- v1 commandのdefault挙動を変えず、version／capabilityを明示optionまたはartifactから選ぶ。
+- `V2-12-06`以降はv2だけをproduction commandとして提供する。既存v1 artifactはread-only verifyまたは明示`migrate`で扱い、欠落値やversionから暗黙auto-upgradeしない。
 - `--intent-version` 等の具体的UIは実装時に決めるが、曖昧なauto-upgradeをしない。
-- Providerごとにv2 structured output capabilityを宣言し、未対応model／capabilityは hard reject する（V2-6-11、ADR 0029）。明示 v2 dispatch を v1 へ暗黙 fallback しない。v1 default path は別経路として維持する。
+- Providerごとにv2 structured output capabilityを宣言し、未対応model／capabilityはhard rejectする（V2-6-11、ADR 0029）。v2 dispatchをlegacy readerへ暗黙fallbackしない。
 - Intent v2生成、map compile、Blueprint、generator、preview、Release I/OをPaper main threadで実行しない。
 - Bukkit／world accessだけをScheduler経由でmain threadへ送る。
 - error codeへversion、stage、rule IDを含め、秘密値をredactする。
@@ -288,9 +306,13 @@ feature追加は柔軟だが、任意code、version、resource、determinism、s
 
 `V2-6-19` RC auditは、v1→v2の完全移行（v1 production code／command／Schemaの削除とv2 default化）を**実施しない**と判断した。根拠は時間ではなく、次の技術的未達条件である。
 
-1. **v2のPaper apply能力が最小範囲でしか昇格していない。** `V2-11-01`（2026-07-20）で`paper_apply`／`post_apply_validation`／`snapshot`／`rollback`／`restart_recovery`を`SUPPORTED`にできたのは、`surface-2_5d` capabilityの4 entry（SANDY_BEACH／BREAKWATER_HARBOR／HARBOR_BASIN／ROCKY_CAPE）を64×64以内で使う場合だけである。他prefixは`EXPERIMENTAL`、Release capability未接続のfoundation entryは`UNSUPPORTED`のままで、実機evidenceは64×64 smokeのみ。v1 placementは500／1000のCLI計測とproduction運用実績を持ち、これを置換できるv2実測はない（`V2-6-16`／`17`無効化により当面測定しない方針）。
+1. **v2のPaper apply能力が最小範囲でしか昇格していない。** `V2-11-01`（2026-07-20）で`paper_apply`／`post_apply_validation`／`snapshot`／`rollback`／`restart_recovery`を`SUPPORTED`にできたのは、`surface-2_5d` capabilityの4 entry（SANDY_BEACH／BREAKWATER_HARBOR／HARBOR_BASIN／ROCKY_CAPE）を64×64以内で使う場合だけである。他prefixは`EXPERIMENTAL`、Release capability未接続のfoundation entryは`UNSUPPORTED`のままである。寸法カバレッジは`V2-11-06`で改善し、FAWE 2.15.2では500×500／1000×1000のPaper lifecycle実測（`V2-11-04`／`V2-11-05`）に基づき1000×1000まで`SUPPORTED`となった（WorldEdit 7.3.19単独は64×64のまま）。ただしv1と同等の運用実績（feature多様性・production稼働）はまだ無く、feature範囲は4 entryに限られる。
 2. **v2の公開Intent経路が部分接続。** foundation／volume kindはdiagnostic bindingのままで、公開Intent dispatch・Release 2 capability・CLI／Paperの通常生成経路に接続していない。v2でrequest→design→generate→export→placementの全経路を通常利用できるのは、capability明示のdesign path（V2-6-11）と`/lfc r2`（評価用）に限られる。
 3. **Track B／Cが未完。** 画像入力（V2-7、1/7）とLARGE生成（V2-8、1/8）はv1相当機能（画像role前処理、1000×1000生成）をv2側で置換できる段階にない。
 4. **v1契約の凍結はAGENTS.mdの正本規範。** v1 Schema、generator `3.0.0-phase6`、Release format 1、v1 placement／Undo、既存checksum／goldenは変更禁止であり、v1削除はこの互換性境界の破壊を必要とするため停止条件に該当する。
 
 このため境界は次のとおり維持する: **v1が既定経路**（CLI／Paper既定command、Release 1）、**v2は明示選択経路**（capability明示design、`/lfc r2`、Release 2）。新規利用へのv2既定化は、`V2-11-01`（完了）に加えてV2-7／V2-8の各gate完了後に、新しいADR（`V2-12-01`）で再判断する。互換レイヤー（version dispatch、v1 adapter）は上記条件が解消するまで残し、削除条件はこの節の1〜3の解消とする。
+
+### 2026-07-21更新（V2-12-05）
+
+上記は`V2-6-19`時点の判断記録である。その後、ADR 0035がv1退役governanceを承認し、`V2-12-02`〜`V2-12-04`がproduction export／正式command／migrationを実装した。初回カバレッジ監査で判明したrequest authoring、job／candidate／確認付きexport、運用verbの不足は`V2-12-08`〜`V2-12-10`で解消し、再監査で未承認劣化なしを確認した。これにより`V2-12-05`は人間承認のもと既定をv2へ切替えた。現在の境界は、**v2が既定、v1は明示opt-inのdeprecated経路**である。v1 Schema、generator `3.0.0-phase6`、Release format 1、placement／Undo、goldenの意味は変えていない。v1 writer／通常commandの削除は`V2-12-06`だけが担当し、legacy reader／verifier／migrationは維持する。

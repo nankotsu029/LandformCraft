@@ -232,9 +232,11 @@ JSON object order、locale、timezone、default charset、thread scheduling、un
 
 ## Schemaファイル
 
-- [`generation-request.schema.json`](../schemas/generation-request.schema.json)（immutable IDは`/schemas/v1/...`）
-- [`terrain-intent.schema.json`](../schemas/terrain-intent.schema.json)（immutable IDは`/schemas/v1/...`）
-- [`world-blueprint.schema.json`](../schemas/world-blueprint.schema.json)（immutable IDは`/schemas/v1/...`）
+active inventoryは`schemas/`のv2 contractである。既存v1 artifactのread／verify／migrateに必要なSchemaは、V2-12-06でpackaged legacy resourceへ隔離した。`$id`とbytesは変更していない。
+
+- [`generation-request.schema.json`](../src/main/resources/legacy/v1/contracts/generation-request.schema.json)（legacy resource、immutable IDは`/schemas/v1/...`）
+- [`terrain-intent.schema.json`](../src/main/resources/legacy/v1/contracts/terrain-intent.schema.json)（legacy resource）
+- [`world-blueprint.schema.json`](../src/main/resources/legacy/v1/contracts/world-blueprint.schema.json)（legacy resource）
 - [`generation-request-v2.schema.json`](../schemas/generation-request-v2.schema.json)（V2-1 reference／constraint source分離、immutable IDは`/schemas/v2/...`）
 - [`terrain-intent-v2.schema.json`](../schemas/terrain-intent-v2.schema.json)（V2-0 contract＋V2-2-01〜06 coastal feature profile＋V2-2-07 version付きtransition policy、immutable IDは`/schemas/v2/...`）
 - [`world-blueprint-v2.schema.json`](../schemas/world-blueprint-v2.schema.json)（V2-0 descriptor-only＋V2-1 SIDECAR＋V2-2 coastal＋V2-3 Hydrology＋V2-4 geology／climate plan binding、immutable IDは`/schemas/v2/...`）
@@ -251,12 +253,12 @@ JSON object order、locale、timezone、default charset、thread scheduling、un
 - [`offline-tile-artifact-v2.schema.json`](../schemas/offline-tile-artifact-v2.schema.json)（V2-2-09 standalone tile metadata。Release manifestではない）
 - [`release-manifest-v2.schema.json`](../schemas/release-manifest-v2.schema.json)（V2-2-10 empty-capability Release format 2 core index）
 - [`coastal-validation-artifact-v2.schema.json`](../schemas/coastal-validation-artifact-v2.schema.json)（V2-2-11 sealed coastal validation evidence）
-- [`export-manifest.schema.json`](../schemas/export-manifest.schema.json)（immutable IDは`/schemas/v1/...`）
-- [`placement-journal.schema.json`](../schemas/placement-journal.schema.json)（immutable IDは`/schemas/v1/...`）
-- [`design-audit.schema.json`](../schemas/design-audit.schema.json)（immutable IDは`/schemas/v1/...`）
-- [`generation-job.schema.json`](../schemas/generation-job.schema.json)（immutable IDは`/schemas/v1/...`）
+- [`export-manifest.schema.json`](../src/main/resources/legacy/v1/contracts/export-manifest.schema.json)（legacy resource）
+- [`placement-journal.schema.json`](../src/main/resources/legacy/v1/contracts/placement-journal.schema.json)（legacy resource）
+- [`design-audit.schema.json`](../src/main/resources/legacy/v1/contracts/design-audit.schema.json)（legacy resource）
+- [`generation-job.schema.json`](../src/main/resources/legacy/v1/contracts/generation-job.schema.json)（legacy resource）
 - [`image-input-evidence.schema.json`](../schemas/image-input-evidence.schema.json)（immutable IDは`/schemas/v1/...`）
 - [`required-assets.schema.json`](../schemas/required-assets.schema.json)（immutable IDは`/schemas/v1/...`）
-- [`structure-placements.schema.json`](../schemas/structure-placements.schema.json)（immutable IDは`/schemas/v1/...`）
+- [`structure-placements.schema.json`](../src/main/resources/legacy/v1/contracts/structure-placements.schema.json)（legacy resource）
 
-v1 schemaは`0.1.0-SNAPSHOT`のPhase 0〜6実装で相互整合を確定しました。V2-0追加時にもv1 Schemaは変更していません。最初の安定版公開後の破壊的変更は同じ`$id`を書き換えず、新しいschema versionとmigrationを追加します。
+v1 schemaはimmutable legacy contractとして維持する。新規作成には使わず、既存artifactのread／verify／migrateのみが利用する。破壊的変更は同じ`$id`を書き換えず、新しいschema versionとmigrationを追加する。

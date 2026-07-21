@@ -22,12 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LandformDataCodecTest {
+    private static final Path LEGACY = Path.of("src/main/resources/legacy/v1/fixtures");
     private final LandformDataCodec codec = new LandformDataCodec();
 
     @Test
     void validatesExamplesAndRoundTripsIntent(@TempDir Path directory) throws IOException {
-        GenerationRequest request = codec.readGenerationRequest(Path.of("examples/rocky-coast/request.yml"));
-        TerrainIntent intent = codec.readTerrainIntent(Path.of("examples/rocky-coast/terrain-intent.json"));
+        GenerationRequest request = codec.readGenerationRequest(LEGACY.resolve("rocky-coast/request.yml"));
+        TerrainIntent intent = codec.readTerrainIntent(LEGACY.resolve("rocky-coast/terrain-intent.json"));
         Path copy = directory.resolve("intent.json");
 
         codec.writeJson(copy, intent);
@@ -38,7 +39,7 @@ class LandformDataCodecTest {
 
     @Test
     void rejectsUnknownRequestField(@TempDir Path directory) throws IOException {
-        String valid = Files.readString(Path.of("examples/rocky-coast/request.yml"));
+        String valid = Files.readString(LEGACY.resolve("rocky-coast/request.yml"));
         Path invalid = directory.resolve("invalid.yml");
         Files.writeString(invalid, valid + "unknown-field: true\n");
 
@@ -47,7 +48,7 @@ class LandformDataCodecTest {
 
     @Test
     void rejectsDuplicateJsonKeys(@TempDir Path directory) throws IOException {
-        String valid = Files.readString(Path.of("examples/rocky-coast/terrain-intent.json"));
+        String valid = Files.readString(LEGACY.resolve("rocky-coast/terrain-intent.json"));
         Path invalid = directory.resolve("duplicate.json");
         Files.writeString(invalid, valid.replaceFirst("\\{", "{\\n  \\\"schemaVersion\\\": 1,"));
 
@@ -56,7 +57,7 @@ class LandformDataCodecTest {
 
     @Test
     void rejectsUnsupportedSchemaVersion(@TempDir Path directory) throws IOException {
-        String valid = Files.readString(Path.of("examples/rocky-coast/terrain-intent.json"));
+        String valid = Files.readString(LEGACY.resolve("rocky-coast/terrain-intent.json"));
         Path incompatible = directory.resolve("future-version.json");
         Files.writeString(incompatible, valid.replaceFirst("\\\"schemaVersion\\\": 1", "\\\"schemaVersion\\\": 2"));
 
@@ -91,12 +92,12 @@ class LandformDataCodecTest {
         codec.writeExportManifest(path, manifest);
 
         assertEquals(manifest, codec.readExportManifest(path));
-        assertEquals("release-example", codec.readExportManifest(Path.of("examples/release-manifest.json")).requestId());
+        assertEquals("release-example", codec.readExportManifest(LEGACY.resolve("release-manifest.json")).requestId());
     }
 
     @Test
     void validatesAndRoundTripsPlacementJournal(@TempDir Path directory) throws IOException {
-        PlacementJournal journal = codec.readPlacementJournal(Path.of("examples/placement-journal.json"));
+        PlacementJournal journal = codec.readPlacementJournal(LEGACY.resolve("placement-journal.json"));
         Path copy = directory.resolve("placement.json");
 
         codec.writePlacementJournal(copy, journal);
@@ -106,7 +107,7 @@ class LandformDataCodecTest {
 
     @Test
     void rejectsUnknownPlacementJournalField(@TempDir Path directory) throws IOException {
-        String valid = Files.readString(Path.of("examples/placement-journal.json"));
+        String valid = Files.readString(LEGACY.resolve("placement-journal.json"));
         Path invalid = directory.resolve("invalid-placement.json");
         Files.writeString(invalid, valid.replaceFirst("\\{", "{\n  \"unexpected\": true,"));
 
@@ -116,7 +117,7 @@ class LandformDataCodecTest {
     @Test
     void safelyReadsLegacyPhaseThreeJournalWithoutWeakeningStrictValidation(@TempDir Path directory)
             throws IOException {
-        String legacy = Files.readString(Path.of("examples/placement-journal.json"))
+        String legacy = Files.readString(LEGACY.resolve("placement-journal.json"))
                 .replaceFirst("(?s)\\s*\"actor\"\\s*:\\s*\\{.*?\\},", "")
                 .replaceFirst("(?s)\\s*\"confirmationActor\"\\s*:\\s*\\{.*?\\},", "")
                 .replaceFirst("(?m)^\\s*\"confirmationCreatedAt\".*\\R", "")
@@ -135,8 +136,8 @@ class LandformDataCodecTest {
 
     @Test
     void validatesAndRoundTripsPhaseFourAuditAndJob(@TempDir Path directory) throws IOException {
-        var audit = codec.readDesignAudit(Path.of("examples/design-audit.json"));
-        var job = codec.readGenerationJob(Path.of("examples/generation-job.json"));
+        var audit = codec.readDesignAudit(LEGACY.resolve("design-audit.json"));
+        var job = codec.readGenerationJob(LEGACY.resolve("generation-job.json"));
         Path auditCopy = directory.resolve("audit.json");
         Path jobCopy = directory.resolve("job.json");
 
@@ -161,7 +162,7 @@ class LandformDataCodecTest {
 
     @Test
     void rejectsReferenceImageWithoutRoleAndDangerousImagePath(@TempDir Path directory) throws IOException {
-        String valid = Files.readString(Path.of("examples/rocky-coast/request.yml"));
+        String valid = Files.readString(LEGACY.resolve("rocky-coast/request.yml"));
         Path roleless = directory.resolve("roleless.yml");
         Files.writeString(roleless, valid.replace(
                 "images: []", "images:\n  - file: images/map.png"
@@ -177,7 +178,7 @@ class LandformDataCodecTest {
 
     @Test
     void rejectsUnknownImageRoleAndMoreThanSixteenImages(@TempDir Path directory) throws IOException {
-        String valid = Files.readString(Path.of("examples/rocky-coast/request.yml"));
+        String valid = Files.readString(LEGACY.resolve("rocky-coast/request.yml"));
         Path unknownRole = directory.resolve("unknown-role.yml");
         Files.writeString(unknownRole, valid.replace(
                 "images: []", "images:\n  - file: images/map.png\n    role: UNTRUSTED_ROLE"
