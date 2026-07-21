@@ -1,6 +1,6 @@
 # Beta Release Checklist
 
-2026-07-14の監査結果を反映しています。`[x]`は今回実行して証拠を得た項目だけです。最後のsource変更後に再実行が必要な項目はcheckを外しています。
+2026-07-14の監査結果を反映しています（2026-07-21に`V2-12-07` migration Phase gateの結果を追記）。`[x]`は今回実行して証拠を得た項目だけです。最後のsource変更後に再実行が必要な項目はcheckを外しています。V2-12は既定経路をv2へ確立しましたが、下記のBeta hardening blocker（実機500／1000、crash Recovery、filesystem concurrency、backup/restore rehearsal、最終artifact SHA-256公開など）は未解決のままで、`V2-12-07`はこれらを免除しません。
 
 ## Build／契約
 
@@ -50,6 +50,12 @@
 
 - [x] V2-6 Phase gate（`PlacementPhaseGateV2Test`＋full clean test／build 909 tests；[audit](design-v2/audits/v2-6-phase-gate.md)）
 - 注: gate自体は能力を昇格しない。昇格は`V2-11-01`（2026-07-20完了）が行い、catalog `paper_apply`ほか4 Paper列が`SUPPORTED`になるのは`surface-2_5d`の4 entryに限られる。寸法は`V2-11-06`（2026-07-20完了）がFAWE 2.15.2実測（`V2-11-04`／`V2-11-05`）の範囲で1000×1000へ昇格した（WorldEdit単独は64×64）。いずれの昇格も本checklistの他のBeta blockerを閉じない。
+
+### V2-12 migration Phase gate（V2-12-07）
+
+- [x] V2-12 Phase gate（`MigrationPhaseGateV2Test`＋full clean `./gradlew clean test build` 991 tests・6 skip・0 failure／error；[audit](design-v2/audits/v2-12-07-phase-gate.md)）
+- [x] v2 production-only構成の監査（v1 production writer不在、D2b/D3 legacy境界維持、R7 active inventory排除、v2-only command surface、legacy migration回帰）
+- 注: V2-12はv2を唯一のproduction経路とし、v1をmigration専用read境界へ隔離しただけで、能力・寸法・Release capability・catalogは昇格していない。本gateはBeta hardening blockerを**免除しない**。gate検出のtest-hygiene defectは`V2-12-11`（LOW）として登録済みで、未解決critical/highは無い。
 
 ## Paper＋FAWE 2.15.2
 

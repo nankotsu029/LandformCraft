@@ -60,6 +60,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlacementUndoServiceV2Test {
     private static final Duration WAIT = Duration.ofSeconds(8);
     private static final String BASELINE_STATE = "minecraft:stone";
+    /** Deterministic placeholder confirmation nonce for the sealed example only (V2-12-11). */
+    private static final String EXAMPLE_CONFIRMATION_TOKEN = "11111111-1111-1111-1111-111111111111";
 
     @Test
     void happyPathUndoesAppliedPlacementAndKeepsSnapshots(@TempDir Path directory) throws Exception {
@@ -229,7 +231,9 @@ class PlacementUndoServiceV2Test {
 
     @Test
     void undoPlanCodecRoundTrip(@TempDir Path directory) throws Exception {
-        Harness harness = Harness.afterApplied(directory, false);
+        // Fixed nonce so the sealed example is reproducible: without it the confirmation hash is a
+        // random one-time token and every run would rewrite the tracked example (V2-12-11).
+        Harness harness = Harness.afterApplied(directory, false, EXAMPLE_CONFIRMATION_TOKEN);
         LandformV2DataCodec codec = new LandformV2DataCodec();
         Path path = directory.resolve("placement-undo-plan-v2.json");
         codec.writePlacementUndoPlan(path, harness.prepared.undoPlan());
@@ -303,6 +307,16 @@ class PlacementUndoServiceV2Test {
         }
 
         static Harness afterApplied(Path root, boolean twoTiles) throws Exception {
+            return afterApplied(root, twoTiles, null);
+        }
+
+        /**
+         * {@code plaintextToken} pins the one-time confirmation nonce so a caller that seals the
+         * canonical example (the codec round-trip) gets a reproducible {@code confirmationHash};
+         * {@code null} keeps the realistic random token every other scenario uses.
+         */
+        static Harness afterApplied(Path root, boolean twoTiles, String plaintextToken)
+                throws Exception {
             PlacementApplyTestFixtureV2 fixture = PlacementApplyTestFixtureV2.create(root, twoTiles);
             UndoWorldGateway gateway = new UndoWorldGateway();
             PlacementApplyTestFixtureV2.ImmutableSource source = fixture.source(false);
@@ -352,7 +366,7 @@ class PlacementUndoServiceV2Test {
                                     verified.verifiedJournal(),
                                     applyComplete,
                                     fixture.plan.actor(),
-                                    null));
+                                    plaintextToken));
             return new Harness(
                     fixture,
                     gateway,

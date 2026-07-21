@@ -64,6 +64,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlacementRecoveryServiceV2Test {
     private static final Duration WAIT = Duration.ofSeconds(8);
     private static final String BASELINE_STATE = "minecraft:stone";
+    /** Deterministic placeholder confirmation nonce for the sealed example only (V2-12-11). */
+    private static final String EXAMPLE_CONFIRMATION_TOKEN = "22222222-2222-2222-2222-222222222222";
 
     // --- persisted state classification ----------------------------------------------------------
 
@@ -554,8 +556,10 @@ class PlacementRecoveryServiceV2Test {
     void recoveryPlanCodecRoundTrip(@TempDir Path directory) throws Exception {
         Harness harness = Harness.afterRecoveryRequired(directory, false);
         PlacementRecoveryServiceV2 service = harness.recoveryService(new RecordingJournalStore());
+        // Fixed nonce so the sealed example is reproducible: without it the confirmation hash is a
+        // random one-time token and every run would rewrite the tracked example (V2-12-11).
         PlacementRecoveryServiceV2.PreparedRecoveryV2 prepared =
-                harness.prepareAccept(service, harness.failedJournal);
+                harness.prepareAccept(service, harness.failedJournal, EXAMPLE_CONFIRMATION_TOKEN);
         LandformV2DataCodec codec = new LandformV2DataCodec();
         Path path = directory.resolve("placement-recovery-plan-v2.json");
         codec.writePlacementRecoveryPlan(path, prepared.recoveryPlan());
@@ -719,6 +723,20 @@ class PlacementRecoveryServiceV2Test {
                 PlacementRecoveryActionV2 action,
                 PlacementJournalV2 journal
         ) {
+            return prepareRequest(diagnosis, action, journal, null);
+        }
+
+        /**
+         * {@code plaintextToken} pins the one-time confirmation nonce so a caller that seals the
+         * canonical example (the codec round-trip) gets a reproducible {@code confirmationHash};
+         * {@code null} keeps the realistic random token every other scenario uses.
+         */
+        PlacementRecoveryPrepareRequestV2 prepareRequest(
+                PlacementRecoveryDiagnosisV2 diagnosis,
+                PlacementRecoveryActionV2 action,
+                PlacementJournalV2 journal,
+                String plaintextToken
+        ) {
             return new PlacementRecoveryPrepareRequestV2(
                     diagnosis,
                     action,
@@ -728,7 +746,7 @@ class PlacementRecoveryServiceV2Test {
                     fixture.snapshot,
                     journal,
                     null,
-                    null,
+                    plaintextToken,
                     PlacementApplyTestFixtureV2.NEVER);
         }
 
@@ -746,10 +764,18 @@ class PlacementRecoveryServiceV2Test {
                 PlacementRecoveryServiceV2 service,
                 PlacementJournalV2 journal
         ) {
+            return prepareAccept(service, journal, null);
+        }
+
+        PlacementRecoveryServiceV2.PreparedRecoveryV2 prepareAccept(
+                PlacementRecoveryServiceV2 service,
+                PlacementJournalV2 journal,
+                String plaintextToken
+        ) {
             PlacementRecoveryDiagnosisV2 diagnosis =
                     service.diagnose(diagnoseRequest(journal, source));
             return service.prepare(prepareRequest(
-                    diagnosis, PlacementRecoveryActionV2.ACCEPT, journal));
+                    diagnosis, PlacementRecoveryActionV2.ACCEPT, journal, plaintextToken));
         }
 
         PlacementRecoveryRollbackRequestV2 rollbackRequest(
