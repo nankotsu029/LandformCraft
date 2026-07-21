@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -111,7 +112,7 @@ public record WaterfallPlanV2(
                 throw new IllegalArgumentException("downstream waterfall reach bed must be non-increasing");
             }
         }
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || minY >= maxY || waterLevel < minY || waterLevel > maxY
                 || baseBedYMillionths < (long) minY * TerrainIntentV2.FIXED_SCALE
                 || lipBedYMillionths > (long) maxY * TerrainIntentV2.FIXED_SCALE) {

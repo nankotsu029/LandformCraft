@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2.environment;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -56,7 +57,7 @@ public record SnowPlanV2(
         if (!SEED_NAMESPACE.equals(seedNamespace)) {
             throw new IllegalArgumentException("unknown snow seed namespace");
         }
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || minY >= maxY || (long) maxY - minY + 1L > 512L) {
             throw new IllegalArgumentException("snow dimensions are invalid");
         }

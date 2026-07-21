@@ -3,6 +3,7 @@ package com.github.nankotsu029.landformcraft.model.v2.environment;
 import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
 import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyPlanV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -54,8 +55,8 @@ public record GeologyPlanV2(
         stageId = qualified(stageId, "stageId");
         Objects.requireNonNull(priorReplacement, "priorReplacement");
         seedNamespace = qualified(seedNamespace, "seedNamespace");
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-            throw new IllegalArgumentException("geology dimensions outside 1..1000");
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw new IllegalArgumentException("geology dimensions outside 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         }
         provinces = immutable(provinces, "provinces", MAX_PROVINCES).stream()
                 .sorted(Comparator.comparingInt(ProvinceDescriptor::provinceCode)

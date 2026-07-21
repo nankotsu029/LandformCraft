@@ -6,6 +6,7 @@ import com.github.nankotsu029.landformcraft.model.v2.CoastalFeaturePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.RockyCapePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -46,8 +47,8 @@ public final class RockyCapeGeneratorV2 {
                 || coastalPlan.geometry().rings().size() != 1) {
             throw failure("v2.cape-plan-binding", "rocky cape and coastal plans do not match");
         }
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-            throw failure("v2.cape-dimensions", "dimensions must be within 1..1000");
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw failure("v2.cape-dimensions", "dimensions must be within 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         }
         this.width = width;
         this.length = length;

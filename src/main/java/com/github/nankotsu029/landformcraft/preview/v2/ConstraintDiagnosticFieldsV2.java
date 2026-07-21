@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.preview.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Objects;
 
 /**
@@ -23,8 +24,8 @@ public record ConstraintDiagnosticFieldsV2(
     public static final int NO_DATA = Integer.MIN_VALUE;
 
     public ConstraintDiagnosticFieldsV2 {
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-            throw new IllegalArgumentException("diagnostic field dimensions outside 1..1000");
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw new IllegalArgumentException("diagnostic field dimensions outside 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         }
         if (minimumHeightMillionths >= maximumHeightMillionths) {
             throw new IllegalArgumentException("diagnostic height range is empty");

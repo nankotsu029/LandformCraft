@@ -80,6 +80,28 @@ public enum V2CommandVerbV2 {
             "v2 candidate list <request-id>", "candidate", Surface.BOTH, null),
     CANDIDATE_INFO("candidate", "info", 4, 4,
             "v2 candidate info <job-id>", "candidate", Surface.BOTH, null),
+    /**
+     * Deterministic image-extraction path (V2-14-01). {@code extract} turns an untrusted PNG/JPEG on
+     * the operator's workstation into a sealed V2-7 draft bundle; {@code promote} re-loads a draft and
+     * turns it into a V2-1 constraint map with the operator's explicit confidence/handling. Both read
+     * arbitrary local image paths and stay {@code EXPERIMENTAL}, so they are CLI-only like migrate.
+     */
+    EXTRACT_LAND_WATER("extract", "land-water", 5, 5,
+            "v2 extract land-water <image-file> <draft-output-dir>", "extract", Surface.CLI, null),
+    EXTRACT_HEIGHT_GUIDE("extract", "height-guide", 5, 5,
+            "v2 extract height-guide <image-file> <draft-output-dir>", "extract", Surface.CLI, null),
+    EXTRACT_ZONE_LABEL("extract", "zone-label", 5, 5,
+            "v2 extract zone-label <image-file> <draft-output-dir>", "extract", Surface.CLI, null),
+    PROMOTE_LAND_WATER("promote", "land-water", 7, 8,
+            "v2 promote land-water <draft-dir> <output-dir> <confidence-threshold> "
+                    + "<reject|water|land|nodata> [nodata-sample]", "extract", Surface.CLI, null),
+    PROMOTE_HEIGHT_GUIDE("promote", "height-guide", 10, 10,
+            "v2 promote height-guide <draft-dir> <output-dir> <request-v2.json> <confidence-threshold> "
+                    + "<absolute-block-y|blocks-above-min-y|blocks-relative-to-water> "
+                    + "<scale-millionths> <offset-millionths>", "extract", Surface.CLI, null),
+    PROMOTE_ZONE_LABEL("promote", "zone-label", 7, 8,
+            "v2 promote zone-label <draft-dir> <output-dir> <request-v2.json> <confidence-threshold> "
+                    + "[nodata-sample]", "extract", Surface.CLI, null),
     MIGRATE_INSPECT("migrate", "inspect", 5, 5,
             "v2 migrate inspect <intent|design|release> <v1-source>", "migrate", Surface.CLI, null),
     MIGRATE_APPLY("migrate", "apply", 8, 8,

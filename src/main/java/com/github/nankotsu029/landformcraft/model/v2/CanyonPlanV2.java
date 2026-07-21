@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -93,7 +94,7 @@ public record CanyonPlanV2(
         } else if (terraceCount != 0 || terraceWidthBlocks != 0) {
             throw new IllegalArgumentException("non-terraced canyon plan must not carry terraces");
         }
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || minY >= maxY || waterLevel < minY || waterLevel > maxY) {
             throw new IllegalArgumentException("canyon world bounds are invalid");
         }

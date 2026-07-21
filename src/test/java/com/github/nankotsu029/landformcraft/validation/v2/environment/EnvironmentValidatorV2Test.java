@@ -106,7 +106,7 @@ class EnvironmentValidatorV2Test {
     @Test
     void rejectsOversizeScanBudget() {
         assertThrows(IllegalArgumentException.class, () ->
-                new EnvironmentValidationInputV2(1_001, 1, CHECKSUM, (x, z) -> healthyCell()));
+                new EnvironmentValidationInputV2(1_025, 1, CHECKSUM, (x, z) -> healthyCell()));
     }
 
     private static void assertIssue(EnvironmentFieldSamplerV2 sampler, String ruleId) {

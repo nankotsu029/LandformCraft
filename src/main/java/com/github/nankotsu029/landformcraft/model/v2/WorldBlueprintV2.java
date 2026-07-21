@@ -8,6 +8,7 @@ import com.github.nankotsu029.landformcraft.model.v2.environment.LithologyPlanV2
 import com.github.nankotsu029.landformcraft.model.v2.environment.StrataPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.WaterConditionPlanV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -190,8 +191,8 @@ public record WorldBlueprintV2(
 
     public record Bounds(int width, int length, int minY, int maxY, int waterLevel) {
         public Bounds {
-            if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-                throw new IllegalArgumentException("bounds horizontal dimensions outside 1..1000");
+            if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+                throw new IllegalArgumentException("bounds horizontal dimensions outside 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
             }
             if (minY >= maxY || (long) maxY - minY + 1L > 512L
                     || waterLevel < minY || waterLevel > maxY) {
@@ -381,7 +382,7 @@ public record WorldBlueprintV2(
             fieldId = V2Validation.qualifiedId(fieldId, "fieldId");
             Objects.requireNonNull(semantic, "semantic");
             Objects.requireNonNull(valueType, "valueType");
-            if (width < 1 || width > 1_000 || length < 1 || length > 1_000) throw new IllegalArgumentException("field dimensions outside bounds");
+            if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) throw new IllegalArgumentException("field dimensions outside bounds");
             Objects.requireNonNull(space, "space");
             Objects.requireNonNull(sampling, "sampling");
             Objects.requireNonNull(storage, "storage");

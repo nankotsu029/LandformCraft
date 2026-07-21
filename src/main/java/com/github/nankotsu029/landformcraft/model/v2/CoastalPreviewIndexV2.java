@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -23,8 +24,8 @@ public record CoastalPreviewIndexV2(
             throw new IllegalArgumentException("coastal preview index version must be 1");
         }
         sourceBlueprintChecksum = V2Validation.checksum(sourceBlueprintChecksum, "sourceBlueprintChecksum");
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-            throw new IllegalArgumentException("coastal preview dimensions must be within 1..1000");
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw new IllegalArgumentException("coastal preview dimensions must be within 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         }
         layers = V2Validation.sorted(layers, "layers", LayerId.values().length,
                 Comparator.comparing(Layer::layerId));
@@ -111,7 +112,7 @@ public record CoastalPreviewIndexV2(
             }
             sha256 = V2Validation.checksum(sha256, "sha256");
             if (byteLength < 1 || byteLength > 8L * 1024L * 1024L
-                    || width < 1 || width > 1_000 || length < 1 || length > 1_000) {
+                    || width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
                 throw new IllegalArgumentException("coastal preview layer exceeds fixed budget");
             }
             paletteId = V2Validation.qualifiedId(paletteId, "paletteId");

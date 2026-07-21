@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.preview.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentCellSnapshotV2;
 import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentFieldSamplerV2;
 import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentValidatorV2;
@@ -13,7 +14,7 @@ public final class EnvironmentDiagnosticFieldFactoryV2 {
 
     public static EnvironmentDiagnosticFieldsV2 create(int width, int length, EnvironmentFieldSamplerV2 sampler) {
         Objects.requireNonNull(sampler, "sampler");
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
             throw new IllegalArgumentException("invalid environment diagnostic dimensions");
         }
         return new EnvironmentDiagnosticFieldsV2(

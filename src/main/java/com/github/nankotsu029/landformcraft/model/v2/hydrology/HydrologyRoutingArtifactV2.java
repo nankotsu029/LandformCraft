@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.model.v2.hydrology;
 
 import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -58,8 +59,8 @@ public record HydrologyRoutingArtifactV2(
         solverVersion = exact(solverVersion, SOLVER_VERSION, "solverVersion");
         directionEncodingVersion = exact(
                 directionEncodingVersion, DIRECTION_ENCODING_VERSION, "directionEncodingVersion");
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-            throw new IllegalArgumentException("hydrology routing dimensions must be within 1..1000");
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw new IllegalArgumentException("hydrology routing dimensions must be within 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         }
         sourceHydrologyPlanChecksum = checksum(sourceHydrologyPlanChecksum, "sourceHydrologyPlanChecksum");
         sourceSurfaceChecksum = checksum(sourceSurfaceChecksum, "sourceSurfaceChecksum");

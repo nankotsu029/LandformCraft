@@ -1,6 +1,7 @@
 package com.github.nankotsu029.landformcraft.model.v2.foundation;
 
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 /** Frozen V2-10-04 execution plan for an EXPERIMENTAL seamount foundation profile. */
 public record SeamountPlanV2(
@@ -54,7 +55,7 @@ public record SeamountPlanV2(
                 || selectedSummitDepthBlocksBelowSea < 8 || selectedSummitDepthBlocksBelowSea > 240) {
             throw new IllegalArgumentException("seamount profile dimensions are invalid");
         }
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000 || minY >= maxY
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || minY >= maxY
                 || waterLevel < minY || waterLevel > maxY) {
             throw new IllegalArgumentException("seamount bounds are invalid");
         }

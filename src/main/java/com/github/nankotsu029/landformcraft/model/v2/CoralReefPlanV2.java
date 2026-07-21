@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.List;
 import java.util.Objects;
 
@@ -52,7 +53,7 @@ public record CoralReefPlanV2(
         Objects.requireNonNull(lagoonPlanHook, "lagoonPlanHook");
         passHooks = V2Validation.immutable(passHooks, "passHooks", 16);
         validateRanges(minimumLagoonDepthBlocks, selectedLagoonDepthBlocks, maximumLagoonDepthBlocks, 5, 14);
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000 || minY >= maxY
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || minY >= maxY
                 || waterLevel < minY || waterLevel > maxY) {
             throw new IllegalArgumentException("coral reef bounds are invalid");
         }

@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.model.v2.foundation;
 
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.List;
 import java.util.Objects;
 
@@ -52,7 +53,7 @@ public record PlateauPlanV2(
                 || escarpmentTransitionBandBlocks < 2 || escarpmentTransitionBandBlocks > 32) {
             throw new IllegalArgumentException("plateau profile dimensions are invalid");
         }
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000 || minY >= maxY) {
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || minY >= maxY) {
             throw new IllegalArgumentException("plateau bounds are invalid");
         }
         long maxX = Math.addExact(

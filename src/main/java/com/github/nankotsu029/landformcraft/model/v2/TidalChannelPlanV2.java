@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,7 +67,7 @@ public record TidalChannelPlanV2(
         if (nodes.isEmpty() || edges.isEmpty()) {
             throw new IllegalArgumentException("tidal network requires nodes and edges");
         }
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || minY >= maxY || waterLevel < minY || waterLevel > maxY) {
             throw new IllegalArgumentException("tidal world bounds are invalid");
         }

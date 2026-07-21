@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.preview.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Objects;
 
 /** Lazy V2-2 coastal diagnostic values. Each field is sampled on demand during one PNG render. */
@@ -23,7 +24,7 @@ public record CoastalDiagnosticFieldsV2(
     public static final int NO_DATA = Integer.MIN_VALUE;
 
     public CoastalDiagnosticFieldsV2 {
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || minimumHeightMillionths >= maximumHeightMillionths) {
             throw new IllegalArgumentException("invalid coastal diagnostic dimensions or height range");
         }

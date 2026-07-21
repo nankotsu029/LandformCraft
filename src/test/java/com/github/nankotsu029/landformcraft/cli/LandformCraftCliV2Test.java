@@ -3,7 +3,10 @@ package com.github.nankotsu029.landformcraft.cli;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -391,6 +394,183 @@ class LandformCraftCliV2Test {
         assertTrue(run("--v1", "definitely-not-a-command").error().contains("V2_UNKNOWN_VERB"),
                 run("--v1", "definitely-not-a-command").error());
         assertFalse(run("--help").output().contains("--v1"));
+    }
+
+    // --- V2-14-01: image extraction path wiring ------------------------------------------------
+
+    @Test
+    void extractPromoteDeclareAndExportRunsTheWholeImageFidelityChain(@TempDir Path root) throws Exception {
+        // 抽出: an untrusted colour PNG becomes a sealed V2-7 land/water draft bundle.
+        Path image = root.resolve("coast.png");
+        writeLandWaterPng(image, 64, 64);
+        Path draftDir = root.resolve("draft");
+        Result extracted = run("v2", "extract", "land-water", image.toString(), draftDir.toString());
+        assertEquals(0, extracted.exitCode(), extracted.error());
+        assertTrue(extracted.output().contains("kind: land-water"), extracted.output());
+        assertTrue(extracted.output().contains("width: 64"), extracted.output());
+        assertTrue(Files.isRegularFile(draftDir.resolve("extracted-mask-draft-v2.json")));
+
+        // 昇格: an explicit confidence threshold + UNKNOWN handling promotes the draft to a V2-1 map.
+        Path promoteDir = root.resolve("promoted");
+        Result promoted = run("v2", "promote", "land-water", draftDir.toString(),
+                promoteDir.toString(), "1", "reject");
+        assertEquals(0, promoted.exitCode(), promoted.error());
+        assertTrue(promoted.output().contains("mapPath: land-water.png"), promoted.output());
+        assertTrue(Files.isRegularFile(promoteDir.resolve("land-water.png")));
+        String sha256 = valueOf(promoted.output(), "sha256");
+
+        // request宣言: the extracted map is declared as the request's single constraint source.
+        String data = root.resolve("data").toString();
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64",
+                "64", "64", "32", "72", "50").exitCode());
+        // The sealed intent binds to constraint-source:coast-mask, so the declared slug reuses it; the
+        // export reads the source id and extracted digest for provenance and never rereads the file.
+        Result declared = run("--data-dir", data, "v2", "request", "constraint-map", "harbor-cove-64",
+                "coast-mask", "maps/extracted-coast-land-water.png", sha256, "64", "64");
+        assertEquals(0, declared.exitCode(), declared.error());
+        assertTrue(declared.output().contains("constraintMaps: 1"), declared.output());
+
+        Path stored = root.resolve("data").resolve("v2").resolve("requests")
+                .resolve("harbor-cove-64.request-v2.json");
+        Result validated = run("v2", "request", "validate", stored.toString());
+        assertEquals(0, validated.exitCode(), validated.error());
+
+        // v2 export到達: the authored request carrying the extracted map reaches the production export.
+        Result exported = run("v2", "export", stored.toString(), INTENT,
+                root.resolve("exports").toString(), "extracted-export", "water", "54", "46");
+        assertEquals(0, exported.exitCode(), exported.error());
+        assertTrue(exported.output().contains("placementEligible: true"), exported.output());
+    }
+
+    @Test
+    void heightGuideExtractionAndPromotionQuantiseAgainstTheStoredRequestBounds(@TempDir Path root)
+            throws Exception {
+        Path image = root.resolve("relief.png");
+        writeHeightGuidePng(image, 16, 16);
+        Path draftDir = root.resolve("draft");
+        assertEquals(0, run("v2", "extract", "height-guide", image.toString(),
+                draftDir.toString()).exitCode());
+
+        String data = root.resolve("data").toString();
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "relief").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "relief",
+                "16", "16", "0", "255", "62").exitCode());
+        Path request = root.resolve("data").resolve("v2").resolve("requests")
+                .resolve("relief.request-v2.json");
+
+        Result promoted = run("v2", "promote", "height-guide", draftDir.toString(),
+                root.resolve("promoted").toString(), request.toString(), "1",
+                "blocks-above-min-y", "1000000", "0");
+        assertEquals(0, promoted.exitCode(), promoted.error());
+        assertTrue(promoted.output().contains("mapPath: height-guide.png"), promoted.output());
+        assertTrue(promoted.output().contains("valueMeaning: BLOCKS_ABOVE_REQUEST_MIN_Y"), promoted.output());
+        assertTrue(Files.isRegularFile(root.resolve("promoted").resolve("height-guide.png")));
+    }
+
+    @Test
+    void zoneLabelExtractionAndPromotionPublishACategoricalMap(@TempDir Path root) throws Exception {
+        Path image = root.resolve("zones.png");
+        writeZonePng(image, 16, 16);
+        Path draftDir = root.resolve("draft");
+        assertEquals(0, run("v2", "extract", "zone-label", image.toString(),
+                draftDir.toString()).exitCode());
+
+        String data = root.resolve("data").toString();
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "zones").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "zones",
+                "16", "16", "0", "128", "62").exitCode());
+        Path request = root.resolve("data").resolve("v2").resolve("requests")
+                .resolve("zones.request-v2.json");
+
+        Result promoted = run("v2", "promote", "zone-label", draftDir.toString(),
+                root.resolve("promoted").toString(), request.toString(), "1");
+        assertEquals(0, promoted.exitCode(), promoted.error());
+        assertTrue(promoted.output().contains("mapPath: zone-labels.png"), promoted.output());
+        assertTrue(Files.isRegularFile(root.resolve("promoted").resolve("zone-labels.png")));
+    }
+
+    @Test
+    void extractAndPromoteAreCliOnlyGrammarWithStableUsage() {
+        // Missing arguments surface the stable V2_USAGE code with the canonical usage text.
+        Result usage = run("v2", "extract", "land-water", "only-one-arg");
+        assertEquals(2, usage.exitCode());
+        assertTrue(usage.error().contains("V2_USAGE"), usage.error());
+        assertTrue(usage.error().contains("<draft-output-dir>"), usage.error());
+
+        // An unknown extract kind is an unknown-operation routing error, not a guess.
+        Result unknown = run("v2", "extract", "coastline", "a.png", "b");
+        assertEquals(2, unknown.exitCode());
+        assertTrue(unknown.error().contains("V2_UNKNOWN_OPERATION"), unknown.error());
+    }
+
+    @Test
+    void promoteRejectsAnUnknownHandlingWord(@TempDir Path root) throws Exception {
+        Path image = root.resolve("coast.png");
+        writeLandWaterPng(image, 8, 8);
+        Path draftDir = root.resolve("draft");
+        assertEquals(0, run("v2", "extract", "land-water", image.toString(),
+                draftDir.toString()).exitCode());
+
+        Result promoted = run("v2", "promote", "land-water", draftDir.toString(),
+                root.resolve("promoted").toString(), "1", "maybe");
+        assertEquals(1, promoted.exitCode());
+        assertTrue(promoted.error().contains("unknown-handling"), promoted.error());
+    }
+
+    private static void writeLandWaterPng(Path path, int width, int length) throws IOException {
+        BufferedImage image = new BufferedImage(width, length, BufferedImage.TYPE_INT_ARGB);
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                // Saturated, full-alpha colours the deterministic extractor classifies with confidence.
+                int argb = x < width / 2 ? argb(255, 10, 40, 220) : argb(255, 70, 140, 70);
+                image.setRGB(x, z, argb);
+            }
+        }
+        writePng(image, path);
+    }
+
+    private static void writeHeightGuidePng(Path path, int width, int length) throws IOException {
+        BufferedImage image = new BufferedImage(width, length, BufferedImage.TYPE_INT_ARGB);
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                int grey = (x * 200) / Math.max(1, width - 1) + 10;
+                image.setRGB(x, z, argb(255, grey, grey, grey));
+            }
+        }
+        writePng(image, path);
+    }
+
+    private static void writeZonePng(Path path, int width, int length) throws IOException {
+        BufferedImage image = new BufferedImage(width, length, BufferedImage.TYPE_INT_ARGB);
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                // Two clearly separated fixed-palette zones (shore sand vs upland rock-ish green).
+                int argb = z < length / 2 ? argb(255, 194, 178, 128) : argb(255, 70, 140, 70);
+                image.setRGB(x, z, argb);
+            }
+        }
+        writePng(image, path);
+    }
+
+    private static void writePng(BufferedImage image, Path path) throws IOException {
+        if (!ImageIO.write(image, "png", path.toFile())) {
+            throw new IOException("no PNG writer available for the extraction fixture");
+        }
+    }
+
+    private static int argb(int alpha, int red, int green, int blue) {
+        return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    /** Reads one {@code key: value} line from the CLI's human-readable output. */
+    private static String valueOf(String output, String key) {
+        for (String line : output.split("\n")) {
+            if (line.startsWith(key + ": ")) {
+                return line.substring(key.length() + 2).trim();
+            }
+        }
+        throw new AssertionError("no '" + key + "' line in CLI output:\n" + output);
     }
 
     private static Result run(String... args) {

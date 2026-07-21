@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.model.v2.environment;
 
 import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyPlanV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -75,7 +76,7 @@ public record ClimatePlanV2(
         if (!SEED_NAMESPACE.equals(seedNamespace)) {
             throw new IllegalArgumentException("unknown climate seed namespace");
         }
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || minY >= maxY || (long) maxY - minY + 1L > 512L
                 || referenceElevationY < minY || referenceElevationY > maxY) {
             throw new IllegalArgumentException("climate dimensions or vertical reference are invalid");

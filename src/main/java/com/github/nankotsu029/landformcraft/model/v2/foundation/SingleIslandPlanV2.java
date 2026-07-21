@@ -1,6 +1,7 @@
 package com.github.nankotsu029.landformcraft.model.v2.foundation;
 
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 /** Frozen V2-9-07 execution plan for an EXPERIMENTAL single-island foundation profile. */
 public record SingleIslandPlanV2(
@@ -52,7 +53,7 @@ public record SingleIslandPlanV2(
                 || selectedSubmarineApronDepthBlocks < 4 || selectedSubmarineApronDepthBlocks > 64) {
             throw new IllegalArgumentException("single island profile dimensions are invalid");
         }
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000 || minY >= maxY
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || minY >= maxY
                 || waterLevel < minY || waterLevel > maxY) {
             throw new IllegalArgumentException("single island bounds are invalid");
         }

@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -23,8 +24,8 @@ public record EnvironmentPreviewIndexV2(
             throw new IllegalArgumentException("environment preview index version must be 1");
         }
         sourcePlanChecksum = V2Validation.checksum(sourcePlanChecksum, "sourcePlanChecksum");
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-            throw new IllegalArgumentException("environment preview dimensions must be within 1..1000");
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw new IllegalArgumentException("environment preview dimensions must be within 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         }
         layers = V2Validation.sorted(layers, "layers", LayerId.values().length,
                 Comparator.comparing(Layer::layerId));
@@ -120,7 +121,7 @@ public record EnvironmentPreviewIndexV2(
             if (byteLength < 1 || byteLength > 8L * 1024L * 1024L) {
                 throw new IllegalArgumentException("environment preview PNG byte length is out of budget");
             }
-            if (width < 1 || length < 1 || width > 1_000 || length > 1_000) {
+            if (width < 1 || length < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
                 throw new IllegalArgumentException("environment preview layer dimensions are invalid");
             }
             paletteId = V2Validation.nonBlank(paletteId, "paletteId", 64);

@@ -17,6 +17,7 @@ import com.github.nankotsu029.landformcraft.model.v2.ExtractedHeightGuidePromoti
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -57,10 +58,11 @@ public final class ExtractedHeightGuidePromotionServiceV2 {
                     ExtractedHeightGuidePromotionFailureCodeV2.INVALID_OPTIONS,
                     "promotion bounds dimensions must match the height guide draft");
         }
-        if (draft.width() > 1_000 || draft.length() > 1_000) {
+        if (draft.width() > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || draft.length() > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
             throw new ExtractedHeightGuidePromotionExceptionV2(
                     ExtractedHeightGuidePromotionFailureCodeV2.INVALID_OPTIONS,
-                    "residual-linked height promotion requires Request-compatible dimensions (≤1000)");
+                    "residual-linked height promotion requires scale-contract dimensions (≤"
+                            + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING + ")");
         }
 
         long pixels = (long) draft.width() * draft.length();

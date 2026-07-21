@@ -1,6 +1,6 @@
 # Scale and Streaming（LARGE実行モデル）
 
-> Status: 設計正本。契約（`model.v2.scale`／`core.v2.scale`、`scale-admission-v1`）は実装済み・`EXPERIMENTAL`。LARGE生成そのものは未実装で、[Task Index](task-index.md) のV2-8が実装経路である。採用判断は [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md)。
+> Status: 設計正本。契約（`model.v2.scale`／`core.v2.scale`、`scale-admission-v1`）は実装済み・`EXPERIMENTAL`。LARGE生成そのものは未実装で、[Task Index](task-index.md) のV2-8が実装経路である。採用判断は [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md)。**2026-07-21のS2決定により`V2-8-03`〜`V2-8-08`は保留（LARGE契約は凍結保持、3000／3072のsupported表現禁止）であり、実装重点はV2-13の1024（MEDIUM）である。`V2-8-02`完了により、分散していたv2の水平寸法検査は`ScaleDimensionPolicyV2`（MEDIUM=1024）へ統一済み。request／Schema上限1000の拡張は`V2-13-02`が担当する。**
 
 ## 1. scale class
 

@@ -226,6 +226,43 @@ class V2CommandRouterV2Test {
     }
 
     @Test
+    void routesTheImageExtractionPathAsCliOnly() {
+        // V2-14-01: extract/promote read an operator-workstation image and stay EXPERIMENTAL, so like
+        // migrate they are CLI-only and never appear on the live Paper surface.
+        V2CommandRouteV2 extract = V2CommandRouterV2.route(
+                new String[] {"v2", "extract", "land-water", "coast.png", "draft"}, CLI);
+        assertTrue(extract.accepted());
+        assertEquals(V2CommandVerbV2.EXTRACT_LAND_WATER, extract.requireVerb());
+        assertEquals("landformcraft.v2.extract", extract.requireVerb().permission());
+
+        V2CommandRouteV2 promote = V2CommandRouterV2.route(
+                new String[] {"v2", "promote", "land-water", "draft", "out", "1", "reject"}, CLI);
+        assertTrue(promote.accepted());
+        assertEquals(V2CommandVerbV2.PROMOTE_LAND_WATER, promote.requireVerb());
+
+        // The optional no-data sample keeps land-water promotion inside its 6..7 arity band.
+        assertTrue(V2CommandRouterV2.route(
+                new String[] {"v2", "promote", "land-water", "draft", "out", "1", "nodata", "255"}, CLI)
+                .accepted());
+        assertEquals(V2CommandVerbV2.PROMOTE_HEIGHT_GUIDE, V2CommandRouterV2.route(
+                new String[] {"v2", "promote", "height-guide", "draft", "out", "req.json", "1",
+                        "blocks-above-min-y", "1000000", "0"}, CLI).requireVerb());
+        assertEquals(V2CommandVerbV2.PROMOTE_ZONE_LABEL, V2CommandRouterV2.route(
+                new String[] {"v2", "promote", "zone-label", "draft", "out", "req.json", "1"}, CLI)
+                .requireVerb());
+
+        assertEquals(V2CommandErrorCodeV2.V2_CLI_ONLY, V2CommandRouterV2.route(
+                new String[] {"v2", "extract", "land-water", "coast.png", "draft"}, PAPER)
+                .errorCode().orElseThrow());
+        assertEquals(V2CommandErrorCodeV2.V2_CLI_ONLY, V2CommandRouterV2.route(
+                new String[] {"v2", "promote", "land-water", "draft", "out", "1", "reject"}, PAPER)
+                .errorCode().orElseThrow());
+        assertEquals(V2CommandErrorCodeV2.V2_UNKNOWN_OPERATION, V2CommandRouterV2.route(
+                new String[] {"v2", "extract", "coastline", "coast.png", "draft"}, CLI)
+                .errorCode().orElseThrow());
+    }
+
+    @Test
     void theRecoverAndRecoveryVerbsAreDistinctTokens() {
         // `recover` is the Paper placement-recovery lifecycle; `recovery` is the CLI read-only view.
         assertEquals(V2CommandVerbV2.RECOVER_DIAGNOSE, V2CommandRouterV2.route(

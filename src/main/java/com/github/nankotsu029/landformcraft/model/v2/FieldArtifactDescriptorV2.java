@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -55,8 +56,8 @@ public record FieldArtifactDescriptorV2(
             fieldId = V2Validation.qualifiedId(fieldId, "fieldId");
             Objects.requireNonNull(semantic, "semantic");
             Objects.requireNonNull(valueType, "valueType");
-            if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-                throw new IllegalArgumentException("field dimensions must be within 1..1000");
+            if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+                throw new IllegalArgumentException("field dimensions must be within 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
             }
             Objects.requireNonNull(coordinateSpace, "coordinateSpace");
             Objects.requireNonNull(sampling, "sampling");

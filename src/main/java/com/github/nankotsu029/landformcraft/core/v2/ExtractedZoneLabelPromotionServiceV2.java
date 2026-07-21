@@ -19,6 +19,7 @@ import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.ZoneLabelProposalV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -59,10 +60,11 @@ public final class ExtractedZoneLabelPromotionServiceV2 {
                     ExtractedZoneLabelPromotionFailureCodeV2.INVALID_OPTIONS,
                     "promotion bounds dimensions must match the zone label draft");
         }
-        if (draft.width() > 1_000 || draft.length() > 1_000) {
+        if (draft.width() > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || draft.length() > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
             throw new ExtractedZoneLabelPromotionExceptionV2(
                     ExtractedZoneLabelPromotionFailureCodeV2.INVALID_OPTIONS,
-                    "zone promotion requires Request-compatible dimensions (≤1000)");
+                    "zone promotion requires scale-contract dimensions (≤"
+                            + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING + ")");
         }
         for (var entry : draft.proposedLabels()) {
             if (entry.sample() == options.noDataSample()) {

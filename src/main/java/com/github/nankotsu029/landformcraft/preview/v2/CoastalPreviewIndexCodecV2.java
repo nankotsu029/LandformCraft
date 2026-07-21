@@ -14,6 +14,7 @@ import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapSo
 import com.github.nankotsu029.landformcraft.format.v2.constraint.LoadedConstraintMapSource;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.SecureConstraintMapSourceLoader;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalPreviewIndexV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import com.github.nankotsu029.landformcraft.validation.StructuredDataValidator;
 
 import javax.imageio.ImageIO;
@@ -183,7 +184,7 @@ public final class CoastalPreviewIndexCodecV2 {
                 int width = reader.getWidth(0);
                 int length = reader.getHeight(0);
                 if (width != layer.width() || length != layer.length()
-                        || width > 1_000 || length > 1_000
+                        || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                         || (long) width * length > 1_000_000L) {
                     throw new IOException("coastal preview PNG dimensions exceed its index budget: " + layer.path());
                 }

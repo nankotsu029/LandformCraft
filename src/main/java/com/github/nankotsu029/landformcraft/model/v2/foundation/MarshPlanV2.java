@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.model.v2.foundation;
 
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.List;
 
 /** Frozen V2-9-05 execution plan for an EXPERIMENTAL marsh foundation profile. */
@@ -65,7 +66,7 @@ public record MarshPlanV2(
         if (groundwaterMinDepthBlocks > selectedHydroperiodBlocks + 16) {
             throw new IllegalArgumentException("marsh groundwater/hydroperiod conflict");
         }
-        if (width < 2 || width > 1_000 || length < 2 || length > 1_000 || minY >= maxY
+        if (width < 2 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 2 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || minY >= maxY
                 || waterLevel < minY || waterLevel > maxY) {
             throw new IllegalArgumentException("marsh bounds are invalid");
         }

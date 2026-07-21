@@ -1,5 +1,7 @@
 package com.github.nankotsu029.landformcraft.model.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
+
 /** Bounded release-local tile window consumed by the V2 offline block-stream exporter. */
 public record OfflineTilePlanV2(
         int tilePlanVersion,
@@ -24,7 +26,7 @@ public record OfflineTilePlanV2(
                 || width < 1 || width > MAXIMUM_HORIZONTAL_EXTENT
                 || length < 1 || length > MAXIMUM_HORIZONTAL_EXTENT
                 || minY > maxY || (long) maxY - minY + 1L > MAXIMUM_VERTICAL_EXTENT
-                || (long) originX + width > 1_000L || (long) originZ + length > 1_000L) {
+                || (long) originX + width > (long) ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || (long) originZ + length > (long) ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
             throw new IllegalArgumentException("offline tile bounds are invalid or exceed the V2 budget");
         }
         int height = Math.toIntExact((long) maxY - minY + 1L);

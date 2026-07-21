@@ -1,11 +1,16 @@
 package com.github.nankotsu029.landformcraft.cli;
 
+import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.core.GenerationExecutors;
 import com.github.nankotsu029.landformcraft.core.CustomAssetService;
 import com.github.nankotsu029.landformcraft.core.DoctorService;
 import com.github.nankotsu029.landformcraft.core.LandformErrorCode;
 import com.github.nankotsu029.landformcraft.core.LandformException;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticBlueprintCompilerV2;
+import com.github.nankotsu029.landformcraft.core.v2.ExtractedHeightGuidePromotionOptionsV2;
+import com.github.nankotsu029.landformcraft.core.v2.ExtractedMaskPromotionOptionsV2;
+import com.github.nankotsu029.landformcraft.core.v2.ExtractedZoneLabelPromotionOptionsV2;
+import com.github.nankotsu029.landformcraft.core.v2.ImageExtractionWorkflowServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandRouteV2;
 import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandRouterV2;
 import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandVerbV2;
@@ -39,6 +44,8 @@ public final class LandformCraftCli {
     public static final String VERSION = "0.9.0-beta.1";
     public static final int SCHEMA_VERSION = 2;
     private static final ThreadLocal<CliOptions> OPTIONS = new ThreadLocal<>();
+    /** Cooperative cancellation tied to the CLI thread's interrupt flag (Ctrl-C / shutdown). */
+    private static final CancellationToken INTERRUPTIBLE = () -> Thread.currentThread().isInterrupted();
 
     private LandformCraftCli() {
     }
@@ -163,6 +170,10 @@ public final class LandformCraftCli {
                     previews.put("v2CorrelationId", route.correlationId());
                     emit(standardOutput, previews);
                 }
+                case EXTRACT_LAND_WATER, EXTRACT_HEIGHT_GUIDE, EXTRACT_ZONE_LABEL ->
+                        emit(standardOutput, extract(verb, tokens, route));
+                case PROMOTE_LAND_WATER, PROMOTE_HEIGHT_GUIDE, PROMOTE_ZONE_LABEL ->
+                        emit(standardOutput, promote(verb, tokens, route));
                 case MIGRATE_INSPECT, MIGRATE_APPLY -> {
                     Map<String, Object> summary = new LinkedHashMap<>(
                             LegacyMigrationApplicationServiceV2.summarize(
@@ -319,6 +330,199 @@ public final class LandformCraftCli {
         result.put("constraintMaps", request.constraintMaps().size());
         result.put("path", store.pathOf(request.requestId()).toString());
         return result;
+    }
+
+    /**
+     * Runs one deterministic image-extraction verb (V2-14-01): the untrusted image is turned into a
+     * sealed V2-7 draft bundle. The result reports the draft directory and provenance so the operator
+     * can feed it straight to {@code v2 promote}. The extraction never calls AI and never guesses.
+     */
+    private static Map<String, Object> extract(
+            V2CommandVerbV2 verb,
+            List<String> tokens,
+            V2CommandRouteV2 route
+    ) throws IOException {
+        ImageExtractionWorkflowServiceV2 workflow = new ImageExtractionWorkflowServiceV2();
+        CancellationToken token = INTERRUPTIBLE;
+        Path imageFile = Path.of(tokens.get(3));
+        Path draftDirectory = Path.of(tokens.get(4));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("v2CorrelationId", route.correlationId());
+        switch (verb) {
+            case EXTRACT_LAND_WATER -> {
+                var artifact = workflow.extractLandWater(imageFile, draftDirectory, token);
+                result.put("kind", "land-water");
+                result.put("role", "LAND_WATER_MASK");
+                result.put("algorithmVersion", artifact.algorithmVersion());
+                result.put("sourceChecksum", artifact.sourceChecksum());
+                result.put("semanticChecksum", artifact.semanticChecksum());
+                result.put("width", artifact.width());
+                result.put("length", artifact.length());
+                result.put("waterCells", artifact.waterCells());
+                result.put("landCells", artifact.landCells());
+                result.put("unknownCells", artifact.unknownCells());
+            }
+            case EXTRACT_HEIGHT_GUIDE -> {
+                var artifact = workflow.extractHeightGuide(imageFile, draftDirectory, token);
+                result.put("kind", "height-guide");
+                result.put("role", "HEIGHT_GUIDE");
+                result.put("algorithmVersion", artifact.algorithmVersion());
+                result.put("sampleSpaceDeclaration", artifact.sampleSpaceDeclaration());
+                result.put("sourceChecksum", artifact.sourceChecksum());
+                result.put("semanticChecksum", artifact.semanticChecksum());
+                result.put("width", artifact.width());
+                result.put("length", artifact.length());
+                result.put("validCells", artifact.validCells());
+                result.put("noDataCells", artifact.noDataCells());
+            }
+            case EXTRACT_ZONE_LABEL -> {
+                var artifact = workflow.extractZoneLabel(imageFile, draftDirectory, token);
+                result.put("kind", "zone-label");
+                result.put("role", "ZONE_LABEL_MAP");
+                result.put("algorithmVersion", artifact.algorithmVersion());
+                result.put("sampleSpaceDeclaration", artifact.sampleSpaceDeclaration());
+                result.put("sourceChecksum", artifact.sourceChecksum());
+                result.put("semanticChecksum", artifact.semanticChecksum());
+                result.put("width", artifact.width());
+                result.put("length", artifact.length());
+                result.put("labeledCells", artifact.labeledCells());
+                result.put("unknownCells", artifact.unknownCells());
+            }
+            default -> throw new IllegalStateException("not an extract verb: " + verb);
+        }
+        result.put("draftDirectory", draftDirectory.toAbsolutePath().normalize().toString());
+        return result;
+    }
+
+    /**
+     * Runs one explicit promotion verb (V2-14-01): a sealed draft becomes a V2-1 constraint map,
+     * re-verified through the strict decoder before atomic publish. The result reports the published
+     * map file, digest, and dimensions plus the exact {@code v2 request constraint-map} arguments, so
+     * the extracted map can be declared as a request's constraint source and carried into
+     * {@code v2 export}. Promotion always requires an explicit confidence threshold and handling; the
+     * {@code EXPERIMENTAL} extraction path is never promoted implicitly.
+     */
+    private static Map<String, Object> promote(
+            V2CommandVerbV2 verb,
+            List<String> tokens,
+            V2CommandRouteV2 route
+    ) throws IOException {
+        ImageExtractionWorkflowServiceV2 workflow = new ImageExtractionWorkflowServiceV2();
+        CancellationToken token = INTERRUPTIBLE;
+        Path draftDirectory = Path.of(tokens.get(3));
+        Path outputDirectory = Path.of(tokens.get(4));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("v2CorrelationId", route.correlationId());
+        switch (verb) {
+            case PROMOTE_LAND_WATER -> {
+                int threshold = integer(tokens.get(5));
+                var options = landWaterPromotionOptions(threshold, tokens.get(6),
+                        tokens.size() >= 8 ? tokens.get(7) : null);
+                var record = workflow.promoteLandWater(draftDirectory, outputDirectory, options, token);
+                result.put("kind", "land-water");
+                result.put("role", record.role());
+                result.put("mapPath", record.mapPath());
+                result.put("mapFile", outputDirectory.resolve(record.mapPath())
+                        .toAbsolutePath().normalize().toString());
+                result.put("sha256", record.mapSha256());
+                result.put("width", record.width());
+                result.put("length", record.length());
+                result.put("waterCells", record.waterCells());
+                result.put("landCells", record.landCells());
+                result.put("noDataCells", record.noDataCells());
+                result.put("thresholdSuppressedCells", record.thresholdSuppressedCells());
+                result.put("requestConstraintMapArgs", constraintMapArgs(
+                        record.mapSha256(), record.width(), record.length()));
+            }
+            case PROMOTE_HEIGHT_GUIDE -> {
+                GenerationRequestV2.Bounds bounds = boundsOf(Path.of(tokens.get(5)));
+                int threshold = integer(tokens.get(6));
+                var options = ExtractedHeightGuidePromotionOptionsV2.of(
+                        threshold, heightValueMeaning(tokens.get(7)),
+                        longValue(tokens.get(8)), longValue(tokens.get(9)));
+                var record = workflow.promoteHeightGuide(
+                        draftDirectory, outputDirectory, options, bounds, token);
+                result.put("kind", "height-guide");
+                result.put("role", record.role());
+                result.put("mapPath", record.mapPath());
+                result.put("mapFile", outputDirectory.resolve(record.mapPath())
+                        .toAbsolutePath().normalize().toString());
+                result.put("sha256", record.mapSha256());
+                result.put("width", record.width());
+                result.put("length", record.length());
+                result.put("valueMeaning", record.valueMeaning());
+                result.put("validCells", record.validCells());
+                result.put("noDataCells", record.noDataCells());
+                result.put("thresholdSuppressedCells", record.thresholdSuppressedCells());
+            }
+            case PROMOTE_ZONE_LABEL -> {
+                GenerationRequestV2.Bounds bounds = boundsOf(Path.of(tokens.get(5)));
+                int threshold = integer(tokens.get(6));
+                int noData = tokens.size() >= 8 ? integer(tokens.get(7))
+                        : ExtractedZoneLabelPromotionOptionsV2.DEFAULT_NODATA_SAMPLE;
+                var options = new ExtractedZoneLabelPromotionOptionsV2(threshold, noData);
+                var record = workflow.promoteZoneLabel(
+                        draftDirectory, outputDirectory, options, bounds, token);
+                result.put("kind", "zone-label");
+                result.put("role", record.role());
+                result.put("mapPath", record.mapPath());
+                result.put("mapFile", outputDirectory.resolve(record.mapPath())
+                        .toAbsolutePath().normalize().toString());
+                result.put("sha256", record.mapSha256());
+                result.put("width", record.width());
+                result.put("length", record.length());
+                result.put("labeledCells", record.labeledCells());
+                result.put("noDataCells", record.noDataCells());
+                result.put("thresholdSuppressedCells", record.thresholdSuppressedCells());
+            }
+            default -> throw new IllegalStateException("not a promote verb: " + verb);
+        }
+        return result;
+    }
+
+    private static ExtractedMaskPromotionOptionsV2 landWaterPromotionOptions(
+            int confidenceThreshold, String handling, String noDataSample) {
+        return switch (handling) {
+            case "reject" -> ExtractedMaskPromotionOptionsV2.rejectBelow(confidenceThreshold);
+            case "water" -> ExtractedMaskPromotionOptionsV2.mapUnknownToWater(confidenceThreshold);
+            case "land" -> ExtractedMaskPromotionOptionsV2.mapUnknownToLand(confidenceThreshold);
+            case "nodata" -> ExtractedMaskPromotionOptionsV2.mapUnknownToNoData(confidenceThreshold,
+                    noDataSample == null
+                            ? ExtractedMaskPromotionOptionsV2.DEFAULT_NODATA_SAMPLE : integer(noDataSample));
+            default -> throw new IllegalArgumentException(
+                    "unknown-handling must be one of reject, water, land, nodata; not '" + handling + "'");
+        };
+    }
+
+    private static GenerationRequestV2.HeightValueMeaning heightValueMeaning(String value) {
+        return switch (value) {
+            case "absolute-block-y" -> GenerationRequestV2.HeightValueMeaning.ABSOLUTE_BLOCK_Y;
+            case "blocks-above-min-y" -> GenerationRequestV2.HeightValueMeaning.BLOCKS_ABOVE_REQUEST_MIN_Y;
+            case "blocks-relative-to-water" ->
+                    GenerationRequestV2.HeightValueMeaning.BLOCKS_RELATIVE_TO_WATER_LEVEL;
+            default -> throw new IllegalArgumentException(
+                    "height value meaning must be one of absolute-block-y, blocks-above-min-y, "
+                            + "blocks-relative-to-water; not '" + value + "'");
+        };
+    }
+
+    /** Reads the bounds a height/zone promotion quantises against from a strict generation request. */
+    private static GenerationRequestV2.Bounds boundsOf(Path request) throws IOException {
+        return new LandformV2DataCodec().readGenerationRequest(request).bounds();
+    }
+
+    /** Suggested {@code v2 request constraint-map} arguments for the promoted land/water map. */
+    private static List<String> constraintMapArgs(String sha256, int width, int length) {
+        return List.of("<request-id>", "<source-slug>", "land-water.png",
+                sha256, Integer.toString(width), Integer.toString(length));
+    }
+
+    private static long longValue(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Expected an integer: " + value, exception);
+        }
     }
 
     /**
@@ -697,13 +901,30 @@ public final class LandformCraftCli {
         helpLine(output, "recovery inspect <journal|plan> <artifact.json>",
                 "v2 placement journal／recovery planをread-onlyで確認");
         output.println();
+        output.println("画像抽出（V2-7経路。決定論的・AI非依存・EXPERIMENTAL）:");
+        helpLine(output, "extract <land-water|height-guide|zone-label> <image-file> <draft-output-dir>",
+                "通常画像／スケッチからdraft bundleを抽出（secure envelope経由）");
+        helpLine(output, "promote land-water <draft-dir> <output-dir> <confidence-threshold> "
+                + "<reject|water|land|nodata> [nodata-sample]",
+                "draftを明示昇格しland-water constraint mapを公開");
+        helpLine(output, "promote height-guide <draft-dir> <output-dir> <request-v2.json> "
+                + "<confidence-threshold> <absolute-block-y|blocks-above-min-y|blocks-relative-to-water> "
+                + "<scale-millionths> <offset-millionths>",
+                "draftを明示昇格しheight-guide constraint mapを公開");
+        helpLine(output, "promote zone-label <draft-dir> <output-dir> <request-v2.json> "
+                + "<confidence-threshold> [nodata-sample]",
+                "draftを明示昇格しzone-label constraint mapを公開");
+        output.println("      昇格後は 'request constraint-map' でsourceを宣言し 'v2 export' へ渡します。"
+                + "暗黙昇格は行いません。");
+        output.println();
         output.println("移行:");
         helpLine(output, "migrate inspect <intent|design|release> <v1-source>",
                 "v1資産のv2変換を試算（dry-run。何も書き込まない）");
         helpLine(output, "migrate apply <intent|design|release> <v1-source> <output-root> <migration-id> "
                 + "<strict|accept-lossy>", "v1資産をv2 design package＋変換reportへ変換");
         output.println("      place／undo／status／recover は world を伴うため Paper 専用です"
-                + "（/lfc <verb>）。migrate は operator workstation の legacy path を読むため CLI 専用です。");
+                + "（/lfc <verb>）。migrate／extract／promote は operator workstation の path を読むため "
+                + "CLI 専用です。");
         output.println();
         output.println("管理（version中立）:");
         helpLine(output, "asset <validate|import|list|info|remove> ...", "custom assetを管理");

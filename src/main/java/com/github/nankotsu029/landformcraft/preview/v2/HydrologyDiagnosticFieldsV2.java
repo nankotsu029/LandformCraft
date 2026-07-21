@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.preview.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Objects;
 
 /** Lazy V2-3 hydrology diagnostic values. Each field is sampled on demand during one PNG render. */
@@ -24,7 +25,7 @@ public record HydrologyDiagnosticFieldsV2(
     public static final int NO_DATA = Integer.MIN_VALUE;
 
     public HydrologyDiagnosticFieldsV2 {
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || minimumElevationMillionths >= maximumElevationMillionths) {
             throw new IllegalArgumentException("invalid hydrology diagnostic dimensions or elevation range");
         }

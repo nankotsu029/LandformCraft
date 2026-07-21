@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.preview.v2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Objects;
 
 /** Lazy V2-4-13 environment diagnostic values. Each field is sampled on demand during one PNG render. */
@@ -18,7 +19,7 @@ public record EnvironmentDiagnosticFieldsV2(
         IntField constraintError
 ) {
     public EnvironmentDiagnosticFieldsV2 {
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
             throw new IllegalArgumentException("invalid environment diagnostic dimensions");
         }
         Objects.requireNonNull(temperature, "temperature");

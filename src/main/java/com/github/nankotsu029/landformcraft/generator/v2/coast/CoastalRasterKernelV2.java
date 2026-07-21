@@ -5,6 +5,7 @@ import com.github.nankotsu029.landformcraft.format.v2.field.FieldValueSource;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalFeaturePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -40,8 +41,8 @@ public final class CoastalRasterKernelV2 {
 
     public CoastalRasterKernelV2(CoastalFeaturePlanV2 plan, int width, int length) {
         this.plan = Objects.requireNonNull(plan, "plan");
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-            throw new CoastalRasterException("v2.coastal-raster-dimensions", "dimensions must be within 1..1000");
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw new CoastalRasterException("v2.coastal-raster-dimensions", "dimensions must be within 1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         }
         if (plan.geometryRole() != CoastalFeaturePlanV2.GeometryRole.COASTLINE
                 || plan.signedDistance().sign() != CoastalFeaturePlanV2.DistanceSign.POSITIVE_ON_LAND_SIDE) {

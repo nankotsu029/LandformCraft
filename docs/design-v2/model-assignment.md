@@ -157,6 +157,25 @@ Effort列はClaude Codeの`--effort`相当（Antigravity/Codexは各ツールの
 | V2-8-07 | Export／Release分割 | Claude Opus 4.8 | High | Claude Sonnet 5 High |
 | V2-8-08 | LARGE offline統合＋Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋人間 |
 
+`V2-8-02`は2026-07-21完了。`V2-8-03`〜`V2-8-08`は2026-07-21のS2決定で保留（HOLD）であり、再開時に本表の割当を再評価する。
+
+### Track C: V2-13 MEDIUM 1024 enablement／measurement（5、2026-07-21追加）
+
+| Task | 内容 | 主担当 | Effort | レビュー |
+|---|---|---|---|---|
+| V2-13-01 | Placement stage instrumentation＋1000 baseline再測定 | Claude Opus 4.8 | High | Antigravity＋実測evidence人間確認 |
+| V2-13-02 | MEDIUM 1024 route／Schema拡張 | Claude Opus 4.8 | High | Codex Terra Extra High＋v1 golden回帰必須 |
+| V2-13-03 | 1024 offline生成budget実測 | Claude Sonnet 5 | High | Antigravity |
+| V2-13-04 | 1024 FAWE placement実測 | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋人間（昇格は別承認） |
+| V2-13-05 | Per-block map packing最適化（条件付き） | Claude Opus 4.8 | XHigh | Codex Terra Extra High |
+
+### Track B: V2-14 Image fidelity wiring follow-up（2、2026-07-21追加）
+
+| Task | 内容 | 主担当 | Effort | レビュー |
+|---|---|---|---|---|
+| V2-14-01 | Extract path CLI／Request配線 | Claude Sonnet 5 | High | Claude Opus 4.8 High |
+| V2-14-02 | 斜視／multi-view reference role（互換確認条件付き） | Claude Opus 4.8 | High | Codex Terra Extra High |
+
 ### Track A extension: V2-9 Terrain foundation（14）
 
 | Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |

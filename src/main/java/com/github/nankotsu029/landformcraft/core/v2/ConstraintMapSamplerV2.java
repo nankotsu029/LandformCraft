@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.core.v2;
 
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import java.util.Objects;
 
 /**
@@ -153,7 +154,7 @@ public final class ConstraintMapSamplerV2 {
     }
 
     private static void requireTarget(int x, int z, int width, int length) {
-        if (width < 1 || width > 1_000 || length < 1 || length > 1_000
+        if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
                 || x < 0 || x >= width || z < 0 || z >= length) {
             throw new IndexOutOfBoundsException("coordinate outside target field");
         }
