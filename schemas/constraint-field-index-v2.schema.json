@@ -157,8 +157,8 @@
           ]
         },
         "valueType": { "enum": ["U8", "U16", "I32"] },
-        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
-        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "width": { "type": "integer", "minimum": 1, "maximum": 1024 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1024 },
         "coordinateSpace": { "const": "RELEASE_LOCAL_XZ" },
         "sampling": { "enum": ["NEAREST", "BILINEAR_FIXED"] },
         "scaleMillionths": {

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -138,6 +139,43 @@ class GenerationRequestV2CodecTest {
         assertThrows(IllegalArgumentException.class, () -> codec.readGenerationRequest(
                 valid.replace("\"maximumDecodedBytes\": 33554432", "\"maximumDecodedBytes\": 79"),
                 "decoded-byte-budget"));
+    }
+
+    @Test
+    void acceptsMediumHorizontalCeilingAndRejectsAbove() throws IOException {
+        // Minimal request (no constraint maps) so only bounds Schema/Java ceilings are exercised.
+        String minimal = """
+                {
+                  "requestVersion": 2,
+                  "requestId": "medium-ceiling",
+                  "bounds": { "width": 1024, "length": 1001, "minY": 0, "maxY": 100, "waterLevel": 50 },
+                  "prompt": "V2-13-02 MEDIUM horizontal ceiling positive fixture",
+                  "referenceImages": [],
+                  "constraintMaps": [],
+                  "generation": { "globalSeed": 827413, "tileSize": 64 },
+                  "constraintMapBudget": {
+                    "maximumMapCount": 8,
+                    "maximumTotalSourceBytes": 33554432,
+                    "maximumDecodedBytes": 33554432,
+                    "maximumPixels": 16000000,
+                    "maximumArtifactBytes": 67108864,
+                    "maximumResidentBytes": 100663296
+                  }
+                }
+                """;
+        GenerationRequestV2 accepted = codec.readGenerationRequest(minimal, "medium-ceiling");
+        assertEquals(1024, accepted.bounds().width());
+        assertEquals(1001, accepted.bounds().length());
+
+        String over = minimal.replace("\"width\": 1024", "\"width\": 1025");
+        assertThrows(StructuredDataValidationException.class,
+                () -> codec.readGenerationRequest(over, "above-medium-ceiling"));
+        assertDoesNotThrow(() -> new GenerationRequestV2.Bounds(1_024, 1_024, 0, 100, 50));
+        assertDoesNotThrow(() -> new GenerationRequestV2.Bounds(1_001, 64, 0, 100, 50));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GenerationRequestV2.Bounds(1_025, 1, 0, 100, 50));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GenerationRequestV2.Bounds(1, 1_025, 0, 100, 50));
     }
 
     @Test

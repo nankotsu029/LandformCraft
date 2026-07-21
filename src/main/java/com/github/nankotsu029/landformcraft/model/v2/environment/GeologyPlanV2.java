@@ -194,7 +194,7 @@ public record GeologyPlanV2(
             }
             if (maximumProvinces < 0 || maximumProvinces > MAX_PROVINCES
                     || maximumFields != MAX_FIELDS
-                    || globalCellCount < 1 || globalCellCount > 1_000_000L
+                    || globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || estimatedCpuWorkUnits < globalCellCount
                     || estimatedCpuWorkUnits > 16_000_000L
                     || estimatedRetainedBytes < 1 || estimatedRetainedBytes > 16L * 1024L * 1024L

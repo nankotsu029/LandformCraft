@@ -40,8 +40,8 @@
       "type": "object", "additionalProperties": false,
       "required": ["width", "length", "minY", "maxY", "waterLevel"],
       "properties": {
-        "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
-        "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "width": { "type": "integer", "minimum": 1, "maximum": 1024 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 1024 },
         "minY": { "$ref": "#/$defs/fixedYBlock" },
         "maxY": { "$ref": "#/$defs/fixedYBlock" },
         "waterLevel": { "$ref": "#/$defs/fixedYBlock" }

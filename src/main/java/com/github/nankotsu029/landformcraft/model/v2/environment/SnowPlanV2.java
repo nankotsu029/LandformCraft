@@ -198,7 +198,7 @@ public record SnowPlanV2(
             budgetVersion = nonBlank(budgetVersion, "budgetVersion", 64);
             if (!VERSION.equals(budgetVersion)
                     || maximumFields != MAX_FIELDS
-                    || globalCellCount < 1 || globalCellCount > 1_000_000L
+                    || globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || estimatedCpuWorkUnits < globalCellCount || estimatedCpuWorkUnits > 16_000_000L
                     || estimatedRetainedBytes < 1 || estimatedRetainedBytes > 2L * 1024L * 1024L
                     || maximumWindowSize < 1 || maximumWindowSize > 256

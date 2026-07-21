@@ -53,6 +53,16 @@ public final class MeasurementSurfaceFixtureV2 {
         return build(root, "v2-11-05-measure-1000", 1000, 1000, 0, 1);
     }
 
+    /**
+     * MEDIUM 1024×1024 solid-only Release for the V2-13-04 FAWE placement re-measurement. The
+     * horizontal ceiling matches {@code ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING} (1024) and
+     * the cell count equals {@code MEDIUM_MAXIMUM_CELLS} (1024²), the offline budget proven E2E by
+     * V2-13-03. Tile geometry reuses the same 128-block MEDIUM tiling as {@link #build1000(Path)}.
+     */
+    public static Fixture build1024(Path root) throws Exception {
+        return build(root, "v2-13-04-measure-1024", 1024, 1024, 0, 1);
+    }
+
     public static Fixture build(
             Path root,
             String requestId,

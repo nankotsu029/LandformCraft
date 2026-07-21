@@ -173,7 +173,7 @@
       ],
       "properties": {
         "budgetVersion": { "const": "feature-material-budget-v1" },
-        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1048576 },
         "resolutionRuleCount": { "const": 4 },
         "conflictRuleCount": { "const": 2 },
         "volcanicBindingCount": { "type": "integer", "minimum": 0, "maximum": 16 },

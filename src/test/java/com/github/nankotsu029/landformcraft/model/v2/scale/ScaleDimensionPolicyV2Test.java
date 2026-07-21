@@ -1,6 +1,10 @@
 package com.github.nankotsu029.landformcraft.model.v2.scale;
 
+import com.github.nankotsu029.landformcraft.model.GenerationBounds;
+import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.OfflineTilePlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.foundation.MacroLandWaterTopologyPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyRoutingArtifactV2;
 import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentValidationInputV2;
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** V2-8-02: the unified route ceiling is the MEDIUM scale-class contract (1024/1025 boundary). */
+/** V2-8-02 / V2-13-02: unified route and request ceiling is the MEDIUM scale-class contract (1024/1025). */
 class ScaleDimensionPolicyV2Test {
     private static final String CHECKSUM = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
@@ -19,6 +23,9 @@ class ScaleDimensionPolicyV2Test {
         assertEquals(1_024, ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
         assertEquals(ScaleClassV2.MEDIUM.maximumHorizontalBlocks(),
                 ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
+        // model.GenerationBounds cannot import model.v2, but the literal must stay aligned.
+        assertEquals(ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING,
+                GenerationBounds.MAX_HORIZONTAL_SIZE);
     }
 
     @Test
@@ -47,5 +54,22 @@ class ScaleDimensionPolicyV2Test {
         assertThrows(IllegalArgumentException.class, () -> new OfflineTilePlanV2(
                 OfflineTilePlanV2.VERSION, "tile-x7-z7", 7, 7, 1_025 - 128, 1_024 - 128,
                 128, 128, 0, 0));
+    }
+
+    @Test
+    void generationRequestBoundsFollowTheUnifiedCeiling() {
+        assertDoesNotThrow(() -> new GenerationRequestV2.Bounds(1_024, 1_001, 0, 100, 50));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GenerationRequestV2.Bounds(1_025, 1, 0, 100, 50));
+    }
+
+    @Test
+    void macroTopologyAndOutletCoordinatesFollowTheUnifiedCeiling() {
+        assertEquals(ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING,
+                MacroLandWaterTopologyPlanV2.MAXIMUM_DIMENSION);
+        assertDoesNotThrow(() -> new HydrologyRoutingArtifactV2.Outlet(
+                "outlet-a", 1_023, 0, HydrologyRoutingArtifactV2.OutletKind.BOUNDARY));
+        assertThrows(IllegalArgumentException.class, () -> new HydrologyRoutingArtifactV2.Outlet(
+                "outlet-b", 1_024, 0, HydrologyRoutingArtifactV2.OutletKind.BOUNDARY));
     }
 }

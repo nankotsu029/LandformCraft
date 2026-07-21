@@ -50,6 +50,7 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 /** Colored administrative commands with confirm-gated mutations and non-blocking completion caches. */
 public final class LandformCraftCommand implements CommandExecutor, TabCompleter, Listener {
@@ -1020,8 +1021,9 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
 
     private static int inclusive(int minimum, int maximum) {
         long value = (long) maximum - minimum + 1L;
-        if (minimum > maximum || value < 1L || value > 1_000L) {
-            throw new IllegalArgumentException("選択範囲は各水平軸1..1000である必要があります。");
+        if (minimum > maximum || value < 1L || value > (long) ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+            throw new IllegalArgumentException(
+                    "選択範囲は各水平軸1.." + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING + "である必要があります。");
         }
         return Math.toIntExact(value);
     }

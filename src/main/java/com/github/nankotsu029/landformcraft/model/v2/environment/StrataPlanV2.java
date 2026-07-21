@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.model.v2.environment;
 
 import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyReconciliationPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 import java.util.Comparator;
 import java.util.HashSet;
@@ -290,7 +291,7 @@ public record StrataPlanV2(
                     || maximumLayersPerProfile != MAX_LAYERS_PER_PROFILE
                     || maximumTotalLayers < 1 || maximumTotalLayers > MAX_TOTAL_LAYERS
                     || maximumStackThicknessBlocks != MAX_STACK_THICKNESS_BLOCKS
-                    || globalCellCount < 1 || globalCellCount > 1_000_000L
+                    || globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || estimatedCpuWorkUnits < 1L || estimatedCpuWorkUnits > 16_000_000L
                     || estimatedRetainedBytes < 1L || estimatedRetainedBytes > 4L * 1024L * 1024L
                     || maximumCanonicalBytes < 1_024L || maximumCanonicalBytes > 128L * 1024L) {

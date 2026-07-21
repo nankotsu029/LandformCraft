@@ -19,8 +19,8 @@ public record TopDownCoordinateMapping(
                 || verticalAxis != ImageMapAxis.POSITIVE_Z_SOUTH) {
             throw new IllegalArgumentException("top-down mapping must use north-up, east-right coordinates");
         }
-        if (targetWidth < 1 || targetWidth > 1000 || targetLength < 1 || targetLength > 1000) {
-            throw new IllegalArgumentException("top-down target dimensions must be between 1 and 1000");
+        if (targetWidth < 1 || targetWidth > 1_024 || targetLength < 1 || targetLength > 1_024) {
+            throw new IllegalArgumentException("top-down target dimensions must be between 1 and 1024");
         }
     }
 }

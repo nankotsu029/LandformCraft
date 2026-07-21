@@ -1,0 +1,26 @@
+{
+  "requestVersion": 2,
+  "requestId": "medium-1024-ceiling",
+  "bounds": {
+    "width": 1024,
+    "length": 1001,
+    "minY": 0,
+    "maxY": 100,
+    "waterLevel": 50
+  },
+  "prompt": "V2-13-02 positive fixture for MEDIUM request/Schema horizontal ceiling (1001..1024). Not a placement-supported or measured generation claim.",
+  "referenceImages": [],
+  "constraintMaps": [],
+  "generation": {
+    "globalSeed": 827413,
+    "tileSize": 64
+  },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  }
+}

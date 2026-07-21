@@ -130,7 +130,7 @@ public final class MacroLandWaterTopologyPlanCompilerV2 {
         if (width < 2 || length < 2
                 || width > MacroLandWaterTopologyPlanV2.MAXIMUM_DIMENSION
                 || length > MacroLandWaterTopologyPlanV2.MAXIMUM_DIMENSION) {
-            throw fail(RULE_RASTER_BUDGET, "mask dimensions outside 2..1000");
+            throw fail(RULE_RASTER_BUDGET, "mask dimensions outside 2.." + MacroLandWaterTopologyPlanV2.MAXIMUM_DIMENSION);
         }
         long cells = (long) width * length;
         if (cells > MacroLandWaterTopologyPlanV2.MAXIMUM_RASTER_CELLS) {

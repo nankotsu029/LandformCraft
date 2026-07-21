@@ -10,8 +10,8 @@
     "planVersion": { "const": 1 },
     "contractVersion": { "const": "foundation-preview-index-v1" },
     "layers": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/layer" } },
-    "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
-    "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1024 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 1024 },
     "canonicalChecksum": { "$ref": "#/$defs/checksum" }
   },
   "$defs": {

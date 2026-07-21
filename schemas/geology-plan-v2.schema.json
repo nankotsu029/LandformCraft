@@ -19,8 +19,8 @@
     "priorReplacement": { "$ref": "#/$defs/priorReplacement" },
     "namedSeed": { "type": "integer" },
     "seedNamespace": { "const": "terrain.v2.geology" },
-    "width": { "type": "integer", "minimum": 1, "maximum": 1000 },
-    "length": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1024 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 1024 },
     "provinces": {
       "type": "array", "maxItems": 256,
       "items": { "$ref": "#/$defs/province" }
@@ -93,7 +93,7 @@
         "budgetVersion": { "const": "geology-field-budget-v1" },
         "maximumProvinces": { "type": "integer", "minimum": 0, "maximum": 256 },
         "maximumFields": { "const": 4 },
-        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1048576 },
         "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
         "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
         "maximumWindowSize": { "type": "integer", "minimum": 1, "maximum": 256 },

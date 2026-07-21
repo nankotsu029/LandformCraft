@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 /**
  * Frozen V2-9-12 macro land-water topology contract. Encodes bay/cove/headland/peninsula/isthmus/
@@ -44,9 +45,9 @@ public record MacroLandWaterTopologyPlanV2(
     public static final int MAXIMUM_ADJACENCIES = 256;
     public static final int MAXIMUM_CONTAINMENTS = 64;
     public static final int MAXIMUM_ZONE_BINDINGS = 64;
-    public static final int MAXIMUM_DIMENSION = 1_000;
+    public static final int MAXIMUM_DIMENSION = ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING;
     public static final long MAXIMUM_GRAPH_WORK_UNITS = 64_000_000L;
-    public static final long MAXIMUM_RASTER_CELLS = 1_000_000L;
+    public static final long MAXIMUM_RASTER_CELLS = ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS;
 
     public enum Medium { LAND, WATER }
 
@@ -83,7 +84,7 @@ public record MacroLandWaterTopologyPlanV2(
             throw new IllegalArgumentException("unknown macro land-water topology contract version");
         }
         if (width < 2 || width > MAXIMUM_DIMENSION || length < 2 || length > MAXIMUM_DIMENSION) {
-            throw new IllegalArgumentException("macro land-water topology dimensions outside 2..1000");
+            throw new IllegalArgumentException("macro land-water topology dimensions outside 2.." + MAXIMUM_DIMENSION);
         }
         landWaterMaskFieldId = FoundationValidationV2.qualified(landWaterMaskFieldId, "landWaterMaskFieldId");
         zoneLabelFieldId = zoneLabelFieldId == null || zoneLabelFieldId.isBlank()

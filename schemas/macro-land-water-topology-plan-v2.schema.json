@@ -17,8 +17,8 @@
     "planVersion": { "const": 1 },
     "topologyId": { "$ref": "#/$defs/slug" },
     "contractVersion": { "const": "macro-land-water-topology-contract-v1" },
-    "width": { "type": "integer", "minimum": 2, "maximum": 1000 },
-    "length": { "type": "integer", "minimum": 2, "maximum": 1000 },
+    "width": { "type": "integer", "minimum": 2, "maximum": 1024 },
+    "length": { "type": "integer", "minimum": 2, "maximum": 1024 },
     "landWaterMaskFieldId": { "const": "foundation.topology.land-water-mask" },
     "zoneLabelFieldId": {
       "anyOf": [
@@ -35,7 +35,7 @@
     "minimumStraitWidthBlocks": { "type": "integer", "minimum": 1, "maximum": 64 },
     "supportRadiusXZ": { "type": "integer", "minimum": 0, "maximum": 32 },
     "estimatedGraphWorkUnits": { "type": "integer", "minimum": 1, "maximum": 64000000 },
-    "estimatedRasterCells": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "estimatedRasterCells": { "type": "integer", "minimum": 1, "maximum": 1048576 },
     "geometryChecksum": { "$ref": "#/$defs/checksum" },
     "canonicalChecksum": { "$ref": "#/$defs/checksum" }
   },

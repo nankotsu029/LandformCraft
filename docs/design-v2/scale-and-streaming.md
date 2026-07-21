@@ -1,13 +1,13 @@
 # Scale and Streaming（LARGE実行モデル）
 
-> Status: 設計正本。契約（`model.v2.scale`／`core.v2.scale`、`scale-admission-v1`）は実装済み・`EXPERIMENTAL`。LARGE生成そのものは未実装で、[Task Index](task-index.md) のV2-8が実装経路である。採用判断は [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md)。**2026-07-21のS2決定により`V2-8-03`〜`V2-8-08`は保留（LARGE契約は凍結保持、3000／3072のsupported表現禁止）であり、実装重点はV2-13の1024（MEDIUM）である。`V2-8-02`完了により、分散していたv2の水平寸法検査は`ScaleDimensionPolicyV2`（MEDIUM=1024）へ統一済み。request／Schema上限1000の拡張は`V2-13-02`が担当する。**
+> Status: 設計正本。契約（`model.v2.scale`／`core.v2.scale`、`scale-admission-v1`）は実装済み・`EXPERIMENTAL`。LARGE生成そのものは未実装で、[Task Index](task-index.md) のV2-8が実装経路である。採用判断は [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md)。**2026-07-21のS2決定により`V2-8-03`〜`V2-8-08`は保留（LARGE契約は凍結保持、3000／3072のsupported表現禁止）であり、実装重点はV2-13の1024（MEDIUM）である。`V2-8-02`完了により、分散していたv2の水平寸法検査は`ScaleDimensionPolicyV2`（MEDIUM=1024）へ統一済み。`V2-13-02`で`GenerationRequestV2.Bounds`と水平寸法Schema `width`／`length` 上限も1024へ拡張済み。`V2-13-03`実測で1024² offline E2Eは hydrology／preview／macro の1_000_000 cell予算で拒否されたが、同日follow-up修正で`ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS`（=1024²=1_048_576）へ拡張し、offline E2Eは成立した（[evidence](audits/v2-13-03-offline-budget-measurement-evidence.md)）。`PlacementDimensionLimitV2`は別gateで実測1000×1000のまま不変。**
 
 ## 1. scale class
 
 | class | 上限（blocks/辺） | 実行方式 | 状態 |
 |---|---|---|---|
 | `SMALL` | 512 | whole/tile任意。即時preview・局所編集重視 | 契約のみ（既存経路は寸法上限内で動作） |
-| `MEDIUM` | 1024 | tile必須。現行の全予算・全決定性テストの対象 | 現行supported上限と一致 |
+| `MEDIUM` | 1024 | tile必須。request／Schema／`GenerationBounds`水平上限とjava routeの対象（`V2-13-02`／`03`）。1024² offline E2Eは`V2-13-03`の同日follow-up修正でcell subsystem予算を`ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS`へ拡張し成立済み。Paper配置の実測上限は別途1000（未変更） | request／route天井。配置SUPPORTED寸法は`PlacementDimensionLimitV2` |
 | `LARGE` | 3072（推奨3000） | streaming必須。全域full解像度working set常駐禁止 | 契約のみ。V2-8 gateまで生成不可 |
 
 既定profile（version凍結。変更はpolicy変更）:

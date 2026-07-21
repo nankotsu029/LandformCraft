@@ -1,0 +1,44 @@
+{
+  "taskId": "V2-13-03",
+  "contract": "offline-generation-budget-measurement-v1",
+  "width": 1024,
+  "length": 1024,
+  "cells": 1048576,
+  "previewBudgetMaximumCells": 1048576,
+  "previewBudgetAdmits": true,
+  "macroRasterBudgetMaximumCells": 1048576,
+  "macroRasterBudgetAdmits": true,
+  "scaleAdmissionOk": true,
+  "exportBudgetOk": true,
+  "estimatedDescriptorResidentBytes": 62914560,
+  "mediumRetainedBytes": 100663296,
+  "tileCount": 64,
+  "mediumMaximumTileCount": 64,
+  "blockingStage": "NONE",
+  "blockingDetail": "full fixture completed end to end; no cell budget gate rejected 1024²",
+  "endToEndCompleted": true,
+  "stages": [
+    {
+      "stageId": "SCALE_EXPORT_ADMISSION",
+      "outcome": "PASS",
+      "wallNanos": 2183203,
+      "wallSeconds": 0.002,
+      "heapUsedBytesBefore": 10463320,
+      "heapUsedBytesAfter": 10463320,
+      "heapDeltaBytes": 0,
+      "diskBytesAfterStage": 0,
+      "detail": "scale+export admitted; tiles=64 estimatedResidentBytes=62914560"
+    },
+    {
+      "stageId": "FIELD_SIDECARS_BLUEPRINT_VALIDATION_PREVIEW",
+      "outcome": "PASS",
+      "wallNanos": 2143637998,
+      "wallSeconds": 2.144,
+      "heapUsedBytesBefore": 10489672,
+      "heapUsedBytesAfter": 84708448,
+      "heapDeltaBytes": 74218776,
+      "diskBytesAfterStage": 21200265,
+      "detail": "full fixture completed: field sidecars, Blueprint compile, coastal validation artifact, preview render, and all tiles"
+    }
+  ]
+}

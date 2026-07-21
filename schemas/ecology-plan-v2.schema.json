@@ -181,7 +181,7 @@
       ],
       "properties": {
         "budgetVersion": { "const": "ecology-placement-budget-v1" },
-        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1048576 },
         "assemblageCount": { "const": 5 },
         "activeAssemblageCount": { "type": "integer", "minimum": 0, "maximum": 5 },
         "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 32000000 },

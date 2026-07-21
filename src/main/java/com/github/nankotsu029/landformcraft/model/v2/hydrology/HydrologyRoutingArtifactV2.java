@@ -188,7 +188,8 @@ public record HydrologyRoutingArtifactV2(
     public record Outlet(String outletId, int x, int z, OutletKind kind) {
         public Outlet {
             outletId = slug(outletId, "outletId");
-            if (x < 0 || x >= 1_000 || z < 0 || z >= 1_000) {
+            if (x < 0 || x >= ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
+                    || z < 0 || z >= ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
                 throw new IllegalArgumentException("outlet coordinate is outside trusted bounds");
             }
             Objects.requireNonNull(kind, "kind");
@@ -214,13 +215,14 @@ public record HydrologyRoutingArtifactV2(
                 throw new IllegalArgumentException("basin numericId is outside 1..256");
             }
             outletId = slug(outletId, "outletId");
-            if (outletCellId < 0 || outletCellId >= 1_000_000) {
+            if (outletCellId < 0 || outletCellId >= ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS) {
                 throw new IllegalArgumentException("basin outletCellId is outside trusted bounds");
             }
             if (outletElevationMillionths < -512_000_000 || outletElevationMillionths > 1_024_000_000) {
                 throw new IllegalArgumentException("basin outlet elevation is outside trusted bounds");
             }
-            if (areaCells < 1 || areaCells > 1_000_000L || outletAccumulation != areaCells) {
+            if (areaCells < 1 || areaCells > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
+                    || outletAccumulation != areaCells) {
                 throw new IllegalArgumentException("basin area and outlet accumulation are inconsistent");
             }
         }
@@ -242,7 +244,7 @@ public record HydrologyRoutingArtifactV2(
     ) {
         public ResourceUsage {
             budgetVersion = exact(budgetVersion, BUDGET_VERSION, "budgetVersion");
-            if (globalCellCount < 1 || globalCellCount > 1_000_000L
+            if (globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || routableCellCount < 1 || routableCellCount > globalCellCount
                     || cpuWorkUnits < 1 || cpuWorkUnits > maximumCpuWorkUnits
                     || maximumCpuWorkUnits < 1 || maximumCpuWorkUnits > 100_000_000L

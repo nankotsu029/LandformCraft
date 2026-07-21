@@ -5,6 +5,7 @@ import com.github.nankotsu029.landformcraft.model.v2.environment.LithologyPlanV2
 import com.github.nankotsu029.landformcraft.model.v2.environment.SnowPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.StrataPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.WaterConditionPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -413,7 +414,7 @@ public record MaterialProfilePlanV2(
         public ResourceBudget {
             budgetVersion = nonBlank(budgetVersion, "budgetVersion", 64);
             if (!VERSION.equals(budgetVersion)
-                    || globalCellCount < 1 || globalCellCount > 1_000_000L
+                    || globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || resolutionRuleCount != RESOLUTION_RULE_COUNT
                     || estimatedCpuWorkUnits < globalCellCount || estimatedCpuWorkUnits > 16_000_000L
                     || estimatedRetainedBytes < 1 || estimatedRetainedBytes > 1L * 1024L * 1024L

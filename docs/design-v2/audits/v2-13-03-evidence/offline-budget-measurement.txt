@@ -1,0 +1,10 @@
+V2-13-03 1024x1024 offline generation budget measurement
+cells=1048576 previewAdmits=true macroRasterAdmits=true
+scaleAdmissionOk=true exportBudgetOk=true
+estimatedDescriptorResidentBytes=62914560 mediumRetainedBytes=100663296
+tileCount=64/64
+blockingStage=NONE
+blockingDetail=full fixture completed end to end; no cell budget gate rejected 1024²
+endToEndCompleted=true
+SCALE_EXPORT_ADMISSION PASS wallSeconds=0.002 heapDeltaBytes=0 diskBytes=0
+FIELD_SIDECARS_BLUEPRINT_VALIDATION_PREVIEW PASS wallSeconds=2.144 heapDeltaBytes=74218776 diskBytes=21200265

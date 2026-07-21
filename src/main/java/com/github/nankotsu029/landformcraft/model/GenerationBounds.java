@@ -1,8 +1,15 @@
 package com.github.nankotsu029.landformcraft.model;
 
-/** Horizontal and vertical limits of one generated artifact. */
+/**
+ * Horizontal and vertical limits of one generated artifact.
+ *
+ * <p>Horizontal ceiling is the MEDIUM scale class maximum (1024). The literal is kept here because
+ * {@code model} must not depend on {@code model.v2}; it must stay equal to
+ * {@code ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING}.</p>
+ */
 public record GenerationBounds(int width, int length, int minY, int maxY, int waterLevel) {
-    public static final int MAX_HORIZONTAL_SIZE = 1_000;
+    /** MEDIUM horizontal ceiling (blocks). Keep equal to ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING. */
+    public static final int MAX_HORIZONTAL_SIZE = 1_024;
     public static final int MAX_VERTICAL_SPAN = 512;
 
     public GenerationBounds {

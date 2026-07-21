@@ -1,5 +1,7 @@
 package com.github.nankotsu029.landformcraft.model.v2.hydrology;
 
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -314,7 +316,7 @@ public record HydrologyPlanV2(
                     || maximumWaterBodies < 0 || maximumWaterBodies > MAX_WATER_BODIES
                     || maximumFallPlans < 0 || maximumFallPlans > MAX_FALLS
                     || maximumFields < FieldSemantic.values().length || maximumFields > MAX_FIELDS
-                    || globalCellCount < 1 || globalCellCount > 1_000_000L
+                    || globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || estimatedCpuWorkUnits < 1 || estimatedCpuWorkUnits > 100_000_000L
                     || estimatedResidentBytes < 1 || estimatedResidentBytes > 512L * 1024L * 1024L) {
                 throw new IllegalArgumentException("hydrology graph/work budget is outside trusted bounds");

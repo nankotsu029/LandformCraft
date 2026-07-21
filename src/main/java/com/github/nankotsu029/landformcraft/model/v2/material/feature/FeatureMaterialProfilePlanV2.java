@@ -6,6 +6,7 @@ import com.github.nankotsu029.landformcraft.model.v2.environment.GeologyPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.LithologyPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.StrataPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.material.MaterialProfilePlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -447,7 +448,7 @@ public record FeatureMaterialProfilePlanV2(
         public ResourceBudget {
             budgetVersion = nonBlank(budgetVersion, "budgetVersion", 64);
             if (!VERSION.equals(budgetVersion)
-                    || globalCellCount < 1 || globalCellCount > 1_000_000L
+                    || globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || resolutionRuleCount != RESOLUTION_RULE_COUNT
                     || conflictRuleCount != CONFLICT_RULE_COUNT
                     || volcanicBindingCount < 0 || volcanicBindingCount > MAX_FEATURE_BINDINGS

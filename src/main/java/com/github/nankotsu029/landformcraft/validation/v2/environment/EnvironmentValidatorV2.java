@@ -7,6 +7,7 @@ import com.github.nankotsu029.landformcraft.model.v2.MetricResultV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.ecology.EcologyPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.material.feature.FeatureMaterialProfilePlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -48,7 +49,7 @@ public final class EnvironmentValidatorV2 {
             FeatureMaterialProfilePlanV2.FeatureSemanticMaterialClass.CANYON_STRATA_EXPOSED.compactCode();
     public static final int FEATURE_CANYON_FLOOR =
             FeatureMaterialProfilePlanV2.FeatureSemanticMaterialClass.CANYON_FLOOR_SEDIMENT.compactCode();
-    public static final long MAX_SCAN_CELLS = 1_000_000L;
+    public static final long MAX_SCAN_CELLS = ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS;
 
     public EnvironmentValidationReportV2 validate(
             EnvironmentValidationInputV2 input,

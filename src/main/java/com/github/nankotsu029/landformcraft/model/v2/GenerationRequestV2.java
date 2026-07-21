@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 /**
  * Version-2 request contract. AI reference images and deterministic constraint maps are intentionally
@@ -132,8 +133,11 @@ public record GenerationRequestV2(
 
     public record Bounds(int width, int length, int minY, int maxY, int waterLevel) {
         public Bounds {
-            if (width < 1 || width > 1_000 || length < 1 || length > 1_000) {
-                throw new IllegalArgumentException("bounds horizontal dimensions must be in 1..1000");
+            if (width < 1 || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
+                    || length < 1 || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING) {
+                throw new IllegalArgumentException(
+                        "bounds horizontal dimensions must be in 1.."
+                                + ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING);
             }
             if (minY < MIN_FIXED_Y_BLOCK || maxY > MAX_FIXED_Y_BLOCK
                     || waterLevel < MIN_FIXED_Y_BLOCK || waterLevel > MAX_FIXED_Y_BLOCK) {

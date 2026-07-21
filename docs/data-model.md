@@ -26,7 +26,7 @@ output(tileSize, createSchematics, createZip)
 
 主な不変条件:
 
-- width／lengthは1〜1000
+- width／lengthは1〜1024（`GenerationBounds.MAX_HORIZONTAL_SIZE`。MEDIUM天井と一致。legacy v1 Schemaの記載は別契約）
 - `minY < maxY`、water levelはその範囲内
 - request IDは小文字英数字から始まる最大64文字のslug
 - candidatesは1〜16
@@ -119,7 +119,7 @@ heightの意味は`ABSOLUTE_BLOCK_Y`、`BLOCKS_ABOVE_REQUEST_MIN_Y`、`BLOCKS_RE
 
 ### V2-2-09 offline tile contract
 
-`OfflineTilePlanV2`はtile ID／index、release-local origin、width／length、inclusive minY／maxYを固定し、水平各辺256、vertical span 512、world bounds 1000×1000を超える値を拒否します。`OfflineTileArtifactV2`はsource Blueprint checksum、`RELEASE_LOCAL_XYZ`、`SPONGE_X_Z_Y_V1`、Minecraft／DataVersion／Sponge version、safe relative schematic path、block／palette／byte budget、artifact／semantic／canonical checksumを持つRelease外metadataです。
+`OfflineTilePlanV2`はtile ID／index、release-local origin、width／length、inclusive minY／maxYを固定し、水平各辺256、vertical span 512、world boundsはMEDIUM天井（1024×1024、`ScaleDimensionPolicyV2`）を超える値を拒否します。`OfflineTileArtifactV2`はsource Blueprint checksum、`RELEASE_LOCAL_XYZ`、`SPONGE_X_Z_Y_V1`、Minecraft／DataVersion／Sponge version、safe relative schematic path、block／palette／byte budget、artifact／semantic／canonical checksumを持つRelease外metadataです。
 
 ### V2-2-10 Release format 2 core contract
 

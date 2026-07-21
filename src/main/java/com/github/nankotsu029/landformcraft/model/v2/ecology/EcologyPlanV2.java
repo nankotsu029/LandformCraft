@@ -3,6 +3,7 @@ package com.github.nankotsu029.landformcraft.model.v2.ecology;
 import com.github.nankotsu029.landformcraft.model.v2.environment.ClimatePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.SnowPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.WaterConditionPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -547,7 +548,7 @@ public record EcologyPlanV2(
         public ResourceBudget {
             budgetVersion = nonBlank(budgetVersion, "budgetVersion", 64);
             if (!VERSION.equals(budgetVersion)
-                    || globalCellCount < 1 || globalCellCount > 1_000_000L
+                    || globalCellCount < 1 || globalCellCount > ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS
                     || assemblageCount != ASSEMBLAGE_COUNT
                     || activeAssemblageCount < 0 || activeAssemblageCount > ASSEMBLAGE_COUNT
                     || estimatedCpuWorkUnits < globalCellCount || estimatedCpuWorkUnits > 32_000_000L

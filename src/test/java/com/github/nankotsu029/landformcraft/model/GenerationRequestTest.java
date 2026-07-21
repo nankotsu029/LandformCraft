@@ -12,7 +12,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class GenerationRequestTest {
     @Test
     void rejectsBoundsLargerThanTheSupportedMaximum() {
-        assertThrows(IllegalArgumentException.class, () -> new GenerationBounds(1_001, 128, -32, 160, 62));
+        assertThrows(IllegalArgumentException.class, () -> new GenerationBounds(1_025, 128, -32, 160, 62));
+    }
+
+    @Test
+    void acceptsMediumHorizontalCeiling() {
+        GenerationBounds bounds = new GenerationBounds(1_024, 1_024, -32, 160, 62);
+        assertEquals(1_024, bounds.width());
+        assertEquals(1_024, bounds.length());
     }
 
     @Test

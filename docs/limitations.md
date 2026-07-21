@@ -9,7 +9,7 @@
 - biome書換えはしない
 - 任意codeを実行する地形module／script／外部JARを読み込まない
 - 全域をdense voxel worldとして生成・保持しない
-- 最大水平範囲は1000×1000、最大vertical spanは512
+- request／Schemaの水平上限はMEDIUM=1024（`V2-13-02`）。`GenerationBounds` Java天井も1024（`V2-13-03`）。Paper配置の実測上限は1000×1000（`PlacementDimensionLimitV2`、未変更）。最大vertical spanは512。1024² offline E2Eは`V2-13-03`測定時点でhydrology／preview／macroの1_000_000 cell予算により拒否されたが、同日follow-up修正でcell予算を`ScaleDimensionPolicyV2.MEDIUM_MAXIMUM_CELLS`（=1_048_576）へ拡張し、offlineのvalidation→preview→export→self-verifyはE2Eで完了する（[evidence](design-v2/audits/v2-13-03-offline-budget-measurement-evidence.md)）。Paper／FAWE配置は1000×1000のまま未拡張であり、1024はSUPPORTED／testedMaximumと表現しない
 - Minecraft／Paper 1.21.11とSponge Schematic v3 DataVersion 4671以外を推測変換しない
 - custom asset paletteはbeta allowlistに限定し、entity／block entity／biomeを拒否する
 - 全server構成での1000×1000実world apply TPS／所要時間は保証しない

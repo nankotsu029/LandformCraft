@@ -135,7 +135,7 @@
       ],
       "properties": {
         "budgetVersion": { "const": "material-profile-budget-v1" },
-        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1048576 },
         "resolutionRuleCount": { "const": 3 },
         "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 16000000 },
         "estimatedRetainedBytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },

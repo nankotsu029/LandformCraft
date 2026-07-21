@@ -14,7 +14,6 @@ import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapSo
 import com.github.nankotsu029.landformcraft.format.v2.constraint.LoadedConstraintMapSource;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.SecureConstraintMapSourceLoader;
 import com.github.nankotsu029.landformcraft.model.v2.EnvironmentPreviewIndexV2;
-import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 import com.github.nankotsu029.landformcraft.validation.StructuredDataValidator;
 
 import javax.imageio.ImageIO;
@@ -192,8 +191,7 @@ public final class EnvironmentPreviewIndexCodecV2 {
                 int width = reader.getWidth(0);
                 int length = reader.getHeight(0);
                 if (width != layer.width() || length != layer.length()
-                        || width > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING || length > ScaleDimensionPolicyV2.MEDIUM_HORIZONTAL_CEILING
-                        || (long) width * length > 1_000_000L) {
+                        || !PreviewDimensionBudgetV2.admits(width, length)) {
                     throw new IOException("environment preview PNG dimensions exceed its index budget: "
                             + layer.path());
                 }

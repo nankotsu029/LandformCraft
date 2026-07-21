@@ -191,7 +191,7 @@
         "maximumWaterBodies": { "type": "integer", "minimum": 0, "maximum": 1024 },
         "maximumFallPlans": { "type": "integer", "minimum": 0, "maximum": 256 },
         "maximumFields": { "type": "integer", "minimum": 6, "maximum": 32 },
-        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "globalCellCount": { "type": "integer", "minimum": 1, "maximum": 1048576 },
         "estimatedCpuWorkUnits": { "type": "integer", "minimum": 1, "maximum": 100000000 },
         "estimatedResidentBytes": { "type": "integer", "minimum": 1, "maximum": 536870912 }
       }

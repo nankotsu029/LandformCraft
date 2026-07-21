@@ -103,6 +103,7 @@ class SchemaContractTest {
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/manual-constraint-island/request-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/diagnostic/oblique-multi-view.request-v2.json"));
+        v2.readGenerationRequest(Path.of("examples/v2/diagnostic/medium-1024.request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/manual-constraint-island/terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/scenarios/lush-cave.terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/scenarios/sky-islands.terrain-intent-v2.json"));

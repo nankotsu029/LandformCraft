@@ -1,0 +1,26 @@
+{
+  "requestVersion": 2,
+  "requestId": "medium-1024-square-offline-budget",
+  "bounds": {
+    "width": 1024,
+    "length": 1024,
+    "minY": 0,
+    "maxY": 1,
+    "waterLevel": 0
+  },
+  "prompt": "V2-13-03 1024x1024 offline generation budget measurement fixture. Not a placement-supported or testedMaximum claim. Preview cell budget remains 1000000.",
+  "referenceImages": [],
+  "constraintMaps": [],
+  "generation": {
+    "globalSeed": 827413,
+    "tileSize": 128
+  },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  }
+}
