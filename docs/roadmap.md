@@ -9,7 +9,7 @@
 | Track | 対象 | 状態 | 次のTask |
 |---|---|---|---|
 | A コア地形 | V2-4 Environment → V2-5 Sparse volume → V2-6 Placement → V2-11 Capability promotion → V2-12 V2正式経路化 | V2-6完了（19/21、`V2-6-16`／`17`無効化、`V2-6-21` P0再完了 2026-07-20、[Phase gate audit](design-v2/audits/v2-6-phase-gate.md)）、V2-11は6 Task完了（`V2-11-01`〜`V2-11-06`、2026-07-20。親Phaseは`進行中`のまま）、**V2-12完了（Phase gate `V2-12-07` 2026-07-21。v2 production-only構成、[V2-12 Phase gate audit](design-v2/audits/v2-12-07-phase-gate.md)）。follow-up defect `V2-12-11`（placement test-hygiene）も2026-07-21完了** | —（Track A本線・follow-upとも完了） |
-| B 画像忠実性 | V2-7 Image fidelity（抽出→draft→明示昇格→競合解決） | 進行中（1/7） | `V2-7-02` |
+| B 画像忠実性 | V2-7 Image fidelity（抽出→draft→明示昇格→競合解決） | 完了（7/7、[Phase gate audit](design-v2/audits/v2-7-phase-gate.md)） | 完了 |
 | C スケール | V2-8 Scale-up（LARGE 3000×3000 offline） | 進行中（1/8） | `V2-8-02` |
 | D 地形基盤拡張 | V2-9 Terrain foundation（`V2-6-01`／`V2-6-02`＋`V2-8-01` ScaleAdmission、V2-6／V2-8完了は待たない） | 完了（14/14、[Phase gate audit](design-v2/audits/v2-9-phase-gate.md)） | 完了 |
 | E 地形拡張（後続） | V2-10 Deferred terrain families（V2-9完了済み） | 完了（11/11、[Phase gate audit](design-v2/audits/v2-10-phase-gate.md)） | 完了 |
@@ -91,7 +91,7 @@ v1（Schema、generator `3.0.0-phase6`、Release format 1、placement／Undo、c
 - geology、climate、ecology fieldと高度な植生
 - cave、overhang、arch、sky island等の局所3D地形（offline v2は下記のとおり）
 - Release format 2とv2地形の広範なsupported Paper配置（`V2-11-01`で`surface-2_5d`の4 featureだけを`SUPPORTED`にし、`V2-11-06`で寸法を実測範囲の1000×1000へ昇格したが、他prefixは`EXPERIMENTAL`、foundation featureは`UNSUPPORTED`、寸法evidenceはFAWE 2.15.2単独／WorldEdit単独runtimeは64×64のまま）
-- 通常画像・スケッチからの決定論的制約抽出（V2-7-01のcoreのみ実装済み・未接続）
+- 通常画像・スケッチからの決定論的制約抽出（V2-7-01〜03: core／secure envelope／draft artifact＋confidence preview。昇格／CLI／Paper／Request未接続）
 - 1024超〜3000×3000のLARGE生成（V2-8-01の契約のみ実装済み・生成不可）
 
 これらは各Phaseのgateを満たすまで利用可能、Beta対応、supportedと表現しません。
@@ -111,7 +111,7 @@ Track A内の依存順は `V2-0 → V2-1 → V2-2 → V2-3 → V2-4 → V2-5 →
 | A | V2-4 Environment | 完了（15/15） | geology／climate／ecology／semantic materialを統合する | [Phase gate audit](design-v2/audits/v2-4-phase-gate.md) |
 | A | V2-5 Sparse volume | 完了（18/18） | cave／lush cave／overhang／arch／sky island／waterfall／local envを局所3D化する | [Phase gate audit](design-v2/audits/v2-5-phase-gate.md) |
 | A | V2-6 Placement | 完了（19/21、`V2-6-16`／`17`無効化） | Release 2を安全に配置・復旧可能にする | [Phase gate audit](design-v2/audits/v2-6-phase-gate.md)（effect envelope、snapshot-all、canonical apply、settle/full verify、WE／FAWE smoke、v1回帰） |
-| B | V2-7 Image fidelity | 進行中（1/7） | 通常画像・スケッチをdraft＋明示昇格で直接制約へ変換する | 抽出決定性、provenance連鎖、多入力競合解決、source差分metric |
+| B | V2-7 Image fidelity | 完了（7/7） | 通常画像・スケッチをdraft＋明示昇格で直接制約へ変換する | 抽出決定性、provenance連鎖、多入力競合解決、source差分metric（[Phase gate](design-v2/audits/v2-7-phase-gate.md)） |
 | C | V2-8 Scale-up | 進行中（1/8） | LARGE（3000×3000）のoffline streaming生成を成立させる | 寸法policy統一、LARGE予算実測、resume／部分再生成、分割export |
 | A | V2-11 Capability promotion | 進行中（6/6 Task完了、Phase gate Task未設定。`V2-6-19`監査で追加、2026-07-20再監査で拡張） | V2-6 gate完了後のPaper apply `SUPPORTED`昇格（`V2-11-01`完了）、dimension guard／measurement profile（`V2-11-02`完了）、docs／Schema同期（`V2-11-03`完了）、500再実測（`V2-11-04`完了）、1000再実測（`V2-11-05`完了）、実測寸法昇格（`V2-11-06`完了） | `V2-11-01`〜`V2-11-06` |
 | A | V2-12 V2 formalization | 完了（10/10、Phase gate `V2-12-07` 2026-07-21。follow-up defect `V2-12-11`はLOW） | v2を唯一のproduction経路とし、v1をlegacy compatibility境界へ隔離する | 完了（[V2-12 Phase gate audit](design-v2/audits/v2-12-07-phase-gate.md)） |
@@ -254,7 +254,19 @@ V2-0〜V2-5のAcceptance gateは完了済みで、完了状態を戻さない。
 
 `V2-12-11`（2026-07-21**完了**）は`V2-12-07` gateが検出したpre-existing・LOWのtest-hygiene defectを解消した。`PlacementUndoServiceV2Test`と`PlacementRecoveryServiceV2Test`のcodec round-trip testが、sealed example（`examples/v2/placement/placement-undo-plan-v2.json`／`placement-recovery-plan-v2.json`）を毎回`UUID.randomUUID()`由来の非決定的confirmation nonceで上書きし、`./gradlew test`のたびにworking treeを汚していた問題である。両testは既存のseam（`request.plaintextToken()`が非nullなら固定nonceを採用、nullなら従来どおりrandom）を使い、round-trip test**だけ**が固定placeholder nonceでexampleを決定論的に再生成するようにした（`PlacementUndoServiceV2Test`へ`afterApplied(root, twoTiles, plaintextToken)` overload、`PlacementRecoveryServiceV2Test`へ`prepareRequest`/`prepareAccept`のtoken overloadを追加。他の全scenarioはrandom token経路を維持）。production側の`PlacementConfirmationBinderV2.newPlaintextToken`（`UUID.randomUUID()`）はsecurity要件のため不変。2 exampleを固定nonceで再生成し、連続runでbyte-stable（churnなし）を確認した。`./gradlew clean test build`が通り、`PlacementPhaseGateV2Test`／`SchemaContractTest`のexample読取回帰は不変で、v1資産・Release format・capability・catalog・placement contract・default routingは不変である。これでV2-12のfollow-upも完了し、Track Aに未着手Taskは残らない。
 
-`V2-7-01`（2026-07-17完了）では`format.v2.constraint.extract`へ`image-land-water-extract-v1`のinteger-only抽出core、`ExtractedMaskDraftV2`（semantic checksum付きdraft）、trusted ceiling付きadmission、行単位cancelを実装し、golden分類・決定性（repeat/thread/locale/timezone）・全拒否経路を`ImageLandWaterExtractorV2Test`で検証した。CLI/Paper/Requestへは未接続で、hard constraint化には明示昇格（V2-7-04）を必須とする。次は`V2-7-02`である。
+`V2-7-01`（2026-07-17完了）では`format.v2.constraint.extract`へ`image-land-water-extract-v1`のinteger-only抽出core、`ExtractedMaskDraftV2`（semantic checksum付きdraft）、trusted ceiling付きadmission、行単位cancelを実装し、golden分類・決定性（repeat/thread/locale/timezone）・全拒否経路を`ImageLandWaterExtractorV2Test`で検証した。CLI/Paper/Requestへは未接続で、hard constraint化には明示昇格（V2-7-04）を必須とする。
+
+`V2-7-02`（2026-07-21完了）では抽出専用のsecure入力封筒`SecureImageExtractionEnvelopeV2`を`format.v2.constraint.extract`へ追加した。retired `ReferenceImageProcessor`と同等のportable path／symlink／hardlink alias／magic／extension／byte／pixel／aspect／frame（APNG `acTL`＋`getNumImages`）／EXIF orientation検査、TOCTOU（size／mtime／file key）、trusted ceiling付きdecode／working budget（8 MiB／4M px／4096／aspect 32／ARGB working 64 MiB）、行・読込単位cancel、raw file SHA-256→`SanitizedArgbImageV2`→`ExtractedMaskDraftV2`のchecksum連鎖を実装し、実PNG／JPEGからdraftまでのstrict経路を`SecureImageExtractionEnvelopeV2Test`で検証した。Request Schema・draft artifact・CLI／Paper／AI Providerへは未接続のまま`EXPERIMENTAL`である。
+
+`V2-7-03`（2026-07-21完了）ではdraft artifactとconfidence previewを追加した。`ExtractedMaskDraftArtifactPublisherV2`が`classes.u8`／`confidence.u8`＋`extracted-mask-draft-v2.json`をstaging→strict read-back→atomic publishし、`ExtractedMaskDraftPreviewRendererV2`が固定palette（`extracted-mask-draft-palette-v1`）のclass／confidence／unknown PNGを1枚ずつrenderしてstrict preview indexを公開する。Schema／example／`SecureImageExtractionEnvelopeV2Test`系に加え`ExtractedMaskDraftArtifactPublisherV2Test`／`ExtractedMaskDraftPreviewRendererV2Test`でround-trip・改変拒否・cancel cleanup・決定性を検証した。昇格・Release capability・CLI／Paper／Requestへは未接続のまま`EXPERIMENTAL`である。
+
+`V2-7-04`（2026-07-21完了）ではdraft→数値constraint PNGへの明示昇格を追加した。`ExtractedMaskPromotionServiceV2`がconfidence閾値とUNKNOWN処理（`REJECT`／`MAP_TO_WATER`／`MAP_TO_LAND`／`MAP_TO_NODATA`）の明示指定を必須とし、U8 grayscale `land-water.png`をstagingして`SecureConstraintMapSourceLoader`＋`NumericPngDecoder`でV2-1再検証したのち、`extracted-mask-promotion-v2.json` provenanceと合わせてatomic publishする。source checksum → draft semantic checksum → map SHA-256 → record canonical checksumの連鎖を固定し、`ExtractedMaskPromotionServiceV2Test`でround-trip・閾値境界・改変拒否・cancel cleanup・決定性を検証した。自動／暗黙昇格・AI補完・CLI／Paper／Request／Release capabilityへは未接続のまま`EXPERIMENTAL`である。
+
+`V2-7-05`（2026-07-21完了）では輝度ベースのheight guide draft抽出と明示昇格連携を追加した。`ImageHeightGuideExtractorV2`（`image-height-guide-extract-v1`）がinteger-only輝度（BT.601風重み）からU8 sample（0..254 clamp）＋confidenceを作り、alpha < 128をno-dataとする。sample空間は`luminance-u8-requires-explicit-height-value-meaning-v1`として宣言し、V2-1の3種`HeightValueMeaning`を抽出時に推測しない。`ExtractedHeightGuidePromotionServiceV2`が意味／scale／offsetの明示指定とconfidence閾値を必須とし、`height-guide.png`をV2-1 strict decoderと`CanonicalConstraintRasterV2` residual一貫性検査の後にatomic publishする。Schema／example／`ImageHeightGuideExtractorV2Test`／`ExtractedHeightGuidePromotionServiceV2Test`でgolden・no-data・clamp・3意味昇格・決定性を検証した。CLI／Paper／Request未接続、`EXPERIMENTAL`のまま。次は`V2-7-06`である。
+
+`V2-7-06`（2026-07-21完了）では固定palette距離量子化によるzone／sketch label draft抽出と明示昇格連携を追加した。`ImageZoneLabelExtractorV2`（`image-zone-label-extract-v1`）がsketch palette v1（shore／upland／wetland／rock）への整数平方ユークリッド距離でlabel index＋confidenceを作り、ambiguous帯・遠色・alpha < 128をUNKNOWNとする（k-means禁止）。sample空間は`fixed-palette-distance-quantize-requires-explicit-categorical-encoding-v1`として宣言する。`ExtractedZoneLabelPromotionServiceV2`がconfidence閾値とnoDataを明示し、`zone-labels.png`をV2-1 categorical decoderと`ZONE_LABEL_MAP` canonical経路の後にatomic publishする。Schema／example／`ImageZoneLabelExtractorV2Test`／`ExtractedZoneLabelPromotionServiceV2Test`でpalette golden・ambiguous・budget・決定性・昇格を検証した。CLI／Paper／Request未接続、`EXPERIMENTAL`のまま。次は`V2-7-07`である。
+
+`V2-7-07`（2026-07-21完了）では多入力競合解決とPhase gateを閉じた。`MultiSourceReconciliationServiceV2`（`image-fidelity-multisource-reconcile-v1`）が`image-constraint-priority-v1`優先順位（manual hard→hard map→manual soft→soft map→image draft→prompt soft→preset）でprompt vs 画像・hard vs draftを解決し、HARD/HARDおよび同rank SOFT peerはfail closed（last-write-wins禁止）。source-to-result差分metricとresult／conflict／source-diff previewをstrict artifactとして公開した。`ImageFidelityPhaseGateV2Test`と[V2-7 Phase gate audit](design-v2/audits/v2-7-phase-gate.md)でportfolioを統合監査し、抽出経路を**SUPPORTED候補**として記録した。runtimeは`EXPERIMENTAL`・CLI／Paper／Request未接続・Release capability追加なしのまま。Track B（V2-7）は完了である。
 
 `V2-8-01`（2026-07-17完了）では`model.v2.scale`のscale class（SMALL/MEDIUM/LARGE≤3072）、version凍結defaultsを持つ`ScaleProfileV2`、canonical row-major `TilePlanV2`、`core.v2.scale.ScaleAdmissionV2`（`scale-admission-v1`）を実装し、3000×3000=576 tileのgolden分解・決定性・全failure codeを`TilePlanV2Test`/`ScaleAdmissionV2Test`で検証した。既存の分散寸法検査とv1・全checksumは不変で、LARGE生成は未実装である。次は`V2-8-02`である。
 
@@ -319,7 +331,7 @@ V2-2〜V2-10の詳細なTask Scope、非Scope、test、決定性／memory／secu
 | A | V2-6 | 21 | 完了（19/21、`V2-6-16`／`17`無効化） | 完了 | `V2-6-19`（完了） |
 | A | V2-11 | 6 | 進行中（6/6 Task完了） | — | — |
 | A | V2-12 | 11 | 完了（11/11、gate closed、follow-up `V2-12-11`完了） | 完了 | `V2-12-07`（完了） |
-| B | V2-7 | 7 | 進行中（1/7） | `V2-7-02` | `V2-7-07` |
+| B | V2-7 | 7 | 完了（7/7） | 完了 | `V2-7-07` |
 | C | V2-8 | 8 | 進行中（1/8） | `V2-8-02` | `V2-8-08` |
 | D | V2-9 | 14 | 完了（14/14） | 完了 | `V2-9-14` |
 | E | V2-10 | 11 | 完了（11/11） | 完了 | `V2-10-09` |

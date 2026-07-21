@@ -212,6 +212,24 @@ class SchemaContractTest {
                 .readAudit(Path.of("examples/v2/design/design-audit-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.design.DesignPackageCodecV2()
                 .readDraftEvidence(Path.of("examples/v2/design/image-draft-evidence-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.ExtractedMaskDraftArtifactCodecV2()
+                .read(Path.of("examples/v2/extract/extracted-mask-draft-v2.json"));
+        new com.github.nankotsu029.landformcraft.preview.v2.ExtractedMaskDraftPreviewIndexCodecV2()
+                .read(Path.of("examples/v2/extract/extracted-mask-draft-preview-index-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.ExtractedMaskPromotionRecordCodecV2()
+                .read(Path.of("examples/v2/extract/extracted-mask-promotion-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.ExtractedHeightGuideDraftArtifactCodecV2()
+                .read(Path.of("examples/v2/extract/extracted-height-guide-draft-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.ExtractedHeightGuidePromotionRecordCodecV2()
+                .read(Path.of("examples/v2/extract/extracted-height-guide-promotion-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.ExtractedZoneLabelDraftArtifactCodecV2()
+                .read(Path.of("examples/v2/extract/extracted-zone-label-draft-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.ExtractedZoneLabelPromotionRecordCodecV2()
+                .read(Path.of("examples/v2/extract/extracted-zone-label-promotion-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.MultiSourceReconciliationArtifactCodecV2()
+                .read(Path.of("examples/v2/extract/multi-source-reconciliation-v2.json"));
+        new com.github.nankotsu029.landformcraft.preview.v2.MultiSourceReconciliationPreviewIndexCodecV2()
+                .read(Path.of("examples/v2/extract/multi-source-reconciliation-preview-index-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.validation.EnvironmentValidationArtifactCodecV2()
                 .read(Path.of("examples/v2/environment/environment-validation-artifact-v2.json"));
         var structured = new StructuredDataValidator();

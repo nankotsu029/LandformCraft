@@ -14,7 +14,7 @@ v1 の `TerrainDesignProvider`／`TerrainDesignApplicationService` は TerrainIn
 2. **`ProviderCapabilityCatalogV2` + `DesignCapabilityNegotiatorV2`** が path／model／requested capability を照合する。未知 version・未知／未宣言 model・capability mismatch は hard reject し、v1 design path へ書き換えない。
 3. **`TerrainDesignApplicationServiceV2`**（`isRelease2Path() == true`）が OPENAI／ANTHROPIC／IMPORT／FIXTURE／MANUAL_CONSTRAINT／REFERENCE_IMAGE_DRAFT を同一 publish 境界へ接続する。
 4. **Design Package v2** は `terrain-intent-v2.json`／`audit-v2.json`／任意 `image-draft-evidence-v2.json`／exact `checksums.sha256` とし、atomic publish + strict read-back する。audit の intentChecksum は intent ファイル SHA-256 とする（v1 Design Package と同型）。
-5. **reference image soft draft** は `ImageLandWaterExtractorV2` → `ImageDraftEvidenceV2`（UNCONFIRMED／CONFIRMED_SOFT／REJECTED）に限り、HARD `mapReferences` への暗黙昇格 API は `forbidHardPromotion` で拒否する。secure ファイル封筒の接続は V2-7-02 のまま。
+5. **reference image soft draft** は `SecureImageExtractionEnvelopeV2`（任意）→ `ImageLandWaterExtractorV2` → `ImageDraftEvidenceV2`（UNCONFIRMED／CONFIRMED_SOFT／REJECTED）に限り、HARD `mapReferences` への暗黙昇格 API は `forbidHardPromotion` で拒否する。Request／CLI／Paperへのsecure封筒接続は後続V2-7 Taskのまま。
 6. **v1 default** は変更しない。CLI／Paper の既存 `design` は v1 のまま。v2 は明示 dispatch のみ。
 
 ## Consequences

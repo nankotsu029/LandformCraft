@@ -1,0 +1,19 @@
+{
+  "algorithmVersion": "image-land-water-extract-v1",
+  "canonicalChecksum": "61d5d71e505647583d465d02a0ed14d62fcb7313815c6d0bb4c7c8f4e6202487",
+  "classesByteLength": 4,
+  "classesPath": "classes.u8",
+  "classesSha256": "f16f6b7f1cd082e72284f88f0b05969cfa0431be25a05508e66cf60b3ea2cf63",
+  "confidenceByteLength": 4,
+  "confidencePath": "confidence.u8",
+  "confidenceSha256": "29e8154ae268cc3b6032190ca93330045f7a5f264d9773db341cc0fa1d34688b",
+  "landCells": 2,
+  "length": 2,
+  "schemaVersion": 1,
+  "semanticChecksum": "9090e16b63aa4690e986afcd4acfe18c1739e78a180d91122279add300bcf904",
+  "sourceChecksum": "abababababababababababababababababababababababababababababababab",
+  "sourceRelativePath": "images/sketch.png",
+  "unknownCells": 1,
+  "waterCells": 1,
+  "width": 2
+}

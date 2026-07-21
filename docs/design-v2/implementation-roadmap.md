@@ -1,6 +1,6 @@
 # Implementation Roadmap v2
 
-> Status: v2の詳細設計とgate。V2-0〜V2-6、Track D `V2-9`、Track E `V2-10`は完了済みである（V2-6は`V2-6-19` Phase gateまで完了、`V2-6-16`／`17`無効化、[V2-6 Phase gate audit](audits/v2-6-phase-gate.md)）。Track Aの次は`V2-11-01`（Paper capability promotion）。Track B `V2-7-02`、Track C `V2-8-02`も並行可能。進捗の正本は [docs/roadmap.md](../roadmap.md) とする。
+> Status: v2の詳細設計とgate。V2-0〜V2-7、Track D `V2-9`、Track E `V2-10`は完了済みである（V2-6は`V2-6-19` Phase gateまで完了、`V2-6-16`／`17`無効化、[V2-6 Phase gate audit](audits/v2-6-phase-gate.md)；V2-7は[V2-7 Phase gate audit](audits/v2-7-phase-gate.md)）。Track Aの次は`V2-11-01`（Paper capability promotion）。Track C `V2-8-02`も並行可能。進捗の正本は [docs/roadmap.md](../roadmap.md) とする。
 
 ## 1. Roadmapの読み方
 

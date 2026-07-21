@@ -1,6 +1,6 @@
 # v2 Task Index
 
-> Status: V2-0〜V2-6は各Phase gateまで完了（V2-6は19/21、`V2-6-16`／`V2-6-17`は無効化済み、[V2-6 Phase gate audit](audits/v2-6-phase-gate.md)）。**Track AのV2-12 Phase gate（`V2-12-07`）は2026-07-21に完了し、V2 production-only構成でV2-12親Phaseを閉じた（[V2-12 Phase gate audit](audits/v2-12-07-phase-gate.md)）。** `V2-12-01`〜`V2-12-06`／`V2-12-08`〜`V2-12-10`と`V2-11-01`〜`V2-11-06`は2026-07-20〜21完了（[ADR 0035](../adr/0035-v1-retirement-governance.md) Accepted）。`V2-12-07` gate検出のfollow-up defect `V2-12-11`（placement test-hygiene、P2/LOW）も2026-07-21に完了し、**Track Aに未着手Taskは残らない**。2026-07-20の全体再監査を受け、V2-11へ`V2-11-02`〜`V2-11-06`（dimension guard、docs／Schema同期、500／1000再実測、実測寸法昇格）を、新Phase V2-12（V2正式経路化とv1完全移行、`V2-12-01`〜`V2-12-07`。rev.4で`V2-12-08`〜`V2-12-10`、`V2-12-07` gateで`V2-12-11`を追加）を追加した。Track B（V2-7）とTrack C（V2-8）は各1 Task完了。Track D（V2-9）とTrack E（V2-10）は全Task完了。この文書はTask ScopeとAcceptance gateの正本であり、進捗状態の正本は [docs/roadmap.md](../roadmap.md)、モデル割当は [model-assignment.md](model-assignment.md) である。
+> Status: V2-0〜V2-6は各Phase gateまで完了（V2-6は19/21、`V2-6-16`／`V2-6-17`は無効化済み、[V2-6 Phase gate audit](audits/v2-6-phase-gate.md)）。**Track AのV2-12 Phase gate（`V2-12-07`）は2026-07-21に完了し、V2 production-only構成でV2-12親Phaseを閉じた（[V2-12 Phase gate audit](audits/v2-12-07-phase-gate.md)）。** `V2-12-01`〜`V2-12-06`／`V2-12-08`〜`V2-12-10`と`V2-11-01`〜`V2-11-06`は2026-07-20〜21完了（[ADR 0035](../adr/0035-v1-retirement-governance.md) Accepted）。`V2-12-07` gate検出のfollow-up defect `V2-12-11`（placement test-hygiene、P2/LOW）も2026-07-21に完了し、**Track Aに未着手Taskは残らない**。2026-07-20の全体再監査を受け、V2-11へ`V2-11-02`〜`V2-11-06`（dimension guard、docs／Schema同期、500／1000再実測、実測寸法昇格）を、新Phase V2-12（V2正式経路化とv1完全移行、`V2-12-01`〜`V2-12-07`。rev.4で`V2-12-08`〜`V2-12-10`、`V2-12-07` gateで`V2-12-11`を追加）を追加した。**Track B（V2-7）は`V2-7-07` Phase gateまで完了（[V2-7 Phase gate audit](audits/v2-7-phase-gate.md)、抽出はSUPPORTED候補／`EXPERIMENTAL`）。** Track C（V2-8）は進行中（1/8）。Track D（V2-9）とTrack E（V2-10）は全Task完了。この文書はTask ScopeとAcceptance gateの正本であり、進捗状態の正本は [docs/roadmap.md](../roadmap.md)、モデル割当は [model-assignment.md](model-assignment.md) である。
 
 ## 1. 読み方
 
@@ -903,58 +903,64 @@
 
 ### V2-7-02 Secure extraction input envelope
 
+- **状態:** 完了（2026-07-21）。`SecureImageExtractionEnvelopeV2`／`SanitizedArgbImageV2`／`ImageExtractionInputLimitsV2`を`format.v2.constraint.extract`へ追加し、retired `ReferenceImageProcessor`と同等のpath／symlink／hardlink alias／magic／extension／byte／pixel／aspect／APNG multi-frame／EXIF orientation検査、TOCTOU、trusted ceiling decode／working budget、cancel、raw SHA-256→draft checksum連鎖を実装した。`loadAndExtractLandWater`で実PNG／JPEG→draftのstrict経路を固定し、`SecureImageExtractionEnvelopeV2Test`で拒否・決定性・cancelを検証した。CLI／Paper／Request／draft artifactへは未接続、`EXPERIMENTAL`のまま。
 - **目的／前提:** sanitized画像fileから抽出coreへのARGB供給路を固定する。前提は`V2-7-01`。
 - **Scope／成果物:** v1 `ReferenceImageProcessor`と同等のpath/symlink/hardlink/magic/byte/pixel/frame/EXIF検査を持つ抽出専用envelope、decode/working budget、cancel、source checksum連鎖を実装する。
 - **非Scope:** Request Schema変更、draft artifact保存、AI Provider接続。
 - **主変更:** `format.v2.constraint.extract`、fixtures、image-constraint-maps docs。
 - **必須test／D/M/S:** path/link/TOCTOU/bomb/multi-frame拒否、byte/pixel/decode/working budget、checksum連鎖、thread/locale不変、cancel cleanup。
-- **Gate／docs／次／停止:** 実PNG/JPEGからdraftまでの経路がstrictに通れば完了し、`V2-7-03`へ進める。v1画像境界の意味を変える必要があれば停止する。
+- **Gate／docs／次／停止:** 達成。次は`V2-7-03`だが本Taskからは開始しない。v1画像境界の意味変更は不要だった。
 
 ### V2-7-03 Draft artifact and confidence preview
 
+- **状態:** 完了（2026-07-21）。`ExtractedMaskDraftArtifactV2`／Codec／Publisherで`classes.u8`＋`confidence.u8`＋strict indexをstaging→read-back→atomic publishし、`ExtractedMaskDraftPreviewIndexV2`／Codec／Rendererでclass／confidence／unknownの固定palette PNG previewを1枚ずつrenderしてstrict index公開した。Schema 2件と`examples/v2/extract/`を追加。round-trip・改変／extra／symlink拒否・cancel cleanup・決定性をtestで固定。昇格／Release／CLI／Paper／Request未接続、`EXPERIMENTAL`のまま。
 - **目的／前提:** draftを検証可能なartifact＋診断previewにする。前提は`V2-7-02`。
 - **Scope／成果物:** draft artifactのstrict Schema/codec（staging→read-back→atomic publish）、class/confidence/unknownの固定PNG preview、strict index、budget。
 - **非Scope:** 昇格、Release capability、Paper UI。
 - **主変更:** `format.v2.constraint.extract`、`preview.v2` registry、新Schema、examples、docs。
 - **必須test／D/M/S:** round-trip、checksum改変/欠損/extra拒否、preview palette/dimension固定、1枚ずつbounded render、cancel cleanup。
-- **Gate／docs／次／停止:** strict read-backとpreview indexが通れば完了し、`V2-7-04`へ進める。既存preview registryの意味変更が必要なら停止する。
+- **Gate／docs／次／停止:** 達成。次は`V2-7-04`だが本Taskからは開始しない。既存preview registryの意味変更は不要だった。
 
 ### V2-7-04 Explicit promotion to constraint map
 
+- **状態:** 完了（2026-07-21）。`ExtractedMaskPromotionServiceV2`がconfidence閾値とUNKNOWN処理の明示指定を必須とし、U8 grayscale `land-water.png`をstaging→`SecureConstraintMapSourceLoader`＋`NumericPngDecoder`再検証→`extracted-mask-promotion-v2.json` provenanceとatomic publishする経路を実装した。Schema／`examples/v2/extract/extracted-mask-promotion-v2.json`／`ExtractedMaskPromotionServiceV2Test`でround-trip・閾値境界・改変拒否・cancel・決定性を固定。自動／暗黙昇格・AI補完・CLI／Paper／Request／Release未接続、`EXPERIMENTAL`のまま。
 - **目的／前提:** draft→数値constraint PNG（V2-1経路）への明示昇格を実装する。前提は`V2-7-03`。
 - **Scope／成果物:** 昇格操作（confidence閾値・UNKNOWN処理の明示指定）、生成した数値PNGのV2-1 strict decoder再検証、source→draft→constraint mapのprovenance連鎖、昇格記録。
 - **非Scope:** 自動/暗黙昇格、AIによる補完、Request外の新しいhard constraint種別。
 - **主変更:** `core.v2`昇格サービス、provenance Schema、examples、image-constraint-maps docs。
 - **必須test／D/M/S:** 昇格round-trip（draft→PNG→field）、checksum連鎖検証、閾値境界、UNKNOWN扱いの明示指定必須、改変拒否、決定性。
-- **Gate／docs／次／停止:** 昇格物がV2-1経路の全検査を通過しprovenanceが検証可能なら完了し、`V2-7-05`へ進める。暗黙のhard化が必要になれば停止する。
+- **Gate／docs／次／停止:** 達成。次は`V2-7-05`だが本Taskからは開始しない。暗黙のhard化は不要だった。
 
 ### V2-7-05 Height guide extraction
 
+- **状態:** 完了（2026-07-21）。`ImageHeightGuideExtractorV2`（`image-height-guide-extract-v1`）がinteger-only輝度→U8 height draft（0..254 clamp、alpha < 128はno-data）を抽出し、sample空間宣言`luminance-u8-requires-explicit-height-value-meaning-v1`で3種`HeightValueMeaning`の推測を禁止した。`ExtractedHeightGuideDraftArtifactPublisherV2`と`ExtractedHeightGuidePromotionServiceV2`でdraft artifact／明示昇格（意味・scale・offset必須）→V2-1 decoder＋residual一貫を実装。Schema／example／testでgolden・no-data・clamp・3意味・決定性を固定。CLI／Paper／Request未接続、`EXPERIMENTAL`のまま。
 - **目的／前提:** 輝度ベースのheight guide draft抽出を追加する。前提は`V2-7-02`（並行可: `V2-7-03`）。
 - **Scope／成果物:** integer-only輝度→height draft（version凍結）、信頼度、既存3種height意味との対応宣言、昇格連携。
 - **非Scope:** 等高線ベクトル化、陰影推定、AI推定。
 - **主変更:** `format.v2.constraint.extract`、Schema、fixtures、docs。
 - **必須test／D/M/S:** golden輝度変換、no-data、範囲clamp、決定性、budget、拒否。
-- **Gate／docs／次／停止:** draft→昇格→residual報告が一貫すれば完了し、`V2-7-06`へ進める。
-- **モデル割当:** [model-assignment.md](model-assignment.md)参照。
+- **Gate／docs／次／停止:** 達成。次は`V2-7-06`だが本Taskからは開始しない。等高線ベクトル化は不要だった。
 
 ### V2-7-06 Zone and sketch label extraction
 
+- **状態:** 完了（2026-07-21）。`ImageZoneLabelExtractorV2`（`image-zone-label-extract-v1`）が固定sketch paletteへの整数平方ユークリッド距離量子化でzone label draftを抽出し、ambiguous帯・遠色・alpha < 128をUNKNOWNとする（k-means禁止）。`ExtractedZoneLabelDraftArtifactPublisherV2`と`ExtractedZoneLabelPromotionServiceV2`でdraft artifact／明示昇格（confidence閾値＋noData）→V2-1 categorical decoder＋`ZONE_LABEL_MAP` canonical経路を実装。Schema／example／`ImageZoneLabelExtractorV2Test`／`ExtractedZoneLabelPromotionServiceV2Test`でpalette golden・ambiguous・budget・決定性・昇格検証を固定。CLI／Paper／Request未接続、`EXPERIMENTAL`のまま。
 - **目的／前提:** スケッチ・zone画像から有界・整数のみの量子化でzone label draftを抽出する。前提は`V2-7-02`。
 - **Scope／成果物:** 固定palette距離量子化（反復クラスタリング禁止）、label表提案、ambiguous帯のUNKNOWN化、昇格連携。
 - **非Scope:** 自由曲線のベクトル化、意味推定（AIによるlabel命名は提案のみ）。
 - **主変更:** `format.v2.constraint.extract`、Schema、fixtures、docs。
 - **必須test／D/M/S:** palette境界golden、ambiguous帯、label数budget、決定性、拒否。
-- **Gate／docs／次／停止:** zone draftが昇格後V2-1 zone経路の全検査を通れば完了し、`V2-7-07`へ進める。
+- **Gate／docs／次／停止:** 達成。次は`V2-7-07`だが本Taskからは開始しない。自由曲線ベクトル化は不要だった。
 - **モデル割当:** [model-assignment.md](model-assignment.md)参照。
 
 ### V2-7-07 Multi-source reconciliation, source diff, and Phase gate audit
 
+- **状態:** 完了（2026-07-21）。`image-fidelity-multisource-reconcile-v1`／`image-constraint-priority-v1`でprompt vs 画像・hard vs draftの優先順位を凍結し、HARD/HARDおよび同rank SOFT peer競合をfail closed（last-write-wins禁止）にした。source-to-result差分metricとresult／conflict／source-diff previewをstrict artifactとして公開。`MultiSourceReconciliationServiceV2Test`／`ImageFidelityPhaseGateV2Test`と[V2-7 Phase gate audit](audits/v2-7-phase-gate.md)でportfolioを閉じた。抽出経路は**SUPPORTED候補**として記録し、runtimeは`EXPERIMENTAL`・CLI／Paper／Request未接続・Release capability追加なし。
 - **目的／前提:** 複数入力（複数画像・prompt・手動map）の競合と優先順位を明示解決し、Phase gateを閉じる。前提は`V2-7-01`〜`V2-7-06`。
 - **Scope／成果物:** source優先順位contract（prompt vs 画像、hard vs draft）、競合診断、source-to-result差分metric/preview、V2-7全portfolioの統合監査。
 - **非Scope:** 新抽出種別、Release capability追加（必要なら新Task）、Paper UI。
 - **必須test／D/M/S:** 競合fixture（画像同士/画像とprompt）、優先順位の決定性、差分metricのstable reduction、全corruption回帰、clean build。
-- **Gate／docs／次／停止:** 全前提Taskと統合監査が通った場合だけV2-7を完了とし、抽出経路を`SUPPORTED`候補として記録する。未解決競合ruleが残れば新Taskを追加して停止する。
+- **Gate／docs／次／停止:** 達成。V2-7親Phaseを完了とし、抽出経路をSUPPORTED候補として記録した。未解決競合ruleは残っていない。
+- **モデル割当:** [model-assignment.md](model-assignment.md)参照。
 
 ## 8. V2-8 Scale-up（Track C: LARGE 3000×3000）
 

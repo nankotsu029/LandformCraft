@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/extracted-height-guide-draft-v2.schema.json",
+  "title": "LandformCraft ExtractedHeightGuideDraftArtifactV2",
+  "description": "Strict index for a published extracted height-guide draft artifact with U8 sample and confidence sidecars. Samples are luminance guides that require an explicit HeightValueMeaning at promotion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "algorithmVersion", "sampleSpaceDeclaration",
+    "sourceChecksum", "semanticChecksum",
+    "width", "length", "validCells", "noDataCells",
+    "samplesPath", "confidencePath", "samplesSha256", "confidenceSha256",
+    "samplesByteLength", "confidenceByteLength", "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "algorithmVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "sampleSpaceDeclaration": {
+      "const": "luminance-u8-requires-explicit-height-value-meaning-v1"
+    },
+    "sourceChecksum": { "$ref": "#/$defs/checksum" },
+    "semanticChecksum": { "$ref": "#/$defs/checksum" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "validCells": { "type": "integer", "minimum": 0 },
+    "noDataCells": { "type": "integer", "minimum": 0 },
+    "samplesPath": { "const": "samples.u8" },
+    "confidencePath": { "const": "confidence.u8" },
+    "samplesSha256": { "$ref": "#/$defs/checksum" },
+    "confidenceSha256": { "$ref": "#/$defs/checksum" },
+    "samplesByteLength": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "confidenceByteLength": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "sourceRelativePath": { "$ref": "#/$defs/safePath" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+    }
+  }
+}

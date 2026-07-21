@@ -66,7 +66,11 @@ Provider payloadはraw fileではなく、向きを補正してcanonical ARGBへ
 
 ### V2-1 numeric constraint map
 
-V2-1のdirect constraint mapはoffline専用の別経路です。AI向け`ReferenceImageProcessor`のARGB／EXIF正規化を再利用せず、filesystemの安全原則だけを共有し、`SecureConstraintMapSourceLoader`と`NumericPngDecoder`で数値sampleを保持します。受理する入力は、宣言と一致するnon-interlaced grayscale PNGのU8またはU16、single frameだけです。RGB、alpha、palette、bit depth違い、APNG、未知critical chunk、chunk順／CRC不正、truncated／trailing data、拡張子とmagicの不一致を拒否します。ICC、EXIF、text、gamma、filenameを数値意味へ利用しません。
+V2-1のdirect constraint mapはoffline専用の別経路です。AI向けARGB／EXIF正規化を再利用せず、filesystemの安全原則だけを共有し、`SecureConstraintMapSourceLoader`と`NumericPngDecoder`で数値sampleを保持します。受理する入力は、宣言と一致するnon-interlaced grayscale PNGのU8またはU16、single frameだけです。RGB、alpha、palette、bit depth違い、APNG、未知critical chunk、chunk順／CRC不正、truncated／trailing data、拡張子とmagicの不一致を拒否します。ICC、EXIF、text、gamma、filenameを数値意味へ利用しません。
+
+### V2-7 extraction input envelope
+
+通常画像からの決定論的抽出（Track B）は、Phase 5と同等のfilesystem／decode安全境界を`SecureImageExtractionEnvelopeV2`へ持つ専用経路です。PNG／JPEGのみを許可し、portable relative path、symlink、同一Request内hardlink alias、magic／extension不一致、TOCTOU、APNG multi-frame、corrupt decodeを拒否します。EXIF orientationはARGBへ反映し、metadataをsemantic値に使いません。trusted ceilingはsource 8 MiB／合計32 MiB、1辺4096、縦横比32、1枚4M／合計16M pixel、decode working 64 MiBです。raw file SHA-256がdraftの`sourceChecksum`へ連鎖します。CLI／Paper／Request Schemaへは未接続です。
 
 Requestが指定するbudgetは上限を狭めることだけができ、次のtrusted ceilingを拡張できません。
 

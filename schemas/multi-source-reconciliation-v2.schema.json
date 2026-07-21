@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/multi-source-reconciliation-v2.schema.json",
+  "title": "LandformCraft MultiSourceReconciliationArtifactV2",
+  "description": "Strict index for multi-source image-fidelity reconciliation with result, conflict, and source-diff U8 sidecars.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "algorithmVersion", "priorityTableVersion", "role", "status",
+    "width", "length", "resultNoDataSample",
+    "resultPath", "conflictPath", "sourceDiffPath",
+    "resultSha256", "conflictSha256", "sourceDiffSha256",
+    "resultByteLength", "conflictByteLength", "sourceDiffByteLength",
+    "resolvedCells", "emptyCells", "hardConflictCells", "softPeerConflictCells", "absoluteDiffSum",
+    "sources", "sourceDiffs", "semanticChecksum", "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "algorithmVersion": { "const": "image-fidelity-multisource-reconcile-v1" },
+    "priorityTableVersion": { "const": "image-constraint-priority-v1" },
+    "role": { "type": "string", "enum": ["LAND_WATER_MASK", "HEIGHT_GUIDE", "ZONE_LABEL_MAP"] },
+    "status": {
+      "type": "string",
+      "enum": ["RESOLVED", "UNRESOLVED_HARD_CONFLICT", "UNRESOLVED_SOFT_PEER_CONFLICT"]
+    },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "resultNoDataSample": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "resultPath": { "const": "result.u8" },
+    "conflictPath": { "const": "conflict.u8" },
+    "sourceDiffPath": { "const": "source-diff.u8" },
+    "resultSha256": { "$ref": "#/$defs/checksum" },
+    "conflictSha256": { "$ref": "#/$defs/checksum" },
+    "sourceDiffSha256": { "$ref": "#/$defs/checksum" },
+    "resultByteLength": { "type": "integer", "minimum": 1, "maximum": 4000000 },
+    "conflictByteLength": { "type": "integer", "minimum": 1, "maximum": 4000000 },
+    "sourceDiffByteLength": { "type": "integer", "minimum": 1, "maximum": 4000000 },
+    "resolvedCells": { "type": "integer", "minimum": 0 },
+    "emptyCells": { "type": "integer", "minimum": 0 },
+    "hardConflictCells": { "type": "integer", "minimum": 0 },
+    "softPeerConflictCells": { "type": "integer", "minimum": 0 },
+    "absoluteDiffSum": { "type": "integer", "minimum": 0 },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "sourceDiffs": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/sourceDiff" }
+    },
+    "semanticChecksum": { "$ref": "#/$defs/checksum" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "kind", "strength", "noDataSample", "samplesSha256", "samplesByteLength"],
+      "properties": {
+        "sourceId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "MANUAL_HARD", "HARD_CANONICAL_MAP", "MANUAL_SOFT", "SOFT_CANONICAL_MAP",
+            "IMAGE_DRAFT", "PROMPT_SOFT", "PRESET_DEFAULT"
+          ]
+        },
+        "strength": { "type": "string", "enum": ["HARD", "SOFT"] },
+        "noDataSample": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "samplesSha256": { "$ref": "#/$defs/checksum" },
+        "samplesByteLength": { "type": "integer", "minimum": 1, "maximum": 4000000 }
+      }
+    },
+    "sourceDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId", "kind", "presentCells", "agreedCells", "suppressedCells",
+        "conflictCells", "mismatchCells", "absoluteDiffSum"
+      ],
+      "properties": {
+        "sourceId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "MANUAL_HARD", "HARD_CANONICAL_MAP", "MANUAL_SOFT", "SOFT_CANONICAL_MAP",
+            "IMAGE_DRAFT", "PROMPT_SOFT", "PRESET_DEFAULT"
+          ]
+        },
+        "presentCells": { "type": "integer", "minimum": 0 },
+        "agreedCells": { "type": "integer", "minimum": 0 },
+        "suppressedCells": { "type": "integer", "minimum": 0 },
+        "conflictCells": { "type": "integer", "minimum": 0 },
+        "mismatchCells": { "type": "integer", "minimum": 0 },
+        "absoluteDiffSum": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

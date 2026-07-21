@@ -94,6 +94,37 @@ public final class ExtractedMaskDraftV2 {
         return Byte.toUnsignedInt(confidence[index(x, z)]);
     }
 
+    /** Defensive copy of the class raster for artifact publication within this package. */
+    byte[] copyClasses() {
+        return classes.clone();
+    }
+
+    /** Defensive copy of the confidence raster for artifact publication within this package. */
+    byte[] copyConfidence() {
+        return confidence.clone();
+    }
+
+    /**
+     * Rebuilds a draft from strictly verified artifact sidecars. Callers must already have checked
+     * dimensions, cell counts, and the semantic checksum.
+     */
+    static ExtractedMaskDraftV2 restore(
+            int width,
+            int length,
+            String algorithmVersion,
+            String sourceChecksum,
+            String semanticChecksum,
+            byte[] classes,
+            byte[] confidence,
+            int waterCells,
+            int landCells,
+            int unknownCells
+    ) {
+        return new ExtractedMaskDraftV2(
+                width, length, algorithmVersion, sourceChecksum, semanticChecksum,
+                classes.clone(), confidence.clone(), waterCells, landCells, unknownCells);
+    }
+
     private int index(int x, int z) {
         if (x < 0 || x >= width || z < 0 || z >= length) {
             throw new IndexOutOfBoundsException("mask coordinate outside bounds");

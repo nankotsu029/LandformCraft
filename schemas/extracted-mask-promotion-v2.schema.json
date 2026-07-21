@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/extracted-mask-promotion-v2.schema.json",
+  "title": "LandformCraft ExtractedMaskPromotionRecordV2",
+  "description": "Strict provenance record for one explicit draft→numeric land-water PNG promotion. Rejects unknown fields and unsealed indexes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "promotionVersion", "role",
+    "sourceChecksum", "draftSemanticChecksum", "draftAlgorithmVersion",
+    "confidenceThreshold", "unknownHandling",
+    "width", "length", "mapPath", "mapSha256", "mapByteLength", "sourceId",
+    "waterCells", "landCells", "noDataCells", "thresholdSuppressedCells",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "promotionVersion": { "const": "extracted-mask-promote-land-water-v1" },
+    "role": { "const": "LAND_WATER_MASK" },
+    "sourceChecksum": { "$ref": "#/$defs/checksum" },
+    "draftSemanticChecksum": { "$ref": "#/$defs/checksum" },
+    "draftAlgorithmVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "confidenceThreshold": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "unknownHandling": {
+      "type": "string",
+      "enum": ["REJECT", "MAP_TO_WATER", "MAP_TO_LAND", "MAP_TO_NODATA"]
+    },
+    "noDataSample": { "type": "integer", "minimum": 2, "maximum": 255 },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "mapPath": { "const": "land-water.png" },
+    "mapSha256": { "$ref": "#/$defs/checksum" },
+    "mapByteLength": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+    "sourceId": { "const": "constraint-source:extracted-mask-land-water" },
+    "waterCells": { "type": "integer", "minimum": 0 },
+    "landCells": { "type": "integer", "minimum": 0 },
+    "noDataCells": { "type": "integer", "minimum": 0 },
+    "thresholdSuppressedCells": { "type": "integer", "minimum": 0 },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "unknownHandling": { "const": "MAP_TO_NODATA" } },
+        "required": ["unknownHandling"]
+      },
+      "then": { "required": ["noDataSample"] },
+      "else": {
+        "not": { "required": ["noDataSample"] }
+      }
+    }
+  ],
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

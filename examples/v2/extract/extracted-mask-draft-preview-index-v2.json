@@ -1,0 +1,42 @@
+{
+  "canonicalChecksum": "556802ba361ff08e622690f15878b8a959e357579ee059362853c10dbbe1d654",
+  "layers": [
+    {
+      "byteLength": 82,
+      "layerId": "CLASS",
+      "layerVersion": 1,
+      "length": 2,
+      "paletteId": "extracted-mask-draft-palette-v1",
+      "path": "class.png",
+      "semantic": "extract.draft.class",
+      "sha256": "1a0f9a24cb5f9b709c958cc480440709d6af7b0ab0b2a00c01e47a1a6493d633",
+      "width": 3
+    },
+    {
+      "byteLength": 83,
+      "layerId": "CONFIDENCE",
+      "layerVersion": 1,
+      "length": 2,
+      "paletteId": "extracted-mask-draft-palette-v1",
+      "path": "confidence.png",
+      "semantic": "extract.draft.confidence",
+      "sha256": "fb0d3bd0f31ebd8a7e2e72e9c7bb42b57ee6a3f0a2f1284ed010446cfc64e0c2",
+      "width": 3
+    },
+    {
+      "byteLength": 77,
+      "layerId": "UNKNOWN",
+      "layerVersion": 1,
+      "length": 2,
+      "paletteId": "extracted-mask-draft-palette-v1",
+      "path": "unknown.png",
+      "semantic": "extract.draft.unknown",
+      "sha256": "c3f48da127f9af588535d31f0afec54682f4b20a5fb0734ca14079dcb0e5cde6",
+      "width": 3
+    }
+  ],
+  "length": 2,
+  "previewIndexVersion": 1,
+  "sourceDraftSemanticChecksum": "95f02b02154414d6648cc0838dd25179cc1dd0f0a271835ba5ad5b658487799f",
+  "width": 3
+}

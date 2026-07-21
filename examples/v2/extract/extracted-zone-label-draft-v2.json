@@ -1,0 +1,49 @@
+{
+  "algorithmVersion": "image-zone-label-extract-v1",
+  "canonicalChecksum": "b29457d6d481d170d4a1026c0443a6ff605b89ad34dbbabdd7bbd2084bd39bd5",
+  "confidenceByteLength": 4,
+  "confidencePath": "confidence.u8",
+  "confidenceSha256": "08efea1c0957a5a1fe019e6edb21fdc9fbe5de2213487eab7a05e06eca1c9784",
+  "labeledCells": 2,
+  "labelsByteLength": 4,
+  "labelsPath": "labels.u8",
+  "labelsSha256": "a6e2d3a090c0fafbc927e4fa9b68bda495eb93a471fc60145213e2a27f198c52",
+  "length": 2,
+  "proposedLabels": [
+    {
+      "blue": 120,
+      "green": 180,
+      "label": "shore",
+      "red": 210,
+      "sample": 10
+    },
+    {
+      "blue": 60,
+      "green": 140,
+      "label": "upland",
+      "red": 70,
+      "sample": 20
+    },
+    {
+      "blue": 70,
+      "green": 90,
+      "label": "wetland",
+      "red": 40,
+      "sample": 30
+    },
+    {
+      "blue": 125,
+      "green": 120,
+      "label": "rock",
+      "red": 120,
+      "sample": 40
+    }
+  ],
+  "sampleSpaceDeclaration": "fixed-palette-distance-quantize-requires-explicit-categorical-encoding-v1",
+  "schemaVersion": 1,
+  "semanticChecksum": "38712cbe25a1b15fd013c41ab46982dbd0ebfcedc10a6c6986fb0f24fdb81889",
+  "sourceChecksum": "abababababababababababababababababababababababababababababababab",
+  "sourceRelativePath": "images/zone-sketch.png",
+  "unknownCells": 2,
+  "width": 2
+}

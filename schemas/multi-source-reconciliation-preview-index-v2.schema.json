@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/multi-source-reconciliation-preview-index-v2.schema.json",
+  "title": "LandformCraft MultiSourceReconciliationPreviewIndexV2",
+  "description": "Strict diagnostic preview index for multi-source reconciliation (result/conflict/source-diff PNG layers).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "reconciliationSemanticChecksum", "width", "length", "layers", "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "reconciliationSemanticChecksum": { "$ref": "#/$defs/checksum" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "layers": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/layer" }
+    },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layerId", "layerVersion", "fileName", "semantic", "sha256",
+        "byteLength", "width", "length", "paletteId"
+      ],
+      "properties": {
+        "layerId": { "type": "string", "enum": ["RESULT", "CONFLICT", "SOURCE_DIFF"] },
+        "layerVersion": { "const": 1 },
+        "fileName": { "type": "string", "enum": ["result.png", "conflict.png", "source-diff.png"] },
+        "semantic": { "type": "string", "enum": ["RESULT", "CONFLICT", "SOURCE_DIFF"] },
+        "sha256": { "$ref": "#/$defs/checksum" },
+        "byteLength": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+        "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "paletteId": { "const": "multi-source-reconcile-palette-v1" }
+      }
+    }
+  }
+}

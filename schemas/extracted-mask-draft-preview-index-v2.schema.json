@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/extracted-mask-draft-preview-index-v2.schema.json",
+  "title": "LandformCraft extracted mask draft diagnostic preview index",
+  "description": "Strict, version-frozen diagnostic preview index for class, confidence, and unknown PNG layers derived from an extracted mask draft. Not a generation input or Release manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "previewIndexVersion", "sourceDraftSemanticChecksum", "width", "length", "layers", "canonicalChecksum"
+  ],
+  "properties": {
+    "previewIndexVersion": { "const": 1 },
+    "sourceDraftSemanticChecksum": { "$ref": "#/$defs/checksum" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "layers": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/layer" } },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "layerId": { "enum": ["CLASS", "CONFIDENCE", "UNKNOWN"] },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layerId", "layerVersion", "path", "semantic", "sha256", "byteLength", "width", "length", "paletteId"
+      ],
+      "properties": {
+        "layerId": { "$ref": "#/$defs/layerId" },
+        "layerVersion": { "const": 1 },
+        "path": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}\\.png$" },
+        "semantic": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$" },
+        "sha256": { "$ref": "#/$defs/checksum" },
+        "byteLength": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+        "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "paletteId": { "const": "extracted-mask-draft-palette-v1" }
+      }
+    }
+  }
+}

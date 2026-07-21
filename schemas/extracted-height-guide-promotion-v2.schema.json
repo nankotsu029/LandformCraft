@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/extracted-height-guide-promotion-v2.schema.json",
+  "title": "LandformCraft ExtractedHeightGuidePromotionRecordV2",
+  "description": "Strict provenance for one explicit height-guide draft→numeric PNG promotion with a declared V2-1 HeightValueMeaning.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "promotionVersion", "role", "sampleSpaceDeclaration",
+    "sourceChecksum", "draftSemanticChecksum", "draftAlgorithmVersion",
+    "confidenceThreshold", "valueMeaning", "valueScaleMillionths", "valueOffsetMillionths",
+    "validSampleMinimum", "validSampleMaximum", "noDataSample",
+    "width", "length", "mapPath", "mapSha256", "mapByteLength", "sourceId",
+    "validCells", "noDataCells", "thresholdSuppressedCells", "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "promotionVersion": { "const": "extracted-height-guide-promote-v1" },
+    "role": { "const": "HEIGHT_GUIDE" },
+    "sampleSpaceDeclaration": {
+      "const": "luminance-u8-requires-explicit-height-value-meaning-v1"
+    },
+    "sourceChecksum": { "$ref": "#/$defs/checksum" },
+    "draftSemanticChecksum": { "$ref": "#/$defs/checksum" },
+    "draftAlgorithmVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "confidenceThreshold": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "valueMeaning": {
+      "type": "string",
+      "enum": [
+        "ABSOLUTE_BLOCK_Y",
+        "BLOCKS_ABOVE_REQUEST_MIN_Y",
+        "BLOCKS_RELATIVE_TO_WATER_LEVEL"
+      ]
+    },
+    "valueScaleMillionths": { "type": "integer" },
+    "valueOffsetMillionths": { "type": "integer" },
+    "validSampleMinimum": { "const": 0 },
+    "validSampleMaximum": { "const": 254 },
+    "noDataSample": { "const": 255 },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "mapPath": { "const": "height-guide.png" },
+    "mapSha256": { "$ref": "#/$defs/checksum" },
+    "mapByteLength": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+    "sourceId": { "const": "constraint-source:extracted-height-guide" },
+    "validCells": { "type": "integer", "minimum": 0 },
+    "noDataCells": { "type": "integer", "minimum": 0 },
+    "thresholdSuppressedCells": { "type": "integer", "minimum": 0 },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

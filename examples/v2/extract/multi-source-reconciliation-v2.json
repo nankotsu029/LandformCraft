@@ -1,0 +1,66 @@
+{
+  "absoluteDiffSum": 1,
+  "algorithmVersion": "image-fidelity-multisource-reconcile-v1",
+  "canonicalChecksum": "ec1c4b935a24958b43d828f5181017c189438acceaf3bb985101f7084c55cdbd",
+  "conflictByteLength": 2,
+  "conflictPath": "conflict.u8",
+  "conflictSha256": "96a296d224f285c67bee93c30f8a309157f0daa35dc5b87e410b78630a09cfc7",
+  "emptyCells": 0,
+  "hardConflictCells": 0,
+  "length": 1,
+  "priorityTableVersion": "image-constraint-priority-v1",
+  "resolvedCells": 2,
+  "resultByteLength": 2,
+  "resultNoDataSample": 255,
+  "resultPath": "result.u8",
+  "resultSha256": "b413f47d13ee2fe6c845b2ee141af81de858df4ec549a58b7970bb96645bc8d2",
+  "role": "LAND_WATER_MASK",
+  "schemaVersion": 1,
+  "semanticChecksum": "f1b1dd0d36d3792e037d02ef9a515c058a50d63808c3d3d08a4e9801d31c51ac",
+  "softPeerConflictCells": 0,
+  "sourceDiffByteLength": 2,
+  "sourceDiffPath": "source-diff.u8",
+  "sourceDiffSha256": "47dc540c94ceb704a23875c11273e16bb0b8a87aed84de911f2133568115f254",
+  "sourceDiffs": [
+    {
+      "absoluteDiffSum": 0,
+      "agreedCells": 2,
+      "conflictCells": 0,
+      "kind": "IMAGE_DRAFT",
+      "mismatchCells": 0,
+      "presentCells": 2,
+      "sourceId": "image.a",
+      "suppressedCells": 0
+    },
+    {
+      "absoluteDiffSum": 1,
+      "agreedCells": 1,
+      "conflictCells": 0,
+      "kind": "PROMPT_SOFT",
+      "mismatchCells": 1,
+      "presentCells": 2,
+      "sourceId": "prompt.a",
+      "suppressedCells": 1
+    }
+  ],
+  "sources": [
+    {
+      "kind": "IMAGE_DRAFT",
+      "noDataSample": 255,
+      "samplesByteLength": 2,
+      "samplesSha256": "b413f47d13ee2fe6c845b2ee141af81de858df4ec549a58b7970bb96645bc8d2",
+      "sourceId": "image.a",
+      "strength": "SOFT"
+    },
+    {
+      "kind": "PROMPT_SOFT",
+      "noDataSample": 255,
+      "samplesByteLength": 2,
+      "samplesSha256": "9dcf97a184f32623d11a73124ceb99a5709b083721e878a16d78f596718ba7b2",
+      "sourceId": "prompt.a",
+      "strength": "SOFT"
+    }
+  ],
+  "status": "RESOLVED",
+  "width": 2
+}

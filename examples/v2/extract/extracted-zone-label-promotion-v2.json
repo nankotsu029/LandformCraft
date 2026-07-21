@@ -1,0 +1,51 @@
+{
+  "canonicalChecksum": "1af4fa3999571e33b561e1676aa8fc48328f66dd8c359f779ed3e502286a6386",
+  "confidenceThreshold": 1,
+  "draftAlgorithmVersion": "image-zone-label-extract-v1",
+  "draftSemanticChecksum": "38712cbe25a1b15fd013c41ab46982dbd0ebfcedc10a6c6986fb0f24fdb81889",
+  "labeledCells": 2,
+  "length": 2,
+  "mapByteLength": 71,
+  "mapPath": "zone-labels.png",
+  "mapSha256": "52105c3d79ed2b6cb917887342a40ac58ca2eb9d73b828a62c93362f396055b3",
+  "noDataCells": 2,
+  "noDataSample": 0,
+  "promotionVersion": "extracted-zone-label-promote-v1",
+  "proposedLabels": [
+    {
+      "blue": 120,
+      "green": 180,
+      "label": "shore",
+      "red": 210,
+      "sample": 10
+    },
+    {
+      "blue": 60,
+      "green": 140,
+      "label": "upland",
+      "red": 70,
+      "sample": 20
+    },
+    {
+      "blue": 70,
+      "green": 90,
+      "label": "wetland",
+      "red": 40,
+      "sample": 30
+    },
+    {
+      "blue": 125,
+      "green": 120,
+      "label": "rock",
+      "red": 120,
+      "sample": 40
+    }
+  ],
+  "role": "ZONE_LABEL_MAP",
+  "sampleSpaceDeclaration": "fixed-palette-distance-quantize-requires-explicit-categorical-encoding-v1",
+  "schemaVersion": 1,
+  "sourceChecksum": "abababababababababababababababababababababababababababababababab",
+  "sourceId": "constraint-source:extracted-zone-label",
+  "thresholdSuppressedCells": 0,
+  "width": 2
+}

@@ -1,0 +1,19 @@
+{
+  "algorithmVersion": "image-height-guide-extract-v1",
+  "canonicalChecksum": "a3c4a51a16daf05e50f5ff274b8df198167de01dd7de3fb6ce6a6a8908bfc019",
+  "confidenceByteLength": 4,
+  "confidencePath": "confidence.u8",
+  "confidenceSha256": "0145b06b36e203c1b849fbaa55bcee0a7f8d47841386819416e299a46e888cd5",
+  "length": 2,
+  "noDataCells": 1,
+  "sampleSpaceDeclaration": "luminance-u8-requires-explicit-height-value-meaning-v1",
+  "samplesByteLength": 4,
+  "samplesPath": "samples.u8",
+  "samplesSha256": "5a9575102e77d8a855530e4e0d5fd4ba9d3d01bad37c8a5e833a6ba0eb62c4f4",
+  "schemaVersion": 1,
+  "semanticChecksum": "fca3eb112e7a3bb02c867de149a32d6cbb28a30c5ec49d3d4554340daf8cafa5",
+  "sourceChecksum": "abababababababababababababababababababababababababababababababab",
+  "sourceRelativePath": "images/height-sketch.png",
+  "validCells": 3,
+  "width": 2
+}

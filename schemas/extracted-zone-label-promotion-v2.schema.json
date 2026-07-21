@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/extracted-zone-label-promotion-v2.schema.json",
+  "title": "LandformCraft ExtractedZoneLabelPromotionRecordV2",
+  "description": "Strict provenance for one explicit zone-label draft→numeric PNG promotion into ZONE_LABEL_MAP.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "promotionVersion", "role", "sampleSpaceDeclaration",
+    "sourceChecksum", "draftSemanticChecksum", "draftAlgorithmVersion",
+    "confidenceThreshold", "noDataSample",
+    "width", "length", "mapPath", "mapSha256", "mapByteLength", "sourceId",
+    "proposedLabels", "labeledCells", "noDataCells", "thresholdSuppressedCells",
+    "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "promotionVersion": { "const": "extracted-zone-label-promote-v1" },
+    "role": { "const": "ZONE_LABEL_MAP" },
+    "sampleSpaceDeclaration": {
+      "const": "fixed-palette-distance-quantize-requires-explicit-categorical-encoding-v1"
+    },
+    "sourceChecksum": { "$ref": "#/$defs/checksum" },
+    "draftSemanticChecksum": { "$ref": "#/$defs/checksum" },
+    "draftAlgorithmVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "confidenceThreshold": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "noDataSample": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "mapPath": { "const": "zone-labels.png" },
+    "mapSha256": { "$ref": "#/$defs/checksum" },
+    "mapByteLength": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+    "sourceId": { "const": "constraint-source:extracted-zone-label" },
+    "proposedLabels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/proposal" }
+    },
+    "labeledCells": { "type": "integer", "minimum": 0 },
+    "noDataCells": { "type": "integer", "minimum": 0 },
+    "thresholdSuppressedCells": { "type": "integer", "minimum": 0 },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sample", "label", "red", "green", "blue"],
+      "properties": {
+        "sample": { "type": "integer", "minimum": 1, "maximum": 254 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" },
+        "red": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "green": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "blue": { "type": "integer", "minimum": 0, "maximum": 255 }
+      }
+    }
+  }
+}

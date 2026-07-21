@@ -1,0 +1,21 @@
+{
+  "canonicalChecksum": "0c33eba5644ba0b4942572b2cce68f503bc51c13556c8af4b23194d408ca051e",
+  "confidenceThreshold": 1,
+  "draftAlgorithmVersion": "image-land-water-extract-v1",
+  "draftSemanticChecksum": "64661680e269797835e112c9f82343779bb483af2baaf49b69aa26ab2dc06cbd",
+  "landCells": 2,
+  "length": 2,
+  "mapByteLength": 71,
+  "mapPath": "land-water.png",
+  "mapSha256": "9dca90a2e139f544cc05df309fcf7709bcdc7d7bf14fa6be0b1388c77bb5acff",
+  "noDataCells": 0,
+  "promotionVersion": "extracted-mask-promote-land-water-v1",
+  "role": "LAND_WATER_MASK",
+  "schemaVersion": 1,
+  "sourceChecksum": "abababababababababababababababababababababababababababababababab",
+  "sourceId": "constraint-source:extracted-mask-land-water",
+  "thresholdSuppressedCells": 0,
+  "unknownHandling": "REJECT",
+  "waterCells": 2,
+  "width": 2
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/extracted-zone-label-draft-v2.schema.json",
+  "title": "LandformCraft ExtractedZoneLabelDraftArtifactV2",
+  "description": "Strict index for a published extracted zone-label draft with U8 label-index and confidence sidecars plus a proposed fixed palette label table.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "algorithmVersion", "sampleSpaceDeclaration",
+    "sourceChecksum", "semanticChecksum",
+    "width", "length", "labeledCells", "unknownCells",
+    "labelsPath", "confidencePath", "labelsSha256", "confidenceSha256",
+    "labelsByteLength", "confidenceByteLength", "proposedLabels", "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "algorithmVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "sampleSpaceDeclaration": {
+      "const": "fixed-palette-distance-quantize-requires-explicit-categorical-encoding-v1"
+    },
+    "sourceChecksum": { "$ref": "#/$defs/checksum" },
+    "semanticChecksum": { "$ref": "#/$defs/checksum" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "labeledCells": { "type": "integer", "minimum": 0 },
+    "unknownCells": { "type": "integer", "minimum": 0 },
+    "labelsPath": { "const": "labels.u8" },
+    "confidencePath": { "const": "confidence.u8" },
+    "labelsSha256": { "$ref": "#/$defs/checksum" },
+    "confidenceSha256": { "$ref": "#/$defs/checksum" },
+    "labelsByteLength": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "confidenceByteLength": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "proposedLabels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/proposal" }
+    },
+    "sourceRelativePath": { "$ref": "#/$defs/safePath" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+    },
+    "proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sample", "label", "red", "green", "blue"],
+      "properties": {
+        "sample": { "type": "integer", "minimum": 1, "maximum": 254 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" },
+        "red": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "green": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "blue": { "type": "integer", "minimum": 0, "maximum": 255 }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nankotsu029/LandformCraft/schemas/v2/extracted-mask-draft-v2.schema.json",
+  "title": "LandformCraft ExtractedMaskDraftArtifactV2",
+  "description": "Strict, version-frozen index for a published extracted land-water draft artifact bundle with U8 class and confidence sidecars. Rejects unknown fields and unsealed indexes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "algorithmVersion", "sourceChecksum", "semanticChecksum",
+    "width", "length", "waterCells", "landCells", "unknownCells",
+    "classesPath", "confidencePath", "classesSha256", "confidenceSha256",
+    "classesByteLength", "confidenceByteLength", "canonicalChecksum"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "algorithmVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
+    "sourceChecksum": { "$ref": "#/$defs/checksum" },
+    "semanticChecksum": { "$ref": "#/$defs/checksum" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "length": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "waterCells": { "type": "integer", "minimum": 0 },
+    "landCells": { "type": "integer", "minimum": 0 },
+    "unknownCells": { "type": "integer", "minimum": 0 },
+    "classesPath": { "const": "classes.u8" },
+    "confidencePath": { "const": "confidence.u8" },
+    "classesSha256": { "$ref": "#/$defs/checksum" },
+    "confidenceSha256": { "$ref": "#/$defs/checksum" },
+    "classesByteLength": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "confidenceByteLength": { "type": "integer", "minimum": 1, "maximum": 16000000 },
+    "sourceRelativePath": { "$ref": "#/$defs/safePath" },
+    "canonicalChecksum": { "$ref": "#/$defs/checksum" }
+  },
+  "$defs": {
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//).+$"
+    }
+  }
+}

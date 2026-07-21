@@ -1,0 +1,42 @@
+{
+  "canonicalChecksum": "7513dc2b58ddbf0d197ab1bb4869a676ae9e8f7195330bc7eb3eccfce14da34b",
+  "layers": [
+    {
+      "byteLength": 74,
+      "fileName": "result.png",
+      "layerId": "RESULT",
+      "layerVersion": 1,
+      "length": 1,
+      "paletteId": "multi-source-reconcile-palette-v1",
+      "semantic": "RESULT",
+      "sha256": "86f13819f242ba4c16d773d6279e44b750b11633de3933cdb3593d4df550ec5b",
+      "width": 2
+    },
+    {
+      "byteLength": 71,
+      "fileName": "conflict.png",
+      "layerId": "CONFLICT",
+      "layerVersion": 1,
+      "length": 1,
+      "paletteId": "multi-source-reconcile-palette-v1",
+      "semantic": "CONFLICT",
+      "sha256": "fc9a29370e780fd1d3a0694e2fa8cdd700fbc333518f7844f841eb9ed68fd841",
+      "width": 2
+    },
+    {
+      "byteLength": 74,
+      "fileName": "source-diff.png",
+      "layerId": "SOURCE_DIFF",
+      "layerVersion": 1,
+      "length": 1,
+      "paletteId": "multi-source-reconcile-palette-v1",
+      "semantic": "SOURCE_DIFF",
+      "sha256": "b988b29bee8737cdeb440173642f97ced6acabbf31ae9caa9a1c4561360ed690",
+      "width": 2
+    }
+  ],
+  "length": 1,
+  "reconciliationSemanticChecksum": "f1b1dd0d36d3792e037d02ef9a515c058a50d63808c3d3d08a4e9801d31c51ac",
+  "schemaVersion": 1,
+  "width": 2
+}

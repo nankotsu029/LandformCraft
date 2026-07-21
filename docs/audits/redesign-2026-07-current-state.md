@@ -31,13 +31,13 @@
 - **維持**: v2契約・module catalog・sidecar・Release 2・placement設計・全既存ID/監査（ADR 0015）。
 - **追加（EXPERIMENTAL, 未接続）**:
   - scale契約 `model.v2.scale`（`ScaleClassV2`/`ScaleProfileV2`/`TilePlanV2`）＋ `core.v2.scale.ScaleAdmissionV2`（ADR 0016、テスト: `TilePlanV2Test`、`ScaleAdmissionV2Test`）
-  - 画像抽出契約 `format.v2.constraint.extract`（`ImageLandWaterExtractorV2`/`ExtractedMaskDraftV2`、ADR 0017、テスト: `ImageLandWaterExtractorV2Test`）
+  - 画像抽出契約 `format.v2.constraint.extract`（`SecureImageExtractionEnvelopeV2`/`ExtractedMaskDraftArtifactPublisherV2`/`ImageLandWaterExtractorV2`/`ExtractedMaskDraftV2`、ADR 0017、テスト: `SecureImageExtractionEnvelopeV2Test`/`ExtractedMaskDraftArtifactPublisherV2Test`/`ExtractedMaskDraftPreviewRendererV2Test`/`ImageLandWaterExtractorV2Test`）と明示昇格 `core.v2.ExtractedMaskPromotionServiceV2`（`ExtractedMaskPromotionServiceV2Test`）
 - **roadmap再構築**: Track A（V2-4→V2-5→V2-6）/ Track B（V2-7 画像忠実性）/ Track C（V2-8 スケール）の3トラック依存グラフと、Taskごとのモデル割当（[model-assignment.md](../design-v2/model-assignment.md)）。
 - **廃止・置換**: なし（削除したコード・Schemaはない）。`task-execution-guide.md`の単一モデル前提の記述をモデル割当正本への参照に置換した。
 
 ## 5. 残存リスク
 
 - LARGE（3000×3000）は契約のみで、生成・予算実測・export分割は未実装（V2-8-02以降）。
-- 画像抽出はcoreのみで、secure入力封筒・draft artifact・昇格経路は未実装（V2-7-02以降）。
+- 画像抽出はland-water＋height guide＋zone label＋多入力競合まで実装し、V2-7 Phase gateでSUPPORTED候補として記録済み（runtime `EXPERIMENTAL`・CLI／Paper／Request未接続）。
 - Beta hardeningのFAWE単独smoke・500角実測は引き続き`BLOCKED_EXTERNAL`。
 - 現行の分散寸法検査はV2-8-02で統一するまで二重管理であり、それまでLARGE値を受理する経路は存在しない（安全側）。
