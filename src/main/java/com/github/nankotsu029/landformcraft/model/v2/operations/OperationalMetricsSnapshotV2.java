@@ -112,6 +112,10 @@ public record OperationalMetricsSnapshotV2(
                 case DISK_USABLE_BYTES, MEMORY_HEAP_USED_BYTES, MEMORY_HEAP_MAX_BYTES
                         -> OperationalMetricUnitV2.BYTES;
                 case SETTLE_TICKS_OBSERVED -> OperationalMetricUnitV2.TICKS;
+                case PLACEMENT_STAGE_DURATION_PLAN, PLACEMENT_STAGE_DURATION_SNAPSHOT,
+                     PLACEMENT_STAGE_DURATION_APPLY, PLACEMENT_STAGE_DURATION_SETTLE,
+                     PLACEMENT_STAGE_DURATION_VERIFY, PLACEMENT_STAGE_DURATION_UNDO
+                        -> OperationalMetricUnitV2.SECONDS;
             };
             if (unit != expected) {
                 throw new IllegalArgumentException(

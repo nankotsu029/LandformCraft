@@ -38,6 +38,13 @@ public final class TerrainIntentPromptV2 {
                     + "character only; do not infer map coordinates.";
             case STRUCTURE_REFERENCE -> "Reference image role STRUCTURE_REFERENCE: use appearance of "
                     + "small artificial features only; do not invent terrain layout.";
+            case OBLIQUE_TERRAIN_REFERENCE -> "Reference image role OBLIQUE_TERRAIN_REFERENCE: an oblique "
+                    + "(perspective) terrain view used as a soft proposal cue only. Do not rectify it to a "
+                    + "top-down view, do not infer map coordinates or HARD geometry, and do not guess "
+                    + "terrain hidden behind ridges or below the surface.";
+            case MULTI_VIEW_REFERENCE -> "Reference image role MULTI_VIEW_REFERENCE: one of several views of "
+                    + "the same location, used as a soft proposal cue only. Do not triangulate coordinates or "
+                    + "HARD geometry across views and do not infer unobserved underground terrain.";
         };
     }
 }

@@ -13,14 +13,42 @@ import java.lang.management.MemoryMXBean;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Collects a bounded operational metrics snapshot from executor load, disk, heap, and optional
  * placement/settle/verify counters (V2-6-13).
  */
 public final class OperationalMetricsCollectorV2 {
+    /**
+     * Closed set of labels emitted by every runtime {@link #collect} snapshot. The placement-stage
+     * duration labels added in V2-13-01 are intentionally excluded: they are wall-clock stage
+     * durations populated only by the offline measurement runner, never by the runtime collector.
+     * Keeping the runtime output fixed to this set preserves the canonical checksums of existing
+     * runtime snapshots after the enum grew.
+     */
+    public static final Set<OperationalMetricLabelV2> RUNTIME_LABELS = Set.copyOf(EnumSet.of(
+            OperationalMetricLabelV2.GENERATION_ACTIVE_TASKS,
+            OperationalMetricLabelV2.GENERATION_QUEUE_DEPTH,
+            OperationalMetricLabelV2.GENERATION_QUEUE_CAPACITY,
+            OperationalMetricLabelV2.IO_AVAILABLE_PERMITS,
+            OperationalMetricLabelV2.IN_FLIGHT_TASKS,
+            OperationalMetricLabelV2.DISK_USABLE_BYTES,
+            OperationalMetricLabelV2.MEMORY_HEAP_USED_BYTES,
+            OperationalMetricLabelV2.MEMORY_HEAP_MAX_BYTES,
+            OperationalMetricLabelV2.PLACEMENT_STAGE_PLANNED,
+            OperationalMetricLabelV2.PLACEMENT_STAGE_APPLYING,
+            OperationalMetricLabelV2.PLACEMENT_STAGE_SETTLING,
+            OperationalMetricLabelV2.PLACEMENT_STAGE_VERIFYING,
+            OperationalMetricLabelV2.PLACEMENT_STAGE_RECOVERY_REQUIRED,
+            OperationalMetricLabelV2.PLACEMENT_STAGE_TERMINAL,
+            OperationalMetricLabelV2.SETTLE_TICKS_OBSERVED,
+            OperationalMetricLabelV2.VERIFY_SCANNED_BLOCKS,
+            OperationalMetricLabelV2.RUNNING_GENERATION_JOBS));
+
     private final ObjectMapper mapper = new ObjectMapper();
     private final Clock clock;
     private final MemoryMXBean memory;

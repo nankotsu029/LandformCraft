@@ -9,6 +9,7 @@ import com.github.nankotsu029.landformcraft.model.PlacementTileState;
 import com.github.nankotsu029.landformcraft.model.ReferenceImageRole;
 import com.github.nankotsu029.landformcraft.model.StructureType;
 import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
+import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.ClimatePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.GeologyPlanV2;
@@ -101,6 +102,7 @@ class SchemaContractTest {
         v2.readGenerationRequest(Path.of("examples/v2/diagnostic/harbor-cove-64.request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/manual-constraint-island/request-v2.json"));
+        v2.readGenerationRequest(Path.of("examples/v2/diagnostic/oblique-multi-view.request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/manual-constraint-island/terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/scenarios/lush-cave.terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/scenarios/sky-islands.terrain-intent-v2.json"));
@@ -357,6 +359,10 @@ class SchemaContractTest {
         JsonNode request = mapper.readTree(legacy.resolve("generation-request.schema.json").toFile());
         assertEquals(enumNames(ReferenceImageRole.class),
                 values(request.at("/$defs/referenceImage/properties/role/enum")));
+
+        JsonNode requestV2 = mapper.readTree(Path.of("schemas/generation-request-v2.schema.json").toFile());
+        assertEquals(enumNames(GenerationRequestV2.ReferenceImageRole.class),
+                values(requestV2.at("/$defs/referenceImage/properties/role/enum")));
 
         JsonNode job = mapper.readTree(legacy.resolve("generation-job.schema.json").toFile());
         assertEquals(enumNames(GenerationStage.class), values(job.at("/properties/stage/enum")));

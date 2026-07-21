@@ -147,11 +147,19 @@ public record GenerationRequestV2(
         }
     }
 
+    /**
+     * Reference image roles are AI proposal input only. No role produces coordinate constraints,
+     * height guides, masks, or any HARD geometry; deterministic constraints use {@link ConstraintMapSource}
+     * instead. Oblique and multi-view roles are never auto-converted to a top-down view and never infer
+     * unobserved underground terrain.
+     */
     public enum ReferenceImageRole {
         MOOD_REFERENCE,
         TOP_DOWN_SKETCH,
         MATERIAL_REFERENCE,
-        STRUCTURE_REFERENCE
+        STRUCTURE_REFERENCE,
+        OBLIQUE_TERRAIN_REFERENCE,
+        MULTI_VIEW_REFERENCE
     }
 
     public record ReferenceImageSource(String id, String file, ReferenceImageRole role) {

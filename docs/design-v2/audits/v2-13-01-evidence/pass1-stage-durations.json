@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "operational-metrics-snapshot-v1",
+  "capturedAt": "2026-07-21T07:53:38Z",
+  "samples": [
+    {
+      "label": "PLACEMENT_STAGE_DURATION_APPLY",
+      "unit": "SECONDS",
+      "value": 1572
+    },
+    {
+      "label": "PLACEMENT_STAGE_DURATION_PLAN",
+      "unit": "SECONDS",
+      "value": 4
+    },
+    {
+      "label": "PLACEMENT_STAGE_DURATION_SETTLE",
+      "unit": "SECONDS",
+      "value": 0
+    },
+    {
+      "label": "PLACEMENT_STAGE_DURATION_SNAPSHOT",
+      "unit": "SECONDS",
+      "value": 199
+    },
+    {
+      "label": "PLACEMENT_STAGE_DURATION_UNDO",
+      "unit": "SECONDS",
+      "value": 176
+    },
+    {
+      "label": "PLACEMENT_STAGE_DURATION_VERIFY",
+      "unit": "SECONDS",
+      "value": 24
+    }
+  ],
+  "canonicalChecksum": "cbbd20e4572d6564922e90707a3262d255442cc660537a54c6e15944c20d1907"
+}

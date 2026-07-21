@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GenerationRequestV2CodecTest {
+    private static final String EXISTING_ROLE_REQUEST_CHECKSUM =
+            "9de924318e568aef1a31c3f43f7ae2964409b41e5bdb0d21e662e91db2a85925";
     private final LandformV2DataCodec codec = new LandformV2DataCodec();
 
     @Test
@@ -34,6 +36,39 @@ class GenerationRequestV2CodecTest {
                 source.getClass().isAssignableFrom(GenerationRequestV2.ReferenceImageSource.class)));
         assertEquals("constraint-source:height", request.constraintMaps().getFirst().sourceId());
         assertTrue(request.constraintMaps().getFirst().encoding() instanceof GenerationRequestV2.HeightEncoding);
+    }
+
+    @Test
+    void roundTripsObliqueAndMultiViewReferenceRoles(@TempDir Path directory) throws IOException {
+        String source = validRequest().replace(
+                "{ \"id\": \"mood\", \"file\": \"references/mood.png\", \"role\": \"MOOD_REFERENCE\" }",
+                "{ \"id\": \"mood\", \"file\": \"references/mood.png\", \"role\": \"MOOD_REFERENCE\" },\n"
+                        + "                    { \"id\": \"oblique\", \"file\": \"references/oblique.png\","
+                        + " \"role\": \"OBLIQUE_TERRAIN_REFERENCE\" },\n"
+                        + "                    { \"id\": \"multi-view\", \"file\": \"references/multi-view.png\","
+                        + " \"role\": \"MULTI_VIEW_REFERENCE\" }");
+
+        GenerationRequestV2 request = codec.readGenerationRequest(source, "oblique-multi-view");
+        Path target = directory.resolve("request-v2.json");
+        codec.writeGenerationRequest(target, request);
+        GenerationRequestV2 roundTrip = codec.readGenerationRequest(target);
+
+        assertEquals(request, roundTrip);
+        assertEquals(codec.generationRequestChecksum(request), codec.generationRequestChecksum(roundTrip));
+        assertEquals(3, request.referenceImages().size());
+        assertTrue(request.referenceImages().stream().map(GenerationRequestV2.ReferenceImageSource::role)
+                .anyMatch(role -> role == GenerationRequestV2.ReferenceImageRole.OBLIQUE_TERRAIN_REFERENCE));
+        assertTrue(request.referenceImages().stream().map(GenerationRequestV2.ReferenceImageSource::role)
+                .anyMatch(role -> role == GenerationRequestV2.ReferenceImageRole.MULTI_VIEW_REFERENCE));
+    }
+
+    @Test
+    void existingRolesKeepAStableCanonicalRequestChecksum() throws IOException {
+        // Additive enum values must not disturb the canonical checksum of a request that uses only
+        // pre-existing roles (V2-14-02 checksum-impact audit invariant). This golden pins that checksum;
+        // it must never change when new reference roles are appended.
+        GenerationRequestV2 request = codec.readGenerationRequest(validRequest(), "existing-roles");
+        assertEquals(EXISTING_ROLE_REQUEST_CHECKSUM, codec.generationRequestChecksum(request));
     }
 
     @Test

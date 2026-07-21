@@ -7,5 +7,7 @@ package com.github.nankotsu029.landformcraft.model.v2.operations;
 public enum OperationalMetricUnitV2 {
     COUNT,
     BYTES,
-    TICKS
+    TICKS,
+    /** Whole-second wall-clock durations (V2-13-01 placement stage instrumentation). */
+    SECONDS
 }

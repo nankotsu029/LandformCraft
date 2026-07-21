@@ -7,6 +7,9 @@
 *.iml
 .DS_Store
 
+# Per-Task working capsules (AGENTS.md §3: never committed)
+.task-context/
+
 # Local Paper runtime
 run/
 run-*/

@@ -1,0 +1,31 @@
+{
+  "requestVersion": 2,
+  "requestId": "oblique-multi-view-64",
+  "bounds": {
+    "width": 64,
+    "length": 64,
+    "minY": 32,
+    "maxY": 72,
+    "waterLevel": 50
+  },
+  "prompt": "Diagnostic request showing V2-14-02 oblique and multi-view reference roles. These images are AI proposal cues only and never produce coordinate constraints, height guides, or HARD geometry; deterministic terrain still comes from constraint maps or the prompt.",
+  "referenceImages": [
+    { "id": "mood", "file": "references/mood.png", "role": "MOOD_REFERENCE" },
+    { "id": "oblique-ridge", "file": "references/oblique-ridge.png", "role": "OBLIQUE_TERRAIN_REFERENCE" },
+    { "id": "cove-north", "file": "references/cove-north.png", "role": "MULTI_VIEW_REFERENCE" },
+    { "id": "cove-east", "file": "references/cove-east.png", "role": "MULTI_VIEW_REFERENCE" }
+  ],
+  "constraintMaps": [],
+  "generation": {
+    "globalSeed": 827413,
+    "tileSize": 64
+  },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  }
+}

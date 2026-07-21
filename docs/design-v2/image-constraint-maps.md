@@ -20,6 +20,19 @@ Constraint map
 
 通常写真、mood board、斜視図はreference imageである。座標対応されたland-water mask、zone label、height guide、river path等はconstraint mapである。両者を同じ「画像role」として扱わない。
 
+Request v2の `GenerationRequestV2.ReferenceImageRole`（AI提案入力専用、座標constraint生成禁止）は次の値を持つ。すべてAIへ渡すpromptの意味付けだけを担い、pixel→座標対応・height guide・mask・curveを生成しない。決定論的constraintは常にconstraint map経路を用いる。
+
+| Role | 用途 |
+|---|---|
+| `MOOD_REFERENCE` | 色、荒々しさ、植生、雰囲気 |
+| `TOP_DOWN_SKETCH` | north-upのsoft sketch（image top=north/-Z、right=east/+X）。pixelからHARD constraint mapを生成しない |
+| `MATERIAL_REFERENCE` | 表面素材感（岩・砂・植物など） |
+| `STRUCTURE_REFERENCE` | 少量の人工物の外観 |
+| `OBLIQUE_TERRAIN_REFERENCE` | 斜視（perspective）地形view。top-downへ自動変換せず、座標・HARD geometry・尾根裏／地下の未確認地形を推定しない（`V2-14-02`） |
+| `MULTI_VIEW_REFERENCE` | 同一地点の複数視点。view間で座標・HARD geometryをtriangulateせず、未確認地下地形を推定しない（`V2-14-02`） |
+
+例: [examples/v2/diagnostic/oblique-multi-view.request-v2.json](../../examples/v2/diagnostic/oblique-multi-view.request-v2.json)。checksum影響監査は [audits/v2-14-02-reference-role-checksum-audit.md](audits/v2-14-02-reference-role-checksum-audit.md)。
+
 ## 2. 現行実装から流用するもの
 
 `ReferenceImageProcessor` の次の安全境界は維持する。

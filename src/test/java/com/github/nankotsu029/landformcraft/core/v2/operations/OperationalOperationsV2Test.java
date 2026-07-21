@@ -53,7 +53,14 @@ class OperationalOperationsV2Test {
             OperationalMetricsSnapshotV2 snapshot = ops.captureMetrics(
                     new OperationalMetricsCollectorV2.PlacementStageCountsV2(1, 0, 0, 0, 1, 2),
                     3L, 128L, 1, "CONSOLE:CONSOLE");
-            assertEquals(OperationalMetricLabelV2.values().length, snapshot.samples().size());
+            // The runtime collector emits exactly its fixed RUNTIME_LABELS subset. The additive
+            // V2-13-01 duration labels are measurement-only and must not appear in runtime
+            // snapshots, so this asserts against the collector's set rather than the enum length.
+            assertEquals(OperationalMetricsCollectorV2.RUNTIME_LABELS.size(), snapshot.samples().size());
+            assertEquals(OperationalMetricsCollectorV2.RUNTIME_LABELS,
+                    snapshot.samples().stream()
+                            .map(OperationalMetricsSnapshotV2.SampleV2::label)
+                            .collect(java.util.stream.Collectors.toSet()));
             assertEquals(1L, snapshot.valueOf(OperationalMetricLabelV2.PLACEMENT_STAGE_PLANNED));
             assertEquals(3L, snapshot.valueOf(OperationalMetricLabelV2.SETTLE_TICKS_OBSERVED));
             assertFalse(snapshot.hasPendingCanonicalChecksum());
