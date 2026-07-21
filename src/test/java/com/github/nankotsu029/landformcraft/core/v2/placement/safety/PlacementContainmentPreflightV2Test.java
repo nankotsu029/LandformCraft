@@ -48,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlacementContainmentPreflightV2Test {
+    private static final String REGENERATE_EXAMPLES_ENV =
+            "LANDFORMCRAFT_V21306_REGENERATE_PLACEMENT_EXAMPLES";
     private static final UUID PLACEMENT_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID OPERATION_ID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static final UUID WORLD_ID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
@@ -102,8 +104,11 @@ class PlacementContainmentPreflightV2Test {
         evidence.requireBindings(fixture.confirmedPlan, fixture.envelopePlan, fixture.snapshotPlan);
         assertEquals(0, fixture.gateway.applyCalls.get());
 
-        codec.writePlacementContainmentPolicy(POLICY_EXAMPLE, PlacementContainmentPolicyV2.standard());
-        codec.writePlacementContainmentEvidence(EVIDENCE_EXAMPLE, evidence);
+        if ("true".equals(System.getenv(REGENERATE_EXAMPLES_ENV))) {
+            codec.writePlacementContainmentPolicy(
+                    POLICY_EXAMPLE, PlacementContainmentPolicyV2.standard());
+            codec.writePlacementContainmentEvidence(EVIDENCE_EXAMPLE, evidence);
+        }
         assertEquals(evidence, codec.readPlacementContainmentEvidence(EVIDENCE_EXAMPLE));
         assertEquals(
                 PlacementContainmentPolicyV2.standard(),

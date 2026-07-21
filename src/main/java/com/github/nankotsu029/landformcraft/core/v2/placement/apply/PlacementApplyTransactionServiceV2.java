@@ -213,8 +213,7 @@ public final class PlacementApplyTransactionServiceV2 implements AutoCloseable {
                     "canonical block source exceeds the overlay ordinal budget",
                     false);
         }
-        long sliceBytes = Math.multiplyExact(
-                limits.maximumMutationsPerSchedulerSlice(), limits.estimatedBytesPerMutation());
+        long sliceBytes = limits.maximumSliceWorkingBytes();
         if (sliceBytes > request.placementPlan().budget().maximumWorkingBytes()) {
             throw new PlacementApplyExceptionV2(
                     PlacementApplyFailureCodeV2.RESOURCE_BUDGET_EXCEEDED,

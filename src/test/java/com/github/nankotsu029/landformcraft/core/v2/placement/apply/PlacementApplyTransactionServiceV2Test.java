@@ -298,6 +298,76 @@ class PlacementApplyTransactionServiceV2Test {
     }
 
     @Test
+    void everyCalibrationSlicePreservesCanonicalOrderChecksumsAndJournalState(@TempDir Path directory)
+            throws Exception {
+        PlacementApplyTestFixtureV2 fixture = PlacementApplyTestFixtureV2.create(directory, true);
+        List<String> expectedSignature = null;
+        List<String> expectedChecksums = null;
+        Map<String, String> expectedWorld = null;
+
+        for (int candidate : PlacementApplyLimitsV2.CALIBRATION_SLICE_CANDIDATES) {
+            RecordingGateway gateway = RecordingGateway.valid();
+            RecordingJournalStore journals = new RecordingJournalStore();
+            PlacementApplyTransactionServiceV2.ApplyResultV2 result;
+            try (PlacementApplyTransactionServiceV2 service = new PlacementApplyTransactionServiceV2(
+                    request -> { }, gateway, journals, PlacementApplyTestFixtureV2.CLOCK,
+                    PlacementApplyLimitsV2.withSliceSize(candidate))) {
+                result = await(service.apply(fixture.request(
+                        fixture.source(false), PlacementApplyTestFixtureV2.NEVER)));
+            }
+
+            assertTrue(gateway.slices.stream()
+                    .allMatch(slice -> slice.mutations().size() <= candidate));
+            assertEquals(List.of(
+                            PlacementJournalStateV2.APPLYING,
+                            PlacementJournalStateV2.APPLYING,
+                            PlacementJournalStateV2.APPLYING),
+                    journals.states());
+            assertTrue(result.applyCompleteJournal().tiles().stream()
+                    .allMatch(tile -> tile.state() == PlacementTileStateV2.APPLIED));
+            if (expectedSignature == null) {
+                expectedSignature = gateway.signature();
+                expectedChecksums = result.canonicalTileChecksums();
+                expectedWorld = gateway.world;
+            } else {
+                assertEquals(expectedSignature, gateway.signature());
+                assertEquals(expectedChecksums, result.canonicalTileChecksums());
+                assertEquals(expectedWorld, gateway.world);
+            }
+        }
+    }
+
+    @Test
+    void everyCalibrationSliceObservesCancellationBeforeSubmittingAnotherSlice(
+            @TempDir Path directory
+    ) throws Exception {
+        for (int candidate : PlacementApplyLimitsV2.CALIBRATION_SLICE_CANDIDATES) {
+            PlacementApplyTestFixtureV2 fixture = PlacementApplyTestFixtureV2.create(
+                    directory.resolve(Integer.toString(candidate)), false);
+            AtomicBoolean cancelled = new AtomicBoolean();
+            RecordingGateway gateway = RecordingGateway.valid();
+            gateway.afterReceipt = () -> cancelled.set(true);
+            RecordingJournalStore journals = new RecordingJournalStore();
+
+            try (PlacementApplyTransactionServiceV2 service =
+                         new PlacementApplyTransactionServiceV2(
+                                 request -> { },
+                                 gateway,
+                                 journals,
+                                 PlacementApplyTestFixtureV2.CLOCK,
+                                 PlacementApplyLimitsV2.withSliceSize(candidate))) {
+                PlacementApplyExceptionV2 failure = failure(service.apply(fixture.request(
+                        fixture.source(false), cancelled::get)));
+                assertEquals(PlacementApplyFailureCodeV2.CANCELLED_AFTER_COMMIT, failure.code());
+                assertTrue(failure.worldMutationMayHaveOccurred());
+                assertEquals(1, gateway.calls.get());
+                assertEquals(PlacementJournalStateV2.RECOVERY_REQUIRED, journals.last().state());
+                assertTrue(gateway.slices.getFirst().mutations().size() <= candidate);
+            }
+        }
+    }
+
+    @Test
     void blockOverlayAndTransactionQueueBudgetsRejectBeforeUnboundedWork(@TempDir Path directory)
             throws Exception {
         PlacementApplyTestFixtureV2 fixture = PlacementApplyTestFixtureV2.create(directory, false);
@@ -329,6 +399,24 @@ class PlacementApplyTransactionServiceV2Test {
         failure(first);
         failure(second);
         await(service.termination());
+    }
+
+    @Test
+    void maximumCalibrationSliceRequiresItsPerTransactionPlanBudget(@TempDir Path directory)
+            throws Exception {
+        PlacementApplyTestFixtureV2 fixture = PlacementApplyTestFixtureV2.create(directory, false);
+        PlacementApplyRequestV2 request = withWorkingBudget(
+                fixture.request(fixture.source(false), PlacementApplyTestFixtureV2.NEVER),
+                PlacementApplyLimitsV2.maximumCalibrationSliceWorkingBytes() - 1L);
+        RecordingGateway gateway = RecordingGateway.valid();
+        try (PlacementApplyTransactionServiceV2 service = new PlacementApplyTransactionServiceV2(
+                ignored -> { }, gateway, journal -> { }, PlacementApplyTestFixtureV2.CLOCK,
+                PlacementApplyLimitsV2.withSliceSize(1_024))) {
+            PlacementApplyExceptionV2 failure = failure(service.apply(request));
+            assertEquals(PlacementApplyFailureCodeV2.RESOURCE_BUDGET_EXCEEDED, failure.code());
+            assertFalse(failure.worldMutationMayHaveOccurred());
+            assertEquals(0, gateway.calls.get());
+        }
     }
 
     @Test
@@ -485,6 +573,58 @@ class PlacementApplyTransactionServiceV2Test {
                 plan.envelopeReferences(),
                 plan.reservationConfirmationBinding(),
                 plan.budget(),
+                PlacementPlanV2.UNBOUND_CHECKSUM));
+        PlacementJournalV2 journal = request.journal();
+        PlacementJournalV2 clonedJournal = codec.sealPlacementJournal(new PlacementJournalV2(
+                journal.journalVersion(),
+                journal.journalContractVersion(),
+                clone,
+                clone.canonicalChecksum(),
+                journal.state(),
+                journal.tiles(),
+                journal.reservedBytes(),
+                journal.snapshotBytesUsed(),
+                journal.updatedAt(),
+                journal.message(),
+                PlacementPlanV2.UNBOUND_CHECKSUM));
+        return new PlacementApplyRequestV2(
+                clone,
+                request.envelopePlan(),
+                request.reservationPlan(),
+                request.snapshotPlan(),
+                request.containmentEvidence(),
+                clonedJournal,
+                request.blockSource(),
+                request.cancellation());
+    }
+
+    private static PlacementApplyRequestV2 withWorkingBudget(
+            PlacementApplyRequestV2 request,
+            long maximumWorkingBytes
+    ) {
+        LandformV2DataCodec codec = new LandformV2DataCodec();
+        PlacementPlanV2 plan = request.placementPlan();
+        PlacementPlanV2.ResourceBudget budget = plan.budget();
+        PlacementPlanV2 clone = codec.sealPlacementPlan(new PlacementPlanV2(
+                plan.planVersion(),
+                plan.placementContractVersion(),
+                plan.placementId(),
+                plan.operationId(),
+                plan.requestId(),
+                plan.actor(),
+                plan.target(),
+                plan.releaseBinding(),
+                plan.requiredCapabilities(),
+                plan.tileOrder(),
+                plan.envelopeReferences(),
+                plan.reservationConfirmationBinding(),
+                new PlacementPlanV2.ResourceBudget(
+                        budget.budgetVersion(),
+                        budget.maximumTiles(),
+                        budget.maximumJournalEntries(),
+                        budget.estimatedCanonicalBytes(),
+                        budget.maximumCanonicalBytes(),
+                        maximumWorkingBytes),
                 PlacementPlanV2.UNBOUND_CHECKSUM));
         PlacementJournalV2 journal = request.journal();
         PlacementJournalV2 clonedJournal = codec.sealPlacementJournal(new PlacementJournalV2(

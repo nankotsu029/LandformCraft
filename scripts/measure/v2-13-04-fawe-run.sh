@@ -44,6 +44,7 @@ PAPER_LAUNCH_PID=""
 PLAN_WAIT_SEC="${LANDFORMCRAFT_V21304_PLAN_WAIT_SEC:-1800}"
 EXEC_TIMEOUT_SEC="${LANDFORMCRAFT_V21304_EXEC_TIMEOUT_SEC:-10800}"
 UNDO_TIMEOUT_SEC="${LANDFORMCRAFT_V21304_UNDO_TIMEOUT_SEC:-10800}"
+APPLY_SLICE_BLOCKS="${LANDFORMCRAFT_V21306_APPLY_SLICE_BLOCKS:-0}"
 
 cleanup() {
   if [[ -n "${TELEMETRY_PID}" ]] && kill -0 "${TELEMETRY_PID}" 2>/dev/null; then
@@ -105,7 +106,10 @@ FAWE_JAR="$(ls -1 "$RUN_DIR/plugins"/FastAsyncWorldEdit*.jar | head -n 1)"
 test -n "$FAWE_JAR"; test -f "$FAWE_JAR"
 write_eula "$RUN_DIR"
 enable_rcon "$RUN_DIR/server.properties" "$RCON_PASSWORD" "$RCON_PORT" "$GAME_PORT"
-install_plugin_and_measurement_config "$RUN_DIR" "$WORLD_NAME" 1024 1024
+if [[ "$APPLY_SLICE_BLOCKS" != "0" ]]; then
+  enable_measurement_watchdog "$RUN_DIR/server.properties"
+fi
+install_plugin_and_measurement_config "$RUN_DIR" "$WORLD_NAME" 1024 1024 "$APPLY_SLICE_BLOCKS"
 rm -f "$RUN_DIR/plugins"/worldedit*.jar "$RUN_DIR/plugins"/WorldEdit*.jar
 test -f "$FAWE_JAR"
 
@@ -216,6 +220,7 @@ run_lifecycle() {
     (( $(date +%s) - exec_start < EXEC_TIMEOUT_SEC )) || { echo "FAIL: execute timeout" >&2; return 1; }
     sleep 3
   done
+  cp "$PLACEMENT_V2/journals/${placement_id}.json" "$life_dir/journal-applied.json"
   grep -nE "APPLIED|settle|exact verify|DISK_" "$RUN_DIR/logs/latest.log" \
     | tee "$life_dir/execute-snippet.log" >/dev/null || true
   if grep -qE 'DISK_BUDGET_EXCEEDED|DISK_SHORTAGE' "$RUN_DIR/logs/latest.log"; then
@@ -241,6 +246,7 @@ run_lifecycle() {
     (( $(date +%s) - undo_start < UNDO_TIMEOUT_SEC )) || { echo "FAIL: undo timeout" >&2; return 1; }
     sleep 3
   done
+  cp "$PLACEMENT_V2/journals/${placement_id}.json" "$life_dir/journal-undone.json"
   grep -nE "UNDONE|rollback|restore" "$RUN_DIR/logs/latest.log" \
     | tee "$life_dir/undo-snippet.log" >/dev/null || true
 
@@ -258,7 +264,8 @@ run_lifecycle() {
 }
 
 echo "==> starting standalone Paper JVM (Xmx=$XMX)"
-PAPER_LAUNCH_PID="$(start_standalone_paper "$RUN_DIR" "$XMX" "$EVIDENCE_DIR/paper.stdout" "$XMS")"
+PAPER_LAUNCH_PID="$(start_standalone_paper \
+  "$RUN_DIR" "$XMX" "$EVIDENCE_DIR/paper.stdout" "$XMS" "$EVIDENCE_DIR/gc-pass1.log")"
 sleep 2
 SERVER_PID="$(find_server_pid "$RUN_DIR" "$PAPER_LAUNCH_PID")"
 echo "paper_launch_pid=$PAPER_LAUNCH_PID server_pid=$SERVER_PID" | tee "$EVIDENCE_DIR/pids.txt"
@@ -281,7 +288,8 @@ sleep 3
 rm -rf "$PLACEMENT_V2" "$CONFIRM_DIR"; mkdir -p "$PLACEMENT_V2" "$CONFIRM_DIR"
 test -d "$RELEASES_V2/$RELEASE_NAME"
 
-PAPER_LAUNCH_PID="$(start_standalone_paper "$RUN_DIR" "$XMX" "$EVIDENCE_DIR/paper-pass2.stdout" "$XMS")"
+PAPER_LAUNCH_PID="$(start_standalone_paper \
+  "$RUN_DIR" "$XMX" "$EVIDENCE_DIR/paper-pass2.stdout" "$XMS" "$EVIDENCE_DIR/gc-pass2.log")"
 sleep 2
 SERVER_PID="$(find_server_pid "$RUN_DIR" "$PAPER_LAUNCH_PID")"
 python3 "$TELEMETRY_PY" --pid "$SERVER_PID" --out "$EVIDENCE_DIR/telemetry-pass2.json" --interval-seconds 20 &
@@ -306,7 +314,8 @@ if [[ -n "${TELEMETRY_PID}" ]]; then
 fi
 
 echo "==> restart after crash for recovery observation"
-PAPER_LAUNCH_PID="$(start_standalone_paper "$RUN_DIR" "$XMX" "$EVIDENCE_DIR/paper-restart.stdout" "$XMS")"
+PAPER_LAUNCH_PID="$(start_standalone_paper \
+  "$RUN_DIR" "$XMX" "$EVIDENCE_DIR/paper-restart.stdout" "$XMS" "$EVIDENCE_DIR/gc-restart.log")"
 sleep 2
 SERVER_PID="$(find_server_pid "$RUN_DIR" "$PAPER_LAUNCH_PID")"
 python3 "$TELEMETRY_PY" --pid "$SERVER_PID" --out "$EVIDENCE_DIR/telemetry-restart.json" --interval-seconds 20 &
@@ -335,6 +344,7 @@ fi
 {
   echo "profile=fawe-2.15.2"; echo "build_jar_sha256=$JAR_SHA"; echo "manifest_sha256=$MANIFEST_SHA"
   echo "release=$RELEASE_NAME"; echo "tile_count=$TILE_COUNT"; echo "dimensions=1024x1024"
+  echo "apply_slice_blocks=$APPLY_SLICE_BLOCKS"
   echo "disk_snapshot_bytes=$DISK_BYTES"
   echo "pass1_bottleneck=$(grep '^bottleneck_stage=' "$EVIDENCE_DIR/pass1/stage-durations.txt" | cut -d= -f2)"
   echo "pass2_bottleneck=$(grep '^bottleneck_stage=' "$EVIDENCE_DIR/pass2/stage-durations.txt" | cut -d= -f2)"

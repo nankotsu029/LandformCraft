@@ -35,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlacementReservationConfirmCompilerV2Test {
+    private static final String REGENERATE_EXAMPLES_ENV =
+            "LANDFORMCRAFT_V21306_REGENERATE_PLACEMENT_EXAMPLES";
     private static final UUID PLACEMENT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID OPERATION_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID WORLD_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
@@ -77,6 +79,10 @@ class PlacementReservationConfirmCompilerV2Test {
 
         Path reservationExample = Path.of("examples/v2/placement/placement-reservation-plan-v2.json");
         Path safetyExample = Path.of("examples/v2/placement/placement-safety-state-v2.json");
+        if ("true".equals(System.getenv(REGENERATE_EXAMPLES_ENV))) {
+            codec.writePlacementReservationPlan(reservationExample, prepared.reservationPlan());
+            codec.writePlacementSafetyStateV2(safetyExample, store.read());
+        }
         assertEquals(prepared.reservationPlan(), codec.readPlacementReservationPlan(reservationExample));
         assertEquals(store.read(), codec.readPlacementSafetyStateV2(safetyExample));
 

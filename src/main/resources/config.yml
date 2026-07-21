@@ -64,6 +64,9 @@ placement:
       isolated-world: ""
       max-width: 0
       max-length: 0
+      # V2-13-06 isolated-host calibration only. 0 uses the production default. A nonzero value
+      # requires enabled=true and must be one of 32, 128, 256, 512, 1024.
+      apply-slice-blocks: 0
 
 worldedit:
   # Either WorldEdit or FAWE may satisfy the WorldEdit API at runtime. Do not install both.

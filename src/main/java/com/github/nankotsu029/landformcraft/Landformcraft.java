@@ -10,6 +10,7 @@ import com.github.nankotsu029.landformcraft.core.v2.operations.OperationalOperat
 import com.github.nankotsu029.landformcraft.core.v2.operations.Release2RetentionServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.operations.RetentionCleanupPortV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.Release2PlacementApplicationServiceV2;
+import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementApplyLimitsV2;
 import com.github.nankotsu029.landformcraft.core.v2.recovery.PlacementRecoveryCleanupPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementJournalV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementPlanV2;
@@ -152,7 +153,8 @@ public final class Landformcraft extends JavaPlugin {
                                 clock,
                                 release2DiskBudget(),
                                 release2DimensionPolicy(integration == fawe),
-                                Release2PlacementOperationStoreV2.WriteFaultInjectorV2.none()),
+                                Release2PlacementOperationStoreV2.WriteFaultInjectorV2.none(),
+                                release2ApplyLimits()),
                         worldAccessPolicy);
                 release2PlacementService = release2Placements;
             } catch (java.io.IOException exception) {
@@ -236,6 +238,28 @@ public final class Landformcraft extends JavaPlugin {
                     + " and does not promote any dimension in the Feature Support Catalog.");
         }
         return new Release2PlacementDimensionPolicyV2(productionGate, profile);
+    }
+
+    /**
+     * V2-13-06 calibration override. It is accepted only with the existing isolated-world
+     * measurement profile and only for the closed candidate set; normal servers use the compiled
+     * production default and cannot tune this safety/performance boundary.
+     */
+    private PlacementApplyLimitsV2 release2ApplyLimits() {
+        String key = Release2MeasurementProfileV2.CONFIG_PREFIX + ".apply-slice-blocks";
+        int configured = getConfig().getInt(key, 0);
+        if (configured == 0) {
+            return PlacementApplyLimitsV2.defaults();
+        }
+        if (!getConfig().getBoolean(Release2MeasurementProfileV2.CONFIG_ENABLED_KEY, false)) {
+            throw new IllegalArgumentException(
+                    key + " requires placement.release2.measurement-profile.enabled=true");
+        }
+        PlacementApplyLimitsV2 limits = PlacementApplyLimitsV2.withSliceSize(configured);
+        getLogger().warning("Release 2 apply slice calibration is ENABLED ("
+                + configured + " mutations/slice). This is for V2-13-06 isolated-host"
+                + " measurement only and does not change placement safety or catalog support.");
+        return limits;
     }
 
     private ProviderSettings providerSettings() {

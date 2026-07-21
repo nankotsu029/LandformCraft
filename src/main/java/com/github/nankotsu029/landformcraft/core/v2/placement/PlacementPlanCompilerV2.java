@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.core.v2.placement;
 
+import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementApplyLimitsV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementJournalStateV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementJournalV2;
@@ -30,7 +31,7 @@ public final class PlacementPlanCompilerV2 {
                 PlacementPlanV2.MAXIMUM_JOURNAL_ENTRIES,
                 estimateCanonicalBytes(tileOrder.tiles().size()),
                 PlacementPlanV2.MAX_CANONICAL_BYTES,
-                32L * 1024L);
+                PlacementApplyLimitsV2.maximumCalibrationSliceWorkingBytes());
         PlacementPlanV2 draft = new PlacementPlanV2(
                 PlacementPlanV2.VERSION,
                 PlacementPlanV2.PLACEMENT_CONTRACT_VERSION,

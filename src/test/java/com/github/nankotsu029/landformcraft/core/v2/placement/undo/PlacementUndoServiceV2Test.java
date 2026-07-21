@@ -58,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlacementUndoServiceV2Test {
+    private static final String REGENERATE_EXAMPLES_ENV =
+            "LANDFORMCRAFT_V21306_REGENERATE_PLACEMENT_EXAMPLES";
     private static final Duration WAIT = Duration.ofSeconds(8);
     private static final String BASELINE_STATE = "minecraft:stone";
     /** Deterministic placeholder confirmation nonce for the sealed example only (V2-12-11). */
@@ -243,7 +245,10 @@ class PlacementUndoServiceV2Test {
                 codec.placementUndoPlanChecksum(read),
                 read.canonicalChecksum());
         Path example = Path.of("examples/v2/placement/placement-undo-plan-v2.json");
-        codec.writePlacementUndoPlan(example, harness.prepared.undoPlan());
+        if ("true".equals(System.getenv(REGENERATE_EXAMPLES_ENV))) {
+            codec.writePlacementUndoPlan(example, harness.prepared.undoPlan());
+        }
+        assertEquals(harness.prepared.undoPlan(), codec.readPlacementUndoPlan(example));
     }
 
     private static PlacementUndoLimitsV2 limits() {

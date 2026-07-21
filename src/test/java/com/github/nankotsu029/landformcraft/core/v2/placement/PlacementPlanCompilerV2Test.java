@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.core.v2.placement;
 
+import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementApplyLimitsV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementJournalStateV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementJournalV2;
@@ -32,6 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlacementPlanCompilerV2Test {
+    private static final String REGENERATE_EXAMPLES_ENV =
+            "LANDFORMCRAFT_V21306_REGENERATE_PLACEMENT_EXAMPLES";
     private static final UUID PLACEMENT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID OPERATION_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID WORLD_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
@@ -44,6 +47,12 @@ class PlacementPlanCompilerV2Test {
     @Test
     void bundledExamplesMatchCompilerContract() throws IOException {
         PlacementPlanCompilerV2.CompiledPlacementV2 expected = compileFixture();
+        if ("true".equals(System.getenv(REGENERATE_EXAMPLES_ENV))) {
+            codec.writePlacementPlan(
+                    Path.of("examples/v2/placement/placement-plan-v2.json"), expected.plan());
+            codec.writePlacementJournal(
+                    Path.of("examples/v2/placement/placement-journal-v2.json"), expected.journal());
+        }
         assertEquals(expected.plan(), codec.readPlacementPlan(
                 Path.of("examples/v2/placement/placement-plan-v2.json")));
         assertEquals(expected.journal(), codec.readPlacementJournal(
@@ -68,6 +77,8 @@ class PlacementPlanCompilerV2Test {
         assertEquals(plan.canonicalChecksum(), journal.planChecksum());
         assertTrue(journal.tiles().stream().allMatch(tile -> tile.state() == PlacementTileStateV2.PENDING));
         assertEquals(codec.placementJournalChecksum(journal), journal.journalChecksum());
+        assertEquals(PlacementApplyLimitsV2.maximumCalibrationSliceWorkingBytes(),
+                plan.budget().maximumWorkingBytes());
 
         Path planPath = directory.resolve("placement-plan-v2.json");
         Path journalPath = directory.resolve("placement-journal-v2.json");

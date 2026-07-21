@@ -62,6 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlacementRecoveryServiceV2Test {
+    private static final String REGENERATE_EXAMPLES_ENV =
+            "LANDFORMCRAFT_V21306_REGENERATE_PLACEMENT_EXAMPLES";
     private static final Duration WAIT = Duration.ofSeconds(8);
     private static final String BASELINE_STATE = "minecraft:stone";
     /** Deterministic placeholder confirmation nonce for the sealed example only (V2-12-11). */
@@ -567,7 +569,10 @@ class PlacementRecoveryServiceV2Test {
         assertEquals(prepared.recoveryPlan(), read);
         assertEquals(codec.placementRecoveryPlanChecksum(read), read.canonicalChecksum());
         Path example = Path.of("examples/v2/placement/placement-recovery-plan-v2.json");
-        codec.writePlacementRecoveryPlan(example, prepared.recoveryPlan());
+        if ("true".equals(System.getenv(REGENERATE_EXAMPLES_ENV))) {
+            codec.writePlacementRecoveryPlan(example, prepared.recoveryPlan());
+        }
+        assertEquals(prepared.recoveryPlan(), codec.readPlacementRecoveryPlan(example));
     }
 
     @Test

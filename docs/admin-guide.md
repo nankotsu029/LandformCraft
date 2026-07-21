@@ -62,6 +62,7 @@ placement:
       isolated-world: ""
       max-width: 0
       max-length: 0
+      apply-slice-blocks: 0
 ```
 
 通常運用のR2配置寸法は、**検出したruntimeで実測済みの寸法**で固定です（`V2-11-02`のクランプ、`V2-11-06`の実測昇格）。
@@ -71,7 +72,7 @@ placement:
 | FAWE 2.15.2 | 1000×1000 | `V2-11-04`（500×500）／`V2-11-05`（1000×1000） |
 | WorldEdit 7.3.19 | 64×64 | `V2-6-14`／`V2-6-15` smoke（64×64超は未実測） |
 
-`measured-candidate-max-*`はこの上限以下へ絞る用途に使え、上限を超える値は起動時に拒否します（設定でcatalog上限を広げることはできません）。上限超のlayoutはworld変更・journal書込・reservation取得のいずれよりも前に拒否されます。配布configの既定値は保守的に64のままなので、FAWE環境で500／1000を使う場合だけ明示的に引き上げてください。1000×1000は実測で壁時計約1.8 h・peak RSS約6 GiBを要します（[performance.md](performance.md)）。
+`measured-candidate-max-*`はこの上限以下へ絞る用途に使え、上限を超える値は起動時に拒否します（設定でcatalog上限を広げることはできません）。上限超のlayoutはworld変更・journal書込・reservation取得のいずれよりも前に拒否されます。配布configの既定値は保守的に64のままなので、FAWE環境で500／1000を使う場合だけ明示的に引き上げてください。V2-13-06の現行production default実測では1000×1000のfull placement＋Undoが壁時計約11.9分、peak RSS約5.24 GiBです（host固有値、[performance.md](performance.md)）。
 
 `measurement-profile`は再実測専用の脱出口で、既定は無効です。`V2-11-04`／`V2-11-05`が使い、以後も**未実測寸法**（1000×1000超、またはWorldEdit runtimeでの64×64超）を実測する場合にだけ使います。有効化には次の3条件がすべて必要です。ひとつでも欠けると通常のruntime上限が適用されます。
 
@@ -80,6 +81,8 @@ placement:
 3. CONSOLE／RCONのoperator実行であること（in-game Playerは未実測寸法へ到達できません）
 
 このprofileでの配置は**能力昇格ではありません**。catalogの`SUPPORTED`寸法は実測evidenceの範囲（`V2-11-06`で1000×1000）に限られ、profileでの実測だけでは広がりません。有効時はstartup logへ警告を出します。
+
+`apply-slice-blocks: 0`はV2-13-06で実測選定したproduction既定値（1024 mutations/slice）を使います。非0は隔離ホスト較正専用で、`measurement-profile.enabled: true`の場合に限り、閉じた候補`32`／`128`／`256`／`512`／`1024`だけを受理します。通常運用で調整する設定ではありません。production既定値は[較正evidence](design-v2/audits/v2-13-06-apply-slice-calibration-evidence.md)でAPPLY約93.4%短縮、lifecycle約74.3%短縮を確認済みですが、寸法catalogは1000×1000のままです。
 
 `disk.minimum-free-bytes`と`disk.safety-margin-bytes`は`V2-11-02`でRelease 2経路へも反映されます（それ以前は`maximum-snapshot-bytes`だけが効き、R2のreservation／snapshot／Undo admissionは固定1 MiBの空き容量下限を使っていました）。R2のreservation floorは`minimum-free-bytes + safety-margin-bytes`です。
 

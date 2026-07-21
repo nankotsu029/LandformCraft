@@ -10,7 +10,8 @@ import java.util.Objects;
  *
  * <p>Normal operation is clamped to the Feature Support Catalog hard limit by
  * {@link Release2MeasuredDimensionGateV2}. This profile exists solely so the dedicated
- * measurement Tasks {@code V2-11-04} (500×500) and {@code V2-11-05} (1000×1000) can run
+ * measurement Tasks {@code V2-11-04} (500×500), {@code V2-11-05} (1000×1000), and
+ * {@code V2-13-06} (apply slice calibration) can run
  * above-catalog layouts on an isolated host, and it is disabled by default. Enabling it requires
  * all three of an explicit configuration flag, a named isolated world, and a CONSOLE/RCON
  * operator actor; an in-game Player can never reach an unmeasured dimension. Admitting a
@@ -23,14 +24,15 @@ public record Release2MeasurementProfileV2(
         int maximumWidth,
         int maximumLength
 ) {
+    public static final String CONFIG_PREFIX = "placement.release2.measurement-profile";
     public static final String CONFIG_ENABLED_KEY =
-            "placement.release2.measurement-profile.enabled";
+            CONFIG_PREFIX + ".enabled";
     public static final String CONFIG_WORLD_KEY =
-            "placement.release2.measurement-profile.isolated-world";
+            CONFIG_PREFIX + ".isolated-world";
     public static final String CONFIG_WIDTH_KEY =
-            "placement.release2.measurement-profile.max-width";
+            CONFIG_PREFIX + ".max-width";
     public static final String CONFIG_LENGTH_KEY =
-            "placement.release2.measurement-profile.max-length";
+            CONFIG_PREFIX + ".max-length";
 
     public Release2MeasurementProfileV2 {
         Objects.requireNonNull(isolatedWorldName, "isolatedWorldName");

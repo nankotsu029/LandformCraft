@@ -32,6 +32,7 @@ desired = {
     "view-distance": "8",
     "simulation-distance": "6",
 }
+
 seen = set()
 out = []
 for line in lines:
@@ -51,6 +52,28 @@ path.write_text("\n".join(out) + "\n")
 PY
 }
 
+enable_measurement_watchdog() {
+  local server_properties="$1"
+  python3 - "$server_properties" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+lines = path.read_text().splitlines()
+out = []
+found = False
+for line in lines:
+    if line.startswith("max-tick-time="):
+        out.append("max-tick-time=60000")
+        found = True
+    else:
+        out.append(line)
+if not found:
+    out.append("max-tick-time=60000")
+path.write_text("\n".join(out) + "\n")
+PY
+}
+
 write_eula() {
   printf 'eula=true\n' >"$1/eula.txt"
 }
@@ -60,6 +83,7 @@ install_plugin_and_measurement_config() {
   local world_name="$2"
   local max_width="$3"
   local max_length="$4"
+  local apply_slice_blocks="${5:-0}"
   mkdir -p "$run_dir/plugins"
   rm -f "$run_dir/plugins"/LandformCraft*.jar
   cp "$JAR" "$run_dir/plugins/LandformCraft-0.9.0-beta.1.jar"
@@ -68,12 +92,12 @@ install_plugin_and_measurement_config() {
   if [[ ! -f "$cfg_dir/config.yml" ]]; then
     unzip -p "$JAR" config.yml >"$cfg_dir/config.yml"
   fi
-  python3 - "$cfg_dir/config.yml" "$world_name" "$max_width" "$max_length" <<'PY'
+  python3 - "$cfg_dir/config.yml" "$world_name" "$max_width" "$max_length" "$apply_slice_blocks" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-world, width, length = sys.argv[2], sys.argv[3], sys.argv[4]
+world, width, length, apply_slice_blocks = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
 lines = path.read_text().splitlines()
 out = []
 i = 0
@@ -89,6 +113,7 @@ while i < len(lines):
         out.append(f'{child}isolated-world: "{world}"')
         out.append(f"{child}max-width: {width}")
         out.append(f"{child}max-length: {length}")
+        out.append(f"{child}apply-slice-blocks: {apply_slice_blocks}")
         i += 1
         while i < len(lines):
             nxt = lines[i]
@@ -165,14 +190,22 @@ start_standalone_paper() {
   # Xms defaults to Xmx (V2-11-04 behaviour). Callers that need RSS to track the
   # live set instead of the committed heap pass a smaller Xms explicitly.
   local xms="${4:-$xmx}"
+  local gc_log="${5:-}"
+  local jvm_args=(
+    "-Xms${xms}"
+    "-Xmx${xmx}"
+    -XX:+UseG1GC
+    -XX:MaxGCPauseMillis=200
+  )
+  if [[ -n "$gc_log" ]]; then
+    jvm_args+=("-Xlog:gc*:file=${gc_log}:time,uptime,level,tags")
+  fi
   mkdir -p "$run_dir/logs"
   : >"$run_dir/logs/latest.log"
   (
     cd "$run_dir"
     exec java \
-      "-Xms${xms}" "-Xmx${xmx}" \
-      -XX:+UseG1GC \
-      -XX:MaxGCPauseMillis=200 \
+      "${jvm_args[@]}" \
       -Dcom.mojang.eula.agree=true \
       -jar paper-1.21.11-132.jar \
       --nogui

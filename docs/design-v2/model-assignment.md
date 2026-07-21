@@ -159,7 +159,7 @@ Effort列はClaude Codeの`--effort`相当（Antigravity/Codexは各ツールの
 
 `V2-8-02`は2026-07-21完了。`V2-8-03`〜`V2-8-08`は2026-07-21のS2決定で保留（HOLD）であり、再開時に本表の割当を再評価する。
 
-### Track C: V2-13 MEDIUM 1024 enablement／measurement（5、2026-07-21追加）
+### Track C: V2-13 MEDIUM 1024 enablement／measurement（6、2026-07-21追加）
 
 | Task | 内容 | 主担当 | Effort | レビュー |
 |---|---|---|---|---|
@@ -168,6 +168,9 @@ Effort列はClaude Codeの`--effort`相当（Antigravity/Codexは各ツールの
 | V2-13-03 | 1024 offline生成budget実測 | Claude Sonnet 5 | High | Antigravity |
 | V2-13-04 | 1024 FAWE placement実測 | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋人間（昇格は別承認） |
 | V2-13-05 | Per-block map packing最適化（条件付き） | Claude Opus 4.8 | XHigh | Codex Terra Extra High |
+| V2-13-06 | Apply slice較正・batching最適化 | GPT-5.6 Sol Max | Max | Claude Opus 4.8 XHigh（独立コードレビュー）＋Antigravity（Acceptance evidence確認）＋人間（実機較正確認） |
+
+`V2-13-06` は性能／concurrency／cancel・Recovery不変性と実機較正を横断する高リスクTaskであり、主担当は承認済みのGPT-5.6 Sol Maxとする。実機evidenceは人間確認なしに完了扱いにしない。1024 production変更の実機evidenceは2026-07-22に人間確認・完全承認され、この明示gateを満たした。
 
 ### Track B: V2-14 Image fidelity wiring follow-up（2、2026-07-21追加）
 

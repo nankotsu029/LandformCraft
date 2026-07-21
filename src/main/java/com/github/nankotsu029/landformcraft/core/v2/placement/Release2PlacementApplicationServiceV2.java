@@ -6,6 +6,7 @@ import com.github.nankotsu029.landformcraft.core.LandformErrorCode;
 import com.github.nankotsu029.landformcraft.core.LandformException;
 import com.github.nankotsu029.landformcraft.core.v2.placement.apply.FilePlacementJournalStoreV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementApplyRequestV2;
+import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementApplyLimitsV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementApplyTransactionServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementCanonicalBlockSourceV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.apply.PlacementDesiredBlockV2;
@@ -147,6 +148,26 @@ public final class Release2PlacementApplicationServiceV2 implements AutoCloseabl
             Release2PlacementDimensionPolicyV2 dimensionPolicy,
             Release2PlacementOperationStoreV2.WriteFaultInjectorV2 operationStoreFaultInjector
     ) throws IOException {
+        this(releasesRoot, stateRoot, executors, gateway, clock, diskBudget, dimensionPolicy,
+                operationStoreFaultInjector, PlacementApplyLimitsV2.defaults());
+    }
+
+    /**
+     * Production/calibration entry point. Non-default slice sizes are supplied only by the
+     * explicitly enabled isolated measurement profile; normal callers retain the calibrated
+     * production default through the overload above.
+     */
+    public Release2PlacementApplicationServiceV2(
+            Path releasesRoot,
+            Path stateRoot,
+            GenerationExecutors executors,
+            PlacementWorldGatewayV2 gateway,
+            Clock clock,
+            Release2DiskBudgetV2 diskBudget,
+            Release2PlacementDimensionPolicyV2 dimensionPolicy,
+            Release2PlacementOperationStoreV2.WriteFaultInjectorV2 operationStoreFaultInjector,
+            PlacementApplyLimitsV2 applyLimits
+    ) throws IOException {
         Objects.requireNonNull(diskBudget, "diskBudget");
         long maximumSnapshotBytes = diskBudget.maximumSnapshotBytes();
         this.releasesRoot = Objects.requireNonNull(releasesRoot, "releasesRoot").toAbsolutePath().normalize();
@@ -156,6 +177,7 @@ public final class Release2PlacementApplicationServiceV2 implements AutoCloseabl
         this.gateway = Objects.requireNonNull(gateway, "gateway");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.dimensionPolicy = Objects.requireNonNull(dimensionPolicy, "dimensionPolicy");
+        Objects.requireNonNull(applyLimits, "applyLimits");
         if (maximumSnapshotBytes < 1) throw new IllegalArgumentException("maximumSnapshotBytes must be positive");
         this.maximumSnapshotBytes = maximumSnapshotBytes;
         Files.createDirectories(this.releasesRoot);
@@ -172,7 +194,7 @@ public final class Release2PlacementApplicationServiceV2 implements AutoCloseabl
         this.containment = new PlacementContainmentPreflightV2(clock);
         this.apply = new PlacementApplyTransactionServiceV2(
                 new StrictPlacementApplyPrerequisiteVerifierV2(this.releasesRoot, safetyStore, snapshotCompiler),
-                gateway, journalStore, clock);
+                gateway, journalStore, clock, applyLimits);
         this.settleVerify = new PlacementSettleVerifyServiceV2(gateway, journalStore, clock);
         this.rollback = new PlacementRollbackServiceV2(
                 snapshotCompiler, safetyStore, gateway, journalStore, clock);
