@@ -1,0 +1,152 @@
+{
+  "intentVersion": 2,
+  "intentId": "plain-hill-64",
+  "theme": "V2-15-09 plain/hill foundation surface export adapter fixture (64x64)",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "coastal-plain",
+      "kind": "PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "baseElevationAboveDatumBlocks": {
+          "min": 2,
+          "max": 4
+        },
+        "microReliefBlocks": {
+          "min": 1,
+          "max": 3
+        },
+        "groundwaterHandoffDepthBlocks": {
+          "min": 4,
+          "max": 8
+        }
+      },
+      "priority": 10,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "plain-hill-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "inland-hills",
+      "kind": "HILL_RANGE",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [
+          [
+            0.1,
+            0.1
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.9,
+            0.9
+          ]
+        ],
+        "interpolation": "POLYLINE"
+      },
+      "parameters": {
+        "ridgeHalfWidthBlocks": {
+          "min": 12,
+          "max": 16
+        },
+        "maxReliefBlocks": {
+          "min": 12,
+          "max": 24
+        },
+        "ridgeStationCount": {
+          "min": 3,
+          "max": 3
+        },
+        "saddleCount": {
+          "min": 2,
+          "max": 2
+        },
+        "plainTransitionBandBlocks": 8
+      },
+      "priority": 20,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "plain-hill-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "plain-hill-overlap",
+      "kind": "OVERLAPS",
+      "from": "feature:coastal-plain",
+      "to": "feature:inland-hills",
+      "strength": "HARD",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 8
+      }
+    }
+  ],
+  "constraints": [],
+  "environment": {
+    "geologyPreset": "COASTAL_SAND_AND_GRAVEL",
+    "climatePreset": "TEMPERATE_MARITIME",
+    "ecologyPreset": "SPARSE_COASTAL"
+  },
+  "mapReferences": [
+    {
+      "id": "foundation-land-water",
+      "sourceId": "constraint-source:foundation-mask",
+      "role": "LAND_WATER_MASK",
+      "artifactId": "constraint:land-water:sha256-0000000000000000000000000000000000000000000000000000000000000000",
+      "strength": "HARD",
+      "sampling": "NEAREST",
+      "toleranceBlocks": 0
+    }
+  ],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "plain-hill-fixture",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}
