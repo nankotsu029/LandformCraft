@@ -60,6 +60,16 @@ MetricResult
 
 message文字列を機械判定の正本にしない。metric algorithm、sampling、percentile、boundary handlingをrule versionへ固定する。
 
+### 3.1 Diagnostic gate契約（V2-18-01）
+
+`DiagnosticBlueprintCompilerV2`はBlueprintへ機械可読な`DiagnosticIssueV2`を積むが、production export spineはこれらをgateに使ってこなかった（[macro foundation監査](../audits/macro-foundation-conformance-audit-2026-07-22.md) item 4）。将来の一括fail-closed化を可能にするため、`DiagnosticGateContractV2`（`diagnostic-gate-contract-v1`）がBlueprint diagnostic ruleを`GATING`／`NON_GATING`へ分類する正本である。
+
+- `gates(issue)`は`severity==ERROR`かつruleが`GATING`のissueだけをtrueにする。WARNING／INFOはrule classに関わらずgateしない。
+- 現在の状態では全Blueprint diagnostic rule（`v2.unsupported-capability`／`v2.missing-validator-capability`／`v2.missing-preview-capability`／`v2.unsupported-constraint-map`／`v2.unsupported-structure-capability`）が`NON_GATING`であり、`gatingIssues(...)`は常に空である。すなわちexportは依然としてどのdiagnostic issueもgateにしない（fail-closed化はしない）。`ignoredErrorIssues(...)`が「発行されるが無視されるERROR一覧」を返し、golden testで固定する。
+- ruleを`GATING`へ変更するのは、それをexport artifact生成前で消費するfail-closed gate（`V2-18-03` HARD preflight gate）を同時に追加するTaskだけである。分類とruntime挙動は常に同一Taskで動かし、どの時点でも動作するproduction経路を1つ保つ。
+- 同契約は`production-connected` FeatureKind集合も所有し、production dispatch spine（`ProductionDispatchRegistryV2`）と同じcurrent-feature-state権威から射影する。`DiagnosticBlueprintCompilerV2`はこれを参照し、既にproduction export routeを持つkind（現状はsurface-2.5D coastal 4種）へは一律の`v2.unsupported-capability` ERRORを発行しない。routeを持たないkindには「production export能力なし」の正直な信号として残す。
+- 本Taskはterrain field／tileの**semantic checksum**を変更しない（diagnosticはterrain生成に寄与しない）。一方、production-connected coastal featureを含むBlueprintは`unsupported-capability` issueが減るため、**Blueprint diagnostic容器のbyte（`canonicalChecksum`）は変化する**。これはgate対象外の診断容器変化であり、field／tile／block streamには影響しない。
+
 ## 4. Hard / Soft判定
 
 - invariant violationは常にcandidate失敗。

@@ -109,6 +109,7 @@ public final class DiagnosticBlueprintCompilerV2 {
     public static final String SEED_NAMESPACE = "terrain.v2.feature";
 
     private final BuiltInLandformModuleCatalogV2 catalog = new BuiltInLandformModuleCatalogV2();
+    private final DiagnosticGateContractV2 gateContract = DiagnosticGateContractV2.builtIn();
     private final LandformV2DataCodec codec = new LandformV2DataCodec();
     private final SandyBeachPlanCompilerV2 sandyBeachCompiler = new SandyBeachPlanCompilerV2();
     private final MeanderingRiverPlanCompilerV2 riverCompiler = new MeanderingRiverPlanCompilerV2();
@@ -274,9 +275,14 @@ public final class DiagnosticBlueprintCompilerV2 {
                 }
             }
 
-            issues.add(issue(
-                    "unsupported-" + issueSequence++, "v2.unsupported-capability", DiagnosticIssueV2.Severity.ERROR,
-                    feature, module, "v2.unsupported-capability"));
+            // V2-18-01: production-connected kinds have a real export route, so the blanket
+            // unsupported-capability ERROR (audit item 4) no longer applies to them. Kinds without a
+            // production route still receive it as an honest "no production export capability" signal.
+            if (!gateContract.isProductionConnected(feature.kind())) {
+                issues.add(issue(
+                        "unsupported-" + issueSequence++, "v2.unsupported-capability",
+                        DiagnosticIssueV2.Severity.ERROR, feature, module, "v2.unsupported-capability"));
+            }
             if (!catalog.hasValidatorCapability(feature.kind())) {
                 issues.add(issue("validator-" + issueSequence++, "v2.missing-validator-capability",
                         DiagnosticIssueV2.Severity.ERROR, feature, module, "v2.missing-validator-capability"));

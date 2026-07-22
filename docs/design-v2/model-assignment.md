@@ -1,340 +1,330 @@
 # Task実行モデル割当（Model Assignment）
 
-> Status: 実行体制の正本。Task ScopeとAcceptanceの正本は [Task Index](task-index.md)、進捗は [docs/roadmap.md](../roadmap.md)。利用可能な契約: Codex（ChatGPT Plus）、Cursor Pro、Antigravity CLI（Gemini Pro系）、Claude Code（Claude Pro）、OpenAI API（少量）。
+> Status: 実行体制の正本（2026-07-22全面改訂）。Task ScopeとAcceptanceの正本は [Task Index](task-index.md)、進捗の正本は [docs/roadmap.md](../roadmap.md)、実行規約は [Task Execution Guide](task-execution-guide.md)。本文書はどのモデルがどのTaskを実行・レビューするかだけを定め、Task Scope・Acceptance・依存・状態を変更しない。矛盾時はTask Index／roadmapが優先する。
 
-## 1. 原則
+## 1. 文書の目的と正本関係
 
-1. **通常Taskの二本柱**は Antigravity Gemini Pro と Claude Sonnet 5 High。Codexは高リスク領域（数学基盤・決定性保証・transaction・rollback・recovery・最終監査）専用とする。
-2. **計画だけ難しいTask**は Claude Code `opusplan`（OpusでPlan、Sonnetで実装）。
-3. **レビューは実装者と別系統**で行う。同じモデルに自分の実装を最終承認させない。
-4. **昇格は失敗ベース**で固定する。最初から強いモデルを使わず、条件を満たしたときだけ上げる。
-5. **1 Task = 1 Task capsule（`.task-context/V2-x-NN.md`、Git管理外）= 1新規セッション**。モデルとEffortはセッション開始時に決める。
-6. **full suiteはPhase gate Task（V2-4-15 / V2-5-18 / V2-6-19 / V2-7-07 / V2-8-08 / V2-9-14 / V2-10-09 / V2-12-07 / V2-15-47 / V2-16-19 / V2-17-07 / V2-18-12）だけ**で実行する。通常Taskは対象テスト＋Task close前の`./gradlew test`/`build`まで。
-7. **Claude Pro枠とAPI課金を分離**する。`ANTHROPIC_API_KEY`が設定されたままだとAPI課金になり得るため、セッション開始時に`/status`で認証元を確認する。
-8. **使用量枯渇時**は上位モデルを全Taskへ広げず、高リスクTaskだけ従量課金（OpenAI API／追加クレジット）で継続する。
+- 本文書は、現在の契約（§2）の範囲内で、品質を落とさずに費用対効果を最大化するTask実行体制の正本である。
+- Task完了の判定・記録は本文書では行わない。完了済みTaskの割当行は正規表から除去し、進捗はroadmapを参照する（§14・§15）。
+- 本文書に存在してTask Indexに存在しないTask IDは正規Taskではない。
 
-### 昇格条件（このラダー以外の飛び級をしない）
+## 2. 現在の契約・利用可能モデル
+
+利用可能な契約は次の2つだけである。いずれも**無制限ではない**。
+
+| 契約 | 提供モデル | 用途 |
+|---|---|---|
+| Claude Max 5x | Claude Fable 5／Claude Opus 4.8／Claude Sonnet 5／Claude Haiku 4.5 | Claude Code（サブスクリプション認証） |
+| Cursor Pro（$20） | Grok 4.5 | Cursor（通常実装・独立レビュー） |
+
+次は利用不能であり、現在・将来の通常Taskの主担当・レビュー・昇格先として割り当ててはならない: Codex、GPT-5.6、Terra、Sol、Luna、Antigravity、Gemini Pro、Claude Pro、OpenAI API、Codex追加クレジット、Anthropic API従量課金（§15の履歴付録だけが非規範的な例外）。
+
+### Effort段階の表記
+
+本文書はツール非依存の意味的段階だけを使う。
 
 ```text
-Cursor／軽量モデル（Haiku・Sonnet Low）
-  ↓ 仕様解釈が必要／同一原因で2回失敗
-Antigravity Gemini Pro ／ Claude Sonnet 5 High
-  ↓ contract・Schema互換・memory・concurrencyが争点
-Claude Opus 4.8 High
-  ↓ 複数不変条件・並行処理・Recovery設計
-Claude Opus 4.8 XHigh
-  ↓ 数学的保証・transaction・rollback実装
-Codex Terra Extra High
-  ↓ world transaction・journal・crash recovery
-Codex Sol Max
-  ↓ PhaseまたはRelease全体の最終監査
-Codex Sol Ultra
+Low / Medium / High / Highest available
 ```
 
-### レビューマトリクス
-
-| 実装者 | 第一レビュー | 高リスク時の第二レビュー |
+| 意味的段階 | Claude Code（`--effort`、確認済み: low/medium/high/max） | Cursor |
 |---|---|---|
-| Antigravity Gemini Pro | Claude Sonnet 5 High | Codex Terra Extra High |
-| Claude Sonnet 5 | Antigravity Gemini Pro | Codex Terra Extra High |
-| Claude Opus 4.8 | Antigravity Gemini Pro | Codex Sol |
-| Cursor Pro | Claude Sonnet 5 High | AntigravityまたはCodex |
-| Codex Terra／Sol | Claude Opus 4.8（独立レビュー） | Antigravity（Acceptance確認）→人間 |
+| Low | `low` | セッション開始時にUIで確認 |
+| Medium | `medium` | 同上 |
+| High | `high` | 同上 |
+| Highest available | `max` | 同上（UIに表示される最上位の推論設定） |
 
-実機依存Task（smoke・実測）はCursor Pro＋人間を主担当とし、モデルにmock完了を許さない。
+Cursor側には確認済みの固有effort段階名がないため、本文書へ固有名を記載しない。セッション開始時に実UIの表示へ従う。
 
-## 2. Task別割当表
+## 3. モデル別の役割
 
-Effort列はClaude Codeの`--effort`相当（Antigravity/Codexは各ツールの同等段階）。「主担当／レビュー」が原則で、停止条件・Acceptanceは[Task Index](task-index.md)が優先する。
+### Claude Haiku 4.5 — 低リスク軽作業
 
-### Track A: V2-4 Environment（残り10）
+使用対象: docsのみの軽微な修正、リンク修正、表記統一、Task capsule作成、grep結果整理、既存情報の要約、diff一次分類、単純なfixture追加。
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-4-06 | Snow/snowline | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-4-07 | Semantic material profile | Claude Sonnet 5 | High | Antigravity |
-| V2-4-08 | Minecraft palette adapter | Claude Code `opusplan` | Plan=Opus/実装=Sonnet | Antigravity＋（palette checksum部）Codex Terra XH |
-| V2-4-09 | Mangrove regional shaping | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-4-10 | Coral reef bathymetry | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-4-11 | Ecology placement | Claude Sonnet 5 | High | Antigravity |
-| V2-4-12 | Volcanic/canyon material | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-4-13 | Environment validators/previews | Claude Sonnet 5 | High | Antigravity |
-| V2-4-14 | Release 2 `environment-fields` | Claude Opus 4.8 | High | Codex Terra Extra High |
-| V2-4-15 | Phase gate audit（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋人間 |
+使用禁止: 公開Schema変更、migration、security判断、並行処理、決定性保証、memory admission、Release形式、world mutation、rollback／Undo／Recovery、Phase gate、最終承認。Haiku単独で完了扱いにできるのは、production・Schema・公開contractを変更しない低リスクTaskだけ。
 
-### Track A: V2-5 Sparse volume（18）
+### Grok 4.5（Cursor Pro） — 通常実装の主力
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-5-01 | Fixed-point SDF primitives | Claude Opus 4.8 | XHigh | Codex Terra Extra High |
-| V2-5-02 | Ordered CSG | Claude Opus 4.8 | High | Antigravity |
-| V2-5-03 | AABB spatial index | Claude Sonnet 5 | High | Antigravity |
-| V2-5-04 | 3D tile cache（memory/concurrency） | Codex Terra Extra High | XHigh | Claude Opus 4.8 High |
-| V2-5-05 | TerrainQuery volume support | Claude Opus 4.8 | High | Antigravity |
-| V2-5-06 | Cave network | Claude Sonnet 5 | High | Antigravity |
-| V2-5-07 | Lush cave | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-5-08 | Underground lake | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-5-09 | Sea cave | Claude Sonnet 5 | High | Antigravity |
-| V2-5-10 | Overhang | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-5-11 | Natural arch | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-5-12 | Sky island group | Claude Sonnet 5 | High | Antigravity |
-| V2-5-13 | Waterfall volume integration | Claude Code `opusplan` | Plan=Opus/実装=Sonnet | Antigravity |
-| V2-5-14 | Post-volume environment/material | Claude Sonnet 5 | High | Antigravity |
-| V2-5-15 | Volume validators/previews | Claude Sonnet 5 | High | Antigravity |
-| V2-5-16 | Offline 3D schematic read-back | Claude Opus 4.8 | High | Codex Terra Extra High |
-| V2-5-17 | Release 2 `sparse-volume` | Claude Opus 4.8 | High | Codex Terra Extra High |
-| V2-5-18 | Phase gate audit（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋人間 |
+使用対象: 既存パターンに沿った通常実装、局所的なFeature wiring、generator dispatch、validator／preview追加、テスト追加、コンパイルエラー修正、対象限定リファクタ、CLI／docs局所整合、テスト失敗の反復修正、実機測定用harness修正。加えて**Claude実装の独立レビュー**（モデルファミリーが異なる第一レビュー）を担う。
 
-### Track A: V2-6 Placement（21）
+単独最終決定の禁止: 公開contract設計、複数Schema migration、transaction、rollback、crash recovery、複雑な並行処理、数学的境界保証、最大入力memory保証、Phase gate、Release capability昇格。Grok実装は原則Sonnet 5がレビューする。
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-6-01 | Placement contract | Claude Opus 4.8 | XHigh | Antigravity |
-| V2-6-02 | Mutation/effect envelope | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh |
-| V2-6-03 | Reservation/bound confirmation | Claude Opus 4.8 | XHigh | Codex Terra Extra High |
-| V2-6-04 | Snapshot-all | Codex Sol Max | Max | Claude Opus 4.8 XHigh |
-| V2-6-05 | Fluid/gravity containment preflight | Codex Terra Extra High | XHigh | Claude Opus 4.8 High |
-| V2-6-06 | Apply transaction orchestration | Codex Sol Max | Max | Claude Opus 4.8 XHigh |
-| V2-6-07 | Bounded settle / full verify | Codex Terra Extra High | XHigh | Claude Opus 4.8 High |
-| V2-6-08 | Rollback | Codex Sol Max | Max | Claude Opus 4.8 XHigh |
-| V2-6-09 | Undo | Codex Terra Extra High | XHigh | Claude Opus 4.8 High |
-| V2-6-10 | Recovery | Codex Sol Max | Max | Claude Opus 4.8 XHigh |
-| V2-6-11 | Provider/manual/image統合 | Claude Sonnet 5 | High | Antigravity |
-| V2-6-12 | Cross-capability hardening | Codex Terra Extra High | XHigh | Claude Opus 4.8 High |
-| V2-6-13 | Metrics/diagnostics/retention | Claude Sonnet 5 | High | Antigravity |
-| V2-6-14 | WorldEdit smoke（実機） | Cursor Pro＋人間 | — | Claude Sonnet 5（ログ分析） |
-| V2-6-15 | FAWE smoke（実機） | Cursor Pro＋人間 | — | Claude Sonnet 5（ログ分析） |
-| V2-6-16 | 500×500実測 | —（無効化） | — | — |
-| V2-6-17 | 1000×1000実測 | —（無効化） | — | — |
-| V2-6-18 | Final supported catalog | Claude Sonnet 5 | High | Antigravity |
-| V2-6-19 | RC audit（full suite） | Codex Sol Ultra | Max | 人間最終承認 |
-| V2-6-20 | Verified Release 2 canonical block source | Claude Opus 4.8 | XHigh | Codex Terra Extra High＋Antigravity |
-| V2-6-21 | Release 2 Paper application／command lifecycle | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋Antigravity＋人間 |
-| V2-11-01 | Paper apply capability promotion（`V2-6-19`監査で追加） | Claude Sonnet 5 | High | Antigravity＋人間 |
+### Claude Sonnet 5 — 品質と使用量のバランス中心
 
-### Track A後続: V2-11 Capability promotion追加分（2026-07-20再監査で追加）
+使用対象: 通常〜中高リスク実装、複数ファイルにまたがる既存設計の拡張、局所的contract変更、E2Eテスト、非破壊的・局所的Schema変更、Grok実装のコードレビュー、Acceptance evidence確認、Task Scopeと差分の照合、ログ／telemetry解析。
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-11-02 | R2 dimension guard／measurement profile（P0） | Claude Opus 4.8 | High | Antigravity＋（admission/security部）Codex Terra XH |
-| V2-11-03 | Docs／Schema／example consistency sync | Claude Sonnet 5 | High | Antigravity |
-| V2-11-04 | 500×500実測（専用高memoryホスト、FAWE 2.15.2／`run-fawe`単独） | Cursor Pro＋人間 | — | Claude Sonnet 5（telemetry／ログ分析） |
-| V2-11-05 | 1000×1000実測（専用高memoryホスト、FAWE 2.15.2／`run-fawe`単独） | Cursor Pro＋人間 | — | Claude Sonnet 5（telemetry／ログ分析） |
-| V2-11-06 | Measured dimension catalog promotion | Claude Sonnet 5 | High | Antigravity＋人間 |
+最初からSonnetで開始してよい場合: 既存パターンだけでは方針が確定しない、Task Scopeの解釈が必要、Grokではコンテキスト不足になりやすい、複数module間の接続が必要。高リスクcontract・transaction・Recovery・複雑な数学／並行処理はOpusへ昇格する（§6）。
 
-### Track A後続: V2-12 V2 production path／v1 migration（7、2026-07-20再監査で追加）
+### Claude Opus 4.8 — 高リスク実装・高品質レビュー限定
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-12-01 | v1 retirement governance ADR／policy改訂 | Claude Opus 4.8 | High | Antigravity＋人間承認必須 |
-| V2-12-02 | Production Release 2 export path | Claude Opus 4.8 | High | Codex Terra Extra High |
-| V2-12-03 | CLI／Paper v2 command routing／E2E | Claude Sonnet 5 | High | Antigravity＋（permission/security部）Codex Terra XH |
-| V2-12-04 | v1→v2 migration tool | Claude Opus 4.8 | XHigh | Codex Terra Extra High |
-| V2-12-05 | v2 default切替／v1 deprecation | Claude Sonnet 5 | High | Antigravity＋人間承認必須 |
-| V2-12-06 | v1削除・名称正規化 | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋人間承認必須 |
-| V2-12-07 | Migration Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋人間 |
+使用対象: 公開contract、複数Schema整合、互換migration、決定性、fixed-point数学、graph ordering、memory admission、concurrency、cancel semantics、security、Release strict read-back、world mutation、Undo／rollback／Recovery、capability promotion、重大なADR。
 
-### Track B: V2-7 画像忠実性（残り6）
+```text
+Opus 4.8 High:              高リスク設計、中規模contract実装、Sonnet／Grok実装の高リスクレビュー
+Opus 4.8 Highest available:  複数不変条件が結合する実装、transaction／Recovery、複雑なmigration、
+                            最大入力保証、Phase gate前の詳細監査
+```
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-7-02 | Secure抽出入力封筒 | Claude Sonnet 5 | High | Antigravity |
-| V2-7-03 | Draft artifact／confidence preview | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-7-04 | 明示昇格経路（draft→constraint map） | Claude Opus 4.8 | High | Antigravity |
-| V2-7-05 | Height guide抽出 | Claude Sonnet 5 | High | Antigravity |
-| V2-7-06 | Zone/スケッチlabel抽出 | Claude Code `opusplan` | Plan=Opus/実装=Sonnet | Antigravity |
-| V2-7-07 | 多入力競合解決＋差分preview＋Phase gate | Claude Opus 4.8 | XHigh | Codex Terra Extra High＋人間 |
+禁止: 通常のFeature wiring、単純なvalidator追加、docs同期への大量投入。
 
-### Track C: V2-8 スケール（残り7）
+### Claude Fable 5 — 最上位の希少リソース
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-8-02 | 寸法policyのscale契約への統一 | Claude Code `opusplan` | Plan=Opus/実装=Sonnet | Antigravity＋v1 golden回帰必須 |
-| V2-8-03 | Constraint map／field storeのLARGE予算 | Claude Opus 4.8 | High | Codex Terra Extra High |
-| V2-8-04 | Coarse大域計画＋hydrology LARGE実測 | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh |
-| V2-8-05 | Streaming生成・resume・部分再生成 | Codex Terra Extra High | XHigh | Claude Opus 4.8 High |
-| V2-8-06 | Preview pyramid（段階preview） | Antigravity Gemini Pro | High | Claude Sonnet 5 High |
-| V2-8-07 | Export／Release分割 | Claude Opus 4.8 | High | Claude Sonnet 5 High |
-| V2-8-08 | LARGE offline統合＋Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋人間 |
+使用対象: Phase gate監査、Release全体監査、複数Phase横断の設計判断、大規模migrationの最終設計、長時間・大規模リポジトリ監査、Opusで解消できない設計矛盾、高品質レビューが対立した場合の裁定、transaction／Recovery全体の最終監査、false promotion防止監査。
 
-`V2-8-02`は2026-07-21完了。`V2-8-03`〜`V2-8-08`は2026-07-21のS2決定で保留（HOLD）であり、再開時に本表の割当を再評価する。
+使用禁止: 通常Feature実装、単純なdocs修正、局所テスト修正、既存パターンwiring、機械的rename、最初の実装試行。**Phase gateだからという理由だけでFableを自動使用しない** — 単純な証拠集約ならOpus 4.8で足りるかを先に評価する（本文書ではV2-16-19をOpus主担当とした例がそれに当たる）。Fable主担当Taskでも、同一Fableセッションに自己レビューと最終承認をさせない。
 
-### Track C: V2-13 MEDIUM 1024 enablement／measurement（6、2026-07-21追加）
+## 4. 費用対効果の基本方針（既定経路）
 
-| Task | 内容 | 主担当 | Effort | レビュー |
-|---|---|---|---|---|
-| V2-13-01 | Placement stage instrumentation＋1000 baseline再測定 | Claude Opus 4.8 | High | Antigravity＋実測evidence人間確認 |
-| V2-13-02 | MEDIUM 1024 route／Schema拡張 | Claude Opus 4.8 | High | Codex Terra Extra High＋v1 golden回帰必須 |
-| V2-13-03 | 1024 offline生成budget実測 | Claude Sonnet 5 | High | Antigravity |
-| V2-13-04 | 1024 FAWE placement実測 | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋人間（昇格は別承認） |
-| V2-13-05 | Per-block map packing最適化（条件付き） | Claude Opus 4.8 | XHigh | Codex Terra Extra High |
-| V2-13-06 | Apply slice較正・batching最適化 | GPT-5.6 Sol Max | Max | Claude Opus 4.8 XHigh（独立コードレビュー）＋Antigravity（Acceptance evidence確認）＋人間（実機較正確認） |
+```text
+低リスクdocs・整理:      Haiku 4.5 → 必要ならGrok 4.5またはSonnet 5レビュー
+通常実装:                Grok 4.5 → Sonnet 5レビュー
+通常だが設計解釈が必要:  Sonnet 5 → Grok 4.5独立レビュー
+高リスク実装:            Opus 4.8 → Grok 4.5独立レビュー → 必要ならSonnet 5 Acceptance確認
+最高リスク／Phase全体:   Opus 4.8またはFable 5 → Grok 4.5独立レビュー
+                         → 別Claudeモデルによる第二レビュー → 人間承認
+```
 
-`V2-13-06` は性能／concurrency／cancel・Recovery不変性と実機較正を横断する高リスクTaskであり、主担当は承認済みのGPT-5.6 Sol Maxとする。実機evidenceは人間確認なしに完了扱いにしない。1024 production変更の実機evidenceは2026-07-22に人間確認・完全承認され、この明示gateを満たした。
+- 同一モデルの別セッションだけでは「独立レビュー」にならない。高リスクTaskのレビュー鎖には**モデルファミリーが異なるレビュー（実務上はGrok 4.5）を最低1つ**含める。
+- 最初から強いモデルを使わない。昇格は§6の明示条件だけで行う。
+- レビューは削らない。使用枠が不足したら低優先度Taskを保留する（§12）。
 
-### Track B: V2-14 Image fidelity wiring follow-up（3、2026-07-21追加、2026-07-22 follow-up登録）
+## 5. リスク分類
 
-| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
-|---|---|---|---|---|---|
-| V2-14-01 | Extract path CLI／Request配線 | Claude Sonnet 5 | High | Claude Opus 4.8 High | CLI／Request配線 |
-| V2-14-02 | 斜視／multi-view reference role（互換確認条件付き） | Claude Opus 4.8 | High | Codex Terra Extra High | Schema互換／checksum監査 |
-| V2-14-03 | README current-state consistency follow-up | Cursor軽量 | Low | Claude Sonnet 5 High | docs／リンク整合。production・Schema変更禁止 |
+| リスク | 定義 | 開始モデル |
+|---|---|---|
+| 低 | production・Schema・公開contractに触れないdocs／fixture／整理 | Haiku 4.5 |
+| 中（通常） | 既存パターンに沿うproduction実装・wiring・テスト | Grok 4.5 |
+| 中高 | Scope解釈・複数module接続・局所contract／Schema変更を含む | Sonnet 5 |
+| 高 | 公開contract／Schema・migration・決定性・memory・concurrency・security・Release read-back | Opus 4.8 |
+| 最高 | Phase／Release横断、複数高リスク不変条件の結合、false promotionが製品保証へ直結 | Opus 4.8 Highest availableまたはFable 5 |
 
-### Track E続編: V2-15 Canonical catalog／existing-generator wiring（47、2026-07-22登録）
+## 6. 昇格条件
 
-| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
-|---|---|---|---|---|---|
-| V2-15-01 | 全地形inventory監査の正本再照合／close | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋人間 | 横断監査／taxonomy判断 |
-| V2-15-02 | current-state machine registry／CI projection | Claude Opus 4.8 | High | Codex Terra Extra High | contract／Schema・docs整合 |
-| V2-15-03 | 既存14 identifierのalias／subtype／child移行ADR | Claude Opus 4.8 | XHigh | Codex Terra Extra High＋人間承認必須 | 公開Schema互換／governance |
-| V2-15-04 | target registry／Schema projection／migration | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋人間 | 複数Schema／migration／checksum |
-| V2-15-05 | registry-driven production dispatch spine | Claude Opus 4.8 | High | Codex Terra Extra High | application contract／決定性 |
-| V2-15-06 | `hydrology-plan` production pipeline | Claude Opus 4.8 | High | Codex Terra Extra High | Release strict read-back／graph binding |
-| V2-15-07 | `environment-fields` production pipeline | Claude Opus 4.8 | High | Codex Terra Extra High | Release dependency／artifact整合 |
-| V2-15-08 | `sparse-volume` production pipeline | Claude Opus 4.8 | XHigh | Codex Terra Extra High | ordered CSG／3D memory／Release |
-| V2-15-09 | foundation surface export adapter | Claude Opus 4.8 | High | Codex Terra Extra High | capability mapping／Release contract |
-| V2-15-10 | `RIVER`＋meandering subtype wiring | Claude Opus 4.8 | High | Codex Terra Extra High | graph／alias互換／checksum |
-| V2-15-11 | `LAKE`＋oxbow subtype wiring | Claude Opus 4.8 | High | Antigravity Gemini Pro | hydrology relation／互換 |
-| V2-15-12 | `CANYON` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常public wiring |
-| V2-15-13 | `WATERFALL`＋volume overlay wiring | Claude Opus 4.8 | High | Codex Terra Extra High | graph／sparse-volume ordering |
-| V2-15-14 | `DELTA` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常hydrology wiring |
-| V2-15-15 | `TIDAL_CHANNEL_NETWORK` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常graph wiring |
-| V2-15-16 | `FJORD` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常hydrology／environment wiring |
-| V2-15-17 | mountain＋alpine／glacial profiles | Claude Opus 4.8 | High | Codex Terra Extra High | subtype互換／shared kernel |
-| V2-15-18 | archipelago＋volcanic profile | Claude Opus 4.8 | High | Antigravity Gemini Pro | composition／compatibility profile |
-| V2-15-19 | marsh＋mangrove profile | Claude Opus 4.8 | High | Antigravity Gemini Pro | environment subtype／material |
-| V2-15-20 | `CORAL_REEF` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常environment wiring |
-| V2-15-21 | `PLAIN`＋backshore alias | Claude Opus 4.8 | High | Codex Terra Extra High | alias／Schema互換 |
-| V2-15-22 | `HILL_RANGE` wiring | Antigravity Gemini Pro | High | Claude Sonnet 5 High | 通常surface wiring |
-| V2-15-23 | `VALLEY` wiring | Antigravity Gemini Pro | High | Claude Sonnet 5 High | 通常surface wiring |
-| V2-15-24 | `FLOODPLAIN` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | river relation／bounds |
-| V2-15-25 | `ROCKY_COAST` wiring | Claude Opus 4.8 | High | Antigravity Gemini Pro | coastal compatibility checksum |
-| V2-15-26 | `SEA_CLIFF` wiring | Claude Opus 4.8 | High | Codex Terra Extra High | surface-volume host contract |
-| V2-15-27 | `SINGLE_ISLAND` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常surface wiring |
-| V2-15-28 | `VOLCANIC_CONE` wiring | Claude Sonnet 5 | High | Antigravity Gemini Pro | child-plan ownership |
-| V2-15-29 | basin／shelf／slope marine trio | Claude Opus 4.8 | XHigh | Codex Terra Extra High | bathymetry数学／shared kernel／memory |
-| V2-15-30 | `SUBMARINE_CANYON` wiring | Claude Opus 4.8 | High | Antigravity Gemini Pro | bathymetry owner／決定性 |
-| V2-15-31 | abyssal plain＋seamount variants | Claude Opus 4.8 | High | Antigravity Gemini Pro | basin containment／variant contract |
-| V2-15-32 | `CAVE_ENTRANCE` wiring | Claude Opus 4.8 | High | Codex Terra Extra High | surface-volume checksum binding |
-| V2-15-33 | `UNDERGROUND_RIVER` wiring | Claude Opus 4.8 | XHigh | Codex Terra Extra High | graph／fluid／CSG ordering |
-| V2-15-34 | glacier／ice cap／ice sheet common kernel | Claude Opus 4.8 | XHigh | Codex Terra Extra High | glacial数学／volume／memory |
-| V2-15-35 | moraine／outwash wiring＋preview | Claude Sonnet 5 | High | Antigravity Gemini Pro | parent bounds／preview整合 |
-| V2-15-36 | sinkhole／karst spring graph wiring | Claude Opus 4.8 | XHigh | Codex Terra Extra High | karst graph／surface-volume-fluid |
-| V2-15-37 | escarpment／plateau transition pair | Claude Opus 4.8 | High | Antigravity Gemini Pro | transition contract／subtype |
-| V2-15-38 | `LAVA_TUBE` wiring | Claude Opus 4.8 | High | Codex Terra Extra High | sparse-volume ownership |
-| V2-15-39 | `SPRING` wiring | Claude Opus 4.8 | High | Antigravity Gemini Pro | hydrology graph specialization |
-| V2-15-40 | cave network／lush cave graph wiring | Claude Opus 4.8 | XHigh | Codex Terra Extra High | sparse graph／volume／memory |
-| V2-15-41 | `OVERHANG` wiring | Claude Opus 4.8 | High | Codex Terra Extra High | sparse solid／gravity envelope |
-| V2-15-42 | `SKY_ISLAND_GROUP` wiring | Claude Opus 4.8 | High | Antigravity Gemini Pro | sparse solid／group bounds |
-| V2-15-43 | `UNDERGROUND_LAKE` public vertical slice | Claude Opus 4.8 | XHigh | Codex Terra Extra High | public Schema＋cave fluid bounds |
-| V2-15-44 | `SEA_CAVE` public vertical slice | Claude Opus 4.8 | XHigh | Codex Terra Extra High | public Schema＋coast-volume host |
-| V2-15-45 | `NATURAL_ARCH` public vertical slice | Claude Opus 4.8 | XHigh | Codex Terra Extra High | public Schema＋support invariant |
-| V2-15-46 | child／overlay／compatibility catalog cleanup | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋人間 | identifier migration／checksum／重複除去 |
-| V2-15-47 | Canonical catalog Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋Antigravity＋人間 | Phase最終監査／false promotion |
+曖昧な「難しそう」では昇格しない。**単なるテスト失敗、環境不足、実機未確保は昇格理由にならない**（環境不足は`BLOCKED_EXTERNAL`、§8）。
 
-### Track E続編: V2-16 Deferred／new terrain and composition（19、2026-07-22登録）
-
-| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
-|---|---|---|---|---|---|
-| V2-16-01 | parent／child／preset composition engine | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh | bounds／seed／ordering／manifest contract |
-| V2-16-02 | `WATERFALL_CHAIN` preset | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常composition wiring |
-| V2-16-03 | `ICE_FJORD` preset | Claude Opus 4.8 | High | Antigravity Gemini Pro | hydrology／glacier dependency |
-| V2-16-04 | `CENOTE` preset | Claude Opus 4.8 | High | Codex Terra Extra High | surface-volume-fluid composition |
-| V2-16-05 | `BARRIER_ISLAND` preset | Claude Sonnet 5 | High | Antigravity Gemini Pro | 通常composition wiring |
-| V2-16-06 | `ATOLL` preset | Claude Sonnet 5 | High | Antigravity Gemini Pro | reef child ordering／validation |
-| V2-16-07 | `ESTUARY` composition | Claude Opus 4.8 | XHigh | Codex Terra Extra High | river-mouth／tidal graph coupling |
-| V2-16-08 | `FLOATING_REEF` composition | Claude Opus 4.8 | High | Codex Terra Extra High | aerial host／sparse support |
-| V2-16-09 | braided／bedrock river＋terrace | Claude Opus 4.8 | XHigh | Codex Terra Extra High | river graph数学／subtype互換 |
-| V2-16-10 | `DAM_RESERVOIR` vertical slice | Claude Opus 4.8 | XHigh | Codex Terra Extra High | artificial hydrology／barrier／spillway |
-| V2-16-11 | `ALLUVIAL_FAN` vertical slice | Claude Opus 4.8 | High | Antigravity Gemini Pro | drainage／deposition数学 |
-| V2-16-12 | `OCEAN_TRENCH` vertical slice | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh | global continuity／bathymetry／memory |
-| V2-16-13 | ridge＋submarine volcano subtype | Claude Opus 4.8 | XHigh | Codex Terra Extra High | ridge数学／provenance subtype |
-| V2-16-14 | `DUNE_FIELD` vertical slice | Claude Opus 4.8 | High | Antigravity Gemini Pro | directional morphology／asymmetry |
-| V2-16-15 | `BADLANDS` vertical slice | Claude Opus 4.8 | XHigh | Codex Terra Extra High | drainage-aware erosion／strata |
-| V2-16-16 | `TOWER_KARST` vertical slice | Claude Opus 4.8 | XHigh | Codex Terra Extra High | tower spacing／cave graph／bounds |
-| V2-16-17 | `SALT_FLAT` vertical slice | Claude Opus 4.8 | High | Antigravity Gemini Pro | flatness／crack field／hydrology |
-| V2-16-18 | `PEAT_BOG` subtype | Claude Sonnet 5 | High | Antigravity Gemini Pro | microtopography／material subtype |
-| V2-16-19 | Deferred／new terrain Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋Antigravity＋人間 | Phase最終監査／canonical count |
-
-### Track A: V2-18 Macro foundation and intent conformance（12、2026-07-22登録）
-
-| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
-|---|---|---|---|---|---|
-| V2-18-01 | Diagnostic severity／production gate契約の正常化 | Claude Opus 4.8 | High | Codex Terra Extra High | diagnostic契約／GATING分類／golden化 |
-| V2-18-02 | Intent contribution／coverage診断（report-only） | Claude Sonnet 5 | High | Antigravity Gemini Pro | 診断metric追加／semantic・容器checksum区分の明文化 |
-| V2-18-03 | HARD preflight gate（評価器・consumer・mapReference実在） | Claude Opus 4.8 | High | Codex Terra Extra High | fail-closed admission／fixture digest整合 |
-| V2-18-04 | Target-driven validation framework＋EDGE evaluator | Claude Opus 4.8 | High | Codex Terra Extra High | validation framework契約／測定領域契約／決定性 |
-| V2-18-05 | 既存coastal metricの正当性修復 | Claude Sonnet 5 | High | Antigravity Gemini Pro | metric正当性／golden更新はADR承認範囲 |
-| V2-18-06 | 再利用可能constraint-map binding＋暫定coastal adapter | Claude Opus 4.8 | High | Codex Terra Extra High | secure decode／path traversal／digest／memory budget |
-| V2-18-07 | ConformanceTargetSet＋desired／actual分離 | Claude Opus 4.8 | XHigh | Codex Terra Extra High | conformance契約／Schema設計／residual意味論 |
-| V2-18-08 | Macro foundation契約ADR | Claude Opus 4.8 | XHigh | Codex Terra Extra High＋人間承認必須 | governance／composition role軸／60 kind対応表 |
-| V2-18-09 | Macro foundation production spine＋coastal統合 | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋Antigravity（Acceptance確認） | production spine／field ownership／raster生成／checksum |
-| V2-18-10 | Surface foundation owner gateのfail-closed昇格 | Claude Sonnet 5 | High | Antigravity Gemini Pro＋人間承認必須 | production gate有効化／surface domain限定 |
-| V2-18-11 | Intent-conformance E2E portfolio | Claude Sonnet 5 | High | Antigravity Gemini Pro | E2E fixture／形状assertion回帰資産 |
-| V2-18-12 | Intent conformance Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋Antigravity＋人間 | Phase最終監査／V2-15 stage gate解除判断 |
-
-V2-18はfail-closed化の前に必ずreport-only段階を先行させるPhaseであり、`V2-18-10`のgate有効化と`V2-18-08`のADRは人間承認なしに完了扱いにしない。`V2-18-09`完了まで、V2-15のproduction export／placement昇格系Task（wiring／vertical slice）はstage gateで待機する（[Task Index §18](task-index.md)、[監査](../audits/macro-foundation-conformance-audit-2026-07-22.md)）。
-
-### Track A follow-up: V2-17 Paper placement evidence／promotion（7、2026-07-22登録）
-
-| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
-|---|---|---|---|---|---|
-| V2-17-01 | measurement harness／runbook／evidence Schema | Claude Opus 4.8 | XHigh | Codex Terra Extra High＋人間 | 実測契約／artifact／resource telemetry |
-| V2-17-02 | hydrology-plan実機matrix | Cursor Pro＋人間 | — | Claude Sonnet 5（ログ分析）＋Codex Terra | 実機／fluid／Undo／Recovery |
-| V2-17-03 | environment-fields実機matrix | Cursor Pro＋人間 | — | Claude Sonnet 5（ログ分析） | 実機／material／resource telemetry |
-| V2-17-04 | sparse-volume実機matrix | Cursor Pro＋人間 | — | Claude Opus 4.8 XHigh＋Codex Terra | 実機／fluid・gravity・containment／Recovery |
-| V2-17-05 | foundation／new／preset実機matrix | Cursor Pro＋人間 | — | Claude Sonnet 5（ログ分析）＋Codex Terra | 実機／capability mapping／runtime coverage |
-| V2-17-06 | evidence-bound capability promotion | Claude Sonnet 5 | High | Antigravity Gemini Pro＋Codex Terra＋人間承認必須 | false promotion／測定範囲／catalog checksum |
-| V2-17-07 | Paper Phase gate（full runtime suite） | Codex Sol Max＋人間 | Max | Claude Opus 4.8 XHigh＋Antigravity | Phase最終監査／Recovery drill／実機evidence |
-
-### Track D: V2-9 Terrain foundation（14）
-
-| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
-|---|---|---|---|---|---|
-| V2-9-01 | Surface foundation contract | Claude Opus 4.8 | High | Codex Terra Extra High | contract・Schema互換／memory |
-| V2-9-02 | PLAIN/HILL_RANGE slices | Antigravity Gemini Pro | High | Claude Sonnet 5 High | 通常実装 |
-| V2-9-03 | MOUNTAIN_RANGE/VALLEY foundation | Claude Opus 4.8 | High | Antigravity | 計画が難しい通常実装／互換 |
-| V2-9-04 | General RIVER contract | Claude Opus 4.8 | XHigh | Codex Terra Extra High | graph数学／決定性 |
-| V2-9-05 | FLOODPLAIN/MARSH foundation | Claude Sonnet 5 | High | Antigravity | 通常実装／environment境界 |
-| V2-9-06 | ROCKY_COAST/SEA_CLIFF | Claude Opus 4.8 | High | Codex Terra Extra High | surface-volume contract |
-| V2-9-07 | Island/cone foundation | Claude Sonnet 5 | High | Antigravity | 計画が難しい通常実装 |
-| V2-9-08 | Marine bathymetry core | Claude Opus 4.8 | XHigh | Codex Terra Extra High | 数学的保証／memory |
-| V2-9-09 | SUBMARINE_CANYON | Claude Opus 4.8 | XHigh | Antigravity | 数学的profile／決定性 |
-| V2-9-10 | CAVE_ENTRANCE connector | Claude Opus 4.8 | High | Codex Terra Extra High | surface-volume contract |
-| V2-9-11 | UNDERGROUND_RIVER/fluid connection | Claude Opus 4.8 | XHigh | Codex Terra Extra High | graph／fluid ordering |
-| V2-9-12 | Macro land-water topology | Claude Opus 4.8 | High | Antigravity | contract・Schema互換 |
-| V2-9-13 | River graph roles/composites | Claude Opus 4.8 | High | Codex Terra Extra High | graph contract／互換 |
-| V2-9-14 | Foundation Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋人間 | 監査 |
-
-### Track E: V2-10 Deferred terrain families（11）
-
-| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
-|---|---|---|---|---|---|
-| V2-10-01 | Glacial ice foundation | Claude Opus 4.8 | XHigh | Codex Terra Extra High | volume／memory／数学 |
-| V2-10-02 | Glacial deposition/profiles | Claude Sonnet 5 | High | Antigravity | 通常実装／classification |
-| V2-10-03 | Karst hydrology graph | Claude Opus 4.8 | XHigh | Codex Terra Extra High | graph／surface-volume-fluid |
-| V2-10-04 | Additional marine landforms | Claude Opus 4.8 | High | Antigravity | bathymetry contract |
-| V2-10-05 | Advanced river/lake contract split | Claude Opus 4.8 | High | Codex Terra Extra High | 計画／contract分割 |
-| V2-10-06 | Escarpment/dry-land foundation | Claude Sonnet 5 | High | Antigravity | 通常実装／transition |
-| V2-10-07 | LAVA_TUBE volume slice | Claude Opus 4.8 | High | Codex Terra Extra High | sparse volume／互換 |
-| V2-10-08 | Advanced island/reef | Claude Sonnet 5 | High | Antigravity | composition／通常実装 |
-| V2-10-09 | Deferred terrain Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋人間 | 監査 |
-| V2-10-10 | Surface SPRING graph-node slice | Claude Opus 4.8 | High | Codex Terra Extra High | graph／hydrology |
-| V2-10-11 | OXBOW_LAKE reach-cutoff basin slice | Claude Opus 4.8 | High | Antigravity | lake／reach relation |
-
-## 3. 種類別の既定割当（表にないTaskが発生した場合）
-
-| 作業種類 | 既定 |
+| 昇格 | 条件（いずれか） |
 |---|---|
-| docs修正・fixture追加・リンク修正・diff要約 | Cursor軽量／Claude Haiku（禁止: Schema変更・並行処理・決定性・rollback） |
-| テスト失敗の反復 | 1回目Cursor → 原因不明ならSonnet High → 同一原因2回失敗でOpus High → contract/memory/concurrencyならCodex Terra XH |
-| Schema変更 | 非破壊・局所=Sonnet High/Antigravity → 複数Schema・migration=Opus High → 保存形式・公開contract=Codex Terra XH |
-| 数学的Task | 既存式実装=Sonnet High → 数式・境界・誤差設計=Opus XHigh → 決定性保証が重大=Codex Sol Max → 最終数学監査=Codex Sol Ultra |
-| Memory/性能 | 計測=Cursor → allocation改善=Sonnet High → bounded設計=Opus High/XHigh → 最大入力保証=Codex Terra XH/Sol Max |
-| Concurrency | 既存パターン=Sonnet High → race/ordering/cancel=Opus XHigh → 決定性含む並列=Codex Terra XH → transaction/recovery連携=Codex Sol Max |
+| Haiku → Grok／Sonnet | production codeを変更する／Schemaに触れる／Task Scopeの解釈が必要／転記だけでは完了しない |
+| Grok → Sonnet | 同一原因で2回修正失敗／複数moduleのcontract解釈／既存実装とTask本文の矛盾／局所修正でAcceptanceを満たせない／公開API・CLI意味論に影響 |
+| Sonnet → Opus | 公開Schema・保存形式／migration／決定性不変条件／memory上限保証／concurrency・race・ordering／security境界／transaction／rollback／Undo／Recovery／capability promotion |
+| Opus → Fable | Phase・Release全体を横断／複数高リスク不変条件の結合／Opusと独立レビューが重大点で対立／正本・ADR・実装間の矛盾を解消できない／false promotionが製品保証へ直結／大規模migrationの最終go・no-go |
 
-## 4. コンテキスト節約
+## 7. レビューマトリクス
 
-- Task capsuleへ入れるのは: 対象Task全文、Execution Guide必須事項、関連ADR/Schema抜粋、変更候補ファイル、現在のgit diff、直近関連テスト結果、凍結対象、Acceptanceチェックリスト、停止条件、推奨モデル/Effort、のみ。
-- リポジトリ全体・全docs・全テストログをレビューへ渡さない。渡すのはcapsule＋`git diff --stat`＋関連diff＋実行テスト結果＋新規/変更Schema・ADR。
-- ルート指示ファイル（AGENTS.md）へ全仕様を詰め込まない。詳細はdocs/ADR/Schemaへ置き、`[[正本]]`参照で辿らせる。
+| 主担当 | 第一レビュー | 高リスク時の第二レビュー |
+|---|---|---|
+| Haiku 4.5 | Grok 4.5またはSonnet 5 | Opus 4.8 |
+| Grok 4.5 | Sonnet 5 | Opus 4.8 |
+| Sonnet 5 | Grok 4.5 | Opus 4.8 |
+| Opus 4.8 | Grok 4.5 | Fable 5または人間 |
+| Fable 5 | Grok 4.5 | Opus 4.8＋人間 |
+| Cursor＋人間による実機Task | Sonnet 5（ログ／telemetry解析） | Opus 4.8＋人間 |
+
+この表は機械的に適用せず、Taskリスクへ応じて§9〜§10の個別行が優先する。高リスクTaskでは、同じモデルに実装・第一レビュー・最終承認をすべて担当させない。人間承認がAcceptanceへ含まれるTaskは、モデルレビュー完了だけで完了扱いにしない。
+
+## 8. 実機依存Taskの扱い
+
+Paper実機smoke、WorldEdit／FAWE測定、MSPT／tick stall測定、Recovery drill、watchdog確認、専用ホストmemory測定、実world配置、Undo／rollback実測は**Cursor＋人間が主担当**である。モデルの担当はharness実装・確認、runbook作成、ログ／telemetry分析、evidence Schema確認、Acceptance照合だけに限る。
+
+- 実機証拠がない状態で、モデルに`COMPLETE`／`SUPPORTED`／`PROMOTED`と判断させない。
+- mock・unit test・offline fixtureを実機証拠の代替にしない。
+- ホスト・環境が確保できないTaskは`BLOCKED_EXTERNAL`とし、強いモデルへの変更で解決を図らない（[Task Execution Guide §8](task-execution-guide.md)）。
+
+## 9. 現在の未完了Task割当
+
+現在実行可能なPhaseはV2-18（Track A）とV2-15（Track E）である。V2-16／V2-17は依存待ち、V2-8-03〜08はHOLDで§10に置く。完了済みTask（V2-0〜V2-7、V2-9〜V2-14、V2-15-01〜09、V2-18-01）は本表へ掲載しない（履歴は§15とroadmap）。
+
+### 9.1 V2-18 Macro foundation and intent conformance（Track A、残り11）
+
+進捗: `V2-18-01`完了（1/12）。次のTaskは`V2-18-02`。fail-closed化は必ずreport-only段階を先行させる。Scope正本は[Task Index §18](task-index.md)。
+
+| Task | 状態 | 内容 | リスク | 主担当 | Effort | 第一レビュー | 第二レビュー／人間gate | 昇格条件 |
+|---|---|---|---|---|---|---|---|---|
+| V2-18-02 | READY | Intent contribution／coverage診断（report-only） | 中高（checksum容器区分の明文化） | Sonnet 5 | High | Grok 4.5 | — | semantic checksum不変性の解釈が割れたらOpus |
+| V2-18-03 | 依存02 | HARD preflight gate（fail-closed admission） | 高（admission／digest整合） | Opus 4.8 | High | Grok 4.5 | Sonnet 5（Acceptance確認） | §6既定 |
+| V2-18-04 | 依存02 | Target-driven validation framework＋EDGE evaluator | 高（framework契約／決定性） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-18-05 | 依存04 | 既存coastal metricの正当性修復 | 中高（golden更新はADR承認範囲のみ） | Sonnet 5 | High | Grok 4.5 | — | golden変更が必要になったら停止しADR確認 |
+| V2-18-06 | 依存03 | constraint-map binding＋暫定coastal adapter | 高（secure decode／path traversal／memory budget） | Opus 4.8 | High | Grok 4.5 | — | security境界のためSonnet開始不可 |
+| V2-18-07 | 依存04,06 | ConformanceTargetSet＋desired／actual分離 | 高（conformance契約／Schema設計） | Opus 4.8 | Highest available | Grok 4.5 | Sonnet 5（Acceptance確認） | §6既定 |
+| V2-18-08 | 依存02 | Macro foundation契約ADR | 最高（governance／60 kind対応表） | Opus 4.8 | Highest available | Grok 4.5 | **人間承認必須** | Opusとレビューが重大対立したらFable裁定 |
+| V2-18-09 | 依存08 | Macro foundation production spine＋coastal統合 | 最高（複数不変条件結合／V2-15 stage gate解除の前提） | Opus 4.8 | Highest available | Grok 4.5 | Sonnet 5（Acceptance確認）。coastal checksum変更はADR承認範囲＝人間確認 | 設計矛盾が解消できなければFable |
+| V2-18-10 | 依存09 | Surface foundation owner gateのfail-closed昇格 | 中高（gate有効化、surface domain限定） | Sonnet 5 | High | Grok 4.5 | **人間承認必須** | merge契約の解釈が割れたらOpus |
+| V2-18-11 | 依存04 | Intent-conformance E2E portfolio | 中（回帰fixture蓄積） | Grok 4.5 | — | Sonnet 5 | — | 形状assertionの意味設計が必要ならSonnet |
+| V2-18-12 | 依存01..11 | Phase gate（full suite、V2-15 stage gate解除判断） | 最高（Phase横断、`V2-15-47`／`V2-16-19` Acceptance追記） | **Fable 5** | Highest available | Grok 4.5 | Opus 4.8＋**人間承認** | — |
+
+割当根拠: `V2-18-12`は単なる証拠集約でなく、V2-15／V2-16のAcceptanceへ遡ってintent-conformanceを追記しstage gateの解除可否を裁定する複数Phase横断判断のためFableとする。`V2-18-09`は実装Taskなので主担当はOpus Highest availableに留め、Fableは対立時の裁定に温存する。
+
+### 9.2 V2-15 Canonical catalog／existing-generator wiring（Track E、残り38）
+
+進捗: `V2-15-01`〜`09`完了（9/47）。次のTaskは`V2-15-10`。
+
+**Stage gate（全行共通）:** production export／placement昇格系の作業・Acceptanceは`V2-18-09`完了＋対象kindのcomposition role登録まで待機する。registry／Schema／codec／offline plan／determinism系の作業は継続できる（roadmap 2026-07-22決定）。各leafの状態表記READYはこの制約付きである。
+
+| Task | 状態 | 内容 | リスク | 主担当 | Effort | 第一レビュー | 第二レビュー／人間gate | 昇格条件 |
+|---|---|---|---|---|---|---|---|---|
+| V2-15-10 | READY | `RIVER`＋meandering subtype wiring | 中高（alias互換／meander checksum不変） | Sonnet 5 | High | Grok 4.5 | — | checksum互換の設計判断が必要ならOpus |
+| V2-15-11 | 依存03,06 | `LAKE`＋oxbow subtype wiring | 中高（hydrology relation） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-12 | 依存06 | `CANYON` wiring | 中（通常public wiring） | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-13 | 依存06,08 | `WATERFALL`＋volume overlay wiring | 中高（graph／CSG ordering接続） | Sonnet 5 | High | Grok 4.5 | — | ordering不変条件が争点ならOpus |
+| V2-15-14 | 依存06 | `DELTA` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-15 | 依存06 | `TIDAL_CHANNEL_NETWORK` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-16 | 依存06 | `FJORD` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-17 | 依存03,07,09 | mountain＋alpine／glacial profiles | 中高（subtype互換／shared kernel） | Sonnet 5 | High | Grok 4.5 | — | kernel互換が争点ならOpus |
+| V2-15-18 | 依存03,07,09 | archipelago＋volcanic profile | 中高（composition profile） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-19 | 依存03,07,09 | marsh＋mangrove profile | 中高（environment subtype） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-20 | 依存07 | `CORAL_REEF` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-21 | 依存03,09 | `PLAIN`＋backshore alias | 中高（alias／Schema互換、ADR 0036準拠） | Sonnet 5 | High | Grok 4.5 | — | disposition互換が争点ならOpus |
+| V2-15-22 | 依存09 | `HILL_RANGE` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-23 | 依存09 | `VALLEY` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-24 | 依存09 | `FLOODPLAIN` wiring | 中（river relation必須） | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-25 | 依存09 | `ROCKY_COAST` wiring | 中高（production coastal checksum不変） | Sonnet 5 | High | Grok 4.5 | — | coastal回帰が崩れたらOpus |
+| V2-15-26 | 依存09 | `SEA_CLIFF` wiring | 中高（surface-volume host handoff） | Sonnet 5 | High | Grok 4.5 | — | host contract設計が必要ならOpus |
+| V2-15-27 | 依存09 | `SINGLE_ISLAND` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-28 | 依存09 | `VOLCANIC_CONE` wiring | 中（caldera／lava childのみ） | Grok 4.5 | — | Sonnet 5 | — | child ownership解釈が必要ならSonnet |
+| V2-15-29 | 依存09 | basin／shelf／slope marine trio | 高（bathymetry数学／shared kernel／memory） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-30 | 依存29 | `SUBMARINE_CANYON` wiring | 中高（bathymetry owner分離） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-31 | 依存29 | abyssal plain＋seamount variants | 中高（basin containment） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-32 | 依存08,09 | `CAVE_ENTRANCE` wiring | 中高（frozen cave checksum bind） | Sonnet 5 | High | Grok 4.5 | — | binding設計が必要ならOpus |
+| V2-15-33 | 依存08,09 | `UNDERGROUND_RIVER` wiring | 高（graph／fluid／CSG ordering） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-34 | 依存07,09 | glacier／ice cap／ice sheet common kernel | 高（glacial数学／volume／memory） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-35 | 依存34 | moraine／outwash wiring＋preview | 中（parent bounds／preview整合） | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-15-36 | 依存08,09 | sinkhole／karst spring graph wiring | 高（karst graph／surface-volume-fluid） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-37 | 依存09 | escarpment／plateau transition pair | 中高（transition contract） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-38 | 依存08,09 | `LAVA_TUBE` wiring | 中高（`CARVE_SOLID` ownershipのみ） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-39 | 依存06,09 | `SPRING` wiring | 中高（hydrology graph specialization不変） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-40 | 依存08 | cave network／lush cave graph wiring | 高（sparse graph／volume／memory） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-41 | 依存08 | `OVERHANG` wiring | 中高（gravity containmentはPaper gate残置） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-42 | 依存08 | `SKY_ISLAND_GROUP` wiring | 中高（sparse solid／group bounds） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-43 | 依存03,08 | `UNDERGROUND_LAKE` public vertical slice | 高（新public kind＋public Schema＋cave fluid bounds） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-44 | 依存03,08 | `SEA_CAVE` public vertical slice | 高（public Schema＋coast-volume host） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-45 | 依存03,08 | `NATURAL_ARCH` public vertical slice | 高（public Schema＋support invariant） | Opus 4.8 | High | Grok 4.5 | — | §6既定 |
+| V2-15-46 | 依存03,04 | child／overlay／compatibility catalog cleanup | 最高（identifier migration／checksum／削除はADR承認範囲のみ） | Opus 4.8 | Highest available | Grok 4.5 | Sonnet 5（Acceptance確認）＋**人間確認**（ADR承認範囲逸脱の有無） | §6既定 |
+| V2-15-47 | 依存10..46 | Phase gate（full suite、既存20＋全leaf E2E） | 最高（47 Task Phaseの最終監査／false promotion防止） | **Fable 5** | Highest available | Grok 4.5 | Opus 4.8＋**人間承認** | — |
+
+割当根拠: 旧割当はwiring系の大半をOpus相当以上としていたが、`V2-15-05`〜`09`でdispatch spine・shared pipeline・export adapterが完了済みのため、確立パターンへ載せるだけのwiringはGrok（通常）／Sonnet（互換・checksum・subtype解釈あり）へ引き下げた。Opusは数学・memory・ordering・public Schema新設を含む行だけに残す。`V2-15-47`は公開カタログ全面の最終監査でfalse promotionが製品保証へ直結するためFableとする。
+
+## 10. HOLD／BLOCKED／承認待ちTask
+
+### 10.1 HOLD: V2-8-03〜08（Track C、LARGE scale-up）
+
+2026-07-21のS2決定で保留。LARGE契約は凍結保持し、1024完成後にS3退役を独立migration Phaseで再審査する。
+
+| Task | 状態 | 主担当 | 暫定候補 | 再評価条件 |
+|---|---|---|---|---|
+| V2-8-03〜V2-8-08 | HOLD | **再開時再評価** | Sonnet 5（予算・preview系）／Opus 4.8（streaming・resume・分割export系） | S3再審査の結論、Scope変更、1024実測結果、その時点のモデル性能・利用枠 |
+
+HOLD Taskへモデルを確定割当しない。再開時に本文書を改訂してから着手する。
+
+### 10.2 BLOCKED（依存待ち）: V2-16（19 Task、`V2-15-47`待ち）
+
+以下は**暫定割当**であり、`V2-16-01`着手前に再評価する。composition engine（`V2-16-01`）の成立を前提に、presetは通常実装として扱う。
+
+| Task | 内容 | リスク | 暫定主担当 | Effort | 第一レビュー | 第二レビュー／人間gate |
+|---|---|---|---|---|---|---|
+| V2-16-01 | composition engine（bounds／seed／ordering／manifest contract） | 最高 | Opus 4.8 | Highest available | Grok 4.5 | Sonnet 5（Acceptance確認） |
+| V2-16-02 | `WATERFALL_CHAIN` preset | 中 | Grok 4.5 | — | Sonnet 5 | — |
+| V2-16-03 | `ICE_FJORD` preset | 中高 | Sonnet 5 | High | Grok 4.5 | — |
+| V2-16-04 | `CENOTE` preset | 中高（surface-volume-fluid） | Sonnet 5 | High | Grok 4.5 | 争点化でOpus |
+| V2-16-05 | `BARRIER_ISLAND` preset | 中 | Grok 4.5 | — | Sonnet 5 | — |
+| V2-16-06 | `ATOLL` preset | 中（child ordering） | Grok 4.5 | — | Sonnet 5 | — |
+| V2-16-07 | `ESTUARY` composition | 高（river-mouth／tidal graph coupling） | Opus 4.8 | High | Grok 4.5 | — |
+| V2-16-08 | `FLOATING_REEF` composition | 中高（aerial host／sparse support） | Sonnet 5 | High | Grok 4.5 | — |
+| V2-16-09 | braided／bedrock river＋terrace | 高（river graph数学／subtype互換） | Opus 4.8 | High | Grok 4.5 | — |
+| V2-16-10 | `DAM_RESERVOIR` vertical slice | 高（barrier／spillway ownership） | Opus 4.8 | High | Grok 4.5 | — |
+| V2-16-11 | `ALLUVIAL_FAN` vertical slice | 中高（drainage／deposition数学） | Sonnet 5 | High | Grok 4.5 | 数学的境界が争点ならOpus |
+| V2-16-12 | `OCEAN_TRENCH` vertical slice | 高（global continuity／memory。LARGEはHOLD policy準拠） | Opus 4.8 | High | Grok 4.5 | — |
+| V2-16-13 | ridge＋submarine volcano subtype | 高（ridge数学／provenance） | Opus 4.8 | High | Grok 4.5 | — |
+| V2-16-14 | `DUNE_FIELD` vertical slice | 中高（directional morphology） | Sonnet 5 | High | Grok 4.5 | — |
+| V2-16-15 | `BADLANDS` vertical slice | 高（drainage-aware erosion／strata） | Opus 4.8 | High | Grok 4.5 | — |
+| V2-16-16 | `TOWER_KARST` vertical slice | 高（tower spacing／cave graph／bounds） | Opus 4.8 | High | Grok 4.5 | — |
+| V2-16-17 | `SALT_FLAT` vertical slice | 中高 | Sonnet 5 | High | Grok 4.5 | — |
+| V2-16-18 | `PEAT_BOG` subtype | 中（new kindなし） | Grok 4.5 | — | Sonnet 5 | — |
+| V2-16-19 | Phase gate（full suite、canonical count再確認） | 最高 | Opus 4.8 | Highest available | Grok 4.5 | Sonnet 5＋**人間承認**。監査対立・横断矛盾が出たらFableへ昇格 |
+
+割当根拠: `V2-16-19`はV2-15-47と異なり、確立済みcanonical catalog上のcomposition Phaseを閉じる監査であり、まずOpus Highest availableで足りるかを評価する（Fable自動投入をしない例）。対立や横断矛盾が出た場合だけFableへ昇格する。
+
+### 10.3 BLOCKED（依存＋実機）: V2-17（7 Task、`V2-15-47`／`V2-16-19`待ち）
+
+実機ホスト未確保の実測Taskは着手時点で`BLOCKED_EXTERNAL`とする。以下は暫定割当で、着手前に再評価する。
+
+| Task | 内容 | 暫定主担当 | Effort | レビュー／解析 | 人間gate |
+|---|---|---|---|---|---|
+| V2-17-01 | measurement harness／runbook／evidence Schema | Opus 4.8 | High | Grok 4.5 | 人間（手順実行可能性確認） |
+| V2-17-02 | hydrology-plan実機matrix | Cursor＋人間（hostなしは`BLOCKED_EXTERNAL`） | — | Sonnet 5（ログ／telemetry解析） | 人間 |
+| V2-17-03 | environment-fields実機matrix | Cursor＋人間（同上） | — | Sonnet 5（ログ／telemetry解析） | 人間 |
+| V2-17-04 | sparse-volume実機matrix（fluid／gravity／containment） | Cursor＋人間（同上） | — | Sonnet 5（解析）＋Opus 4.8（evidence第二確認） | 人間 |
+| V2-17-05 | foundation／new／preset実機matrix | Cursor＋人間（同上） | — | Sonnet 5（ログ／telemetry解析） | 人間 |
+| V2-17-06 | evidence-bound capability promotion | Sonnet 5 | High | Grok 4.5＋Opus 4.8（false promotion監査） | **人間承認必須** |
+| V2-17-07 | Paper Phase gate（full runtime suite、Recovery drill） | **Fable 5**（監査）＋Cursor＋人間（実機drill） | Highest available | Grok 4.5 | Opus 4.8＋**人間承認** |
+
+モデルはharness／evidence分析のみを担当し、実機証拠のない`SUPPORTED`／`PROMOTED`判断をしない（§8）。`V2-17-07`はRelease全体のcapability保証を閉じる最終監査でfalse promotionが製品保証へ直結するためFableとする。
+
+### 10.4 人間承認待ち（モデル追加投入で解決しない項目）
+
+| 項目 | 状態 | モデルの役割 |
+|---|---|---|
+| V2-13親Phase完了宣言／1024 catalog昇格 | 全6 Task完了済み、**いずれも別の人間承認待ち** | Sonnet 5によるevidence整理のみ。承認判断はしない |
+| V2-14親Phase完了宣言 | 3/3 Task完了済み、**人間承認待ち** | 同上 |
+
+## 11. 種類別の既定割当（表にない新規Taskが発生した場合）
+
+| 作業種類 | 開始モデル | 標準レビュー | 昇格条件 | 使用禁止 | 人間gate |
+|---|---|---|---|---|---|
+| docs | Haiku 4.5 | Grok 4.5またはSonnet 5 | Scope解釈が必要→Sonnet | Fable／Opus | 不要 |
+| fixture／test | Haiku 4.5（単純）／Grok 4.5 | Sonnet 5 | 同一原因2回失敗→Sonnet | Fable | 不要 |
+| 通常Feature実装 | Grok 4.5 | Sonnet 5 | §6 Grok→Sonnet | Fable | 不要 |
+| 既存generator wiring | Grok 4.5 | Sonnet 5 | 互換・checksum解釈→Sonnet | Fable | 不要 |
+| CLI／Paper routing | Grok 4.5 | Sonnet 5 | permission／security接点→Opus | Haiku | 不要 |
+| Schema局所変更（非破壊） | Sonnet 5 | Grok 4.5 | 保存形式・公開contract→Opus | Haiku | 不要 |
+| 複数Schema／migration | Opus 4.8 High | Grok 4.5 | 最終go/no-go→Fable | Haiku／Grok単独 | migration実施時 |
+| 数学／fixed-point | Opus 4.8 High〜Highest available | Grok 4.5 | 決定性保証の最終監査→Fable | Haiku | 不要 |
+| hydrology graph | Sonnet 5（既存パターン）／Opus 4.8（ordering・決定性） | Grok 4.5 | §6既定 | Haiku | 不要 |
+| memory／performance | Sonnet 5（allocation改善）／Opus 4.8（bounded設計・最大入力保証） | Grok 4.5 | §6既定 | Haiku | 実測を伴う場合 |
+| concurrency／cancel | Opus 4.8 High〜Highest available | Grok 4.5 | transaction連鎖→Fable監査 | Haiku／Grok単独 | 不要 |
+| security | Opus 4.8 High | Grok 4.5 | 境界設計対立→Fable | Haiku／Grok単独 | 境界変更時 |
+| Release／strict read-back | Opus 4.8 High | Grok 4.5 | capability昇格→＋Sonnet Acceptance | Haiku | capability昇格時 |
+| transaction／rollback／Recovery | Opus 4.8 Highest available | Grok 4.5 | 全体最終監査→Fable | Haiku／Grok単独／Sonnet単独 | Recovery drill時 |
+| 実機測定 | Cursor＋人間 | Sonnet 5（解析） | — | 全モデル単独完了 | **必須** |
+| ADR／governance | Opus 4.8 Highest available | Grok 4.5 | 複数Phase横断→Fable | Haiku／Grok単独 | **必須** |
+| Phase gate | Opus 4.8 Highest available（証拠集約中心）／Fable 5（横断裁定・false promotion） | Grok 4.5 | Opus監査で対立→Fable | Haiku／Grok単独 | **必須** |
+
+## 12. 使用量・課金管理
+
+### Claude（Claude Max 5x）
+
+1. セッション開始時に`/status`で**サブスクリプション認証**であることを確認する。
+2. `ANTHROPIC_API_KEY`が環境変数・設定に残っているとAPI従量課金になり得るため確認する。**ユーザーの明示承認なしにAPI従量課金へ切り替えない。**
+3. Max 5x利用枠が不足した場合の順序:
+   1. Haiku／Sonnetで可能な作業を先へ進める
+   2. 通常実装をCursor／Grokへ移す
+   3. Opus／Fableが必要な高リスクTaskを保留する
+   4. 新たな従量課金は人間の明示承認を得る
+
+### Cursor（Cursor Pro $20）
+
+1. usage-based billing／BYOK／Max Mode／追加従量課金の設定が有効になっていないかを確認する。**ユーザーの明示承認なしに月額プラン外の従量課金を前提にしない。**
+2. Cursor利用枠が不足しても品質上必要なレビューを削除しない。低優先度Taskを保留し、Grok第一レビュー分は一時的にSonnet 5レビューへ振り替えてよい（高リスクTaskの「モデルファミリーが異なるレビュー」要件は、枠回復後の追認レビューで満たす）。
+
+## 13. Task capsule／コンテキスト節約
+
+1 Task＝1 Task capsule（`.task-context/V2-x-NN.md`、Git管理外）＝1新規セッション。モデルとEffortはセッション開始時に本文書から決める。
+
+capsuleへ含めるのは原則次だけ: 対象Task全文、Task Execution Guideの必須事項、関連ADR／Schemaの必要箇所、依存TaskのAcceptance結果、変更候補ファイル、現在のgit diff、直近の関連テスト結果、凍結対象、Acceptance checklist、停止条件、推奨モデル／Effort、レビュー担当。
+
+毎回無差別に渡さないもの: リポジトリ全体、すべてのdocs、すべてのADR、全テストログ、無関係な過去Task。
+
+モデル別の調整: Grok／Haikuへは上記最小構成を厳守する。Opus／Fableが担当するPhase gate・横断監査・migration設計では、必要な依存（対象Phase全Taskの完了証拠、関連ADR全文、stage gate条件）を狭めすぎず、Taskを正しく完了できる**最小十分**な情報量にする。コンテキスト削減自体を目的にしない。
+
+## 14. 文書更新ルール
+
+- 本文書を更新するのは次の場合だけ: 契約・利用可能モデルの変更、新Phase／Taskの登録、HOLD Taskの再開、昇格条件・レビュー体制の変更、Phase gate通過による表の整理。
+- Taskが完了したら、該当行を正規表から削除する（進捗記録はroadmapが正本。本文書へ完了履歴を蓄積しない）。実行モデルの履歴は本文書のGit履歴とroadmapに残る。
+- 表にないTaskは§11の種類別既定で開始し、恒常化するなら次回改訂で表へ追加する。
+- Task Scope・Acceptance・依存・状態・IDは本文書で変更しない。正本間の矛盾を発見したら本文書で独自解決せず、roadmap／Task Index側の修正Taskとして報告する。
+
+## 15. 履歴付録（非規範的）
+
+> Historical execution record — Non-normative — Not an available current assignment
+
+2026-07-22の本改訂以前、本文書はCodex（ChatGPT Plus）、Antigravity（Gemini Pro系）、Claude Pro、OpenAI API、GPT-5.6を含む旧契約前提の割当を記載していた。完了済みTask（V2-0〜V2-7、V2-9〜V2-14、V2-15-01〜09、V2-18-01ほか）は当時の割当・当時のモデルで実行されており、その実行記録は遡及的に書き換えない。旧割当表の全文は本ファイルのGit履歴（2026-07-22以前版）を、各Taskの完了evidenceは[docs/roadmap.md](../roadmap.md)と`docs/design-v2/audits/`を参照する。例: `V2-13-06`はGPT-5.6系モデルが主担当として完了し人間承認済みである（歴史記録であり、現在の割当先ではない）。

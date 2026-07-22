@@ -140,23 +140,47 @@ class DiagnosticBlueprintCompilerV2Test {
                         .filter(module -> module.lifecycleStatus() == ModuleDescriptorV2.LifecycleStatus.SUPPORTED)
                         .map(ModuleDescriptorV2::moduleId)
                         .collect(java.util.stream.Collectors.toUnmodifiableSet()));
+        DiagnosticGateContractV2 gate = DiagnosticGateContractV2.builtIn();
         assertTrue(blueprint.diagnosticIssues().stream().anyMatch(
                 issue -> issue.ruleId().equals("v2.unsupported-capability")));
         assertTrue(blueprint.diagnosticIssues().stream().anyMatch(
                 issue -> issue.ruleId().equals("v2.missing-validator-capability")));
         assertTrue(blueprint.diagnosticIssues().stream().anyMatch(
                 issue -> issue.ruleId().equals("v2.missing-preview-capability")));
+        // V2-18-01: no capability-shortfall issue is stamped on a production-connected feature.
+        Set<String> capabilityRules = Set.of(
+                "v2.unsupported-capability", "v2.missing-validator-capability", "v2.missing-preview-capability");
+        Set<String> productionConnectedIds = intent.features().stream()
+                .filter(feature -> gate.isProductionConnected(feature.kind()))
+                .map(TerrainIntentV2.Feature::id)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        assertEquals(4, productionConnectedIds.size());
         assertTrue(blueprint.diagnosticIssues().stream().noneMatch(issue ->
-                (issue.ruleId().equals("v2.missing-validator-capability")
-                        || issue.ruleId().equals("v2.missing-preview-capability"))
-                        && issue.references().stream().anyMatch(reference -> reference.id().equals("main-beach")
-                        || reference.id().equals("harbor-basin")
-                        || reference.id().equals("central-breakwater")
-                        || reference.id().equals("east-cape"))));
-        assertEquals(intent.features().size(), blueprint.diagnosticIssues().stream()
+                capabilityRules.contains(issue.ruleId())
+                        && issue.references().stream().anyMatch(
+                                reference -> productionConnectedIds.contains(reference.id()))));
+        // unsupported-capability is now emitted only for kinds without a production export route.
+        long expectedUnsupported = intent.features().stream()
+                .filter(feature -> !gate.isProductionConnected(feature.kind())).count();
+        assertEquals(expectedUnsupported, blueprint.diagnosticIssues().stream()
                 .filter(issue -> issue.ruleId().equals("v2.unsupported-capability")).count());
         assertFalse(blueprint.diagnosticIssues().stream().anyMatch(
                 issue -> issue.severity() == DiagnosticIssueV2.Severity.INFO));
+
+        // Every emitted diagnostic rule is registered in the gate contract, none currently gate,
+        // and the currently-ignored ERROR list is exactly the full set of emitted ERROR issues.
+        assertTrue(blueprint.diagnosticIssues().stream().allMatch(issue -> gate.isRegistered(issue.ruleId())));
+        assertTrue(gate.gatingIssues(blueprint.diagnosticIssues()).isEmpty());
+        assertEquals(
+                blueprint.diagnosticIssues().stream()
+                        .filter(issue -> issue.severity() == DiagnosticIssueV2.Severity.ERROR).toList(),
+                gate.ignoredErrorIssues(blueprint.diagnosticIssues()));
+        assertEquals(Set.of(
+                        "v2.unsupported-capability", "v2.missing-validator-capability",
+                        "v2.missing-preview-capability", "v2.unsupported-constraint-map",
+                        "v2.unsupported-structure-capability"),
+                blueprint.diagnosticIssues().stream().map(DiagnosticIssueV2::ruleId)
+                        .collect(java.util.stream.Collectors.toUnmodifiableSet()));
     }
 
     @Test
@@ -167,11 +191,14 @@ class DiagnosticBlueprintCompilerV2Test {
             fixtures = files.sorted().toList();
         }
         assertEquals(10, fixtures.size());
+        DiagnosticGateContractV2 gate = DiagnosticGateContractV2.builtIn();
         for (Path fixture : fixtures) {
             TerrainIntentV2 intent = codec.readTerrainIntent(fixture);
             WorldBlueprintV2 blueprint = new DiagnosticBlueprintCompilerV2().compile(
                     request(intent.intentId(), DiagnosticCompileRequestV2.defaultBudget()), intent);
-            assertEquals(intent.features().size(), blueprint.diagnosticIssues().stream()
+            long expectedUnsupported = intent.features().stream()
+                    .filter(feature -> !gate.isProductionConnected(feature.kind())).count();
+            assertEquals(expectedUnsupported, blueprint.diagnosticIssues().stream()
                     .filter(issue -> issue.ruleId().equals("v2.unsupported-capability")).count(), fixture.toString());
             for (TerrainIntentV2.Feature feature : intent.features()) {
                 ModuleDescriptorV2.LifecycleStatus expected = SUPPORTED_OFFLINE_KINDS.contains(feature.kind())
