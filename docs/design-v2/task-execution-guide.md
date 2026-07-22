@@ -1,12 +1,12 @@
 # v2 Task Execution Guide
 
-> Status: V2-2〜V2-17の各Taskを、1回のエージェント作業で安全に閉じられる単位へ分けるための実行規約。進捗の正本は [docs/roadmap.md](../roadmap.md)、Taskの正本は [task-index.md](task-index.md)、Taskごとの実行モデル・Effort・レビュー体制の正本は [model-assignment.md](model-assignment.md) である。
+> Status: V2-2〜V2-18の各Taskを、1回のエージェント作業で安全に閉じられる単位へ分けるための実行規約。進捗の正本は [docs/roadmap.md](../roadmap.md)、Taskの正本は [task-index.md](task-index.md)、Taskごとの実行モデル・Effort・レビュー体制の正本は [model-assignment.md](model-assignment.md) である。
 
 ## 1. 目的
 
 Phase全体を一度に実装しない。各回は `V2-x-NN` のTaskを1個だけ選び、そのAcceptance gateまで実装、検証、文書同期して終了する。Task完了は親Phase完了を意味しない。親Phaseは末尾の統合監査Taskだけが閉じる。
 
-Track A（V2-4→V2-5→V2-6→V2-11→V2-12→V2-17）、Track B（V2-7→V2-14）、Track C（V2-8→V2-13）、Track D（V2-9）、Track E（V2-10→V2-15→V2-16）は、Taskが宣言した依存を満たす限り並行実行できる。V2-9／V2-10は完了済みで、そのplan-level成果を公開経路へ接続するV2-15は`V2-14-03`を、compositionとdeferred／new terrainを扱うV2-16は`V2-15-47`を前提とする。Paper evidenceと能力昇格を扱うV2-17は`V2-15-47`／`V2-16-19`の両方を前提とし、実機証拠のないFeatureを`SUPPORTED`へしない。ただし同一ファイルを複数エージェントが同時編集してはならず、`format.v2.release`等の共有領域を変更するTaskは直列にする。1 Taskは1 Task capsule（`.task-context/V2-x-NN.md`、Git管理外）と1新規セッションで実行し、モデルとEffortはセッション開始時に [model-assignment.md](model-assignment.md) から決める。
+Track A（V2-4→V2-5→V2-6→V2-11→V2-12→V2-18→V2-17）、Track B（V2-7→V2-14）、Track C（V2-8→V2-13）、Track D（V2-9）、Track E（V2-10→V2-15→V2-16）は、Taskが宣言した依存を満たす限り並行実行できる。V2-9／V2-10は完了済みで、そのplan-level成果を公開経路へ接続するV2-15は`V2-14-03`を、compositionとdeferred／new terrainを扱うV2-16は`V2-15-47`を前提とする。Paper evidenceと能力昇格を扱うV2-17は`V2-15-47`／`V2-16-19`の両方を前提とし、実機証拠のないFeatureを`SUPPORTED`へしない。2026-07-22 macro foundation監査で登録したV2-18はTrack Aで実行し、V2-15のproduction export／placement昇格系Taskは`V2-18-09`完了と対象kindのcomposition role登録を前提とするstage gateに従う（registry／Schema／codec／offline plan／determinism系Taskは継続可）。ただし同一ファイルを複数エージェントが同時編集してはならず、`format.v2.release`等の共有領域を変更するTaskは直列にする。1 Taskは1 Task capsule（`.task-context/V2-x-NN.md`、Git管理外）と1新規セッションで実行し、モデルとEffortはセッション開始時に [model-assignment.md](model-assignment.md) から決める。
 
 IDは順序変更に強い `V2-<phase>-<two digits>` とする。既存IDの意味を変更せず、新しい依存が見つかった場合は未使用IDを追加する。番号を詰め直して履歴やプロンプトを壊さない。
 

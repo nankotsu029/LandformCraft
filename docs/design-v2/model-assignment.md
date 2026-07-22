@@ -9,7 +9,7 @@
 3. **レビューは実装者と別系統**で行う。同じモデルに自分の実装を最終承認させない。
 4. **昇格は失敗ベース**で固定する。最初から強いモデルを使わず、条件を満たしたときだけ上げる。
 5. **1 Task = 1 Task capsule（`.task-context/V2-x-NN.md`、Git管理外）= 1新規セッション**。モデルとEffortはセッション開始時に決める。
-6. **full suiteはPhase gate Task（V2-4-15 / V2-5-18 / V2-6-19 / V2-7-07 / V2-8-08 / V2-9-14 / V2-10-09 / V2-12-07 / V2-15-47 / V2-16-19 / V2-17-07）だけ**で実行する。通常Taskは対象テスト＋Task close前の`./gradlew test`/`build`まで。
+6. **full suiteはPhase gate Task（V2-4-15 / V2-5-18 / V2-6-19 / V2-7-07 / V2-8-08 / V2-9-14 / V2-10-09 / V2-12-07 / V2-15-47 / V2-16-19 / V2-17-07 / V2-18-12）だけ**で実行する。通常Taskは対象テスト＋Task close前の`./gradlew test`/`build`まで。
 7. **Claude Pro枠とAPI課金を分離**する。`ANTHROPIC_API_KEY`が設定されたままだとAPI課金になり得るため、セッション開始時に`/status`で認証元を確認する。
 8. **使用量枯渇時**は上位モデルを全Taskへ広げず、高リスクTaskだけ従量課金（OpenAI API／追加クレジット）で継続する。
 
@@ -255,6 +255,25 @@ Effort列はClaude Codeの`--effort`相当（Antigravity/Codexは各ツールの
 | V2-16-17 | `SALT_FLAT` vertical slice | Claude Opus 4.8 | High | Antigravity Gemini Pro | flatness／crack field／hydrology |
 | V2-16-18 | `PEAT_BOG` subtype | Claude Sonnet 5 | High | Antigravity Gemini Pro | microtopography／material subtype |
 | V2-16-19 | Deferred／new terrain Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋Antigravity＋人間 | Phase最終監査／canonical count |
+
+### Track A: V2-18 Macro foundation and intent conformance（12、2026-07-22登録）
+
+| Task | 内容 | 主担当 | Effort | レビュー | リスク種別 |
+|---|---|---|---|---|---|
+| V2-18-01 | Diagnostic severity／production gate契約の正常化 | Claude Opus 4.8 | High | Codex Terra Extra High | diagnostic契約／GATING分類／golden化 |
+| V2-18-02 | Intent contribution／coverage診断（report-only） | Claude Sonnet 5 | High | Antigravity Gemini Pro | 診断metric追加／semantic・容器checksum区分の明文化 |
+| V2-18-03 | HARD preflight gate（評価器・consumer・mapReference実在） | Claude Opus 4.8 | High | Codex Terra Extra High | fail-closed admission／fixture digest整合 |
+| V2-18-04 | Target-driven validation framework＋EDGE evaluator | Claude Opus 4.8 | High | Codex Terra Extra High | validation framework契約／測定領域契約／決定性 |
+| V2-18-05 | 既存coastal metricの正当性修復 | Claude Sonnet 5 | High | Antigravity Gemini Pro | metric正当性／golden更新はADR承認範囲 |
+| V2-18-06 | 再利用可能constraint-map binding＋暫定coastal adapter | Claude Opus 4.8 | High | Codex Terra Extra High | secure decode／path traversal／digest／memory budget |
+| V2-18-07 | ConformanceTargetSet＋desired／actual分離 | Claude Opus 4.8 | XHigh | Codex Terra Extra High | conformance契約／Schema設計／residual意味論 |
+| V2-18-08 | Macro foundation契約ADR | Claude Opus 4.8 | XHigh | Codex Terra Extra High＋人間承認必須 | governance／composition role軸／60 kind対応表 |
+| V2-18-09 | Macro foundation production spine＋coastal統合 | Codex Terra Extra High | XHigh | Claude Opus 4.8 XHigh＋Antigravity（Acceptance確認） | production spine／field ownership／raster生成／checksum |
+| V2-18-10 | Surface foundation owner gateのfail-closed昇格 | Claude Sonnet 5 | High | Antigravity Gemini Pro＋人間承認必須 | production gate有効化／surface domain限定 |
+| V2-18-11 | Intent-conformance E2E portfolio | Claude Sonnet 5 | High | Antigravity Gemini Pro | E2E fixture／形状assertion回帰資産 |
+| V2-18-12 | Intent conformance Phase gate（full suite） | Codex Sol Max | Max | Claude Opus 4.8 XHigh＋Antigravity＋人間 | Phase最終監査／V2-15 stage gate解除判断 |
+
+V2-18はfail-closed化の前に必ずreport-only段階を先行させるPhaseであり、`V2-18-10`のgate有効化と`V2-18-08`のADRは人間承認なしに完了扱いにしない。`V2-18-09`完了まで、V2-15のproduction export／placement昇格系Task（wiring／vertical slice）はstage gateで待機する（[Task Index §18](task-index.md)、[監査](../audits/macro-foundation-conformance-audit-2026-07-22.md)）。
 
 ### Track A follow-up: V2-17 Paper placement evidence／promotion（7、2026-07-22登録）
 
