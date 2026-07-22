@@ -1,10 +1,10 @@
 # Implementation Roadmap v2
 
-> Status: v2の詳細設計とgate。V2-0〜V2-7、Track D `V2-9`、Track E `V2-10`は完了済みである（V2-6は`V2-6-19` Phase gateまで完了、`V2-6-16`／`17`無効化、[V2-6 Phase gate audit](audits/v2-6-phase-gate.md)；V2-7は[V2-7 Phase gate audit](audits/v2-7-phase-gate.md)）。Track Aの次は`V2-11-01`（Paper capability promotion）。Track C `V2-8-02`も並行可能。進捗の正本は [docs/roadmap.md](../roadmap.md) とする。
+> Status: v2の詳細設計とgate。完了履歴と現在の状態は[進捗の正本](../roadmap.md)に従う。2026-07-22の[全地形カタログ監査](../audits/terrain-catalog-full-audit-2026-07-22.md)により、既存5 Track制のまま`V2-14-03`、Track E続編`V2-15`／`V2-16`、Track A follow-up `V2-17`を登録した。`V2-15-01`〜`04`は完了し、[ADR 0036](../adr/0036-canonical-feature-identifier-disposition.md)のcanonical target projectionとmigrationを実装した。現在の次Taskは`V2-15-05`である（未着手）。
 
 ## 1. Roadmapの読み方
 
-このroadmapはV2-0〜V2-10の依存関係と親Phase gateを示す。日付や完了を約束せず、各Phaseは前提gateを満たすまで能力をsupportedとしない。実行単位は [Task Index](task-index.md)、運用規則は [Task Execution Guide](task-execution-guide.md)、モデル割当は [Model Assignment](model-assignment.md) を正本とする。現行Beta hardeningのrelease checklist未完了を消さない。`V2-6-16`／`V2-6-17`は無効化済み。V2-2 gateは [監査](audits/v2-2-phase-gate.md)、V2-3 gateは [Hydrology監査](audits/v2-3-phase-gate.md)、V2-4 gateは [Environment監査](audits/v2-4-phase-gate.md)、V2-5 gateは [Volume監査](audits/v2-5-phase-gate.md) により完了した。地形拡張の事実調査は [Gap監査](../audits/terrain-feature-gap-audit-2026-07-18.md) を参照する。
+このroadmapはV2-0〜V2-17の依存関係と親Phase gateを示す。日付や完了を約束せず、各Phaseは前提gateを満たすまで能力をsupportedとしない。実行単位は [Task Index](task-index.md)、運用規則は [Task Execution Guide](task-execution-guide.md)、モデル割当は [Model Assignment](model-assignment.md) を正本とする。現行Beta hardeningのrelease checklist未完了を消さない。`V2-6-16`／`V2-6-17`は無効化済み。現行地形inventoryは2026-07-22監査、2026-07-18 Gap監査は履歴資料として扱う。
 
 ```text
 Track A（コア地形）:
@@ -15,16 +15,22 @@ V2-0 Compatibility spine
   → V2-4 Geology / climate / ecology
   → V2-5 Sparse local volume
   → V2-6 Release 2 placement / hardening / capability catalog
-  → V2-9 Terrain foundation expansion
-  → V2-10 Deferred terrain families
+  → V2-11 Capability promotion → V2-12 V2 production path
+  → V2-17 Paper placement evidence / promotion（V2-15 / V2-16 gate後）
 
 Track B（画像忠実性、前提はV2-1のみ）:
 V2-7 Image fidelity: 抽出core → secure envelope → draft artifact/preview
   → 明示昇格 → height/zone抽出 → 多入力競合解決 / Phase gate
+  → V2-14 wiring follow-up → V2-14-03 current-state docs sync
 
 Track C（スケール、Task単位で前提宣言）:
 V2-8 Scale-up: scale契約 → 寸法policy統一 → LARGE予算 → coarse計画/hydrology
   → streaming/resume/部分再生成 → preview pyramid → export分割 → LARGE gate
+
+Track D／E（地形拡張）:
+V2-9 Terrain foundation → V2-10 Deferred terrain families
+  → V2-15 canonical registry / existing-generator public wiring
+  → V2-16 deferred / new terrain / composition
 ```
 
 Track間は依存を明示したTaskだけが待ち、それ以外は並行実行できる。同一ファイルの同時編集は禁止し、共有領域（`format.v2.release`等）を変更するTaskは直列にする。
@@ -112,7 +118,7 @@ V2-1 gateは完了した。`GenerationRequestV2`、3 roleのstrict binding、gra
 
 security／corruption testはmalformed PNG、format／sample mismatch、unknown label、invalid no-data、dimension／aspect mismatch、absolute／traversal、symlink、request内hardlink alias、TOCTOU、byte／pixel／decode／resident／artifact budget、future version、source／artifact／index checksum改変、hard conflict、cancel cleanupを拒否する。trusted ceilingはmap 32、source 1枚8 MiB／合計32 MiB、1枚4,000,000 pixel／合計16,000,000 pixel、decoded 1枚8 MiB／合計32 MiB、decoder working 32 MiB、artifact 64 MiB、resident 96 MiBで、Requestから拡張できない。1000×1000 manual fixture、whole／tile、seam、tile／thread順、locale／timezoneもAcceptance内で検証した。bundle atomic moveをcommit pointとし、move前のcancel／failureだけをcleanupする。V2-2の専用coast generator、Release 2、Paper配置は未実装である。
 
-## 5. V2-2〜V2-6のTask構造
+## 5. Phase Task構造
 
 詳細なScope、非Scope、変更面、test、D/M/S条件、Acceptance、停止条件は [Task Index](task-index.md) を正本とする。実行規則と短い共通プロンプトは [Task Execution Guide](task-execution-guide.md) を参照する。Taskを1個完了しても親Phaseは完了しない。
 
@@ -127,6 +133,13 @@ security／corruption testはmalformed PNG、format／sample mismatch、unknown 
 | V2-8 | 8 | scale契約→寸法policy統一→LARGE予算→coarse計画→streaming/resume→preview pyramid→export分割→gate | `V2-8-08` |
 | V2-9 | 14 | foundation contract→surface/coast/island/marine→surface-volume→macro/river graph→gate | `V2-9-14` |
 | V2-10 | 11 | glacial→karst→advanced marine/river contract→dry land/volume/island→SPRING/OXBOW slices→gate | `V2-10-09` |
+| V2-11 | 6 | Paper capability→dimension guard→docs/Schema→500/1000実測→dimension promotion | — |
+| V2-12 | 11 | governance→production path→migration→v1 drain→phase gate→follow-up | `V2-12-07` |
+| V2-13 | 6 | instrumentation→1024 route→offline/FAWE実測→条件付き最適化→slice較正 | —（人間承認） |
+| V2-14 | 3 | extract wiring→reference role→current-state docs sync | —（人間承認） |
+| V2-15 | 47 | inventory→canonical registry／dispatch spine→family別public wiring→gate | `V2-15-47` |
+| V2-16 | 19 | composition engine→preset／deferred／new terrain→gate | `V2-16-19` |
+| V2-17 | 7 | measurement harness→runtime別実機matrix→evidence-bound promotion→gate | `V2-17-07` |
 
 V2-7の設計正本は [image-constraint-maps.md](image-constraint-maps.md) と [ADR 0017](../adr/0017-deterministic-image-mask-extraction.md)、V2-8の設計正本は [scale-and-streaming.md](scale-and-streaming.md) と [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md) である。
 
@@ -261,4 +274,4 @@ TerrainIntentV2の最小record/Schema
 + v1 checksum不変test
 ```
 
-V2-0ではAzure Coastの5 featureをmodule／field diagnosticまでcompileし、残り10 scenarioもfallbackせずround-tripする。v1出力はquery adapterを含むgolden testで固定した。V2-1ではprecision mapをAI referenceから分離し、numeric decodeからfield sidecar、constraint reconciliation、diagnostic previewまでを縦に完成した。`V2-2-01`〜`V2-5-18`で各offline Phase gateを閉じた。`V2-6-01`〜`V2-6-13`でplacement safety、rollback／Undo／Recovery、provider path、cross-capability hardening、運用metricsを固定した。Track Aの次は`BLOCKED_EXTERNAL`の`V2-6-14`である。V2-9／V2-10は各Phase gateまで完了した（[V2-9 audit](audits/v2-9-phase-gate.md)、[V2-10 audit](audits/v2-10-phase-gate.md)）。
+V2-0ではAzure Coastの5 featureをmodule／field diagnosticまでcompileし、残り10 scenarioもfallbackせずround-tripする。v1出力はquery adapterを含むgolden testで固定した。V2-1ではprecision mapをAI referenceから分離し、numeric decodeからfield sidecar、constraint reconciliation、diagnostic previewまでを縦に完成した。`V2-2-01`〜`V2-5-18`で各offline Phase gateを閉じ、V2-6のplacement safety／RecoveryとV2-12のproduction pathも完了した。V2-9／V2-10は各Phase gateまで完了した（[V2-9 audit](audits/v2-9-phase-gate.md)、[V2-10 audit](audits/v2-10-phase-gate.md)）。`V2-14-03`でREADME current-stateを同期し、`V2-15-01`で全地形inventoryを現行HEADへ再照合、`V2-15-02`で[60 FeatureKindのcurrent-state projection](current-feature-state-machine-registry.md)をCI固定した。`V2-15-03`では[ADR 0036](../adr/0036-canonical-feature-identifier-disposition.md)が人間承認され、`V2-15-04`で[46-kind canonical target projection](canonical-feature-target-registry.md)と明示migrationを実装した。現在の次Taskは`V2-15-05`であり、主依存順は`V2-15`→`V2-16`→`V2-17`である。

@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.format.v2;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.nankotsu029.landformcraft.model.v2.CanonicalTerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.validation.StructuredDataValidationException;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,13 @@ class LandformV2DataCodecTest {
         assertInstanceOf(VersionedTerrainIntent.V1.class,
                 dispatcher.read(Path.of(
                         "src/main/resources/legacy/v1/fixtures/rocky-coast/terrain-intent.json")));
-        assertInstanceOf(VersionedTerrainIntent.V2.class, dispatcher.read(COASTAL));
+        assertInstanceOf(VersionedTerrainIntent.V2.class, dispatcher.readLegacy(
+                COASTAL, CanonicalTerrainIntentV2.FeatureProjection.LEGACY_V2));
+        assertThrows(IOException.class, () -> dispatcher.read(COASTAL));
+        assertThrows(IOException.class, () -> dispatcher.readLegacy(
+                COASTAL, CanonicalTerrainIntentV2.FeatureProjection.CANONICAL_V2));
+        assertInstanceOf(VersionedTerrainIntent.CanonicalV2.class, dispatcher.read(Path.of(
+                "examples/v2/catalog/meandering-river.terrain-intent-v2-canonical.json")));
 
         String v2 = Files.readString(COASTAL);
         assertThrows(IOException.class, () -> dispatcher.read(v2.replace("\"intentVersion\": 2", "\"intentVersion\": 3"), "future-v2"));

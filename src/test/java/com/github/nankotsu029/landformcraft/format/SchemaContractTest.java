@@ -99,6 +99,8 @@ class SchemaContractTest {
         var v2 = new com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec();
         v2.readGenerationRequest(Path.of("examples/v2/diagnostic/azure-coast.request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json"));
+        v2.readGenerationRequest(Path.of("examples/v2/diagnostic/coastal-fishing-map.request-v2.json"));
+        v2.readTerrainIntent(Path.of("examples/v2/diagnostic/coastal-fishing-map.terrain-intent-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/diagnostic/harbor-cove-64.request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/manual-constraint-island/request-v2.json"));
@@ -163,6 +165,8 @@ class SchemaContractTest {
                 "examples/v2/foundation/advanced-island-reef-catalog-contract-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.catalog.FeatureSupportCatalogCodecV2()
                 .read(Path.of("examples/v2/catalog/feature-support-catalog-v2.json"));
+        new com.github.nankotsu029.landformcraft.format.v2.CanonicalTerrainIntentCodecV2()
+                .read(Path.of("examples/v2/catalog/meandering-river.terrain-intent-v2-canonical.json"));
         v2.readTerrainIntent(Path.of("examples/v2/foundation/moraine-field-positive.terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/foundation/outwash-plain-positive.terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/foundation/permafrost-plain-profile.terrain-intent-v2.json"));

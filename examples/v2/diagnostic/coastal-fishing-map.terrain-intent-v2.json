@@ -1,0 +1,337 @@
+{
+  "intentVersion": 2,
+  "intentId": "coastal-fishing-map",
+  "theme": "400x400 continuous coastal fishing map: west casting beach, central low stone mole with deep inlet, east rocky cape; north land ~32%, south sea ~68%; no buildings",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "west-beach",
+      "kind": "SANDY_BEACH",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [
+          [0.03, 0.34],
+          [0.10, 0.38],
+          [0.18, 0.41],
+          [0.27, 0.38],
+          [0.36, 0.35]
+        ],
+        "interpolation": "CATMULL_ROM"
+      },
+      "parameters": {
+        "widthBlocks": { "min": 20, "max": 55 },
+        "shoreSlopeDegrees": { "min": 2, "max": 8 },
+        "nearshoreDepthBlocks": { "atDistance": 40, "target": 6 },
+        "foreshoreShare01": 0.62,
+        "endpointTaperBlocks": 56,
+        "landSide": "LEFT"
+      },
+      "priority": 10,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "coastal-fishing-map",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "central-breakwater",
+      "kind": "BREAKWATER_HARBOR",
+      "geometry": {
+        "type": "MULTI_SPLINE",
+        "paths": [
+          {
+            "id": "west-arm",
+            "startEndpointId": "west-landfall",
+            "endEndpointId": "west-opening",
+            "points": [
+              [0.38, 0.35],
+              [0.42, 0.44],
+              [0.45, 0.52],
+              [0.470, 0.575]
+            ]
+          },
+          {
+            "id": "east-arm",
+            "startEndpointId": "east-landfall",
+            "endEndpointId": "east-opening",
+            "points": [
+              [0.64, 0.38],
+              [0.60, 0.46],
+              [0.575, 0.53],
+              [0.555, 0.575]
+            ]
+          }
+        ],
+        "interpolation": "CATMULL_ROM"
+      },
+      "parameters": {
+        "crestWidthBlocks": 6,
+        "crestAboveWaterBlocks": 3,
+        "outerDepthBlocks": 12,
+        "crestProfile": "FLAT",
+        "foundationProfile": "LINEAR_SIDE_SLOPE",
+        "foundationSideSlopeRunPerRise": 1.5,
+        "opening": {
+          "betweenEndpointIds": ["west-opening", "east-opening"],
+          "widthBlocks": 28,
+          "measurement": "CLEAR_EDGE_TO_EDGE"
+        },
+        "innerSide": "NORTH"
+      },
+      "priority": 20,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "coastal-fishing-map",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "harbor-basin",
+      "kind": "HARBOR_BASIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [0.38, 0.35],
+            [0.64, 0.38],
+            [0.555, 0.575],
+            [0.470, 0.575],
+            [0.38, 0.35]
+          ]
+        ]
+      },
+      "parameters": {
+        "waterDepthBlocks": { "min": 7, "max": 11 },
+        "entranceEndpointIds": ["west-opening", "east-opening"],
+        "entranceCorridorLengthBlocks": 28,
+        "bottomProfile": "EDGE_TO_CENTER_LINEAR",
+        "profileTransitionBlocks": 10
+      },
+      "priority": 15,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "coastal-fishing-map",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "east-cape",
+      "kind": "ROCKY_CAPE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [0.66, 0.24],
+            [0.78, 0.18],
+            [0.90, 0.20],
+            [0.98, 0.32],
+            [0.96, 0.52],
+            [0.86, 0.58],
+            [0.74, 0.54],
+            [0.66, 0.40],
+            [0.66, 0.24]
+          ]
+        ]
+      },
+      "parameters": {
+        "cliffHeightBlocks": { "min": 6, "max": 10 },
+        "localReliefAboveSeaBlocks": { "min": 12, "max": 16 },
+        "cliffBandWidthBlocks": { "min": 6, "max": 10 },
+        "seaStackCount": { "min": 4, "max": 7 },
+        "seaStackRadiusBlocks": { "min": 2, "max": 4 },
+        "seaStackOffshoreDistanceBlocks": { "min": 6, "max": 12 },
+        "channelCount": { "min": 2, "max": 3 },
+        "channelWidthBlocks": { "min": 3, "max": 6 },
+        "channelLengthBlocks": { "min": 12, "max": 20 },
+        "channelDepthBlocks": { "min": 2, "max": 4 },
+        "rockExposure01": { "min": 0.70, "max": 0.94 },
+        "seawardSide": "SOUTH",
+        "capeMode": "TWO_POINT_FIVE_D_ONLY"
+      },
+      "priority": 10,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "coastal-fishing-map",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "backshore-plains",
+      "kind": "BACKSHORE_PLAINS",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [0.02, 0.02],
+            [0.98, 0.02],
+            [0.96, 0.18],
+            [0.78, 0.16],
+            [0.64, 0.22],
+            [0.40, 0.24],
+            [0.18, 0.26],
+            [0.04, 0.22],
+            [0.02, 0.02]
+          ]
+        ]
+      },
+      "parameters": {
+        "elevationAboveWaterBlocks": { "min": 4, "max": 12 },
+        "grassCover01": { "min": 0.52, "max": 0.78 }
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "coastal-fishing-map",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "breakwater-encloses-basin",
+      "kind": "ENCLOSES",
+      "from": "feature:central-breakwater",
+      "to": "feature:harbor-basin",
+      "strength": "HARD"
+    },
+    {
+      "id": "basin-overlaps-beach",
+      "kind": "OVERLAPS",
+      "from": "feature:harbor-basin",
+      "to": "feature:west-beach",
+      "strength": "SOFT",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 28
+      }
+    },
+    {
+      "id": "harbor-adjoins-beach",
+      "kind": "ADJACENT_TO",
+      "from": "feature:central-breakwater",
+      "to": "feature:west-beach",
+      "strength": "HARD",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 28
+      }
+    },
+    {
+      "id": "cape-adjoins-harbor",
+      "kind": "ADJACENT_TO",
+      "from": "feature:east-cape",
+      "to": "feature:central-breakwater",
+      "strength": "SOFT",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 32
+      }
+    },
+    {
+      "id": "cape-adjoins-basin",
+      "kind": "ADJACENT_TO",
+      "from": "feature:east-cape",
+      "to": "feature:harbor-basin",
+      "strength": "SOFT",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 24
+      }
+    },
+    {
+      "id": "backshore-adjoins-beach",
+      "kind": "ADJACENT_TO",
+      "from": "feature:backshore-plains",
+      "to": "feature:west-beach",
+      "strength": "HARD"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "south-is-sea",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "SOUTH",
+        "classification": "SEA",
+        "minimumShare01": 0.9
+      }
+    },
+    {
+      "id": "north-is-land",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "NORTH",
+        "classification": "LAND",
+        "minimumShare01": 0.85
+      }
+    },
+    {
+      "id": "beach-width",
+      "strength": "HARD",
+      "kind": "METRIC_RANGE",
+      "subject": "feature:west-beach",
+      "metric": "BEACH_WIDTH_BLOCKS_P50",
+      "range": { "min": 20, "max": 55 },
+      "tolerance": 2
+    },
+    {
+      "id": "cape-irregularity",
+      "strength": "SOFT",
+      "kind": "METRIC_RANGE",
+      "subject": "feature:east-cape",
+      "metric": "COASTLINE_TURNING_PER_100_BLOCKS",
+      "range": { "min": 1.8, "max": 4.2 },
+      "tolerance": 0.1,
+      "weight": 0.7
+    }
+  ],
+  "environment": {
+    "geologyPreset": "MIXED_SEDIMENT_AND_ANDESITE",
+    "climatePreset": "TEMPERATE_MARITIME",
+    "ecologyPreset": "SPARSE_COASTAL"
+  },
+  "mapReferences": [
+    {
+      "id": "coast-mask-binding",
+      "sourceId": "constraint-source:coast-mask",
+      "role": "LAND_WATER_MASK",
+      "artifactId": "constraint:land-water:sha256-0000000000000000000000000000000000000000000000000000000000000000",
+      "strength": "HARD",
+      "sampling": "NEAREST",
+      "toleranceBlocks": 0
+    }
+  ],
+  "structures": [
+    {
+      "id": "coastal-footpath",
+      "kind": "PATH",
+      "count": 1,
+      "preferredFeatureId": "backshore-plains"
+    }
+  ],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "coastal-fishing-map",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

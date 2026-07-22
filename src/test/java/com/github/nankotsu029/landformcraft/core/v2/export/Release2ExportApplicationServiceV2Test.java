@@ -7,11 +7,13 @@ import com.github.nankotsu029.landformcraft.core.v2.design.TerrainDesignApplicat
 import com.github.nankotsu029.landformcraft.core.v2.placement.PlacementPlanCompilerV2;
 import com.github.nankotsu029.landformcraft.core.v2.placement.apply.VerifiedReleaseCanonicalBlockSourceV2;
 import com.github.nankotsu029.landformcraft.format.v2.design.DesignArtifactsV2;
+import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.release.ReleasePlacementEligibilityVerifierV2;
 import com.github.nankotsu029.landformcraft.format.v2.release.ReleaseSurfaceVerifierV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.HardLandWaterSourceV2;
 import com.github.nankotsu029.landformcraft.model.v2.design.DesignCapabilityV2;
 import com.github.nankotsu029.landformcraft.model.v2.design.DesignPathKindV2;
+import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.placement.PlacementPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleClassV2;
 import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleProfileV2;
@@ -185,6 +187,43 @@ class Release2ExportApplicationServiceV2Test {
 
         IOException failure = assertThrows(IOException.class, () -> service().exportNow(request));
         assertTrue(failure.getMessage().contains("working set exceeds its budget"), failure.getMessage());
+    }
+
+    @Test
+    void unsupportedFeatureIsRejectedByDispatchBeforeWorkArtifacts(@TempDir Path root) throws Exception {
+        LandformV2DataCodec codec = new LandformV2DataCodec();
+        TerrainIntentV2 intent = codec.readTerrainIntent(INTENT);
+        List<TerrainIntentV2.Feature> features = intent.features().stream().map(feature -> {
+            if (feature.kind() != TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS) {
+                return feature;
+            }
+            return new TerrainIntentV2.Feature(
+                    feature.id(), TerrainIntentV2.FeatureKind.PLAIN, feature.geometry(),
+                    new TerrainIntentV2.PlainParameters(
+                            new TerrainIntentV2.IntRange(4, 12),
+                            new TerrainIntentV2.IntRange(1, 2),
+                            new TerrainIntentV2.IntRange(1, 4)),
+                    feature.priority(), feature.provenance());
+        }).toList();
+        TerrainIntentV2 unsupported = new TerrainIntentV2(
+                intent.intentVersion(), intent.intentId(), intent.theme(), intent.coordinateSystem(),
+                features, intent.relations(), intent.constraints(), intent.environment(), intent.mapReferences(),
+                intent.structures(), intent.provenance());
+        Path intentPath = root.resolve("unsupported-intent.json");
+        codec.writeTerrainIntent(intentPath, unsupported);
+        Path workRoot = root.resolve("work");
+        Path exportsRoot = root.resolve("exports");
+
+        IOException failure = assertThrows(IOException.class, () -> service().exportNow(
+                new Release2ExportRequestV2(
+                        REQUEST, intentPath, workRoot, exportsRoot, "unsupported", BASELINE)));
+
+        assertTrue(failure.getMessage().contains("no production dispatch route: PLAIN"), failure.getMessage());
+        assertTrue(Files.isDirectory(workRoot));
+        try (var entries = Files.list(workRoot)) {
+            assertTrue(entries.findAny().isEmpty(), "dispatch rejection must precede work artifacts");
+        }
+        assertFalse(Files.exists(exportsRoot));
     }
 
     private static Release2ExportApplicationServiceV2 service() {

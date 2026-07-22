@@ -37,4 +37,4 @@ environment/previews/index.json
 environment/previews/<fixed 10 PNG names>
 ```
 
-`requiredCapabilities[]`は`["environment-fields","hydrology-plan","surface-2_5d"]`だけである。`manifest.json.artifacts[]`にはmanifest以外の全fileを個別に列挙する。palette／material／snow／ecology／preview indexはsemantic checksumとversionを拘束するため、任意のfileを追加・削除・置換できない。実行可能なfixtureとtampering例は`ReleaseEnvironmentPublisherVerifierV2Test`にある。`V2-4-15`統合監査を通過したoffline `SUPPORTED` layoutであるが、CLI／Paper applyやRelease format 1の例ではない。
+`requiredCapabilities[]`は`["environment-fields","hydrology-plan","surface-2_5d"]`だけである。`manifest.json.artifacts[]`にはmanifest以外の全fileを個別に列挙する。palette／material／snow／ecology／preview indexはsemantic checksumとversionを拘束するため、任意のfileを追加・削除・置換できない。実行可能なfixtureとtampering例は`ReleaseEnvironmentPublisherVerifierV2Test`にある。`V2-15-07`以降、coastal production feature向けのshared Application Serviceは`Release2EnvironmentExportApplicationServiceV2`（`EnvironmentFieldsExportPipelineV2`）であり、hydrology dependencyを同一Releaseでstrict verifyする。個別environment Feature leafの公開配線、CLI既定切替、Paper applyは含まない。`V2-4-15`統合監査を通過したoffline `SUPPORTED` layoutであるが、Release format 1の例ではない。

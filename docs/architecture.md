@@ -240,9 +240,9 @@ V2-0／V2-1／V2-2／V2-3の現行実装は次の分離経路です。
 
 ```text
 terrain-intent JSON
-  → TerrainIntentVersionDispatcher（schemaVersion:1 / intentVersion:2のexact dispatch）
-  → LandformV2DataCodec（strict Schema / fixed-point normalization / canonical JSON）
-  → TerrainIntentV2
+  → TerrainIntentVersionDispatcher（schemaVersion:1 / intentVersion:2＋explicit featureProjection）
+  → LEGACY_V2専用reader / CANONICAL_V2 strict codec（discriminator欠落を推測しない）
+  → TerrainIntentV2 compatibility model / CanonicalTerrainIntentV2 authoring model
   → DiagnosticBlueprintCompilerV2
   → compile-time BuiltInLandformModuleCatalogV2 / named seed / budget preflight
   → descriptor-only WorldBlueprintV2 + machine-readable diagnostic issues
@@ -269,6 +269,22 @@ SandyBeachPlanV2 + CoastalRasterKernelV2
 V2-6-21では上記offline境界を維持したまま、strict verified Release 2 canonical sourceを専用Paper application facadeへ接続しました。public経路はv1と分離した`/lfc r2`で、effect envelope、reservation-bound confirmation、snapshot-all、containment、canonical apply、bounded settle、effect envelope全体のexact verify、reverse rollback、operation-bound Undo／Recoveryを順序固定します。Bukkit world accessはPaper Scheduler、mutationはWorldEdit public API adapter、CPU／I/O orchestrationはbounded workerで所有し、shutdown時に新規受付を停止します。これは既存v1 codec／generator／Release 1／placement／Undoの意味を変更せず、実機smoke完了前のためRelease 2 Paper capabilityを`SUPPORTED`へ昇格しません。
 
 V2-12-02では、これまでintegration fixtureにしか存在しなかったv2のexport orchestrationを`core.v2.export`のApplication Serviceへ昇格しました。`Release2ExportApplicationServiceV2`が唯一の正式export APIで、sealed `GenerationRequestV2`とdesign stageの`TerrainIntentV2`だけを入力に、Blueprint compile → coastal generation／transition composition → constraint field sidecar → field-only validation → 固定11 preview → `TilePlanV2`幾何のSponge v3 tile → `ReleaseSurfacePublisherV2`（staging → strict read-back → atomic publish）を順に実行し、publish後の`ReleaseSurfaceVerifierV2`（directory／ZIP manifest一致）と`ReleasePlacementEligibilityVerifierV2`を通過した結果だけをsealします。tile幾何が`TilePlanV2`正本のため、publish済みReleaseは`VerifiedReleaseCanonicalBlockSourceV2`でそのまま開いてplacement planをcompileできます。coastal featureが所有しないcellのbaselineは推測せず呼び出し側が`SurfaceBaselineV2`で宣言し、`ExportBudgetV2`がtile数とdense descriptor working setをartifact生成前にadmitします。CLI／Paper command routingとworld mutationは含みません。
+
+V2-15-05では、このApplication Serviceのpipeline選択をcompile-time-only
+`ProductionDispatchRegistryV2`へ分離しました。registryはV2-15-02 current-state projectionとmodule bindingを
+照合し、generator／validator／preview／export handlerが完全なproduction chainだけを選択します。現行feature
+routeはcoastal 4件と`surface-2_5d`だけで、`BACKSHORE_PLAINS`は既存Intentを壊さないcontract-only入力です。
+V2-15-06は同じcoastal feature setへ`hydrology-plan` shared artifact overlay
+（`Release2HydrologyExportApplicationServiceV2`／`HydrologyPlanExportPipelineV2`）をcapability明示選択で追加し、
+empty-graph routingとgraph bindingのstrict read-backをproduction経路へ接続しました。V2-15-07はさらに
+`environment-fields` shared overlay（`Release2EnvironmentExportApplicationServiceV2`／
+`EnvironmentFieldsExportPipelineV2`）を追加し、geology／climate／snow／material／palette／ecologyと
+hydrology dependencyを同一Releaseでstrict verifyします。V2-15-08は
+`Release2SparseVolumeExportApplicationServiceV2`／`SparseVolumeExportPipelineV2`を追加し、既存environment
+chainへbounded SDF、ordinal固定ordered CSG、AABB index、volume validation、streaming 3D tileを重ねて
+`sparse-volume` exact capability prefixをstrict verifyします。個別hydrology／environment／volume Featureの昇格、
+unknown／partial／duplicate route、未接続kind、複数pipelineの暗黙合成はwork artifact生成前に拒否します。
+Schema、Release capability名、support level、Paper world mutationはこのdispatch spineから変更しません。
 
 V2-12-03〜V2-12-05では、このApplication ServiceをBukkit非依存の`core.v2.command` router経由でCLI／Paperへ接続し、request authoring、非同期job／candidate／確認付きexport、placement運用verbをv2 backendへ揃えたうえで既定routingをv2へ切替えました。CLIの`lfc <verb>`とPaperの`/lfc <verb>`は明示形`v2 <verb>`と同じrouterへ入り、v1は`lfc --v1 <verb>`／`/lfc v1 <verb>`からだけ旧adapterへdispatchされます。これはv1 Schema、generator、Release format 1、placement／Undoの意味を変更せず、version dispatchの入口だけを変更する境界です。
 

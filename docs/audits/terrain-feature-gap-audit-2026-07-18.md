@@ -1,6 +1,6 @@
 # 2026-07-18 地形Feature Gap監査
 
-> Status: 調査記録。branch `fix/all`、HEAD `5d2df6c`、2026-07-18の未コミット作業ツリーを対象とする。開始時点でtaxonomy、roadmap、Task Index、V2-4〜V2-6実装を含む既存差分があったため、全差分を保護対象としてHEADへ戻さず調査した。進捗の正本は [roadmap](../roadmap.md)、Task Scopeの正本は [Task Index](../design-v2/task-index.md) である。
+> Status: **履歴資料**（2026-07-18時点のinventory。当時は29 FeatureKind／Paper apply 0）。現行の全地形inventoryと公開経路計画は [terrain-catalog-full-audit-2026-07-22.md](terrain-catalog-full-audit-2026-07-22.md) を正本とする。調査対象は branch `fix/all`、HEAD `5d2df6c`、2026-07-18の未コミット作業ツリー。進捗の正本は [roadmap](../roadmap.md)、Task Scopeの正本は [Task Index](../design-v2/task-index.md) である。
 
 ## 1. 調査方法と数え方
 

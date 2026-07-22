@@ -49,20 +49,52 @@ import java.util.Objects;
  * <p>Tile geometry comes from {@link TilePlanV2}, so a published Release opens directly through the
  * V2-6-20 verified canonical block source without any re-tiling.</p>
  */
-final class CoastalSurfaceExportPipelineV2 {
+final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2 {
+    static final String PIPELINE_ID = "v2.production.surface-2_5d.coastal";
+    static final String GENERATOR_HANDLER_ID = "v2.coast.surface-generator";
+    static final String VALIDATOR_HANDLER_ID = "v2.coast.field-validator";
+    static final String PREVIEW_HANDLER_ID = "v2.coast.diagnostic-preview";
+    static final String EXPORT_HANDLER_ID = "v2.release.surface-2_5d-export";
+    private static final PipelineDescriptor DESCRIPTOR = new PipelineDescriptor(
+            PIPELINE_ID,
+            new HandlerSet(
+                    GENERATOR_HANDLER_ID,
+                    VALIDATOR_HANDLER_ID,
+                    PREVIEW_HANDLER_ID,
+                    EXPORT_HANDLER_ID),
+            List.of(
+                    TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
+                    TerrainIntentV2.FeatureKind.HARBOR_BASIN,
+                    TerrainIntentV2.FeatureKind.ROCKY_CAPE,
+                    TerrainIntentV2.FeatureKind.SANDY_BEACH),
+            List.of(TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS),
+            List.of("surface-2_5d"));
+
     private final LandformV2DataCodec data = new LandformV2DataCodec();
     private final ConstraintFieldIndexCodecV2 indexCodec = new ConstraintFieldIndexCodecV2();
 
-    record GeneratedSurfaceV2(
-            SurfaceReleaseSourceV2 source,
-            WorldBlueprintV2 blueprint,
-            CoastalValidationReportV2 report,
-            CoastalPreviewIndexV2 previews,
-            TilePlanV2 tilePlan
-    ) {
+    @Override
+    public PipelineDescriptor descriptor() {
+        return DESCRIPTOR;
     }
 
-    GeneratedSurfaceV2 generate(
+    @Override
+    public GeneratedSurface generate(
+            GenerationRequestV2 request,
+            TerrainIntentV2 draftIntent,
+            SurfaceBaselineV2 baseline,
+            Path workRoot,
+            ExportBudgetV2 budget,
+            CancellationToken token
+    ) throws IOException {
+        return generateWithFields(request, draftIntent, baseline, workRoot, budget, token).surface();
+    }
+
+    /**
+     * Same coastal generation as {@link #generate}, also retaining the release-local fields so a
+     * hydrology overlay can sample provisional surface height without regenerating the coast.
+     */
+    GeneratedCoastalSurface generateWithFields(
             GenerationRequestV2 request,
             TerrainIntentV2 draftIntent,
             SurfaceBaselineV2 baseline,
@@ -148,7 +180,14 @@ final class CoastalSurfaceExportPipelineV2 {
         SurfaceReleaseSourceV2 source = new SurfaceReleaseSourceV2(
                 requestPath, intentPath, blueprintPath, indexPath, constraintRoot,
                 validationPath, previewRoot.resolve("index.json"), previewRoot, tiles);
-        return new GeneratedSurfaceV2(source, blueprint, report, previews, tilePlan);
+        return new GeneratedCoastalSurface(new GeneratedSurface(source, blueprint), fields);
+    }
+
+    record GeneratedCoastalSurface(GeneratedSurface surface, CoastalSurfaceFieldsV2 fields) {
+        GeneratedCoastalSurface {
+            Objects.requireNonNull(surface, "surface");
+            Objects.requireNonNull(fields, "fields");
+        }
     }
 
     private WorldBlueprintV2 compile(

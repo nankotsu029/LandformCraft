@@ -33,14 +33,14 @@ import java.util.concurrent.CompletableFuture;
 public final class Release2ExportApplicationServiceV2 {
     private final GenerationExecutors executors;
     private final LandformV2DataCodec codec;
-    private final CoastalSurfaceExportPipelineV2 pipeline;
+    private final ProductionDispatchRegistryV2 dispatchRegistry;
     private final ReleaseSurfacePublisherV2 publisher;
     private final ReleaseSurfaceVerifierV2 verifier;
     private final ReleasePlacementEligibilityVerifierV2 eligibilityVerifier;
 
     public Release2ExportApplicationServiceV2(GenerationExecutors executors) {
         this(executors, new ReleaseSurfacePublisherV2(), new ReleaseSurfaceVerifierV2(),
-                new ReleasePlacementEligibilityVerifierV2());
+                new ReleasePlacementEligibilityVerifierV2(), ProductionDispatchRegistryV2.builtIn());
     }
 
     public Release2ExportApplicationServiceV2(
@@ -49,9 +49,19 @@ public final class Release2ExportApplicationServiceV2 {
             ReleaseSurfaceVerifierV2 verifier,
             ReleasePlacementEligibilityVerifierV2 eligibilityVerifier
     ) {
+        this(executors, publisher, verifier, eligibilityVerifier, ProductionDispatchRegistryV2.builtIn());
+    }
+
+    Release2ExportApplicationServiceV2(
+            GenerationExecutors executors,
+            ReleaseSurfacePublisherV2 publisher,
+            ReleaseSurfaceVerifierV2 verifier,
+            ReleasePlacementEligibilityVerifierV2 eligibilityVerifier,
+            ProductionDispatchRegistryV2 dispatchRegistry
+    ) {
         this.executors = Objects.requireNonNull(executors, "executors");
         this.codec = new LandformV2DataCodec();
-        this.pipeline = new CoastalSurfaceExportPipelineV2();
+        this.dispatchRegistry = Objects.requireNonNull(dispatchRegistry, "dispatchRegistry");
         this.publisher = Objects.requireNonNull(publisher, "publisher");
         this.verifier = Objects.requireNonNull(verifier, "verifier");
         this.eligibilityVerifier = Objects.requireNonNull(eligibilityVerifier, "eligibilityVerifier");
@@ -82,7 +92,13 @@ public final class Release2ExportApplicationServiceV2 {
 
         GenerationRequestV2 generationRequest = codec.readGenerationRequest(request.generationRequest());
         TerrainIntentV2 intent = codec.readTerrainIntent(request.terrainIntent());
-        CoastalSurfaceExportPipelineV2.GeneratedSurfaceV2 generated = pipeline.generate(
+        ProductionDispatchRegistryV2.DispatchSelection dispatch;
+        try {
+            dispatch = dispatchRegistry.select(intent);
+        } catch (IllegalArgumentException exception) {
+            throw new IOException("production dispatch rejected terrain intent: " + exception.getMessage(), exception);
+        }
+        ProductionExportPipelineV2.GeneratedSurface generated = dispatch.pipeline().generate(
                 generationRequest, intent, request.baseline(), request.workRoot(), request.budget(), token);
 
         SurfaceReleaseSourceV2 source = generated.source();
@@ -90,6 +106,9 @@ public final class Release2ExportApplicationServiceV2 {
                 request.exportsRoot(), request.releaseId(), source, request.createZip(), token);
 
         ReleaseCoreVerificationV2 directory = verifier.verify(published.releaseDirectory(), token);
+        if (!directory.manifest().requiredCapabilities().equals(dispatch.plan().requiredCapabilities())) {
+            throw new IOException("published Release 2 capability set differs from production dispatch plan");
+        }
         if (published.zip().isPresent()) {
             ReleaseCoreVerificationV2 zip = verifier.verify(published.zip().get(), token);
             if (!directory.manifest().equals(zip.manifest())) {

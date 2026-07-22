@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Asynchronous v2 export lifecycle (V2-12-09).
@@ -39,6 +40,7 @@ public final class ExportJobServiceV2 {
     private final GenerationExecutors executors;
     private final Clock clock;
     private final Map<UUID, RunningJob> running = new ConcurrentHashMap<>();
+    private final Object stateTransitionLock = new Object();
 
     public ExportJobServiceV2(GenerationExecutors executors, ExportJobStoreV2 store, Clock clock) {
         this.executors = Objects.requireNonNull(executors, "executors");
@@ -71,6 +73,8 @@ public final class ExportJobServiceV2 {
         AtomicBoolean cancelled = new AtomicBoolean();
         CancellationToken token = cancelled::get;
         Release2ExportRequestV2 request = submission.toExportRequest(token);
+        RunningJob runningJob = new RunningJob(cancelled);
+        running.put(jobId, runningJob);
         CompletableFuture<Release2ExportResultV2> future = executors.supplyIo(() -> {
             try {
                 transition(jobId, ExportJobStateV2.RUNNING, 100_000, "generating and publishing");
@@ -82,8 +86,9 @@ public final class ExportJobServiceV2 {
                 throw new UncheckedIOException(exception);
             }
         });
+        runningJob.bind(future);
         future.whenComplete((result, failure) -> {
-            running.remove(jobId);
+            running.remove(jobId, runningJob);
             if (failure == null) {
                 return;
             }
@@ -94,7 +99,6 @@ public final class ExportJobServiceV2 {
                 settleFailed(jobId, failure);
             }
         });
-        running.put(jobId, new RunningJob(cancelled, future));
         return queued;
     }
 
@@ -109,19 +113,25 @@ public final class ExportJobServiceV2 {
      * {@code job cancel} reports the state instead of inventing a transition.
      */
     public ExportJobSnapshotV2 cancel(String jobId) throws IOException {
-        ExportJobSnapshotV2 current = status(jobId);
-        if (current.state().terminal()) {
-            return current;
+        RunningJob job;
+        ExportJobSnapshotV2 cancelledSnapshot;
+        synchronized (stateTransitionLock) {
+            ExportJobSnapshotV2 current = status(jobId);
+            if (current.state().terminal()) {
+                return current;
+            }
+            job = running.get(current.jobUuid());
+            if (job != null) {
+                job.requestCancellation();
+            }
+            cancelledSnapshot = current.transitionedTo(
+                    ExportJobStateV2.CANCELLED, current.progressMillionths(), clock.instant(),
+                    "cancelled by operator; no Release was published");
+            store.save(cancelledSnapshot);
         }
-        RunningJob job = running.get(current.jobUuid());
         if (job != null) {
-            job.cancelled().set(true);
-            job.future().cancel(true);
+            job.interrupt();
         }
-        ExportJobSnapshotV2 cancelledSnapshot = current.transitionedTo(
-                ExportJobStateV2.CANCELLED, current.progressMillionths(), clock.instant(),
-                "cancelled by operator; no Release was published");
-        store.save(cancelledSnapshot);
         return cancelledSnapshot;
     }
 
@@ -139,40 +149,46 @@ public final class ExportJobServiceV2 {
     }
 
     private void transition(UUID jobId, ExportJobStateV2 next, int progress, String message) {
-        try {
-            Optional<ExportJobSnapshotV2> current = store.find(jobId.toString());
-            if (current.isEmpty() || current.get().state().terminal()) {
-                // Cancelled between transitions: the terminal state wins and the worker unwinds.
-                return;
+        synchronized (stateTransitionLock) {
+            try {
+                Optional<ExportJobSnapshotV2> current = store.find(jobId.toString());
+                if (current.isEmpty() || current.get().state().terminal()) {
+                    // Cancelled between transitions: the terminal state wins and the worker unwinds.
+                    return;
+                }
+                store.save(current.get().transitionedTo(next, progress, clock.instant(), message));
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
             }
-            store.save(current.get().transitionedTo(next, progress, clock.instant(), message));
-        } catch (IOException exception) {
-            throw new UncheckedIOException(exception);
         }
     }
 
     private void settleCancelled(UUID jobId) {
-        try {
-            Optional<ExportJobSnapshotV2> current = store.find(jobId.toString());
-            if (current.isPresent() && !current.get().state().terminal()) {
-                store.save(current.get().transitionedTo(ExportJobStateV2.CANCELLED,
-                        current.get().progressMillionths(), clock.instant(),
-                        "cancelled by operator; no Release was published"));
+        synchronized (stateTransitionLock) {
+            try {
+                Optional<ExportJobSnapshotV2> current = store.find(jobId.toString());
+                if (current.isPresent() && !current.get().state().terminal()) {
+                    store.save(current.get().transitionedTo(ExportJobStateV2.CANCELLED,
+                            current.get().progressMillionths(), clock.instant(),
+                            "cancelled by operator; no Release was published"));
+                }
+            } catch (IOException ignored) {
+                // The cancel path already recorded the terminal state; a lost race is not a new failure.
             }
-        } catch (IOException ignored) {
-            // The cancel path already recorded the terminal state; a lost race is not a new failure.
         }
     }
 
     private void settleFailed(UUID jobId, Throwable failure) {
-        try {
-            Optional<ExportJobSnapshotV2> current = store.find(jobId.toString());
-            if (current.isPresent() && !current.get().state().terminal()) {
-                store.save(current.get().transitionedTo(ExportJobStateV2.FAILED,
-                        current.get().progressMillionths(), clock.instant(), safeMessage(failure)));
+        synchronized (stateTransitionLock) {
+            try {
+                Optional<ExportJobSnapshotV2> current = store.find(jobId.toString());
+                if (current.isPresent() && !current.get().state().terminal()) {
+                    store.save(current.get().transitionedTo(ExportJobStateV2.FAILED,
+                            current.get().progressMillionths(), clock.instant(), safeMessage(failure)));
+                }
+            } catch (IOException ignored) {
+                // Nothing more can be recorded; the job stays in its last durable state.
             }
-        } catch (IOException ignored) {
-            // Nothing more can be recorded; the job stays in its last durable state.
         }
     }
 
@@ -189,6 +205,33 @@ public final class ExportJobServiceV2 {
                 ? text.substring(0, ExportJobSnapshotV2.MAX_MESSAGE_LENGTH) : text;
     }
 
-    private record RunningJob(AtomicBoolean cancelled, CompletableFuture<Release2ExportResultV2> future) {
+    private static final class RunningJob {
+        private final AtomicBoolean cancelled;
+        private final AtomicReference<CompletableFuture<Release2ExportResultV2>> future =
+                new AtomicReference<>();
+
+        private RunningJob(AtomicBoolean cancelled) {
+            this.cancelled = Objects.requireNonNull(cancelled, "cancelled");
+        }
+
+        private void bind(CompletableFuture<Release2ExportResultV2> accepted) {
+            if (!future.compareAndSet(null, Objects.requireNonNull(accepted, "accepted"))) {
+                throw new IllegalStateException("v2 export job Future was already bound");
+            }
+            if (cancelled.get()) {
+                accepted.cancel(true);
+            }
+        }
+
+        private void requestCancellation() {
+            cancelled.set(true);
+        }
+
+        private void interrupt() {
+            CompletableFuture<Release2ExportResultV2> accepted = future.get();
+            if (accepted != null) {
+                accepted.cancel(true);
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 # TerrainIntent v2
 
-> Status: V2-0〜V2-4のPhase gateを完了した。V2-4 Blueprint compilerは既存`environment.climatePreset`／`ecologyPreset`をclosed built-in catalogとして明示解決し、欠落／unknown presetをfallbackせず拒否する。TerrainIntent v2 Schemaのfield形状と現行v1 Schema／実装はV2-4-15で変更していない。Track Aの次は`V2-5-01`であり、feature contractの導入順は [Task Index](task-index.md) を参照する。
+> Status: V2-15-04でADR 0036の`CANONICAL_V2` authoring projectionを追加した。historic `schemas/terrain-intent-v2.schema.json`／`TerrainIntentV2`は`LEGACY_V2` compatibility readerとして凍結し、新規Schema／model／codecを並設する。V2-15-05は既存`LEGACY_V2` coastal production経路の選択をregistry-driven spineへ変更した。V2-15-06〜08は`hydrology-plan`／`environment-fields`／`sparse-volume` shared artifactのproduction Application Service／pipelineを並設し、exact capability dependencyを同一Releaseでstrict verifyするが、個別hydrology／environment／volume Feature leafとPaper能力は未接続である。次Taskは`V2-15-09`である。
 
 ## 1. 目的
 
@@ -63,6 +63,25 @@ TerrainIntentV2
 ```
 
 `intentVersion` はTerrainIntent意味契約のversionであり、generator versionやRelease format versionではない。`features`、`relations`、`constraints` はIDを含め、配列順を意味へ使わない。canonicalization時はIDで安定順序化する。
+
+### 2.1 Feature projection discriminator（V2-15-04）
+
+同じ`intentVersion: 2`に二つの明示projectionがある。historic文書は外部selector
+`LEGACY_V2`を指定した専用readerだけで読み、`featureProjection`欠落からlegacyを推測しない。
+新規authoring文書は`schemas/terrain-intent-v2-canonical.schema.json`とtop-level
+`featureProjection: CANONICAL_V2`を必須とする。generic dispatcherはこのdiscriminatorがない
+v2文書を拒否する。
+
+canonical projectionは46 top-level kindに限定し、旧14値を7 parent discriminator行と6 typed
+child tokenへ写像する。移行由来elementの`legacySeedBinding`は旧kind、derivation version、seed
+namespace、module ID／version、generator versionを保持し、canonical JSONとsemantic checksumへ
+参加する。詳細な機械projectionは[Canonical feature target registry](canonical-feature-target-registry.md)、
+互換fixture対は[examples/v2/catalog](../../examples/v2/catalog/README.md)を参照する。
+
+V2-15-05の`production-dispatch-registry-v1`はSchema projectionを推測しない。現行production
+Application Serviceがstrict legacy readerで読んだIntentについて、current-state registry上のcoastal
+4 kindだけを完全なhandler chainへdispatchする。canonical parent／childをgeneratorへ接続する作業は
+対応するV2-15 leaf Taskで行い、本Taskからは昇格しない。
 
 ## 3. Geometry
 

@@ -4,7 +4,7 @@
 
 `V2-12-02`のproduction export経路（`core.v2.export`）には次の既知の境界がある。いずれも推測fallbackを避けるためのfail closedであり、緩和は後続Taskで行う。
 
-- **対象capabilityは`surface-2_5d`だけ**である。`hydrology-plan`／`environment-fields`／`sparse-volume`のproduction export経路は未接続で、既存のcapability別publisherを直接呼ぶ必要がある。
+- **対象capabilityのproduction Application Serviceは`surface-2_5d`、`hydrology-plan`、`environment-fields`（いずれもshared artifact）**である。`hydrology-plan`は`Release2HydrologyExportApplicationServiceV2`、`environment-fields`は`Release2EnvironmentExportApplicationServiceV2`経由でcoastal production featureへoverlayでき、hydrology dependencyは同一Releaseでstrict verifyされる。個別hydrology／environment Featureの公開配線は`V2-15-10`以降である。`sparse-volume`のproduction export経路は未接続で、既存のcapability別publisherを直接呼ぶ必要がある。
 - **V2-2の4 coastal contributorが全て必要**である。sealed coastal transition planがSANDY_BEACH／HARBOR_BASIN／BREAKWATER_HARBOR／ROCKY_CAPEを1個ずつ持たない場合、部分集合を推測補完せずrejectする。
 - **coastal featureが所有しないcellのbaselineは生成しない。** land-waterと地表高は`SurfaceBaselineV2`として呼び出し側が宣言する。汎用base landformはV2-9 foundation側の契約であり、export経路は独自の地形を発明しない。
 - **desired constraint fieldはcomposition結果をsealしたものである。** 外部由来のHARD land-water maskをbundleとして持ち込んで束縛する経路（画像由来maskの直接binding）は`V2-7`／`V2-12-04`の入力側Taskに残る。

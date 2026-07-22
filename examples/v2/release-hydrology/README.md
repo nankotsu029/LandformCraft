@@ -1,6 +1,9 @@
 # Release 2 `hydrology-plan` layout
 
-このcapabilityは`surface-2_5d`を必須依存とする。`ReleaseHydrologyPublisherV2`へsealed surface／hydrology artifactのpathを渡すと、次のportable layoutをstagingでstrict verifyしてからpublishする。
+このcapabilityは`surface-2_5d`を必須依存とする。`V2-15-06`以降、production経路は
+`Release2HydrologyExportApplicationServiceV2` → `HydrologyPlanExportPipelineV2`（coastal surface共有＋empty-graph routing／reconciliation／validation／preview）→
+`ReleaseHydrologyPublisherV2`である。個別hydrology Featureの昇格は後続Taskであり、本pipelineは共有artifactだけを配線する。
+`ReleaseHydrologyPublisherV2`へsealed surface／hydrology artifactのpathを渡すと、次のportable layoutをstagingでstrict verifyしてからpublishする。
 
 ```text
 manifest.json

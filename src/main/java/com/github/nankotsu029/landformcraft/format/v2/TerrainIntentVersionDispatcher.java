@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.nankotsu029.landformcraft.format.LandformDataCodec;
+import com.github.nankotsu029.landformcraft.model.v2.CanonicalTerrainIntentV2;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +19,7 @@ public final class TerrainIntentVersionDispatcher {
             JsonFactory.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build());
     private final LandformDataCodec v1 = new LandformDataCodec();
     private final LandformV2DataCodec v2 = new LandformV2DataCodec();
+    private final CanonicalTerrainIntentCodecV2 canonicalV2 = new CanonicalTerrainIntentCodecV2();
 
     public VersionedTerrainIntent read(Path path) throws IOException {
         byte[] bytes;
@@ -39,6 +41,45 @@ public final class TerrainIntentVersionDispatcher {
             return new VersionedTerrainIntent.V1(v1.readTerrainIntent(input, documentName));
         }
         if (!root.path("intentVersion").isInt() || root.path("intentVersion").intValue() != 2) throw new IOException("unsupported v2 terrain intent version");
+        if (!root.has("featureProjection")) {
+            throw new IOException("historic v2 terrain intent requires explicit LEGACY_V2 reader selection");
+        }
+        if (!"CANONICAL_V2".equals(root.path("featureProjection").textValue())) {
+            throw new IOException("unsupported or mismatched v2 feature projection");
+        }
+        return new VersionedTerrainIntent.CanonicalV2(canonicalV2.read(input, documentName));
+    }
+
+    public VersionedTerrainIntent.V2 readLegacy(
+            Path path,
+            CanonicalTerrainIntentV2.FeatureProjection projection
+    ) throws IOException {
+        byte[] bytes;
+        try (InputStream input = Files.newInputStream(path)) {
+            bytes = input.readNBytes(Math.toIntExact(LandformDataCodec.MAX_DOCUMENT_BYTES + 1));
+        }
+        if (bytes.length > LandformDataCodec.MAX_DOCUMENT_BYTES) {
+            throw new IOException("document exceeds limit: " + path);
+        }
+        return readLegacy(new String(bytes, StandardCharsets.UTF_8), path.toString(), projection);
+    }
+
+    public VersionedTerrainIntent.V2 readLegacy(
+            String input,
+            String documentName,
+            CanonicalTerrainIntentV2.FeatureProjection projection
+    ) throws IOException {
+        if (projection != CanonicalTerrainIntentV2.FeatureProjection.LEGACY_V2) {
+            throw new IOException("legacy reader requires explicit LEGACY_V2 projection");
+        }
+        JsonNode root = mapper.readTree(input);
+        if (root == null || !root.isObject()
+                || !root.path("intentVersion").isInt() || root.path("intentVersion").intValue() != 2) {
+            throw new IOException("legacy reader requires a TerrainIntent v2 document");
+        }
+        if (root.has("featureProjection")) {
+            throw new IOException("LEGACY_V2 document must not contain a featureProjection field");
+        }
         return new VersionedTerrainIntent.V2(v2.readTerrainIntent(input, documentName));
     }
 }

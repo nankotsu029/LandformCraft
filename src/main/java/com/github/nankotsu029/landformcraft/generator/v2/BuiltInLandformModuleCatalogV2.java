@@ -209,6 +209,14 @@ public final class BuiltInLandformModuleCatalogV2 {
         return STAGES;
     }
 
+    /**
+     * Read-only current binding projection for inventory/CI checks. This does not expose module
+     * registration or allow mutation; the compile-time catalog remains the only owner.
+     */
+    public Map<TerrainIntentV2.FeatureKind, String> featureBindings() {
+        return BINDINGS;
+    }
+
     public ModuleDescriptorV2 requireFor(TerrainIntentV2.FeatureKind kind) {
         String moduleId = BINDINGS.get(kind);
         if (moduleId == null) {

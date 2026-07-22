@@ -299,6 +299,7 @@ feature追加は柔軟だが、任意code、version、resource、determinism、s
 | Rollback／Undo／Recovery | `V2-6-08`〜`V2-6-10` | failure injectionとv1回帰 |
 | Cross-capability hardening | `V2-6-12`（完了、ADR 0030） | 全valid prefixとdirectory／ZIP corruption拒否；Release 1 allowlist未緩和 |
 | Supported runtime／dimension | `V2-6-14`〜`V2-6-18` | 今回buildの実機evidenceがある範囲だけcatalog化 |
+| TerrainIntent v2 feature projection | `V2-15-03`／`V2-15-04`（完了） | ADR 0036承認、explicit projection、14 mapping、seed tuple、compatibility fixture／checksum回帰 |
 
 `V2-6-14`／`V2-6-15`は実機依存であり、環境がなければ`BLOCKED_EXTERNAL`とする。`V2-6-16`／`V2-6-17`は無効化済み。mockや過去buildの結果でmigration gateを閉じない。個別Task完了でv1 defaultをv2へ切り替えず、`V2-6-19`のrelease candidate監査後もexplicit version dispatchを維持する（判断根拠は§15）。V2-6が完了しても、既存Beta hardeningの未チェック項目を根拠なく完了へ変更しない。
 
@@ -316,3 +317,21 @@ feature追加は柔軟だが、任意code、version、resource、determinism、s
 ### 2026-07-21更新（V2-12-05）
 
 上記は`V2-6-19`時点の判断記録である。その後、ADR 0035がv1退役governanceを承認し、`V2-12-02`〜`V2-12-04`がproduction export／正式command／migrationを実装した。初回カバレッジ監査で判明したrequest authoring、job／candidate／確認付きexport、運用verbの不足は`V2-12-08`〜`V2-12-10`で解消し、再監査で未承認劣化なしを確認した。これにより`V2-12-05`は人間承認のもと既定をv2へ切替えた。現在の境界は、**v2が既定、v1は明示opt-inのdeprecated経路**である。v1 Schema、generator `3.0.0-phase6`、Release format 1、placement／Undo、goldenの意味は変えていない。v1 writer／通常commandの削除は`V2-12-06`だけが担当し、legacy reader／verifier／migrationは維持する。
+
+## 16. TerrainIntent v2 feature projection migration（V2-15-04）
+
+これはv1→v2 migrationとは別の、historic TerrainIntent v2 identifier projectionの移行である。
+historic Schema／model／fixtureは変更せず、呼出し側が`LEGACY_V2`を明示した専用readerだけで読む。
+新規targetは`featureProjection: CANONICAL_V2`を必須とする別Schema／modelで、generic dispatcherは
+discriminator欠落からlegacyを推測しない。
+
+strict migratorはADR 0036の14 mappingだけを実行する。owner relationの欠落・複数・unsupported、
+parameter loss、seed tupleの欠落／余剰をdocument全体の失敗として扱い、部分migrationしない。
+成功時は元文書を上書きせず、canonical targetとversion付き旧新checksum reportをstagingへ書き、
+exact file set、strict read-back、checksum／seed binding一致後にatomic publishする。再入力が
+`CANONICAL_V2`なら二重移行せず`ALREADY_CANONICAL`を返す。
+
+移行由来parent／childの`legacySeedBinding`はprovenanceではなく生成semanticであり、旧kind、
+`sha256-tagged-v1`、seed namespace、module ID／version、generator versionをcanonical JSON／checksumへ
+含める。14 tokenの公開lifecycleはこのTask完了では進まず、全て`CURRENT_PUBLIC`のままである。
+実装停止／再有効化はoperational modeだけを変更し、一方向lifecycleをrollbackしない。

@@ -63,6 +63,7 @@ public final class StructuredDataValidator {
             "release-manifest-v2.schema.json",
             "generation-request-v2.schema.json",
             "terrain-intent-v2.schema.json",
+            "terrain-intent-v2-canonical.schema.json",
             "geology-plan-v2.schema.json",
             "lithology-plan-v2.schema.json",
             "strata-plan-v2.schema.json",

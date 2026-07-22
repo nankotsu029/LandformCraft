@@ -123,6 +123,14 @@ tasks {
         dependsOn(shadowJar)
         val pluginJar = layout.buildDirectory.file("libs/LandformCraft-${project.version}.jar")
         inputs.file(pluginJar).withPropertyName("pluginJar")
+        // V2-15-02/V2-15-04: registry tests read these source-of-truth files directly.
+        // Declare them so local and remote Gradle caches cannot skip CI drift detection.
+        inputs.files(
+            "schemas/terrain-intent-v2.schema.json",
+            "schemas/terrain-intent-v2-canonical.schema.json",
+            "docs/design-v2/current-feature-state-machine-registry.md",
+            "docs/design-v2/canonical-feature-target-registry.md"
+        ).withPropertyName("currentFeatureStateRegistrySources")
         systemProperty("landformcraft.pluginJar", pluginJar.get().asFile.absolutePath)
     }
 }

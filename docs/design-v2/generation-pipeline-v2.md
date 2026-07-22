@@ -270,6 +270,25 @@ previewはregistryから1枚ずつ生成し、index manifestへ宣言する。ex
 
 `V2-12-02`以降、このStage 12までのorchestrationは`core.v2.export`の`Release2ExportApplicationServiceV2`がproduction APIとして所有する。request＋design intentを入力に、constraint field sidecar、Blueprint、validation、preview、`TilePlanV2`幾何のtileを生成し、`ReleaseSurfacePublisherV2`のstaging→strict read-back→atomic publishへ渡して、strict verifierとplacement eligibilityを通った結果だけをsealする。coastal featureが所有しないcellのbaselineは推測せず、呼び出し側が`SurfaceBaselineV2`で宣言する。
 
+`V2-15-05`ではApplication Serviceからcoastal pipelineへの直接参照を
+`production-dispatch-registry-v1`へ置き換えた。registryはV2-15-02 current-state projection、module
+binding、compile-time-only pipeline descriptorを照合し、generator／validator／preview／exportの4 roleが
+完全一致するchainだけをartifact生成前に選択する。実行routeは現行production-connected coastal 4件、
+`BACKSHORE_PLAINS`は既存fixture互換のcontract-only入力である。handler discovery、未接続kindへのfallback、
+複数pipelineの暗黙合成は行わない。capability setを明示して`select(intent, capabilities)`する。
+`V2-15-06`は`hydrology-plan`＋`surface-2_5d`のshared artifact pipeline
+（`v2.production.hydrology-plan.shared`）をregistryへ登録し、empty-graph routing／reconciliation／
+validation／previewとstrict Release publishをproduction Application Serviceへ接続した。
+`V2-15-07`は`environment-fields`＋`hydrology-plan`＋`surface-2_5d`のshared artifact pipeline
+（`v2.production.environment-fields.shared`）をregistryへ登録し、geology／climate／snow／material／
+palette／ecology／validation／previewとhydrology dependencyのstrict Release publishを接続した。
+`V2-15-08`はそのchainへ既存`terrain-query-volume-v1` kernelのbounded SDF／ordinal固定ordered CSG／
+AABB index／volume validation／streaming 3D tileを重ねるshared artifact pipeline
+（`v2.production.sparse-volume.shared`）をregistryへ登録した。個別volume Featureを推測しないidentity
+operatorをsealed bedrock cellへ適用し、surface canonical streamを保持したまま既存`sparse-volume`
+artifact setのstrict directory／ZIP read-backをproduction Application Serviceへ接続する。個別Featureの
+昇格やCLI既定切替は後続Taskであり、foundation pipelineは別のV2-15 Taskで明示登録する。
+
 ## 4. Stage I/O表
 
 | Stage | 主なread | 主なwrite | 実行scope |
