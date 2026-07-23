@@ -133,16 +133,16 @@ Paper実機smoke、WorldEdit／FAWE測定、MSPT／tick stall測定、Recovery d
 
 ## 9. 現在の未完了Task割当
 
-現在実行可能なPhaseはV2-18（Track A）とV2-15（Track E）である。V2-16／V2-17は依存待ち、V2-8-03〜08はHOLDで§10に置く。完了済みTask（V2-0〜V2-7、V2-9〜V2-14、V2-15-01〜09、V2-18-01〜11）は本表へ掲載しない（履歴は§15とroadmap）。
+現在実行可能なPhaseはV2-15（Track E）である。V2-18は2026-07-23の人間承認でPhase gate `V2-18-12`が完了し、全13 Task完了で閉鎖した。V2-16／V2-17は依存待ち、V2-8-03〜08はHOLDで§10に置く。完了済みTask（V2-0〜V2-7、V2-9〜V2-14、V2-15-01〜09、V2-18全13）は本表へ掲載しない（履歴は§15とroadmap）。
 
-### 9.1 V2-18 Macro foundation and intent conformance（Track A、残り2）
+### 9.1 V2-18 Macro foundation and intent conformance（Track A、完了）
 
-進捗: `V2-18-01`〜`11`完了（11/13。`V2-18-10`のfail-closed昇格は2026-07-23の人間承認で完了、`V2-18-11`のconformance portfolioが確定した`coastal-honored-400`東arm landfall非適合の是正Taskとして`V2-18-13`を追加登録した）。次のTaskは`V2-18-13`。fail-closed化は必ずreport-only段階を先行させる（owner coverage gateのfail-closed昇格は`V2-18-10`だけが行う）。Scope正本は[Task Index §18](task-index.md)。
+進捗: **全13 Task完了・親Phase閉鎖（2026-07-23）**。`V2-18-10`のfail-closed昇格は2026-07-23の人間承認で完了、`V2-18-11`のconformance portfolioが確定した`coastal-honored-400`東arm landfall非適合は`V2-18-13`が是正した。`V2-18-12`（Phase gate）は2026-07-23に実装・検証（`MacroFoundationPhaseGateV2Test`によるconformance portfolioのgate化＋全leaf再検証＋full clean suite PASS、[audit](audits/v2-18-12-phase-gate.md)）ののち、同日の人間承認（atomic decision: `V2-15-47`／`V2-16-19` Acceptance追記・V2-15 stage gate解除・親Phase閉鎖）で完了した。Scope正本は[Task Index §18](task-index.md)。
 
 | Task | 状態 | 内容 | リスク | 主担当 | Effort | 第一レビュー | 第二レビュー／人間gate | 昇格条件 |
 |---|---|---|---|---|---|---|---|---|
-| V2-18-13 | READY（依存11充足済み） | `coastal-honored-400`東arm landfall非適合の是正（fixture geometry＋mask再生成） | 中（mask再生成でcoastal容器checksumが動く） | Sonnet 5 | — | Grok 4.5 | — | 再生成手順が`V2-18-09`の合成規則と一致しない場合はOpus |
-| V2-18-12 | 依存01..11,13 | Phase gate（full suite、V2-15 stage gate解除判断） | 最高（Phase横断、`V2-15-47`／`V2-16-19` Acceptance追記） | **Fable 5** | Highest available | Grok 4.5 | Opus 4.8＋**人間承認** | — |
+| V2-18-13 | 完了（2026-07-23） | `coastal-honored-400`東arm landfall非適合の是正（rocky cape西端をNW 0.62→0.60／SW 0.72→0.685へ拡張しfixture geometryを是正、mask再生成でarmをmainlandへ接続） | 中（mask再生成でcoastal容器checksumが動く） | Sonnet 5 | — | Grok 4.5 | — | 再生成手順が`V2-18-09`の合成規則と一致しない場合はOpus |
+| V2-18-12 | 完了（2026-07-23、人間承認済み） | Phase gate（full suite、V2-15 stage gate解除判断） | 最高（Phase横断、`V2-15-47`／`V2-16-19` Acceptance追記） | **Fable 5** | Highest available | Grok 4.5 | Opus 4.8＋**人間承認** | — |
 
 割当根拠: `V2-18-12`は単なる証拠集約でなく、V2-15／V2-16のAcceptanceへ遡ってintent-conformanceを追記しstage gateの解除可否を裁定する複数Phase横断判断のためFableとする。
 
@@ -150,7 +150,7 @@ Paper実機smoke、WorldEdit／FAWE測定、MSPT／tick stall測定、Recovery d
 
 進捗: `V2-15-01`〜`09`完了（9/47）。次のTaskは`V2-15-10`。
 
-**Stage gate（全行共通）:** production export／placement昇格系の作業・Acceptanceは`V2-18-09`完了（2026-07-22完了済み）＋**対象kindのcomposition role登録**（ADR 0038 D4のPROVISIONAL→確定監査。`CompositionProfileRegistryV2`にNORMATIVE登録済みなのは現状coastal 4種＋`PLAIN`／`HILL_RANGE`のみ）まで待機する。registry／Schema／codec／offline plan／determinism系の作業は継続できる（roadmap 2026-07-22決定）。stage gate自体の解除判断は`V2-18-12`が行う。各leafの状態表記READYはこの制約付きである。
+**Stage gate（全行共通、2026-07-23解除済み）:** 一律保留（`V2-18-09`完了までの待機）は`V2-18-12`の裁定と2026-07-23の人間承認で解除された。以後、production export／placement昇格系の作業・Acceptanceは各配線leafの**per-leaf義務**として次を負う: (1) 対象kindのcomposition profileをfield監査でPROVISIONAL→確定する（ADR 0038 D4。`CompositionProfileRegistryV2`にNORMATIVE登録済みなのは現状coastal 4種＋`PLAIN`／`HILL_RANGE`のみ。対応表の変更が必要ならADR 0038 amendmentを先行させ、Phase gate期待値はregistry変更と同一commitで更新する — test期待値だけの変更は禁止）、(2) 新規接続kindのintent-conformance portfolio caseを追加し、portfolio全case適合（登録済み非適合ゼロ）を維持する。registry／Schema／codec／offline plan／determinism系の作業は従来どおり制約なし。
 
 | Task | 状態 | 内容 | リスク | 主担当 | Effort | 第一レビュー | 第二レビュー／人間gate | 昇格条件 |
 |---|---|---|---|---|---|---|---|---|

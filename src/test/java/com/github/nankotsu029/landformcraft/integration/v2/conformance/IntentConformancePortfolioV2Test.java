@@ -136,28 +136,29 @@ class IntentConformancePortfolioV2Test {
     }
 
     @Test
-    void theHonored400EastArmIsAnIsolatedIslandUntilV21813CorrectsTheFixture() {
-        // Registered non-conformance, kept visible rather than asserted away. The declared
-        // "east-landfall" endpoint (0.61, 0.47) stops short of the rocky cape's western edge (0.62),
-        // so the whole east arm composes as its own land component: every cell of it is land, none of
-        // it touches off-structure mainland, and the landfall cell itself is not on the mainland.
-        // Correcting the geometry means regenerating the V2-18-09 land-water mask, which is V2-18-13.
+    void theHonored400EastArmLandsOnTheMainlandAfterV21813() {
+        // V2-18-13 corrected the registered non-conformance: the rocky cape's western edge was
+        // extended west so the east breakwater arm's foundation toe reaches cape land, and the mask
+        // was regenerated. Both arms now land on the mainland; the previous isolated 2163-cell land
+        // island is gone.
         IntentConformancePortfolioV2.MeasurementsV2 measurements = MEASUREMENTS.get("coastal-honored-400");
         IntentConformancePortfolioV2.ArmLandfallV2 east = measurements.arm("east-arm");
         IntentConformancePortfolioV2.ArmLandfallV2 west = measurements.arm("west-arm");
 
+        // Every arm cell is land, both reach off-structure mainland, and both declared landfall cells
+        // now sit on the mainland — so both compose as connected causeways, not stranded islands.
         assertEquals(east.ownedCells(), east.ownedLandCells());
-        assertEquals(0, east.offStructureMainlandContacts());
-        assertFalse(east.landfallCellInMainland());
-        assertFalse(east.connectedToShore());
-        // The same measurement reports the west arm as connected, so the assertion is discriminating
-        // rather than universally failing.
-        assertTrue(west.offStructureMainlandContacts() > 0);
-        assertTrue(west.landfallCellInMainland());
-        assertTrue(west.connectedToShore());
-        // Both arms are still one land component each, so the isolated arm is a landfall defect and
-        // not a fragmented structure.
-        assertTrue(measurements.landComponentCount() >= 2);
+        assertTrue(east.offStructureMainlandContacts() > 0, () -> "east arm: " + east);
+        assertTrue(east.landfallCellInMainland(), () -> "east arm: " + east);
+        assertTrue(east.connectedToShore(), () -> "east arm: " + east);
+        assertEquals(west.ownedCells(), west.ownedLandCells());
+        assertTrue(west.offStructureMainlandContacts() > 0, () -> "west arm: " + west);
+        assertTrue(west.landfallCellInMainland(), () -> "west arm: " + west);
+        assertTrue(west.connectedToShore(), () -> "west arm: " + west);
+        // The only remaining non-mainland land components are the rocky cape's declared offshore sea
+        // stacks, never a stranded breakwater arm.
+        assertEquals(72852, measurements.mainlandCells());
+        assertEquals(4, measurements.landComponentCount());
     }
 
     @Test

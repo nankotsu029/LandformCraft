@@ -28,7 +28,7 @@ class ConformanceTargetSetV2Test {
     private static final Path INTENT =
             Path.of("examples/v2/diagnostic/coastal-honored-400.terrain-intent-v2.json");
     private static final String DECLARED_DIGEST =
-            "8b3f04df90d89e84e4d9c389200bd5d0278a7dc72df0216da8f75cf72aa88c0f";
+            "60095de7148a92a805e5574f970c56e5f0156740f9904418a0a19e1d845aaa23";
     private static final String OTHER_DIGEST =
             "0000000000000000000000000000000000000000000000000000000000000000";
 

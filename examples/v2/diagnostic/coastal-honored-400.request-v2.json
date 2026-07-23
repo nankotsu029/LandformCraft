@@ -14,7 +14,7 @@
     {
       "sourceId": "constraint-source:coast-mask",
       "file": "maps/coastal-honored-400-land-water-u8.png",
-      "expectedSha256": "8b3f04df90d89e84e4d9c389200bd5d0278a7dc72df0216da8f75cf72aa88c0f",
+      "expectedSha256": "60095de7148a92a805e5574f970c56e5f0156740f9904418a0a19e1d845aaa23",
       "expectedWidth": 400,
       "expectedLength": 400,
       "decoderKind": "CATEGORICAL_RASTER",

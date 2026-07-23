@@ -112,12 +112,12 @@ final class IntentConformancePortfolioV2 {
                         Path.of("examples/v2/diagnostic/coastal-honored-400.terrain-intent-v2.json"),
                         new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 42),
                         400, 400,
-                        // V2-18-13 (registered non-conformance): the east arm's declared landfall
-                        // endpoint (0.61, 0.47) stops short of the rocky cape's western edge (0.62),
-                        // so the whole arm composes as an isolated land island. The portfolio pins the
-                        // current shape instead of hiding it; correcting the fixture geometry requires
-                        // regenerating the V2-18-09 land-water mask and is its own Task.
-                        Set.of("west-arm"),
+                        // V2-18-13 corrected the fixture: the rocky cape's western edge was extended
+                        // west (NW 0.62→0.60, SW 0.72→0.685) so the east breakwater arm's foundation
+                        // toe reaches cape land and its declared landfall now sits on the mainland. The
+                        // land-water mask was regenerated (composed output ∪ macro composition) and both
+                        // arms now connect to shore.
+                        Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm")));
     }
 
