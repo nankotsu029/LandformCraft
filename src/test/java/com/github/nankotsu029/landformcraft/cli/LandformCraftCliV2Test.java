@@ -44,6 +44,23 @@ class LandformCraftCliV2Test {
     }
 
     @Test
+    void exportHydrologyPlanVerbPublishesTheRiverOfflineProductionRoute(@TempDir Path root) {
+        // V2-15-10 / ADR 0039 Candidate A: the hydrology-plan CLI form exports a RIVER-declaring
+        // intent through the OFFLINE_PRODUCTION route without touching Paper capability.
+        String riverRequest = "examples/v2/diagnostic/harbor-cove-64-honored-river.request-v2.json";
+        String riverIntent = "examples/v2/diagnostic/harbor-cove-64-honored-river.terrain-intent-v2.json";
+        Result result = run("v2", "export", "hydrology-plan", riverRequest, riverIntent,
+                root.resolve("exports").toString(), "cli-export-hydrology", "water", "54", "46");
+
+        assertEquals(0, result.exitCode(), result.error());
+        assertTrue(result.output().contains("requiredCapabilities: [hydrology-plan, surface-2_5d]"),
+                result.output());
+        assertTrue(result.output().contains("placementEligible: true"), result.output());
+        assertTrue(Files.isDirectory(root.resolve("exports").resolve("cli-export-hydrology")));
+        assertTrue(Files.isRegularFile(root.resolve("exports").resolve("cli-export-hydrology.zip")));
+    }
+
+    @Test
     void generateVerbPublishesTheDirectoryWithoutAZip(@TempDir Path root) {
         Result result = run("v2", "generate", REQUEST, INTENT,
                 root.resolve("exports").toString(), "cli-generate", "water", "54", "46");

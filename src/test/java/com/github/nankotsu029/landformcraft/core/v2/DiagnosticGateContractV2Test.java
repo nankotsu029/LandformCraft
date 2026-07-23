@@ -47,9 +47,11 @@ class DiagnosticGateContractV2Test {
 
     @Test
     void productionKindsMatchTheProductionDispatchSpine() {
-        // Anti-drift: the contract's production-connected set is exactly the dispatch spine's routed
-        // kinds, so both derive from the same current-feature-state authority.
+        // Anti-drift: the contract's production-connected set is exactly the dispatch spine's
+        // PRODUCTION_CONNECTED routed kinds (not the V2-15-10 / ADR 0039 Candidate A
+        // OFFLINE_PRODUCTION allowlist), so both derive from the same current-feature-state authority.
         Set<TerrainIntentV2.FeatureKind> dispatchKinds = ProductionDispatchRegistryV2.builtIn().routes().stream()
+                .filter(route -> route.routeClass() == ProductionDispatchRegistryV2.RouteClass.PRODUCTION_CONNECTED)
                 .map(ProductionDispatchRegistryV2.Route::featureKind)
                 .collect(Collectors.toCollection(() -> new TreeSet<>(java.util.Comparator.comparing(Enum::name))));
         assertEquals(dispatchKinds, DiagnosticGateContractV2.builtIn().productionConnectedKinds());

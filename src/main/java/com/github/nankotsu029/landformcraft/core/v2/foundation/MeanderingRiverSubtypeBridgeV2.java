@@ -27,4 +27,25 @@ public final class MeanderingRiverSubtypeBridgeV2 {
                 1,
                 2);
     }
+
+    /**
+     * V2-15-10 / ADR 0039 Candidate A: maps a {@code RIVER} feature's {@link TerrainIntentV2.RiverParameters}
+     * onto {@link TerrainIntentV2.MeanderingRiverParameters} so the offline hydrology-plan pipeline can
+     * compile it with {@code MeanderingRiverPlanCompilerV2} without changing that compiler's math or the
+     * {@code MEANDERING_RIVER} kind's own contract. {@code variant} controls whether the compiled reach
+     * meanders ({@link TerrainIntentV2.RiverVariant#MEANDERING_RIVER}) or stays straight
+     * ({@link TerrainIntentV2.RiverVariant#RIVER}).
+     */
+    public static TerrainIntentV2.MeanderingRiverParameters meanderingParametersFor(
+            TerrainIntentV2.RiverParameters river,
+            TerrainIntentV2.RiverVariant variant
+    ) {
+        Objects.requireNonNull(river, "river");
+        Objects.requireNonNull(variant, "variant");
+        return new TerrainIntentV2.MeanderingRiverParameters(
+                river.bankfullWidthBlocks(),
+                river.dischargeClass(),
+                river.minimumBedSlopeMillionths(),
+                variant);
+    }
 }

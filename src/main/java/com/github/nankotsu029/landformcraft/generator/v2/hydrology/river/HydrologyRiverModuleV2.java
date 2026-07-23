@@ -6,7 +6,15 @@ import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
 import java.util.List;
 
-/** Built-in supported module for offline RIVER / MEANDERING_RIVER reach shaping. */
+/**
+ * Built-in supported module for offline RIVER / MEANDERING_RIVER reach shaping.
+ *
+ * <p>V2-15-10 / ADR 0039 Candidate A: {@code RIVER} compiles into the same
+ * {@code MeanderingRiverPlanV2} shape as {@code MEANDERING_RIVER} (bridged by
+ * {@code MeanderingRiverSubtypeBridgeV2}), so both kinds share this module binding, the shared
+ * hydrology-plan pipeline, and the same field set below. Neither kind's Paper column is promoted by
+ * this Task.</p>
+ */
 public final class HydrologyRiverModuleV2 {
     public static final String MODULE_ID = "v2.hydrology.river";
     public static final String MODULE_VERSION = "0.1.0-v2-3-03";
@@ -36,7 +44,7 @@ public final class HydrologyRiverModuleV2 {
             MODULE_ID,
             MODULE_VERSION,
             ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
-            List.of(TerrainIntentV2.FeatureKind.MEANDERING_RIVER),
+            List.of(TerrainIntentV2.FeatureKind.MEANDERING_RIVER, TerrainIntentV2.FeatureKind.RIVER),
             REQUIRED,
             PROVIDED,
             PROVIDED.stream()

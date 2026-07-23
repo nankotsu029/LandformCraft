@@ -82,6 +82,16 @@ public enum V2CommandVerbV2 {
     /** Consumes the confirmation token and queues the asynchronous export job (V2-12-09). */
     EXPORT_CREATE("export", "create", 5, 5,
             "v2 export create <plan-id> <token>", "export", Surface.PAPER, null),
+    /**
+     * V2-15-10 / ADR 0039 Candidate A: publishes the {@code hydrology-plan} + {@code surface-2_5d}
+     * Release (the {@code OFFLINE_PRODUCTION} route for {@code RIVER} / {@code MEANDERING_RIVER}
+     * alongside the coastal contributors) instead of the plain {@code surface-2_5d} form. This never
+     * promotes a Paper {@code paper_apply} capability; it stays CLI-only, like {@code migrate}.
+     */
+    EXPORT_HYDROLOGY("export", "hydrology-plan", 10, 10,
+            "v2 export hydrology-plan <request-v2.json> <terrain-intent-v2.json> <exports-root> "
+                    + "<release-id> <land|water> <land-surface-y> <water-bed-y>",
+            "export", Surface.CLI, null),
     PREVIEW("preview", null, 3, 3,
             "v2 preview <release-directory-or-zip>", "preview", Surface.BOTH, null),
     JOB_STATUS("job", "status", 4, 4,

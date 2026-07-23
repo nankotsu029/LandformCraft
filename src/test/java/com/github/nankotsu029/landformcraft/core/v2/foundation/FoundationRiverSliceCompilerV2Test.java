@@ -64,12 +64,28 @@ class FoundationRiverSliceCompilerV2Test {
     }
 
     @Test
-    void riverRemainsExperimentalWithoutBlueprintEmbedding() {
+    void foundationLandformRiverModuleRemainsExperimentalAndUnbound() {
+        // This vertical-slice FoundationRiverSliceCompilerV2 path uses its own separate, still-
+        // EXPERIMENTAL LandformRiverModuleV2 producer; it is not the compile-time module catalog
+        // binding for TerrainIntentV2.FeatureKind.RIVER (that is HydrologyRiverModuleV2 as of V2-15-10
+        // / ADR 0039 Candidate A; see riverIsDedicatedToTheHydrologyRiverModule below).
         ModuleDescriptorV2 riverModule = new LandformRiverModuleV2().descriptor();
         assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL, riverModule.lifecycleStatus());
+    }
+
+    @Test
+    void riverIsDedicatedToTheHydrologyRiverModule() {
+        // V2-15-10 / ADR 0039 Candidate A: RIVER shares HydrologyRiverModuleV2 with MEANDERING_RIVER
+        // (bridged via MeanderingRiverSubtypeBridgeV2), so it has a dedicated module binding.
         ModuleDescriptorV2 catalogRiver = catalog.requireFor(TerrainIntentV2.FeatureKind.RIVER);
-        assertEquals(BuiltInLandformModuleCatalogV2.DIAGNOSTIC_MODULE_ID, catalogRiver.moduleId());
+        assertEquals(HydrologyRiverModuleV2.MODULE_ID, catalogRiver.moduleId());
+        assertEquals(ModuleDescriptorV2.LifecycleStatus.SUPPORTED, catalogRiver.lifecycleStatus());
+        // The module only declares MEANDERING_RIVER's own "feature.meandering-river.*" diagnostic
+        // capability names (unchanged by this Task); RIVER keeps generating the general public-intent
+        // diagnostic "missing-validator/preview-capability" issues, since this Task wires only the
+        // offline hydrology-plan production route, not Paper/CLI capability promotion.
         assertFalse(catalog.hasValidatorCapability(TerrainIntentV2.FeatureKind.RIVER));
+        assertFalse(catalog.hasPreviewCapability(TerrainIntentV2.FeatureKind.RIVER));
     }
 
     @Test

@@ -288,6 +288,11 @@ AABB index／volume validation／streaming 3D tileを重ねるshared artifact pi
 operatorをsealed bedrock cellへ適用し、surface canonical streamを保持したまま既存`sparse-volume`
 artifact setのstrict directory／ZIP read-backをproduction Application Serviceへ接続する。個別Featureの
 昇格やCLI既定切替は後続Taskであり、foundation pipelineは別のV2-15 Taskで明示登録する。
+`V2-15-10`は[ADR 0039](../adr/0039-offline-production-route-eligibility.md) 候補Aに従い registryを
+`production-dispatch-registry-v2`へbumpし、`RouteClass.OFFLINE_PRODUCTION`（export SUPPORTED＋dedicated
+module＋非production-connected kind限定の許可制）を追加した。`RIVER`／`MEANDERING_RIVER`を`hydrology-plan`
+shared pipelineのoffline routeへ登録し、既存coastal 4の`PRODUCTION_CONNECTED`route・意味・Paper
+`SUPPORTED` exact setは不変のまま、Paper非昇格のexport専用縦経路を実現した。
 
 ## 4. Stage I/O表
 

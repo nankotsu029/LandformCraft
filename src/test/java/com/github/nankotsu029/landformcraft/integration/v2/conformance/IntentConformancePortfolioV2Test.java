@@ -4,6 +4,9 @@ import com.github.nankotsu029.landformcraft.core.GenerationExecutors;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportApplicationServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportRequestV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportResultV2;
+import com.github.nankotsu029.landformcraft.core.v2.export.Release2HydrologyExportApplicationServiceV2;
+import com.github.nankotsu029.landformcraft.model.v2.HydrologyValidationArtifactV2;
+import com.github.nankotsu029.landformcraft.model.v2.MetricResultV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
 import com.github.nankotsu029.landformcraft.validation.v2.target.TargetEvaluationV2;
@@ -61,11 +64,17 @@ class IntentConformancePortfolioV2Test {
         executors = GenerationExecutors.createDefault(2);
         for (IntentConformancePortfolioV2.CaseV2 portfolioCase : IntentConformancePortfolioV2.cases()) {
             Path run = root.resolve(portfolioCase.id());
-            Release2ExportResultV2 result = new Release2ExportApplicationServiceV2(executors).exportNow(
-                    new Release2ExportRequestV2(
-                            portfolioCase.request(), portfolioCase.intent(),
-                            run.resolve("work"), run.resolve("exports"),
-                            portfolioCase.id(), portfolioCase.baseline()));
+            Release2ExportRequestV2 request = new Release2ExportRequestV2(
+                    portfolioCase.request(), portfolioCase.intent(),
+                    run.resolve("work"), run.resolve("exports"),
+                    portfolioCase.id(), portfolioCase.baseline());
+            // V2-15-10: a HYDROLOGY-route case (RIVER / MEANDERING_RIVER alongside the coastal
+            // contributors) must publish through the hydrology-plan OFFLINE_PRODUCTION dispatch path,
+            // not the plain surface-2_5d path, per ADR 0039 Candidate A.
+            Release2ExportResultV2 result = portfolioCase.exportRoute()
+                    == IntentConformancePortfolioV2.ExportRouteV2.HYDROLOGY
+                    ? new Release2HydrologyExportApplicationServiceV2(executors).exportNow(request)
+                    : new Release2ExportApplicationServiceV2(executors).exportNow(request);
             RELEASES.put(portfolioCase.id(), result.releaseDirectory());
             MEASUREMENTS.put(portfolioCase.id(),
                     IntentConformancePortfolioV2.measure(result.releaseDirectory()));
@@ -159,6 +168,32 @@ class IntentConformancePortfolioV2Test {
         // stacks, never a stranded breakwater arm.
         assertEquals(72852, measurements.mainlandCells());
         assertEquals(4, measurements.landComponentCount());
+    }
+
+    @Test
+    void theRiverOfflineWiringPublishesPassingHydrologyMetrics() throws Exception {
+        // V2-15-10 / ADR 0039 Candidate A per-leaf intent-conformance obligation: read the RIVER
+        // reach-shape evidence back from the published hydrology-plan Release (never in-process
+        // generator state) and confirm the shared HydrologyValidatorV2 metrics it wired for
+        // MEANDERING_RIVER are computed and pass for this FeatureKind.RIVER-declared feature too.
+        Path release = RELEASES.get("harbor-cove-64-honored-river");
+        HydrologyValidationArtifactV2.HydrologyValidationReport report =
+                IntentConformancePortfolioV2.readHydrologyValidationReport(release);
+        assertTrue(report.passesHardValidation(), () -> String.valueOf(report.issues()));
+
+        Map<String, MetricResultV2> riverMetrics = report.metrics().stream()
+                .filter(metric -> IntentConformancePortfolioV2.RIVER_FEATURE_ID.equals(metric.subject()))
+                .collect(Collectors.toMap(MetricResultV2::metricId, metric -> metric));
+        assertEquals(Set.of(
+                "hydrology.river.channel-gaps",
+                "hydrology.river.reverse-gradient-cells",
+                "hydrology.river.source-mouth-reachable"), riverMetrics.keySet());
+        for (MetricResultV2 metric : riverMetrics.values()) {
+            assertTrue(metric.passed(), metric::toString);
+        }
+        assertEquals(0L, riverMetrics.get("hydrology.river.channel-gaps").actualMillionths());
+        assertEquals(0L, riverMetrics.get("hydrology.river.reverse-gradient-cells").actualMillionths());
+        assertEquals(1L, riverMetrics.get("hydrology.river.source-mouth-reachable").actualMillionths());
     }
 
     @Test

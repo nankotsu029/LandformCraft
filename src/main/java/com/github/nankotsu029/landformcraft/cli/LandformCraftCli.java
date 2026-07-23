@@ -165,6 +165,22 @@ public final class LandformCraftCli {
                     summary.put("v2CorrelationId", route.correlationId());
                     emit(standardOutput, summary);
                 }
+                case EXPORT_HYDROLOGY -> {
+                    // V2-15-10 / ADR 0039 Candidate A: hydrology-plan OFFLINE_PRODUCTION route,
+                    // operation token shifts every remaining index by one versus EXPORT.
+                    Path exportsRoot = Path.of(tokens.get(5));
+                    Map<String, Object> summary = new LinkedHashMap<>(V2WorkflowServiceV2.summarize(
+                            workflow.exportHydrology(
+                                    Path.of(tokens.get(3)),
+                                    Path.of(tokens.get(4)),
+                                    exportsRoot.resolve(".work-" + tokens.get(6)),
+                                    exportsRoot,
+                                    tokens.get(6),
+                                    V2WorkflowServiceV2.baseline(
+                                            tokens.get(7), tokens.get(8), tokens.get(9)))));
+                    summary.put("v2CorrelationId", route.correlationId());
+                    emit(standardOutput, summary);
+                }
                 case PREVIEW -> {
                     Map<String, Object> previews = new LinkedHashMap<>(
                             workflow.inspectPreviews(Path.of(tokens.get(2))));

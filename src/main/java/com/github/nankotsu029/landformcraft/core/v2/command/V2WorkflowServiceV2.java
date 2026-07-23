@@ -8,6 +8,7 @@ import com.github.nankotsu029.landformcraft.core.v2.export.ExportBudgetV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportApplicationServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportRequestV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportResultV2;
+import com.github.nankotsu029.landformcraft.core.v2.export.Release2HydrologyExportApplicationServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.SurfaceBaselineV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.release.ReleaseCoreVerifierV2;
@@ -43,6 +44,7 @@ public final class V2WorkflowServiceV2 {
     private final LandformV2DataCodec codec = new LandformV2DataCodec();
     private final TerrainDesignApplicationServiceV2 designService;
     private final Release2ExportApplicationServiceV2 exportService;
+    private final Release2HydrologyExportApplicationServiceV2 hydrologyExportService;
 
     public V2WorkflowServiceV2(
             GenerationExecutors executors,
@@ -51,6 +53,7 @@ public final class V2WorkflowServiceV2 {
         Objects.requireNonNull(executors, "executors");
         this.designService = new TerrainDesignApplicationServiceV2(executors, providerFactory);
         this.exportService = new Release2ExportApplicationServiceV2(executors);
+        this.hydrologyExportService = new Release2HydrologyExportApplicationServiceV2(executors);
     }
 
     /** Strict read of a v2 generation request. Returns operator-facing facts only, never raw paths. */
@@ -116,6 +119,26 @@ public final class V2WorkflowServiceV2 {
     ) throws IOException {
         return exportService.exportNow(new Release2ExportRequestV2(
                 request, terrainIntent, workRoot, exportsRoot, releaseId, baseline, createZip,
+                ExportBudgetV2.defaults(), Optional.of(NEVER)));
+    }
+
+    /**
+     * V2-15-10 / ADR 0039 Candidate A: runs the {@code hydrology-plan} production export path
+     * ({@link Release2HydrologyExportApplicationServiceV2}) instead of the plain {@code surface-2_5d}
+     * path, so an intent declaring {@code RIVER} / {@code MEANDERING_RIVER} alongside the coastal
+     * contributors can select the {@code OFFLINE_PRODUCTION} route. Never promotes a Paper
+     * {@code paper_apply} capability.
+     */
+    public Release2ExportResultV2 exportHydrology(
+            Path request,
+            Path terrainIntent,
+            Path workRoot,
+            Path exportsRoot,
+            String releaseId,
+            SurfaceBaselineV2 baseline
+    ) throws IOException {
+        return hydrologyExportService.exportNow(new Release2ExportRequestV2(
+                request, terrainIntent, workRoot, exportsRoot, releaseId, baseline, true,
                 ExportBudgetV2.defaults(), Optional.of(NEVER)));
     }
 

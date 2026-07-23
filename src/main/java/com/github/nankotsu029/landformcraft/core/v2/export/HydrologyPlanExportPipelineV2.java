@@ -14,12 +14,15 @@ import com.github.nankotsu029.landformcraft.generator.v2.hydrology.core.Hydrolog
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.core.HydrologyRoutingResultV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.core.ProvisionalSurfaceV2;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.reconcile.BoundedHydrologyReconcilerV2;
+import com.github.nankotsu029.landformcraft.generator.v2.hydrology.reconcile.HydrologyReconciliationPlanCompilerV2;
+import com.github.nankotsu029.landformcraft.generator.v2.hydrology.river.HydrologyRiverModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.hydrology.river.MeanderingRiverGeneratorV2;
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.HydrologyValidationArtifactV2;
+import com.github.nankotsu029.landformcraft.model.v2.MeanderingRiverPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
 import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyReconciliationArtifactV2;
-import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyReconciliationStateV2;
 import com.github.nankotsu029.landformcraft.model.v2.hydrology.HydrologyRoutingArtifactV2;
 import com.github.nankotsu029.landformcraft.preview.v2.HydrologyDiagnosticFieldFactoryV2;
 import com.github.nankotsu029.landformcraft.preview.v2.HydrologyDiagnosticPreviewRendererV2;
@@ -35,13 +38,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.IntPredicate;
 
 /**
- * V2-15-06 production pipeline for shared {@code hydrology-plan} artifacts.
+ * V2-15-06 production pipeline for shared {@code hydrology-plan} artifacts, extended by V2-15-10
+ * (ADR 0039 Candidate A) to also execute the {@code RIVER} / {@code MEANDERING_RIVER} offline
+ * production route.
  *
  * <p>It reuses the coastal surface chain, then freezes empty-graph routing, reconciliation,
- * field-only validation, and the fixed hydrology preview set. Individual hydrology FeatureKinds are
- * not promoted or executed here.</p>
+ * field-only validation, and the fixed hydrology preview set. When the compiled Blueprint carries a
+ * {@code RIVER} or {@code MEANDERING_RIVER} plan, this pipeline also executes
+ * {@link MeanderingRiverGeneratorV2} and samples its fields for validation/preview. Other individual
+ * hydrology FeatureKinds are still not promoted or executed here.</p>
  */
 final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 {
     static final String PIPELINE_ID = "v2.production.hydrology-plan.shared";
@@ -49,6 +58,28 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
     static final String VALIDATOR_HANDLER_ID = "v2.hydrology.field-validator";
     static final String PREVIEW_HANDLER_ID = "v2.hydrology.diagnostic-preview";
     static final String EXPORT_HANDLER_ID = "v2.release.hydrology-plan-export";
+
+    private static final IntPredicate NO_HARD_ROUTE_CONFLICT = index -> false;
+
+    private static final Set<String> RIVER_FIELD_IDS = Set.of(
+            HydrologyRiverModuleV2.CHANNEL_MASK_FIELD_ID,
+            HydrologyRiverModuleV2.BANK_MASK_FIELD_ID,
+            HydrologyRiverModuleV2.FLOODPLAIN_MASK_FIELD_ID,
+            HydrologyRiverModuleV2.MEANDER_CORRIDOR_FIELD_ID,
+            HydrologyRiverModuleV2.LOCAL_WIDTH_FIELD_ID,
+            HydrologyRiverModuleV2.DISCHARGE_INDEX_FIELD_ID,
+            HydrologyIrModuleV2.BED_ELEVATION_FIELD,
+            HydrologyIrModuleV2.WATER_SURFACE_FIELD,
+            HydrologyIrModuleV2.WATER_DEPTH_FIELD,
+            HydrologyIrModuleV2.WATER_BODY_ID_FIELD);
+
+    private static final Set<MeanderingRiverGeneratorV2.RiverField> MAXIMUM_MERGED_RIVER_FIELDS = Set.of(
+            MeanderingRiverGeneratorV2.RiverField.CHANNEL_MASK,
+            MeanderingRiverGeneratorV2.RiverField.BANK_MASK,
+            MeanderingRiverGeneratorV2.RiverField.FLOODPLAIN_MASK,
+            MeanderingRiverGeneratorV2.RiverField.MEANDER_CORRIDOR,
+            MeanderingRiverGeneratorV2.RiverField.DISCHARGE_INDEX,
+            MeanderingRiverGeneratorV2.RiverField.WATER_BODY_ID);
 
     private static final PipelineDescriptor DESCRIPTOR = new PipelineDescriptor(
             PIPELINE_ID,
@@ -60,6 +91,8 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
             List.of(
                     TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
                     TerrainIntentV2.FeatureKind.HARBOR_BASIN,
+                    TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
+                    TerrainIntentV2.FeatureKind.RIVER,
                     TerrainIntentV2.FeatureKind.ROCKY_CAPE,
                     TerrainIntentV2.FeatureKind.SANDY_BEACH),
             List.of(TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS),
@@ -72,6 +105,8 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
     private final HydrologyRoutingBundlePublisherV2 routingPublisher =
             new HydrologyRoutingBundlePublisherV2();
     private final BoundedHydrologyReconcilerV2 reconciler = new BoundedHydrologyReconcilerV2();
+    private final HydrologyReconciliationPlanCompilerV2 reconciliationPlanCompiler =
+            new HydrologyReconciliationPlanCompilerV2();
     private final HydrologyValidatorV2 validator = new HydrologyValidatorV2();
 
     @Override
@@ -140,17 +175,19 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
         Path reconciliationPlanPath = hydrologyRoot.resolve("reconciliation-plan.json");
         data.writeHydrologyReconciliationPlan(
                 reconciliationPlanPath, blueprint.hydrologyReconciliationPlan());
+        // V2-15-10: a RIVER / MEANDERING_RIVER plan freezes non-empty REACH_BED reconciliation
+        // variables (HydrologyReconciliationPlanCompilerV2.compileRivers); the coastal-only empty-graph
+        // path still freezes zero variables, so the shared baseline state is correct for both.
         HydrologyReconciliationArtifactV2 reconciliationArtifact = reconciler.reconcile(
                 blueprint.canonicalChecksum(),
                 blueprint.hydrologyReconciliationPlan(),
-                new HydrologyReconciliationStateV2(
-                        blueprint.hydrologyReconciliationPlan().canonicalChecksum(), List.of()),
+                reconciliationPlanCompiler.baselineState(blueprint.hydrologyReconciliationPlan()),
                 token);
         Path reconciliationArtifactPath = hydrologyRoot.resolve("reconciliation-artifact.json");
         new HydrologyReconciliationArtifactCodecV2().write(
                 reconciliationArtifactPath, reconciliationArtifact);
 
-        HydrologyFieldSamplerV2 sampler = sharedFieldSampler(routingResult);
+        HydrologyFieldSamplerV2 sampler = sharedFieldSampler(routingResult, blueprint.meanderingRiverPlans());
         HydrologyValidationInputV2 validationInput = new HydrologyValidationInputV2(
                 blueprint, sampler, reconciliationArtifact);
         HydrologyValidationReportV2 report = validator.validate(validationInput, token);
@@ -193,8 +230,11 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
     }
 
     private static void requireSharedHydrologyOnly(WorldBlueprintV2 blueprint) throws IOException {
-        if (!blueprint.meanderingRiverPlans().isEmpty()
-                || !blueprint.lakePlans().isEmpty()
+        // V2-15-10 / ADR 0039 Candidate A: RIVER and MEANDERING_RIVER are the one explicit
+        // OFFLINE_PRODUCTION family wired here; meanderingRiverPlans() may be non-empty. Every other
+        // individual hydrology Feature plan (lake/canyon/waterfall/delta/tidal/fjord/mountain/
+        // volcanic/mangrove/coral) and any non-empty global basin graph remain rejected.
+        if (!blueprint.lakePlans().isEmpty()
                 || !blueprint.canyonPlans().isEmpty()
                 || !blueprint.waterfallPlans().isEmpty()
                 || !blueprint.deltaPlans().isEmpty()
@@ -280,7 +320,21 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
                 HydrologyRoutingArtifactV2.OutletKind.BOUNDARY);
     }
 
-    private static HydrologyFieldSamplerV2 sharedFieldSampler(HydrologyRoutingResultV2 routing) {
+    /**
+     * V2-15-10: adds a merged {@link MeanderingRiverGeneratorV2} sampler for any {@code RIVER} /
+     * {@code MEANDERING_RIVER} plans on the Blueprint, without touching {@link MeanderingRiverGeneratorV2}
+     * field math. Mask-shaped fields merge with {@code MAX} (they are always {@code 0} or a positive
+     * code from every generator, never {@code NO_DATA}); {@code LOCAL_WIDTH}/{@code BED_ELEVATION}/
+     * {@code WATER_SURFACE}/{@code WATER_DEPTH} merge by taking the first non-{@code NO_DATA} value in
+     * plan order, matching {@link HydrologyValidationInputV2#NO_DATA}'s shared sentinel.
+     */
+    private static HydrologyFieldSamplerV2 sharedFieldSampler(
+            HydrologyRoutingResultV2 routing,
+            List<MeanderingRiverPlanV2> riverPlans
+    ) {
+        List<MeanderingRiverGeneratorV2> riverGenerators = riverPlans.stream()
+                .map(MeanderingRiverGeneratorV2::new)
+                .toList();
         return new HydrologyFieldSamplerV2() {
             @Override
             public int width() {
@@ -300,8 +354,66 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
                 if (HydrologyIrModuleV2.FLOW_ACCUMULATION_FIELD.equals(fieldId)) {
                     return routing.flowAccumulationAt(globalX, globalZ);
                 }
+                if (!riverGenerators.isEmpty() && RIVER_FIELD_IDS.contains(fieldId)) {
+                    return riverValueAt(riverGenerators, fieldId, globalX, globalZ);
+                }
                 return HydrologyValidationInputV2.NO_DATA;
             }
         };
+    }
+
+    private static int riverValueAt(
+            List<MeanderingRiverGeneratorV2> generators, String fieldId, int globalX, int globalZ
+    ) {
+        MeanderingRiverGeneratorV2.RiverField field = riverFieldFor(fieldId);
+        boolean maximumMerge = MAXIMUM_MERGED_RIVER_FIELDS.contains(field);
+        int accumulated = maximumMerge ? 0 : HydrologyValidationInputV2.NO_DATA;
+        for (MeanderingRiverGeneratorV2 generator : generators) {
+            if (globalX < 0 || globalX >= generator.width() || globalZ < 0 || globalZ >= generator.length()) {
+                continue;
+            }
+            int raw = generator.sampleAt(globalX, globalZ, NO_HARD_ROUTE_CONFLICT).rawValue(field);
+            if (raw == MeanderingRiverGeneratorV2.NO_DATA) {
+                continue;
+            }
+            accumulated = maximumMerge
+                    ? Math.max(accumulated, raw)
+                    : (accumulated == HydrologyValidationInputV2.NO_DATA ? raw : accumulated);
+        }
+        return accumulated;
+    }
+
+    private static MeanderingRiverGeneratorV2.RiverField riverFieldFor(String fieldId) {
+        if (HydrologyRiverModuleV2.CHANNEL_MASK_FIELD_ID.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.CHANNEL_MASK;
+        }
+        if (HydrologyRiverModuleV2.BANK_MASK_FIELD_ID.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.BANK_MASK;
+        }
+        if (HydrologyRiverModuleV2.FLOODPLAIN_MASK_FIELD_ID.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.FLOODPLAIN_MASK;
+        }
+        if (HydrologyRiverModuleV2.MEANDER_CORRIDOR_FIELD_ID.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.MEANDER_CORRIDOR;
+        }
+        if (HydrologyRiverModuleV2.LOCAL_WIDTH_FIELD_ID.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.LOCAL_WIDTH;
+        }
+        if (HydrologyRiverModuleV2.DISCHARGE_INDEX_FIELD_ID.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.DISCHARGE_INDEX;
+        }
+        if (HydrologyIrModuleV2.BED_ELEVATION_FIELD.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.BED_ELEVATION;
+        }
+        if (HydrologyIrModuleV2.WATER_SURFACE_FIELD.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.WATER_SURFACE;
+        }
+        if (HydrologyIrModuleV2.WATER_DEPTH_FIELD.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.WATER_DEPTH;
+        }
+        if (HydrologyIrModuleV2.WATER_BODY_ID_FIELD.equals(fieldId)) {
+            return MeanderingRiverGeneratorV2.RiverField.WATER_BODY_ID;
+        }
+        throw new IllegalArgumentException("unknown river field id: " + fieldId);
     }
 }

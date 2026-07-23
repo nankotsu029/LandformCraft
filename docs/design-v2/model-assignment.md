@@ -148,13 +148,13 @@ Paper実機smoke、WorldEdit／FAWE測定、MSPT／tick stall測定、Recovery d
 
 ### 9.2 V2-15 Canonical catalog／existing-generator wiring（Track E、残り38）
 
-進捗: `V2-15-01`〜`09`完了（9/47）。次のTaskは`V2-15-10`。
+進捗: `V2-15-01`〜`10`完了（10/47）。次のTaskは`V2-15-11`。**[ADR 0039](../adr/0039-offline-production-route-eligibility.md) Gate 0 は2026-07-23の人間承認で`Accepted`（候補A採択: offline production route は dispatch `production-dispatch-registry-v1→v2` contract bump で追加）となり、`V2-15-10`が候補Aパターンの最初の適用leafとして完了した**。`PRODUCTION_CONNECTED`（Paper込み完全接続＝coastal 4）の意味・Paper `SUPPORTED` exact setは不変（`RIVER`／`MEANDERING_RIVER`はexport-SUPPORTEDのまま`OFFLINE_PRODUCTION`route、Paper `paper_apply`はEXPERIMENTALで昇格なし）。後続`V2-15-11`〜`46`は同一パターンをコピーする。
 
-**Stage gate（全行共通、2026-07-23解除済み）:** 一律保留（`V2-18-09`完了までの待機）は`V2-18-12`の裁定と2026-07-23の人間承認で解除された。以後、production export／placement昇格系の作業・Acceptanceは各配線leafの**per-leaf義務**として次を負う: (1) 対象kindのcomposition profileをfield監査でPROVISIONAL→確定する（ADR 0038 D4。`CompositionProfileRegistryV2`にNORMATIVE登録済みなのは現状coastal 4種＋`PLAIN`／`HILL_RANGE`のみ。対応表の変更が必要ならADR 0038 amendmentを先行させ、Phase gate期待値はregistry変更と同一commitで更新する — test期待値だけの変更は禁止）、(2) 新規接続kindのintent-conformance portfolio caseを追加し、portfolio全case適合（登録済み非適合ゼロ）を維持する。registry／Schema／codec／offline plan／determinism系の作業は従来どおり制約なし。
+**Stage gate（全行共通、2026-07-23解除済み）:** 一律保留（`V2-18-09`完了までの待機）は`V2-18-12`の裁定と2026-07-23の人間承認で解除された。以後、production export／placement昇格系の作業・Acceptanceは各配線leafの**per-leaf義務**として次を負う: (1) 対象kindのcomposition profileをfield監査でPROVISIONAL→確定する（ADR 0038 D4。`CompositionProfileRegistryV2`にNORMATIVE登録済みなのは現状coastal 4種＋`PLAIN`／`HILL_RANGE`のみ。対応表の変更が必要ならADR 0038 amendmentを先行させ、Phase gate期待値はregistry変更と同一commitで更新する — test期待値だけの変更は禁止）、(2) 新規接続kindのintent-conformance portfolio caseを追加し、portfolio全case適合（登録済み非適合ゼロ）を維持する。registry／Schema／codec／offline plan／determinism系の作業は従来どおり制約なし。加えて ADR 0039 Accepted 後は、承認された offline production route パターンだけを 10〜46 でコピーする（A/B 混在禁止）。
 
 | Task | 状態 | 内容 | リスク | 主担当 | Effort | 第一レビュー | 第二レビュー／人間gate | 昇格条件 |
 |---|---|---|---|---|---|---|---|---|
-| V2-15-10 | READY | `RIVER`＋meandering subtype wiring | 中高（alias互換／meander checksum不変） | Sonnet 5 | High | Grok 4.5 | — | checksum互換の設計判断が必要ならOpus |
+| V2-15-10 | **完了（2026-07-23）** | `RIVER`＋meandering subtype wiring＋dispatch `v1→v2` bump（ADR 0039候補Aの最初の適用leaf） | 中高（alias互換／meander checksum不変） | Sonnet 5 | High | Grok 4.5 | — | checksum互換の設計判断が必要ならOpus |
 | V2-15-11 | 依存03,06 | `LAKE`＋oxbow subtype wiring | 中高（hydrology relation） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
 | V2-15-12 | 依存06 | `CANYON` wiring | 中（通常public wiring） | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
 | V2-15-13 | 依存06,08 | `WATERFALL`＋volume overlay wiring | 中高（graph／CSG ordering接続） | Sonnet 5 | High | Grok 4.5 | — | ordering不変条件が争点ならOpus |

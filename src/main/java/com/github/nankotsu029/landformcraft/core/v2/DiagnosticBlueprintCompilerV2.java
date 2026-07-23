@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.core.v2;
 
+import com.github.nankotsu029.landformcraft.core.v2.foundation.MeanderingRiverSubtypeBridgeV2;
 import com.github.nankotsu029.landformcraft.format.v2.CanonicalJsonV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
@@ -213,6 +214,35 @@ public final class DiagnosticBlueprintCompilerV2 {
                 try {
                     meanderingRiverPlans.add(riverCompiler.compile(
                             feature,
+                            new WorldBlueprintV2.Bounds(
+                                    request.bounds().width(), request.bounds().length(),
+                                    request.bounds().minY(), request.bounds().maxY(),
+                                    request.bounds().waterLevel()),
+                            codec.geometryChecksum(feature.geometry())));
+                } catch (RiverGenerationException exception) {
+                    throw new DiagnosticCompilationException(exception.ruleId(), exception.getMessage());
+                }
+            }
+            // V2-15-10 / ADR 0039 Candidate A: RIVER wires the offline hydrology-plan pipeline by
+            // compiling through the same MeanderingRiverPlanCompilerV2 shape as MEANDERING_RIVER, via a
+            // synthetic MEANDERING_RIVER-kind feature carrying bridged parameters. The original
+            // FeaturePlan above keeps FeatureKind.RIVER; only the compiled MeanderingRiverPlanV2 (and its
+            // downstream reconciliation/validation) uses the bridged shape. MeanderingRiverPlanCompilerV2's
+            // math and the MEANDERING_RIVER kind's own contract are unchanged.
+            if (feature.kind() == TerrainIntentV2.FeatureKind.RIVER) {
+                TerrainIntentV2.RiverParameters riverParameters =
+                        (TerrainIntentV2.RiverParameters) feature.parameters();
+                TerrainIntentV2.Feature meanderingFeature = new TerrainIntentV2.Feature(
+                        feature.id(),
+                        TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
+                        feature.geometry(),
+                        MeanderingRiverSubtypeBridgeV2.meanderingParametersFor(
+                                riverParameters, TerrainIntentV2.RiverVariant.MEANDERING_RIVER),
+                        feature.priority(),
+                        feature.provenance());
+                try {
+                    meanderingRiverPlans.add(riverCompiler.compile(
+                            meanderingFeature,
                             new WorldBlueprintV2.Bounds(
                                     request.bounds().width(), request.bounds().length(),
                                     request.bounds().minY(), request.bounds().maxY(),

@@ -5,6 +5,9 @@ import com.github.nankotsu029.landformcraft.format.v2.catalog.FeatureSupportCata
 import com.github.nankotsu029.landformcraft.format.v2.release.ReleaseArtifactCatalogV2;
 import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
+import com.github.nankotsu029.landformcraft.model.v2.catalog.FeatureSupportCatalogV2;
+import com.github.nankotsu029.landformcraft.model.v2.catalog.FeatureSupportEntryV2;
+import com.github.nankotsu029.landformcraft.model.v2.catalog.FeatureSupportLevelV2;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -12,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,14 +26,26 @@ import java.util.TreeSet;
 
 /**
  * Immutable application registry for production generator/validator/preview/export dispatch
- * (V2-15-05 spine, V2-15-06 hydrology, V2-15-07 environment, and V2-15-08 sparse-volume
- * capability overlays). The registry is assembled only from compile-time handlers and the V2-15-02
- * current source-state projection. It does not change Feature Support Catalog levels or Release contracts.
+ * (V2-15-05 spine, V2-15-06 hydrology, V2-15-07 environment, V2-15-08 sparse-volume capability
+ * overlays, and the V2-15-10 {@code v2} contract bump adding {@link RouteClass#OFFLINE_PRODUCTION}
+ * per Accepted ADR 0039 Candidate A). The registry is assembled only from compile-time handlers and
+ * the V2-15-02 current source-state projection. It does not change Feature Support Catalog levels or
+ * Release contracts, and {@code PRODUCTION_CONNECTED} keeps its existing meaning (Paper-and-export
+ * complete; coastal four only).
  */
 public final class ProductionDispatchRegistryV2 {
-    public static final String CONTRACT_VERSION = "production-dispatch-registry-v1";
+    public static final String CONTRACT_VERSION = "production-dispatch-registry-v2";
     public static final int MAXIMUM_PIPELINES = 16;
     public static final int MAXIMUM_ROUTES = 128;
+
+    /**
+     * V2-15-10 / ADR 0039 Candidate A: a route either covers the exact current
+     * {@code PRODUCTION_CONNECTED} kind set (Paper-and-export complete) or is an explicit
+     * {@code OFFLINE_PRODUCTION} allowlist entry (export-only; Paper stays below SUPPORTED). Adding a
+     * kind to the offline allowlist never changes {@code PRODUCTION_CONNECTED} or the Paper
+     * {@code SUPPORTED} exact set.
+     */
+    public enum RouteClass { PRODUCTION_CONNECTED, OFFLINE_PRODUCTION }
 
     private final Map<TerrainIntentV2.FeatureKind, Route> routes;
     private final Map<TerrainIntentV2.FeatureKind, String> contractOnlyPipelines;
@@ -43,9 +59,10 @@ public final class ProductionDispatchRegistryV2 {
         for (TerrainIntentV2.FeatureKind kind : TerrainIntentV2.FeatureKind.values()) {
             compatibilityKinds.add(kind.name());
         }
+        FeatureSupportCatalogV2 catalog = new FeatureSupportCatalogCodecV2().builtInSealed();
         CurrentFeatureStateRegistryV2 source = CurrentFeatureStateRegistryV2.project(
                 compatibilityKinds,
-                new FeatureSupportCatalogCodecV2().builtInSealed(),
+                catalog,
                 modules.featureBindings(),
                 modules.modules());
         source.requireConsistent();
@@ -54,29 +71,62 @@ public final class ProductionDispatchRegistryV2 {
         ProductionExportPipelineV2 hydrology = new HydrologyPlanExportPipelineV2();
         ProductionExportPipelineV2 environment = new EnvironmentFieldsExportPipelineV2();
         ProductionExportPipelineV2 sparseVolume = new SparseVolumeExportPipelineV2();
-        ProductionExportPipelineV2.PipelineDescriptor descriptor = coastal.descriptor();
+        ProductionExportPipelineV2.PipelineDescriptor coastalDescriptor = coastal.descriptor();
+        ProductionExportPipelineV2.PipelineDescriptor hydrologyDescriptor = hydrology.descriptor();
         Map<TerrainIntentV2.FeatureKind, CurrentFeatureStateRegistryV2.Entry> sourceEntries =
                 sourceEntries(source.entries());
-        List<Route> routes = descriptor.executableKinds().stream()
+        List<Route> routes = new ArrayList<>(coastalDescriptor.executableKinds().stream()
                 .map(kind -> new Route(
                         kind,
                         sourceEntries.get(kind).moduleId(),
-                        descriptor.pipelineId(),
-                        descriptor.handlers(),
-                        descriptor.requiredCapabilities()))
-                .toList();
+                        coastalDescriptor.pipelineId(),
+                        coastalDescriptor.handlers(),
+                        coastalDescriptor.requiredCapabilities(),
+                        RouteClass.PRODUCTION_CONNECTED))
+                .toList());
+        // V2-15-10 / ADR 0039 Candidate A: the one explicit OFFLINE_PRODUCTION allowlist entry for
+        // this Task. RIVER and MEANDERING_RIVER are export-SUPPORTED but stay below Paper SUPPORTED
+        // (coastal 4 only); they run on the shared hydrology-plan pipeline that already executes
+        // MeanderingRiverGeneratorV2. No other export-SUPPORTED kind is admitted here.
+        for (TerrainIntentV2.FeatureKind offlineKind : List.of(
+                TerrainIntentV2.FeatureKind.RIVER, TerrainIntentV2.FeatureKind.MEANDERING_RIVER)) {
+            routes.add(new Route(
+                    offlineKind,
+                    sourceEntries.get(offlineKind).moduleId(),
+                    hydrologyDescriptor.pipelineId(),
+                    hydrologyDescriptor.handlers(),
+                    hydrologyDescriptor.requiredCapabilities(),
+                    RouteClass.OFFLINE_PRODUCTION));
+        }
         return new ProductionDispatchRegistryV2(
-                source.entries(), routes, List.of(coastal, hydrology, environment, sparseVolume));
+                source.entries(), routes, List.of(coastal, hydrology, environment, sparseVolume),
+                exportSupportedKinds(catalog));
     }
 
+    static Set<TerrainIntentV2.FeatureKind> exportSupportedKinds(FeatureSupportCatalogV2 catalog) {
+        Set<TerrainIntentV2.FeatureKind> result = EnumSet.noneOf(TerrainIntentV2.FeatureKind.class);
+        for (FeatureSupportEntryV2 entry : catalog.entries()) {
+            if (entry.hasFeatureKind() && entry.support().export() == FeatureSupportLevelV2.SUPPORTED) {
+                result.add(TerrainIntentV2.FeatureKind.valueOf(entry.featureKindName()));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @param exportSupportedKinds current Feature Support Catalog kinds with {@code export==SUPPORTED};
+     *         only used to validate {@link RouteClass#OFFLINE_PRODUCTION} routes (ADR 0039 Candidate A).
+     */
     public ProductionDispatchRegistryV2(
             List<CurrentFeatureStateRegistryV2.Entry> sourceEntries,
             List<Route> routes,
-            List<ProductionExportPipelineV2> pipelines
+            List<ProductionExportPipelineV2> pipelines,
+            Set<TerrainIntentV2.FeatureKind> exportSupportedKinds
     ) {
         Objects.requireNonNull(sourceEntries, "sourceEntries");
         Objects.requireNonNull(routes, "routes");
         Objects.requireNonNull(pipelines, "pipelines");
+        Objects.requireNonNull(exportSupportedKinds, "exportSupportedKinds");
         if (routes.size() > MAXIMUM_ROUTES) {
             throw new IllegalArgumentException("production dispatch route budget exceeded");
         }
@@ -121,9 +171,29 @@ public final class ProductionDispatchRegistryV2 {
                 throw new IllegalArgumentException("duplicate production dispatch kind: " + route.featureKind());
             }
             CurrentFeatureStateRegistryV2.Entry source = requireSource(sourceByKind, route.featureKind());
-            if (source.currentState() != CurrentFeatureStateRegistryV2.CurrentState.PRODUCTION_CONNECTED) {
-                throw new IllegalArgumentException("dispatch route would elevate a non-production feature: "
-                        + route.featureKind());
+            if (route.routeClass() == RouteClass.PRODUCTION_CONNECTED) {
+                if (source.currentState() != CurrentFeatureStateRegistryV2.CurrentState.PRODUCTION_CONNECTED) {
+                    throw new IllegalArgumentException("dispatch route would elevate a non-production feature: "
+                            + route.featureKind());
+                }
+            } else {
+                // ADR 0039 Candidate A allowlist: dedicated module, export==SUPPORTED, and not already
+                // PRODUCTION_CONNECTED (which, combined with export==SUPPORTED, means paperApply is not
+                // SUPPORTED either). PRODUCTION_CONNECTED's meaning and the Paper SUPPORTED exact set are
+                // unchanged; only the offline export route is new.
+                if (source.currentState() == CurrentFeatureStateRegistryV2.CurrentState.PRODUCTION_CONNECTED) {
+                    throw new IllegalArgumentException(
+                            "offline production route kind must not already be production-connected: "
+                                    + route.featureKind());
+                }
+                if (source.moduleBinding() != CurrentFeatureStateRegistryV2.ModuleBinding.DEDICATED) {
+                    throw new IllegalArgumentException(
+                            "offline production route requires a dedicated module binding: " + route.featureKind());
+                }
+                if (!exportSupportedKinds.contains(route.featureKind())) {
+                    throw new IllegalArgumentException(
+                            "offline production route requires an export-supported kind: " + route.featureKind());
+                }
             }
             if (!source.moduleId().equals(route.moduleId())) {
                 throw new IllegalArgumentException("dispatch route module differs from current registry: "
@@ -154,7 +224,13 @@ public final class ProductionDispatchRegistryV2 {
                 expected.add(entry.featureKind());
             }
         }
-        if (!expected.equals(routeByKind.keySet())) {
+        Set<TerrainIntentV2.FeatureKind> actualProductionConnected = new TreeSet<>(Comparator.comparing(Enum::name));
+        for (Route route : routeByKind.values()) {
+            if (route.routeClass() == RouteClass.PRODUCTION_CONNECTED) {
+                actualProductionConnected.add(route.featureKind());
+            }
+        }
+        if (!expected.equals(actualProductionConnected)) {
             throw new IllegalArgumentException("production dispatch routes must exactly cover current production kinds");
         }
         this.routes = Map.copyOf(routeByKind);
@@ -204,7 +280,8 @@ public final class ProductionDispatchRegistryV2 {
                         route.moduleId(),
                         capabilityPipeline.descriptor().pipelineId(),
                         capabilityPipeline.descriptor().handlers(),
-                        capabilityPipeline.descriptor().requiredCapabilities()));
+                        capabilityPipeline.descriptor().requiredCapabilities(),
+                        route.routeClass()));
                 continue;
             }
             if (!contractOnlyPipelines.containsKey(kind)
@@ -319,7 +396,8 @@ public final class ProductionDispatchRegistryV2 {
             String moduleId,
             String pipelineId,
             ProductionExportPipelineV2.HandlerSet handlers,
-            List<String> requiredCapabilities
+            List<String> requiredCapabilities,
+            RouteClass routeClass
     ) {
         public Route {
             Objects.requireNonNull(featureKind, "featureKind");
@@ -328,6 +406,7 @@ public final class ProductionDispatchRegistryV2 {
             Objects.requireNonNull(handlers, "handlers");
             requiredCapabilities = List.copyOf(Objects.requireNonNull(
                     requiredCapabilities, "requiredCapabilities"));
+            Objects.requireNonNull(routeClass, "routeClass");
             if (requiredCapabilities.isEmpty()) {
                 throw new IllegalArgumentException("dispatch route requires a capability");
             }
@@ -342,7 +421,8 @@ public final class ProductionDispatchRegistryV2 {
                     handlers.validatorHandlerId(),
                     handlers.previewHandlerId(),
                     handlers.exportHandlerId(),
-                    String.join(",", requiredCapabilities));
+                    String.join(",", requiredCapabilities),
+                    routeClass.name());
         }
     }
 

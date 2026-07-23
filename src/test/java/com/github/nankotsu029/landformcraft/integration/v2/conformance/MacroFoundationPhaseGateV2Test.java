@@ -11,6 +11,7 @@ import com.github.nankotsu029.landformcraft.core.v2.export.IntentContributionCov
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportApplicationServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportRequestV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportResultV2;
+import com.github.nankotsu029.landformcraft.core.v2.export.Release2HydrologyExportApplicationServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.SurfaceBaselineV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.SurfaceFoundationOwnerGateV2;
 import com.github.nankotsu029.landformcraft.format.v2.catalog.FeatureSupportCatalogCodecV2;
@@ -87,11 +88,16 @@ class MacroFoundationPhaseGateV2Test {
         // than a re-statement of the portfolio test's.
         for (IntentConformancePortfolioV2.CaseV2 portfolioCase : IntentConformancePortfolioV2.cases()) {
             Path run = root.resolve(portfolioCase.id());
-            Release2ExportResultV2 result = new Release2ExportApplicationServiceV2(executors).exportNow(
-                    new Release2ExportRequestV2(
-                            portfolioCase.request(), portfolioCase.intent(),
-                            run.resolve("work"), run.resolve("exports"),
-                            portfolioCase.id(), portfolioCase.baseline()));
+            Release2ExportRequestV2 request = new Release2ExportRequestV2(
+                    portfolioCase.request(), portfolioCase.intent(),
+                    run.resolve("work"), run.resolve("exports"),
+                    portfolioCase.id(), portfolioCase.baseline());
+            // V2-15-10: a HYDROLOGY-route case must publish through the hydrology-plan
+            // OFFLINE_PRODUCTION dispatch path (ADR 0039 Candidate A), not the plain surface-2_5d path.
+            Release2ExportResultV2 result = portfolioCase.exportRoute()
+                    == IntentConformancePortfolioV2.ExportRouteV2.HYDROLOGY
+                    ? new Release2HydrologyExportApplicationServiceV2(executors).exportNow(request)
+                    : new Release2ExportApplicationServiceV2(executors).exportNow(request);
             MEASUREMENTS.put(portfolioCase.id(),
                     IntentConformancePortfolioV2.measure(result.releaseDirectory()));
             SEALED_INTENTS.put(portfolioCase.id(),
@@ -272,9 +278,10 @@ class MacroFoundationPhaseGateV2Test {
         List<TerrainIntentV2.FeatureKind> kinds = List.of(TerrainIntentV2.FeatureKind.values());
         assertEquals(60, kinds.size());
 
-        // ADR 0038 D4: NORMATIVE 6 / PROVISIONAL 54. Every PROVISIONAL kind is confirmed only by
-        // its own V2-15 wiring Task's field audit — the per-kind obligation the stage-gate release
-        // decision converts the blanket hold into.
+        // ADR 0038 D4: NORMATIVE 6 / PROVISIONAL 54 originally. Every PROVISIONAL kind is confirmed
+        // only by its own V2-15 wiring Task's field audit — the per-kind obligation the stage-gate
+        // release decision converts the blanket hold into. V2-15-10 / ADR 0039 Candidate A confirms
+        // RIVER (confidence-only amendment), moving the tiers to NORMATIVE 7 / PROVISIONAL 53.
         Set<TerrainIntentV2.FeatureKind> normative = kinds.stream()
                 .filter(kind -> registry.registration(kind).confidence()
                         == CompositionProfileRegistryV2.Confidence.NORMATIVE)
@@ -286,9 +293,10 @@ class MacroFoundationPhaseGateV2Test {
                         TerrainIntentV2.FeatureKind.HARBOR_BASIN,
                         TerrainIntentV2.FeatureKind.ROCKY_CAPE,
                         TerrainIntentV2.FeatureKind.PLAIN,
-                        TerrainIntentV2.FeatureKind.HILL_RANGE),
+                        TerrainIntentV2.FeatureKind.HILL_RANGE,
+                        TerrainIntentV2.FeatureKind.RIVER),
                 normative);
-        assertEquals(54, kinds.size() - normative.size());
+        assertEquals(53, kinds.size() - normative.size());
         assertEquals(17, registry.foundationEligibleKinds().size());
 
         // D4 reclassification: ABYSSAL_PLAIN is a basin-floor modifier, never a foundation producer.

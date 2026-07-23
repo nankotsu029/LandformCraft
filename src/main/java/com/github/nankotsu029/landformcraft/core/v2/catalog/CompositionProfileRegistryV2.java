@@ -27,7 +27,9 @@ import java.util.TreeSet;
  * (the four production-connected coastal modifiers plus the ADR 0037 adapter-connected
  * {@code PLAIN} / {@code HILL_RANGE} producers) are confirmed by the ADR approval; every other kind
  * is {@code PROVISIONAL} and is confirmed (or amended) by its own V2-15 production wiring Task —
- * the "composition role registration" the V2-15 stage gate requires.</p>
+ * the "composition role registration" the V2-15 stage gate requires. V2-15-10 confirms
+ * {@code RIVER} (a brief ADR 0038 amendment moves it PROVISIONAL→NORMATIVE confidence only; its
+ * profile fields are unchanged), bringing the NORMATIVE tier to seven kinds.</p>
  */
 public final class CompositionProfileRegistryV2 {
     public static final String CONTRACT_VERSION = "composition-profile-registry-v1";
@@ -55,7 +57,9 @@ public final class CompositionProfileRegistryV2 {
             TerrainIntentV2.FeatureKind.HARBOR_BASIN,
             TerrainIntentV2.FeatureKind.ROCKY_CAPE,
             TerrainIntentV2.FeatureKind.PLAIN,
-            TerrainIntentV2.FeatureKind.HILL_RANGE);
+            TerrainIntentV2.FeatureKind.HILL_RANGE,
+            // V2-15-10 / ADR 0039 Candidate A: confidence-only amendment, profile fields unchanged.
+            TerrainIntentV2.FeatureKind.RIVER);
 
     private final Map<TerrainIntentV2.FeatureKind, Registration> registrations;
 

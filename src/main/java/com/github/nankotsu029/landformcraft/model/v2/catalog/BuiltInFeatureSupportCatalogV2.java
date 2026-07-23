@@ -70,6 +70,7 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 TerrainIntentV2.FeatureKind.HARBOR_BASIN,
                 TerrainIntentV2.FeatureKind.ROCKY_CAPE,
                 TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
+                TerrainIntentV2.FeatureKind.RIVER,
                 TerrainIntentV2.FeatureKind.LAKE,
                 TerrainIntentV2.FeatureKind.CANYON,
                 TerrainIntentV2.FeatureKind.WATERFALL,
@@ -538,18 +539,18 @@ public final class BuiltInFeatureSupportCatalogV2 {
                         "V2-9 plan-level offline G/V/P SUPPORTED; intent/standalone/export PARTIAL")));
         result.add(entry(
                 "RIVER",
-                "FND9",
+                "SF16",
                 FeaturePrimaryRoleV2.STANDALONE_FEATURE,
                 List.of(FeaturePrimaryRoleV2.STANDALONE_FEATURE),
-                caps(FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.NOT_APPLICABLE),
+                withPaper(caps(FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.NOT_APPLICABLE,FeatureSupportLevelV2.NOT_APPLICABLE), FeatureSupportLevelV2.EXPERIMENTAL),
                 "RIVER",
-                ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
+                ModuleDescriptorV2.LifecycleStatus.SUPPORTED,
+                "hydrology-plan",
                 "",
-                "",
-                "docs/design-v2/audits/v2-9-phase-gate.md",
+                "docs/design-v2/audits + V2-15-10 offline hydrology-plan wiring (ADR 0039 Candidate A)",
                 List.of(
-                        "V2-9 plan-level offline G/V/P SUPPORTED; intent/standalone/export PARTIAL",
-                        "Child sandbar/river-island/plunge-pool roles")));
+                        "Dedicated module binding; offline SUPPORTED; Paper columns EXPERIMENTAL: /lfc v2 accepts this capability prefix, per-prefix real-machine smoke pending (V2-11-01)",
+                        "V2-15-10 / ADR 0039 Candidate A: compiles via MeanderingRiverSubtypeBridgeV2 into the shared MeanderingRiverPlanCompilerV2 shape; MEANDERING_RIVER's own math/checksum contract is unchanged")));
         result.add(entry(
                 "FLOODPLAIN",
                 "FND9",

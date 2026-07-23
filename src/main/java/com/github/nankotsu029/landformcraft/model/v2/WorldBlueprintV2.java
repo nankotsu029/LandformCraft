@@ -840,7 +840,7 @@ public record WorldBlueprintV2(
         }
         for (MeanderingRiverPlanV2 riverPlan : meanderingRiverPlans) {
             FeaturePlan featurePlan = plansById.get(riverPlan.featureId());
-            if (featurePlan == null || featurePlan.kind() != TerrainIntentV2.FeatureKind.MEANDERING_RIVER) {
+            if (featurePlan == null || !isRiverFamily(featurePlan.kind())) {
                 throw new IllegalArgumentException(
                         "meandering river plan does not match feature plan: " + riverPlan.featureId());
             }
@@ -874,8 +874,7 @@ public record WorldBlueprintV2(
             }
         }
         for (FeaturePlan plan : plans) {
-            if (plan.kind() == TerrainIntentV2.FeatureKind.MEANDERING_RIVER
-                    != riverPlansById.containsKey(plan.featureId())) {
+            if (isRiverFamily(plan.kind()) != riverPlansById.containsKey(plan.featureId())) {
                 throw new IllegalArgumentException(
                         "meandering river plan presence does not match feature kind: " + plan.featureId());
             }
@@ -1573,12 +1572,21 @@ public record WorldBlueprintV2(
         }
     }
 
+    /**
+     * V2-15-10 / ADR 0039 Candidate A: {@code RIVER} compiles into the same
+     * {@link MeanderingRiverPlanV2} shape as {@code MEANDERING_RIVER} (via
+     * {@code MeanderingRiverSubtypeBridgeV2}), so both kinds own exactly one river-family plan.
+     */
+    private static boolean isRiverFamily(TerrainIntentV2.FeatureKind kind) {
+        return kind == TerrainIntentV2.FeatureKind.MEANDERING_RIVER || kind == TerrainIntentV2.FeatureKind.RIVER;
+    }
+
     private static boolean reconciliationVariableMatchesFeature(
             HydrologyReconciliationPlanV2.VariableKind variableKind,
             TerrainIntentV2.FeatureKind featureKind
     ) {
         return switch (variableKind) {
-            case REACH_BED -> featureKind == TerrainIntentV2.FeatureKind.MEANDERING_RIVER;
+            case REACH_BED -> isRiverFamily(featureKind);
             case LAKE_SURFACE, LAKE_SPILL -> featureKind == TerrainIntentV2.FeatureKind.LAKE;
             case WATERFALL_LIP, WATERFALL_BASE -> featureKind == TerrainIntentV2.FeatureKind.WATERFALL;
             case MARINE_CONNECTION -> featureKind == TerrainIntentV2.FeatureKind.DELTA
@@ -1594,7 +1602,7 @@ public record WorldBlueprintV2(
             TerrainIntentV2.FeatureKind featureKind
     ) {
         return switch (constraintKind) {
-            case REACH_BED -> featureKind == TerrainIntentV2.FeatureKind.MEANDERING_RIVER;
+            case REACH_BED -> isRiverFamily(featureKind);
             case LAKE_SPILL -> featureKind == TerrainIntentV2.FeatureKind.LAKE;
             case DELTA_MOUTH -> featureKind == TerrainIntentV2.FeatureKind.DELTA;
             case TIDAL_CONNECTION -> featureKind == TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK;

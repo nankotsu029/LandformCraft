@@ -6,6 +6,7 @@ import com.github.nankotsu029.landformcraft.format.v2.catalog.FeatureSupportCata
 import com.github.nankotsu029.landformcraft.format.v2.release.ReleaseArtifactCatalogV2;
 import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
+import com.github.nankotsu029.landformcraft.model.v2.catalog.FeatureSupportCatalogV2;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -29,9 +30,9 @@ class ProductionDispatchRegistryV2Test {
             Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json");
     // Updated when capability overlays change; recompute via builtIn().registryChecksum().
     private static final String EXPECTED_REGISTRY_CHECKSUM =
-            "bec55cada3e479a182b027c873b9ed50a81d283bea51527b479e739999342afc";
+            "2fdb87e658b19df3129e68aabcae679c7966ff4a51124c6449d08d2396aa50c5";
     private static final String EXPECTED_ENVIRONMENT_PLAN_CHECKSUM =
-            "40303ba4cb75354b7d7df06d2fc87b393ce3e497d8f2d0d22477aeedfa463caf";
+            "e9064809b5864b8ed817e7a6090581cb89d96f5d9473ab7e46ccd3cefd4f4325";
 
     @Test
     void builtInRegistrySelectsTheCompleteCoastalProductionChain() throws Exception {
@@ -40,7 +41,7 @@ class ProductionDispatchRegistryV2Test {
 
         ProductionDispatchRegistryV2.DispatchPlan plan = registry.select(intent).plan();
 
-        assertEquals("production-dispatch-registry-v1", plan.contractVersion());
+        assertEquals("production-dispatch-registry-v2", plan.contractVersion());
         assertEquals(CoastalSurfaceExportPipelineV2.PIPELINE_ID, plan.pipelineId());
         assertEquals(List.of(
                         TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
@@ -57,7 +58,7 @@ class ProductionDispatchRegistryV2Test {
                         CoastalSurfaceExportPipelineV2.PREVIEW_HANDLER_ID,
                         CoastalSurfaceExportPipelineV2.EXPORT_HANDLER_ID))));
         assertEquals(EXPECTED_REGISTRY_CHECKSUM, registry.registryChecksum());
-        assertEquals("cda5fc94b4147006c859503c964d4da9152aaad744980e2759acd3e396f3756c",
+        assertEquals("7504eb98bd041b2bb9a46be3e5221fa590fff4a24595b9893ac752fcc91a5bd6",
                 plan.planChecksum());
     }
 
@@ -85,7 +86,7 @@ class ProductionDispatchRegistryV2Test {
                         HydrologyPlanExportPipelineV2.PREVIEW_HANDLER_ID,
                         HydrologyPlanExportPipelineV2.EXPORT_HANDLER_ID))));
         assertEquals(EXPECTED_REGISTRY_CHECKSUM, registry.registryChecksum());
-        assertEquals("b592c5b77f9e74d1ab26dd663b7945a0321cda8a2cdbf1c4bce2e8e09730ee3d",
+        assertEquals("ce05b9aba6e87e938b37e30bc9e5ee9f2776f330cb891a15fde46826a8d48257",
                 plan.planChecksum());
     }
 
@@ -142,7 +143,7 @@ class ProductionDispatchRegistryV2Test {
                         SparseVolumeExportPipelineV2.PREVIEW_HANDLER_ID,
                         SparseVolumeExportPipelineV2.EXPORT_HANDLER_ID))));
         assertEquals(EXPECTED_REGISTRY_CHECKSUM, registry.registryChecksum());
-        assertEquals("b01959e3a4a032869ef95e5d447367d9e667d26503c37b77bb8d491224aa9a08",
+        assertEquals("24113e63fc647e682d0f35b2d12558e0c021dbaa2dffea04a2592952cd176880",
                 plan.planChecksum());
     }
 
@@ -160,24 +161,31 @@ class ProductionDispatchRegistryV2Test {
     void rejectsMissingDuplicateUnknownPartialAndElevatingRoutes() {
         List<CurrentFeatureStateRegistryV2.Entry> source = currentSource();
         ProductionExportPipelineV2 pipeline = new CoastalSurfaceExportPipelineV2();
-        List<ProductionDispatchRegistryV2.Route> routes = ProductionDispatchRegistryV2.builtIn().routes();
+        // Only PRODUCTION_CONNECTED (coastal) routes for these exact-cover / elevation checks; the
+        // built-in OFFLINE_PRODUCTION river routes reference the hydrology pipeline, which is not in
+        // scope for this pipeline-only fixture.
+        List<ProductionDispatchRegistryV2.Route> routes = ProductionDispatchRegistryV2.builtIn().routes().stream()
+                .filter(route -> route.routeClass() == ProductionDispatchRegistryV2.RouteClass.PRODUCTION_CONNECTED)
+                .toList();
+        Set<TerrainIntentV2.FeatureKind> exportSupported = exportSupportedKinds();
 
         IllegalArgumentException missing = assertThrows(IllegalArgumentException.class,
-                () -> new ProductionDispatchRegistryV2(source, routes.subList(1, routes.size()), List.of(pipeline)));
+                () -> new ProductionDispatchRegistryV2(
+                        source, routes.subList(1, routes.size()), List.of(pipeline), exportSupported));
         assertTrue(missing.getMessage().contains("exactly cover"), missing.getMessage());
 
         List<ProductionDispatchRegistryV2.Route> duplicateRoutes = new ArrayList<>(routes);
         duplicateRoutes.add(routes.getFirst());
         IllegalArgumentException duplicate = assertThrows(IllegalArgumentException.class,
-                () -> new ProductionDispatchRegistryV2(source, duplicateRoutes, List.of(pipeline)));
+                () -> new ProductionDispatchRegistryV2(source, duplicateRoutes, List.of(pipeline), exportSupported));
         assertTrue(duplicate.getMessage().contains("duplicate production dispatch kind"), duplicate.getMessage());
 
         ProductionDispatchRegistryV2.Route first = routes.getFirst();
         List<ProductionDispatchRegistryV2.Route> unknownRoutes = replaceFirst(routes, new ProductionDispatchRegistryV2.Route(
                 first.featureKind(), first.moduleId(), "v2.unknown.pipeline",
-                first.handlers(), first.requiredCapabilities()));
+                first.handlers(), first.requiredCapabilities(), first.routeClass()));
         IllegalArgumentException unknown = assertThrows(IllegalArgumentException.class,
-                () -> new ProductionDispatchRegistryV2(source, unknownRoutes, List.of(pipeline)));
+                () -> new ProductionDispatchRegistryV2(source, unknownRoutes, List.of(pipeline), exportSupported));
         assertTrue(unknown.getMessage().contains("unknown pipeline"), unknown.getMessage());
 
         var partialHandlers = new ProductionExportPipelineV2.HandlerSet(
@@ -188,19 +196,113 @@ class ProductionDispatchRegistryV2Test {
         List<ProductionDispatchRegistryV2.Route> partialRoutes = replaceFirst(routes,
                 new ProductionDispatchRegistryV2.Route(
                         first.featureKind(), first.moduleId(), first.pipelineId(),
-                        partialHandlers, first.requiredCapabilities()));
+                        partialHandlers, first.requiredCapabilities(), first.routeClass()));
         IllegalArgumentException partial = assertThrows(IllegalArgumentException.class,
-                () -> new ProductionDispatchRegistryV2(source, partialRoutes, List.of(pipeline)));
+                () -> new ProductionDispatchRegistryV2(source, partialRoutes, List.of(pipeline), exportSupported));
         assertTrue(partial.getMessage().contains("handler chain differs"), partial.getMessage());
 
         List<ProductionDispatchRegistryV2.Route> elevatedRoutes = replaceFirst(routes,
                 new ProductionDispatchRegistryV2.Route(
                         TerrainIntentV2.FeatureKind.PLAIN,
                         BuiltInLandformModuleCatalogV2.DIAGNOSTIC_MODULE_ID,
-                        first.pipelineId(), first.handlers(), first.requiredCapabilities()));
+                        first.pipelineId(), first.handlers(), first.requiredCapabilities(),
+                        ProductionDispatchRegistryV2.RouteClass.PRODUCTION_CONNECTED));
         IllegalArgumentException elevated = assertThrows(IllegalArgumentException.class,
-                () -> new ProductionDispatchRegistryV2(source, elevatedRoutes, List.of(pipeline)));
+                () -> new ProductionDispatchRegistryV2(source, elevatedRoutes, List.of(pipeline), exportSupported));
         assertTrue(elevated.getMessage().contains("would elevate"), elevated.getMessage());
+    }
+
+    @Test
+    void offlineProductionRouteRequiresDedicatedModuleExportSupportAndNonProductionConnectedKind() {
+        List<CurrentFeatureStateRegistryV2.Entry> source = currentSource();
+        ProductionExportPipelineV2 hydrology = new HydrologyPlanExportPipelineV2();
+        Set<TerrainIntentV2.FeatureKind> exportSupported = exportSupportedKinds();
+        ProductionDispatchRegistryV2.Route riverRoute = ProductionDispatchRegistryV2.builtIn().routes().stream()
+                .filter(route -> route.featureKind() == TerrainIntentV2.FeatureKind.RIVER)
+                .findFirst().orElseThrow();
+
+        // A PRODUCTION_CONNECTED-labeled route for a kind that is not PRODUCTION_CONNECTED fails the
+        // exact-cover check for the coastal-four set (empty here, since no PRODUCTION_CONNECTED routes
+        // are supplied), not the offline allowlist path.
+        List<ProductionDispatchRegistryV2.Route> mislabeled = List.of(new ProductionDispatchRegistryV2.Route(
+                riverRoute.featureKind(), riverRoute.moduleId(), riverRoute.pipelineId(),
+                riverRoute.handlers(), riverRoute.requiredCapabilities(),
+                ProductionDispatchRegistryV2.RouteClass.PRODUCTION_CONNECTED));
+        IllegalArgumentException elevated = assertThrows(IllegalArgumentException.class,
+                () -> new ProductionDispatchRegistryV2(source, mislabeled, List.of(hydrology), exportSupported));
+        assertTrue(elevated.getMessage().contains("would elevate"), elevated.getMessage());
+
+        // Offline route for a kind whose module binding is diagnostic (not dedicated) is rejected.
+        // VALLEY has no dedicated module binding, so its current moduleId is the diagnostic module id.
+        List<ProductionDispatchRegistryV2.Route> nonDedicated = List.of(new ProductionDispatchRegistryV2.Route(
+                TerrainIntentV2.FeatureKind.VALLEY, BuiltInLandformModuleCatalogV2.DIAGNOSTIC_MODULE_ID,
+                riverRoute.pipelineId(), riverRoute.handlers(), riverRoute.requiredCapabilities(),
+                ProductionDispatchRegistryV2.RouteClass.OFFLINE_PRODUCTION));
+        IllegalArgumentException nonDedicatedError = assertThrows(IllegalArgumentException.class,
+                () -> new ProductionDispatchRegistryV2(source, nonDedicated, List.of(hydrology), exportSupported));
+        assertTrue(nonDedicatedError.getMessage().contains("dedicated module binding"),
+                nonDedicatedError.getMessage());
+
+        // Offline route for a kind that is not export-SUPPORTED is rejected even with a dedicated
+        // module and a pipeline that (hypothetically) executes it.
+        IllegalArgumentException notExportSupported = assertThrows(IllegalArgumentException.class,
+                () -> new ProductionDispatchRegistryV2(source, List.of(riverRoute), List.of(hydrology), Set.of()));
+        assertTrue(notExportSupported.getMessage().contains("export-supported kind"),
+                notExportSupported.getMessage());
+    }
+
+    @Test
+    void builtInRegistrySelectsRiverAndMeanderingRiverAsOfflineProductionOnHydrologyOverlay() throws Exception {
+        ProductionDispatchRegistryV2 registry = ProductionDispatchRegistryV2.builtIn();
+        for (TerrainIntentV2.FeatureKind offlineKind : List.of(
+                TerrainIntentV2.FeatureKind.RIVER, TerrainIntentV2.FeatureKind.MEANDERING_RIVER)) {
+            ProductionDispatchRegistryV2.Route route = registry.routes().stream()
+                    .filter(candidate -> candidate.featureKind() == offlineKind)
+                    .findFirst().orElseThrow(() -> new AssertionError("missing route for " + offlineKind));
+            assertEquals(ProductionDispatchRegistryV2.RouteClass.OFFLINE_PRODUCTION, route.routeClass(),
+                    offlineKind.name());
+            assertEquals(HydrologyPlanExportPipelineV2.PIPELINE_ID, route.pipelineId(), offlineKind.name());
+            assertEquals(ReleaseArtifactCatalogV2.HYDROLOGY_WITH_SURFACE, route.requiredCapabilities(),
+                    offlineKind.name());
+        }
+    }
+
+    @Test
+    void lakeStillHasNoProductionDispatchRoute() {
+        // ADR 0039 Candidate A adds exactly one explicit OFFLINE_PRODUCTION family (RIVER /
+        // MEANDERING_RIVER); every other export-SUPPORTED kind, including LAKE, must not be
+        // auto-admitted into a dispatch route by this Task.
+        ProductionDispatchRegistryV2 registry = ProductionDispatchRegistryV2.builtIn();
+        assertTrue(registry.routes().stream()
+                .noneMatch(route -> route.featureKind() == TerrainIntentV2.FeatureKind.LAKE));
+    }
+
+    @Test
+    void coastalFourStillExactlyCoverProductionConnectedRoutes() {
+        ProductionDispatchRegistryV2 registry = ProductionDispatchRegistryV2.builtIn();
+        Set<TerrainIntentV2.FeatureKind> productionConnected = registry.routes().stream()
+                .filter(route -> route.routeClass() == ProductionDispatchRegistryV2.RouteClass.PRODUCTION_CONNECTED)
+                .map(ProductionDispatchRegistryV2.Route::featureKind)
+                .collect(java.util.stream.Collectors.toCollection(
+                        () -> java.util.EnumSet.noneOf(TerrainIntentV2.FeatureKind.class)));
+        assertEquals(java.util.EnumSet.of(
+                TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
+                TerrainIntentV2.FeatureKind.HARBOR_BASIN,
+                TerrainIntentV2.FeatureKind.ROCKY_CAPE,
+                TerrainIntentV2.FeatureKind.SANDY_BEACH), productionConnected);
+
+        Set<TerrainIntentV2.FeatureKind> offline = registry.routes().stream()
+                .filter(route -> route.routeClass() == ProductionDispatchRegistryV2.RouteClass.OFFLINE_PRODUCTION)
+                .map(ProductionDispatchRegistryV2.Route::featureKind)
+                .collect(java.util.stream.Collectors.toCollection(
+                        () -> java.util.EnumSet.noneOf(TerrainIntentV2.FeatureKind.class)));
+        assertEquals(java.util.EnumSet.of(
+                TerrainIntentV2.FeatureKind.RIVER, TerrainIntentV2.FeatureKind.MEANDERING_RIVER), offline);
+    }
+
+    private static Set<TerrainIntentV2.FeatureKind> exportSupportedKinds() {
+        FeatureSupportCatalogV2 catalog = new FeatureSupportCatalogCodecV2().builtInSealed();
+        return ProductionDispatchRegistryV2.exportSupportedKinds(catalog);
     }
 
     @Test
@@ -231,11 +333,14 @@ class ProductionDispatchRegistryV2Test {
         source.sort(Comparator.comparing(
                 (CurrentFeatureStateRegistryV2.Entry entry) -> entry.featureKind().name()).reversed());
         List<ProductionDispatchRegistryV2.Route> routes = new ArrayList<>(
-                ProductionDispatchRegistryV2.builtIn().routes());
+                ProductionDispatchRegistryV2.builtIn().routes().stream()
+                        .filter(route -> route.routeClass()
+                                == ProductionDispatchRegistryV2.RouteClass.PRODUCTION_CONNECTED)
+                        .toList());
         routes.sort(Comparator.comparing(
                 (ProductionDispatchRegistryV2.Route route) -> route.featureKind().name()).reversed());
         ProductionDispatchRegistryV2 registry = new ProductionDispatchRegistryV2(
-                source, routes, List.of(new CoastalSurfaceExportPipelineV2()));
+                source, routes, List.of(new CoastalSurfaceExportPipelineV2()), exportSupportedKinds());
         TerrainIntentV2 intent = new LandformV2DataCodec().readTerrainIntent(INTENT);
         String expected = registry.registryChecksum() + ":" + registry.select(intent).plan().planChecksum();
 

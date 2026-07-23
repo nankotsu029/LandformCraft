@@ -387,6 +387,7 @@ public final class BuiltInLandformModuleCatalogV2 {
         result.put(TerrainIntentV2.FeatureKind.HARBOR_BASIN, CoastalFoundationModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.ROCKY_CAPE, CoastalFoundationModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.MEANDERING_RIVER, HydrologyRiverModuleV2.MODULE_ID);
+        result.put(TerrainIntentV2.FeatureKind.RIVER, HydrologyRiverModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.LAKE, HydrologyLakeModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.CANYON, LandformCanyonModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.WATERFALL, HydrologyWaterfallModuleV2.MODULE_ID);
@@ -406,6 +407,7 @@ public final class BuiltInLandformModuleCatalogV2 {
                 .filter(kind -> !com.github.nankotsu029.landformcraft.model.v2.CoastalFeaturePlanV2
                         .isFoundationKind(kind)
                         && kind != TerrainIntentV2.FeatureKind.MEANDERING_RIVER
+                        && kind != TerrainIntentV2.FeatureKind.RIVER
                         && kind != TerrainIntentV2.FeatureKind.LAKE
                         && kind != TerrainIntentV2.FeatureKind.CANYON
                         && kind != TerrainIntentV2.FeatureKind.WATERFALL)

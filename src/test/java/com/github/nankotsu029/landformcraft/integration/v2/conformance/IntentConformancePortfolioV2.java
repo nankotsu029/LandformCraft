@@ -4,6 +4,7 @@ import com.github.nankotsu029.landformcraft.core.v2.export.SurfaceBaselineV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.field.ConstraintFieldIndexCodecV2;
 import com.github.nankotsu029.landformcraft.format.v2.field.LfcGridReaderV1;
+import com.github.nankotsu029.landformcraft.format.v2.validation.HydrologyValidationArtifactCodecV2;
 import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalRasterKernelV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.HardLandWaterSourceV2;
@@ -18,6 +19,7 @@ import com.github.nankotsu029.landformcraft.model.v2.CoastalFeaturePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalTransitionPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.ConstraintFieldIndexV2;
 import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
+import com.github.nankotsu029.landformcraft.model.v2.HydrologyValidationArtifactV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
 import com.github.nankotsu029.landformcraft.validation.v2.target.TargetDrivenValidatorV2;
@@ -68,6 +70,14 @@ final class IntentConformancePortfolioV2 {
     }
 
     /**
+     * Which production dispatch capability set the case exports through. {@code SURFACE} is the
+     * plain {@code surface-2_5d} coastal path; {@code HYDROLOGY} is the V2-15-10 {@code hydrology-plan}
+     * path (ADR 0039 Candidate A {@code OFFLINE_PRODUCTION} route), required for a case that declares
+     * a {@code RIVER} / {@code MEANDERING_RIVER} feature alongside the coastal contributors.
+     */
+    enum ExportRouteV2 { SURFACE, HYDROLOGY }
+
+    /**
      * One portfolio fixture. {@code shoreConnectedArmIds} is the arm set whose footprint currently
      * reaches off-structure mainland; it is an explicit expectation rather than a derived value so a
      * regression cannot silently disconnect an arm, and so a known non-conformance stays visible.
@@ -80,12 +90,14 @@ final class IntentConformancePortfolioV2 {
             int width,
             int length,
             Set<String> shoreConnectedArmIds,
-            Set<String> declaredArmIds
+            Set<String> declaredArmIds,
+            ExportRouteV2 exportRoute
     ) {
         CaseV2 {
             Objects.requireNonNull(id, "id");
             shoreConnectedArmIds = Set.copyOf(shoreConnectedArmIds);
             declaredArmIds = Set.copyOf(declaredArmIds);
+            Objects.requireNonNull(exportRoute, "exportRoute");
         }
 
         @Override
@@ -94,7 +106,7 @@ final class IntentConformancePortfolioV2 {
         }
     }
 
-    /** The permanent portfolio. Both cases are the V2-18-03 gate-passing coastal contracts. */
+    /** The permanent portfolio. Both original cases are the V2-18-03 gate-passing coastal contracts. */
     static List<CaseV2> cases() {
         return List.of(
                 new CaseV2(
@@ -105,7 +117,8 @@ final class IntentConformancePortfolioV2 {
                         64, 64,
                         // Both declared landfalls reach the mainland at this scale.
                         Set.of("west-arm", "east-arm"),
-                        Set.of("west-arm", "east-arm")),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.SURFACE),
                 new CaseV2(
                         "coastal-honored-400",
                         Path.of("examples/v2/diagnostic/coastal-honored-400.request-v2.json"),
@@ -118,8 +131,26 @@ final class IntentConformancePortfolioV2 {
                         // land-water mask was regenerated (composed output ∪ macro composition) and both
                         // arms now connect to shore.
                         Set.of("west-arm", "east-arm"),
-                        Set.of("west-arm", "east-arm")));
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.SURFACE),
+                new CaseV2(
+                        // V2-15-10 / ADR 0039 Candidate A: the harbor-cove-64-honored coastal contract
+                        // plus one RIVER feature, published through the hydrology-plan OFFLINE_PRODUCTION
+                        // route so this leaf's per-leaf intent-conformance obligation is measured from a
+                        // published Release rather than in-process generator state. The coastal shape
+                        // fixture and land-water mask are otherwise identical to harbor-cove-64-honored.
+                        "harbor-cove-64-honored-river",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-river.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-river.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.HYDROLOGY));
     }
+
+    /** The declared {@code RIVER} / {@code MEANDERING_RIVER} feature id measured by the river case. */
+    static final String RIVER_FEATURE_ID = "inland-stem";
 
     /** Everything the portfolio measures, all of it read back from the published Release. */
     record MeasurementsV2(
@@ -458,6 +489,19 @@ final class IntentConformancePortfolioV2 {
             }
         }
         return in;
+    }
+
+    /**
+     * Reads the published {@code hydrology/validation.json} evidence through the strict,
+     * checksum-verifying reader. Only defined for {@link ExportRouteV2#HYDROLOGY} cases, whose Release
+     * carries this artifact in addition to the shared {@code surface-2_5d} tree.
+     */
+    static HydrologyValidationArtifactV2.HydrologyValidationReport readHydrologyValidationReport(
+            Path releaseDirectory
+    ) throws IOException {
+        return new HydrologyValidationArtifactCodecV2()
+                .read(releaseDirectory.resolve("hydrology/validation.json"))
+                .report();
     }
 
     /** Reads the published ACTUAL land-water sidecar through the strict, checksum-verifying reader. */

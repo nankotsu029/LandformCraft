@@ -67,7 +67,9 @@ class FoundationPhaseGateV2Test {
             TerrainIntentV2.FeatureKind.HILL_RANGE,
             TerrainIntentV2.FeatureKind.MOUNTAIN_RANGE,
             TerrainIntentV2.FeatureKind.VALLEY,
-            TerrainIntentV2.FeatureKind.RIVER,
+            // RIVER moved off the diagnostic module onto HydrologyRiverModuleV2 in V2-15-10 / ADR 0039
+            // Candidate A (offline production route); it is no longer diagnostic-only, so it is removed
+            // from this V2-9 diagnostic-stability list.
             TerrainIntentV2.FeatureKind.FLOODPLAIN,
             TerrainIntentV2.FeatureKind.MARSH,
             TerrainIntentV2.FeatureKind.ROCKY_COAST,

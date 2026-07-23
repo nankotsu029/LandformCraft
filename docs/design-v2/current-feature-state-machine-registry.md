@@ -15,16 +15,20 @@ documentation update in the same change.
 
 - Contract: `current-feature-state-registry-v1`
 - Sources: enum=60, Schema=60, module bindings=60, catalog FeatureKind entries=60
-- Module bindings: dedicated=16, diagnostic=44
+- Module bindings: dedicated=17, diagnostic=43
 - States: production-connected=4, offline-or-plan-level=48, enum-schema-only=4, child-plan-only=4
 - Production-connected: `BREAKWATER_HARBOR`, `HARBOR_BASIN`, `ROCKY_CAPE`, `SANDY_BEACH`
 - Enum/Schema only: `BACKSHORE_PLAINS`, `BEDROCK_RIVER`, `FLOODED_CAVE`, `GLACIAL_CIRQUE_FIELD`
 - Child-plan-only: `LAGOON`, `LAVA_FLOW_FIELD`, `REEF_PASS`, `VOLCANIC_CALDERA`
-- Canonical projection SHA-256: `5a9eb1982502cd7edb351aadec1bf79b37c9cf27506ada1cf229da2aed8da4df`
+- Canonical projection SHA-256: `8b3cf144445c34e71a3dfd8f87364ca4378d2bc2bfb3f8ef0785b31fdf5ae00c`
 
 <!-- current-feature-state-registry-v1:end -->
 
-`PRODUCTION_CONNECTED` remains the existing coastal four only. `OFFLINE_OR_PLAN_LEVEL` does not
+V2-15-10 (ADR 0039 Candidate A) moves `RIVER` from the diagnostic module binding onto the dedicated
+`HydrologyRiverModuleV2` (shared with `MEANDERING_RIVER`), so dedicated bindings move from 16 to 17
+and diagnostic bindings move from 44 to 43. `RIVER`'s current state stays `OFFLINE_OR_PLAN_LEVEL`
+(unchanged set membership; only the module-binding count changes), and `PRODUCTION_CONNECTED`
+remains the existing coastal four only. `OFFLINE_OR_PLAN_LEVEL` does not
 mean public export, CLI, Paper application, or `SUPPORTED` promotion; those connections remain
 separate V2-15 leaf Tasks and V2-17 real-host evidence gates. `ENUM_SCHEMA_ONLY` and
 `CHILD_PLAN_ONLY` remain current-state classifications, not deletion or migration authority.
