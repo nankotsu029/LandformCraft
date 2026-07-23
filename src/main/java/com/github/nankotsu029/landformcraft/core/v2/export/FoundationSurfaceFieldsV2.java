@@ -71,11 +71,13 @@ final class FoundationSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
                 int absoluteY = absoluteSurfaceY(elevationBlocks, minY, maxY, waterLevel);
                 surfaceHeight[index] = Math.multiplyExact(absoluteY, SCALE);
                 ownerIndex[index] = sample.ownerIndex();
-                covered++;
+                // V2-18-10: count cells that actually carry an effective foundation owner. The old
+                // unconditional increment could never differ from the cell total, so the adapter's
+                // "full owner coverage" check was true by construction; the count is now measured.
+                if (sample.ownerIndex() > 0) {
+                    covered++;
+                }
             }
-        }
-        if (covered != cells) {
-            throw new IllegalStateException("foundation surface projection missed cells");
         }
         return new FoundationSurfaceFieldsV2(landWater, surfaceHeight, ownerIndex, width, length, covered);
     }
@@ -101,7 +103,8 @@ final class FoundationSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
                 || surfaceClassCode == SurfaceFoundationPlanV2.SurfaceClassCode.SUBMARINE_CANYON.code();
     }
 
-    int coveredCells() {
+    /** Cells of the request domain carrying an effective foundation owner (V2-18-10 gate subject). */
+    int foundationOwnerCells() {
         return coveredCells;
     }
 

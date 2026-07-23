@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -31,6 +32,7 @@ public final class Release2HydrologyExportApplicationServiceV2 {
     private final GenerationExecutors executors;
     private final LandformV2DataCodec codec;
     private final ProductionDispatchRegistryV2 dispatchRegistry;
+    private final HardPreflightGateV2 preflightGate = new HardPreflightGateV2();
     private final ReleaseHydrologyPublisherV2 publisher;
     private final ReleaseHydrologyVerifierV2 verifier;
     private final ReleasePlacementEligibilityVerifierV2 eligibilityVerifier;
@@ -90,8 +92,10 @@ public final class Release2HydrologyExportApplicationServiceV2 {
             throw new IOException("production hydrology dispatch rejected terrain intent: "
                     + exception.getMessage(), exception);
         }
+        preflightGate.requireHonorable(generationRequest, request.generationRequest(), intent, token);
         ProductionExportPipelineV2.GeneratedHydrology generated = dispatch.pipeline().generateHydrology(
-                generationRequest, intent, request.baseline(), request.workRoot(), request.budget(), token);
+                generationRequest, request.generationRequest(), intent, request.baseline(),
+                request.workRoot(), request.budget(), token);
 
         HydrologyReleaseSourceV2 source = generated.source();
         ReleaseHydrologyArtifactsV2 published = publisher.publish(
@@ -123,6 +127,8 @@ public final class Release2HydrologyExportApplicationServiceV2 {
                 directory.manifest().canonicalChecksum(),
                 directory.manifest().requiredCapabilities(),
                 tileIds,
-                eligibility);
+                eligibility,
+                Optional.empty(),
+                List.of());
     }
 }

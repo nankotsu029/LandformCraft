@@ -43,6 +43,21 @@ public enum V2CommandVerbV2 {
     REQUEST_CONSTRAINT_MAP("request", "constraint-map", 9, 9,
             "v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width> <length>",
             "request.edit", Surface.BOTH, null),
+    /**
+     * Replaces the generation settings. Export-relevant since the resolved mask must match the
+     * seed's composed geometry (V2-18-09/10), so authoring must be able to reproduce a mask's seed.
+     */
+    REQUEST_GENERATION("request", "generation", 6, 6,
+            "v2 request generation <request-id> <global-seed> <tile-size>",
+            "request.edit", Surface.BOTH, null),
+    /**
+     * Declares the macro foundation's per-medium provisional base elevation (V2-18-10, ADR 0038 D2-2).
+     * Together with the constraint map source this is the explicit foundation input the surface owner
+     * gate requires, so authoring can reach a passing {@code v2 export} without hand-editing JSON.
+     */
+    REQUEST_FOUNDATION_BASE_LEVELS("request", "foundation-base-levels", 6, 6,
+            "v2 request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>",
+            "request.edit", Surface.BOTH, null),
     REQUEST_LIST("request", "list", 3, 3,
             "v2 request list", "request", Surface.BOTH, null),
     DESIGN("design", null, 5, 6,

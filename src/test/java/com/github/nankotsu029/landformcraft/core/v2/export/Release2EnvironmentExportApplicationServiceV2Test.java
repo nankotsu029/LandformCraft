@@ -33,8 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * directory／ZIP strict verify with hydrology dependency → placement eligibility. No Feature promotion.
  */
 class Release2EnvironmentExportApplicationServiceV2Test {
-    private static final Path REQUEST = Path.of("examples/v2/diagnostic/azure-coast.request-v2.json");
-    private static final Path INTENT = Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json");
+    private static final Path REQUEST = Path.of("examples/v2/diagnostic/coastal-honored-400.request-v2.json");
+    private static final Path INTENT = Path.of("examples/v2/diagnostic/coastal-honored-400.terrain-intent-v2.json");
     private static final SurfaceBaselineV2 BASELINE =
             new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 42);
 

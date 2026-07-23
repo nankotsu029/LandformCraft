@@ -186,8 +186,12 @@ final class SurfaceReleaseCapabilityVerifierV2 {
         }
         for (TerrainIntentV2.ConstraintMapBinding binding : intent.mapReferences()) {
             ConstraintFieldIndexV2.AppliedBinding applied = bySource.get(binding.sourceId());
+            // V2-18-07 separates the two artifact references that used to be forced equal. The field
+            // index's canonicalArtifactId content-addresses the DESIRED field artifact (verified against
+            // its own semantic checksum inside ConstraintFieldIndexV2). The intent binding's artifactId is
+            // the desired-source provenance and must reference the declared INPUT mask digest, not the
+            // generated field's checksum. Every other binding parameter still has to agree.
             if (applied == null || !applied.bindingId().equals(binding.id()) || applied.role() != binding.role()
-                    || !applied.canonicalArtifactId().equals(binding.artifactId())
                     || applied.strength() != binding.strength()
                     || applied.sampling().name().equals(binding.sampling().name()) == false
                     || applied.toleranceBlocks() != binding.toleranceBlocks()
@@ -195,6 +199,10 @@ final class SurfaceReleaseCapabilityVerifierV2 {
                 throw new IOException("surface Release constraint binding differs between intent and field index");
             }
             String expectedSourceChecksum = requestSources.get(binding.sourceId());
+            String expectedArtifactId = artifactPrefix(binding.role()) + expectedSourceChecksum;
+            if (!binding.artifactId().equals(expectedArtifactId)) {
+                throw new IOException("surface Release intent binding does not reference the declared input mask digest");
+            }
             boolean provenanceMatches = fieldIndex.fields().stream()
                     .filter(field -> applied.fieldIds().contains(field.definition().fieldId()))
                     .allMatch(field -> field.provenance().sourceChecksum().equals(expectedSourceChecksum));
@@ -202,6 +210,15 @@ final class SurfaceReleaseCapabilityVerifierV2 {
                 throw new IOException("surface Release field provenance differs from request source checksum");
             }
         }
+    }
+
+    /** Canonical artifact-id prefix per map role, matching {@code TerrainIntentV2.ConstraintMapBinding}. */
+    private static String artifactPrefix(TerrainIntentV2.ConstraintMapRole role) {
+        return switch (role) {
+            case LAND_WATER_MASK -> "constraint:land-water:sha256-";
+            case HEIGHT_GUIDE -> "constraint:height-guide:sha256-";
+            case ZONE_LABEL_MAP -> "constraint:zone-label-map:sha256-";
+        };
     }
 
     private static boolean requiresCoastalMetrics(WorldBlueprintV2 blueprint) {

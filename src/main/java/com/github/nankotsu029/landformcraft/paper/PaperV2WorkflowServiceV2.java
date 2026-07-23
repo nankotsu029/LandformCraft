@@ -105,6 +105,29 @@ public final class PaperV2WorkflowServiceV2 {
                 requestId, sourceSlug, file, expectedSha256, expectedWidth, expectedLength)));
     }
 
+    /** Replaces the generation settings (seed／tile size); export-relevant since V2-18-09/10. */
+    public CompletionStage<GenerationRequestV2> setGeneration(
+            String requestId,
+            long globalSeed,
+            int tileSize
+    ) {
+        return executors.supplyIo(() -> io(() -> requests().generation(requestId, globalSeed, tileSize)));
+    }
+
+    /**
+     * Declares the macro foundation's per-medium base elevation (V2-18-10, ADR 0038 D2-2). Required
+     * together with the constraint map source before a {@code surface-2_5d} export can pass the
+     * foundation owner gate.
+     */
+    public CompletionStage<GenerationRequestV2> setFoundationBaseLevels(
+            String requestId,
+            int landSurfaceY,
+            int waterBedY
+    ) {
+        return executors.supplyIo(() -> io(() ->
+                requests().foundationBaseLevels(requestId, landSurfaceY, waterBedY)));
+    }
+
     public CompletionStage<GenerationRequestV2> setPrompt(String requestId, String prompt) {
         return executors.supplyIo(() -> io(() -> requests().prompt(requestId, prompt)));
     }

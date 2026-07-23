@@ -55,10 +55,12 @@ Paper、Bukkit、WorldEdit、FAWE本体は配布JARへshadeしません。WorldE
 
 ```bash
 ./gradlew clean build
-./gradlew run --args="request validate examples/v2/diagnostic/harbor-cove-64.request-v2.json"
-./gradlew run --args="export examples/v2/diagnostic/harbor-cove-64.request-v2.json examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json build/exports harbor-cove-64 water 54 46"
+./gradlew run --args="request validate examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json"
+./gradlew run --args="export examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json build/exports harbor-cove-64 water 54 46"
 ./gradlew run --args="preview build/exports/harbor-cove-64"
 ```
+
+同梱fixtureは明示foundation入力（HARD `LAND_WATER_MASK`＋`foundationBaseLevels`）を持つため、maskが全cellのland-water構図を確定するmacro foundation経路で生成されます。`V2-18-10`以降、surface exportはfoundation owner被覆100%を必須とするため、この明示foundation入力を持たないrequestは`v2.export.foundation-owner-coverage-incomplete`で拒否されます。末尾のbaseline引数はfoundation経路では無視され、summaryへ`v2.cli.surface-baseline-deprecated`警告が出ます（詳細は [docs/commands.md](docs/commands.md)）。
 
 Paperへ `build/libs/LandformCraft-0.9.0-beta.1.jar` とWorldEditまたはFAWEを配置し、test worldで次を実行します。
 

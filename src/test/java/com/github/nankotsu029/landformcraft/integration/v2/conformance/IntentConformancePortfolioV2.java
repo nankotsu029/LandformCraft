@@ -1,0 +1,653 @@
+package com.github.nankotsu029.landformcraft.integration.v2.conformance;
+
+import com.github.nankotsu029.landformcraft.core.v2.export.SurfaceBaselineV2;
+import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
+import com.github.nankotsu029.landformcraft.format.v2.field.ConstraintFieldIndexCodecV2;
+import com.github.nankotsu029.landformcraft.format.v2.field.LfcGridReaderV1;
+import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
+import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalRasterKernelV2;
+import com.github.nankotsu029.landformcraft.generator.v2.coast.HardLandWaterSourceV2;
+import com.github.nankotsu029.landformcraft.generator.v2.coast.beach.SandyBeachGeneratorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.coast.breakwater.BreakwaterHarborGeneratorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.coast.cape.RockyCapeGeneratorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.coast.harbor.HarborBasinGeneratorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionCompositorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionLayerSourcesV2;
+import com.github.nankotsu029.landformcraft.model.v2.BreakwaterHarborPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.CoastalFeaturePlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.CoastalTransitionPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.ConstraintFieldIndexV2;
+import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
+import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
+import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
+import com.github.nankotsu029.landformcraft.validation.v2.target.TargetDrivenValidatorV2;
+import com.github.nankotsu029.landformcraft.validation.v2.target.TargetEvaluationV2;
+import com.github.nankotsu029.landformcraft.validation.v2.target.ValidationFieldSamplerV2;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
+
+/**
+ * V2-18-11 intent-conformance E2E portfolio.
+ *
+ * <p>The V2-18 audit (item 5) found that no layer asserted terrain <em>shape</em>: the existing tests
+ * pinned determinism, checksums, strict verify and budget rejection, so a release whose north edge had
+ * lost the mainland and whose features floated in isolation still passed every gate. This portfolio
+ * closes that gap permanently. It measures a <em>published</em> Release — never in-process generator
+ * state — and reports:</p>
+ *
+ * <ol>
+ *   <li><b>EDGE conformance:</b> the published blueprint's {@code v2.edge-classification} targets are
+ *       re-evaluated by the production {@link com.github.nankotsu029.landformcraft.validation.v2.target
+ *       .EdgeClassificationEvaluatorV2} over the published ACTUAL land-water sidecar, so the measured
+ *       edge shares are read back out of the artifact an operator would ship.</li>
+ *   <li><b>beach ↔ backshore land continuity:</b> every beach-owned land band cell is land, lies in one
+ *       land component, and that component also carries the declared backshore hinterland.</li>
+ *   <li><b>breakwater arm land connection:</b> for each declared arm, whether its footprint reaches
+ *       off-structure mainland — a breakwater whose "landfall" endpoint never lands is an isolated
+ *       island, which the shape assertions must expose rather than tolerate.</li>
+ * </ol>
+ *
+ * <p>Cases accumulate as later V2-18/V2-15 leaves connect more kinds; adding a case is adding one
+ * {@link CaseV2} entry. The portfolio's promotion into the Phase gate is {@code V2-18-12}'s Task.</p>
+ */
+final class IntentConformancePortfolioV2 {
+    /** Land value in the published land-water sidecar and in the EDGE evaluator's contract field. */
+    static final int LAND = 1;
+    static final int WATER = 0;
+
+    private IntentConformancePortfolioV2() {
+    }
+
+    /**
+     * One portfolio fixture. {@code shoreConnectedArmIds} is the arm set whose footprint currently
+     * reaches off-structure mainland; it is an explicit expectation rather than a derived value so a
+     * regression cannot silently disconnect an arm, and so a known non-conformance stays visible.
+     */
+    record CaseV2(
+            String id,
+            Path request,
+            Path intent,
+            SurfaceBaselineV2 baseline,
+            int width,
+            int length,
+            Set<String> shoreConnectedArmIds,
+            Set<String> declaredArmIds
+    ) {
+        CaseV2 {
+            Objects.requireNonNull(id, "id");
+            shoreConnectedArmIds = Set.copyOf(shoreConnectedArmIds);
+            declaredArmIds = Set.copyOf(declaredArmIds);
+        }
+
+        @Override
+        public String toString() {
+            return id;
+        }
+    }
+
+    /** The permanent portfolio. Both cases are the V2-18-03 gate-passing coastal contracts. */
+    static List<CaseV2> cases() {
+        return List.of(
+                new CaseV2(
+                        "harbor-cove-64-honored",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        // Both declared landfalls reach the mainland at this scale.
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm")),
+                new CaseV2(
+                        "coastal-honored-400",
+                        Path.of("examples/v2/diagnostic/coastal-honored-400.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/coastal-honored-400.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 42),
+                        400, 400,
+                        // V2-18-13 (registered non-conformance): the east arm's declared landfall
+                        // endpoint (0.61, 0.47) stops short of the rocky cape's western edge (0.62),
+                        // so the whole arm composes as an isolated land island. The portfolio pins the
+                        // current shape instead of hiding it; correcting the fixture geometry requires
+                        // regenerating the V2-18-09 land-water mask and is its own Task.
+                        Set.of("west-arm"),
+                        Set.of("west-arm", "east-arm")));
+    }
+
+    /** Everything the portfolio measures, all of it read back from the published Release. */
+    record MeasurementsV2(
+            int width,
+            int length,
+            List<TargetEvaluationV2> edgeEvaluations,
+            int landCells,
+            int landComponentCount,
+            int mainlandCells,
+            BeachContinuityV2 beach,
+            HinterlandV2 backshorePlains,
+            List<ArmLandfallV2> arms
+    ) {
+        MeasurementsV2 {
+            edgeEvaluations = List.copyOf(edgeEvaluations);
+            arms = List.copyOf(arms);
+        }
+
+        ArmLandfallV2 arm(String armId) {
+            return arms.stream().filter(arm -> arm.armId().equals(armId)).findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("no such declared arm: " + armId));
+        }
+    }
+
+    /**
+     * Beach-owned cells only: a cell the compositor awards to another contributor says nothing about
+     * the beach's own conformance.
+     */
+    record BeachContinuityV2(
+            int landBandCells,
+            int landBandOnLand,
+            int landBandInMainland,
+            int landBandComponentCount,
+            int nearshoreCells,
+            int nearshoreOnWater
+    ) {
+    }
+
+    /** The declared {@code BACKSHORE_PLAINS} polygon, rasterized from the published intent. */
+    record HinterlandV2(int polygonCells, int onLand, int inMainland) {
+    }
+
+    record ArmLandfallV2(
+            String armId,
+            int ownedCells,
+            int ownedLandCells,
+            int offStructureMainlandContacts,
+            boolean landfallCellInMainland
+    ) {
+        boolean connectedToShore() {
+            return offStructureMainlandContacts > 0 && landfallCellInMainland;
+        }
+    }
+
+    /** Measures one published surface Release. Pure: the same directory always yields the same record. */
+    static MeasurementsV2 measure(Path releaseDirectory) throws IOException {
+        return measure(blueprintOf(releaseDirectory), intentOf(releaseDirectory),
+                readActualLandWater(releaseDirectory));
+    }
+
+    static WorldBlueprintV2 blueprintOf(Path releaseDirectory) throws IOException {
+        return new LandformV2DataCodec().readWorldBlueprint(
+                releaseDirectory.resolve("blueprint/world-blueprint.json"));
+    }
+
+    static TerrainIntentV2 intentOf(Path releaseDirectory) throws IOException {
+        return new LandformV2DataCodec().readTerrainIntent(
+                releaseDirectory.resolve("source/terrain-intent.json"));
+    }
+
+    /**
+     * Measurement over an explicit raster. The negative tests feed a deliberately damaged copy of a
+     * published field through exactly this entry point, so a broken shape is proved to be detected by
+     * the same code the positive cases run.
+     */
+    static MeasurementsV2 measure(WorldBlueprintV2 blueprint, TerrainIntentV2 intent, int[] land)
+            throws IOException {
+        int width = blueprint.space().bounds().width();
+        int length = blueprint.space().bounds().length();
+        if (land.length != Math.multiplyExact(width, length)) {
+            throw new IOException("published land-water sidecar does not match the blueprint bounds");
+        }
+
+        List<TargetEvaluationV2> edges = TargetDrivenValidatorV2.builtIn()
+                .validate(blueprint.validationTargets(), sampler(land, width, length))
+                .evaluations();
+
+        LandComponentsV2 components = LandComponentsV2.of(land, width, length);
+        CoastalRuntimeV2 runtime = CoastalRuntimeV2.of(blueprint, width, length);
+
+        return new MeasurementsV2(
+                width, length, edges,
+                components.landCells(), components.componentCount(), components.mainlandCells(),
+                measureBeach(runtime, components, land, width, length),
+                measureHinterland(intent, components, land, width, length),
+                measureArms(runtime, blueprint, intent, components, land, width, length));
+    }
+
+    private static BeachContinuityV2 measureBeach(
+            CoastalRuntimeV2 runtime,
+            LandComponentsV2 components,
+            int[] land,
+            int width,
+            int length
+    ) {
+        int landBandCells = 0;
+        int landBandOnLand = 0;
+        int landBandInMainland = 0;
+        int nearshoreCells = 0;
+        int nearshoreOnWater = 0;
+        Set<Integer> bandComponents = new TreeSet<>();
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                if (runtime.ownerAt(x, z) != runtime.beachOwnerIndex()) {
+                    continue;
+                }
+                int index = z * width + x;
+                SandyBeachGeneratorV2.BeachBand band =
+                        runtime.beach().sampleAt(x, z, HardLandWaterSourceV2.NONE).band();
+                switch (band) {
+                    case FORESHORE, BACKSHORE -> {
+                        landBandCells++;
+                        if (land[index] == LAND) {
+                            landBandOnLand++;
+                            bandComponents.add(components.componentAt(index));
+                        }
+                        if (components.isMainland(index)) {
+                            landBandInMainland++;
+                        }
+                    }
+                    case NEARSHORE -> {
+                        nearshoreCells++;
+                        if (land[index] == WATER) {
+                            nearshoreOnWater++;
+                        }
+                    }
+                    case OUTSIDE -> {
+                    }
+                }
+            }
+        }
+        return new BeachContinuityV2(landBandCells, landBandOnLand, landBandInMainland,
+                bandComponents.size(), nearshoreCells, nearshoreOnWater);
+    }
+
+    private static HinterlandV2 measureHinterland(
+            TerrainIntentV2 intent,
+            LandComponentsV2 components,
+            int[] land,
+            int width,
+            int length
+    ) {
+        TerrainIntentV2.Feature plains = intent.features().stream()
+                .filter(feature -> feature.kind() == TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("portfolio case declares no backshore hinterland"));
+        List<TerrainIntentV2.Point2> ring =
+                ((TerrainIntentV2.PolygonGeometry) plains.geometry()).rings().getFirst();
+        int cells = 0;
+        int onLand = 0;
+        int inMainland = 0;
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                if (!inside(ring, x, z, width, length)) {
+                    continue;
+                }
+                cells++;
+                int index = z * width + x;
+                if (land[index] == LAND) {
+                    onLand++;
+                }
+                if (components.isMainland(index)) {
+                    inMainland++;
+                }
+            }
+        }
+        return new HinterlandV2(cells, onLand, inMainland);
+    }
+
+    private static List<ArmLandfallV2> measureArms(
+            CoastalRuntimeV2 runtime,
+            WorldBlueprintV2 blueprint,
+            TerrainIntentV2 intent,
+            LandComponentsV2 components,
+            int[] land,
+            int width,
+            int length
+    ) {
+        Map<Integer, String> armIdByOrder = new LinkedHashMap<>();
+        for (BreakwaterHarborPlanV2.ArmPlan arm : blueprint.breakwaterHarborPlans().getFirst().arms()) {
+            armIdByOrder.put(arm.armOrder(), arm.armId());
+        }
+        Map<String, int[]> counters = new LinkedHashMap<>();
+        armIdByOrder.values().forEach(armId -> counters.put(armId, new int[3]));
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                if (runtime.ownerAt(x, z) != runtime.breakwaterOwnerIndex()) {
+                    continue;
+                }
+                BreakwaterHarborGeneratorV2.BreakwaterSample sample = runtime.breakwater().sampleAt(x, z);
+                if (sample.region() == BreakwaterHarborGeneratorV2.BreakwaterRegion.OUTSIDE) {
+                    continue;
+                }
+                String armId = armIdByOrder.get(sample.armIndex());
+                if (armId == null) {
+                    throw new IllegalStateException("breakwater sample references an undeclared arm order");
+                }
+                int[] counter = counters.get(armId);
+                counter[0]++;
+                if (land[z * width + x] == LAND) {
+                    counter[1]++;
+                }
+                if (touchesOffStructureMainland(runtime, components, land, width, length, x, z)) {
+                    counter[2]++;
+                }
+            }
+        }
+
+        List<ArmLandfallV2> arms = new ArrayList<>(counters.size());
+        Map<String, TerrainIntentV2.Point2> landfalls = declaredLandfalls(intent);
+        for (Map.Entry<String, int[]> entry : counters.entrySet()) {
+            TerrainIntentV2.Point2 landfall = landfalls.get(entry.getKey());
+            boolean onMainland = landfall != null
+                    && components.isMainland(cellIndex(landfall, width, length));
+            arms.add(new ArmLandfallV2(entry.getKey(), entry.getValue()[0], entry.getValue()[1],
+                    entry.getValue()[2], onMainland));
+        }
+        return List.copyOf(arms);
+    }
+
+    /**
+     * A breakwater cell counts as connected only through land it does not own itself: the structure
+     * being land is not evidence that it reaches the shore.
+     */
+    private static boolean touchesOffStructureMainland(
+            CoastalRuntimeV2 runtime,
+            LandComponentsV2 components,
+            int[] land,
+            int width,
+            int length,
+            int x,
+            int z
+    ) {
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int nx = x + dx;
+                int nz = z + dz;
+                if (nx < 0 || nz < 0 || nx >= width || nz >= length) {
+                    continue;
+                }
+                int neighbour = nz * width + nx;
+                if (land[neighbour] != LAND || !components.isMainland(neighbour)) {
+                    continue;
+                }
+                if (runtime.breakwater().sampleAt(nx, nz).region()
+                        == BreakwaterHarborGeneratorV2.BreakwaterRegion.OUTSIDE) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Map<String, TerrainIntentV2.Point2> declaredLandfalls(TerrainIntentV2 intent) {
+        TerrainIntentV2.Feature breakwater = intent.features().stream()
+                .filter(feature -> feature.kind() == TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("portfolio case declares no breakwater"));
+        Map<String, TerrainIntentV2.Point2> landfalls = new LinkedHashMap<>();
+        for (TerrainIntentV2.NamedPath path
+                : ((TerrainIntentV2.MultiSplineGeometry) breakwater.geometry()).paths()) {
+            landfalls.put(path.id(), path.points().getFirst());
+        }
+        return landfalls;
+    }
+
+    /** Normalized XZ → release-local cell, matching the plan compilers' {@code millionths × (n-1)}. */
+    private static int cellIndex(TerrainIntentV2.Point2 point, int width, int length) {
+        int x = clamp(Math.round(point.xMillionths() / (double) TerrainIntentV2.FIXED_SCALE * (width - 1)), width);
+        int z = clamp(Math.round(point.zMillionths() / (double) TerrainIntentV2.FIXED_SCALE * (length - 1)), length);
+        return z * width + x;
+    }
+
+    private static int clamp(long value, int extent) {
+        return (int) Math.max(0, Math.min(extent - 1, value));
+    }
+
+    /**
+     * Negative fixture: floods the declared backshore hinterland. The declared land mass disappearing
+     * must show up as a conformance failure, never as a silently smaller "mainland".
+     */
+    static int[] withFloodedHinterland(TerrainIntentV2 intent, int[] land, int width, int length) {
+        TerrainIntentV2.Feature plains = intent.features().stream()
+                .filter(feature -> feature.kind() == TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS)
+                .findFirst()
+                .orElseThrow();
+        List<TerrainIntentV2.Point2> ring =
+                ((TerrainIntentV2.PolygonGeometry) plains.geometry()).rings().getFirst();
+        int[] damaged = land.clone();
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                if (inside(ring, x, z, width, length)) {
+                    damaged[z * width + x] = WATER;
+                }
+            }
+        }
+        return damaged;
+    }
+
+    /**
+     * Negative fixture: floods the NORTH edge band the version-1 EDGE contract measures — exactly the
+     * shape the audit observed (north land share 0.000) — leaving the rest of the map untouched.
+     */
+    static int[] withFloodedNorthEdgeBand(int[] land, int width, int length) {
+        int[] damaged = land.clone();
+        int depth = Math.max(1, length / 32);
+        for (int z = 0; z < depth; z++) {
+            for (int x = 0; x < width; x++) {
+                damaged[z * width + x] = WATER;
+            }
+        }
+        return damaged;
+    }
+
+    /** Even-odd containment of the cell centre, evaluated in release-local cell coordinates. */
+    private static boolean inside(List<TerrainIntentV2.Point2> ring, int x, int z, int width, int length) {
+        boolean in = false;
+        int size = ring.size();
+        for (int i = 0, j = size - 1; i < size; j = i++) {
+            double xi = ring.get(i).xMillionths() / (double) TerrainIntentV2.FIXED_SCALE * (width - 1);
+            double zi = ring.get(i).zMillionths() / (double) TerrainIntentV2.FIXED_SCALE * (length - 1);
+            double xj = ring.get(j).xMillionths() / (double) TerrainIntentV2.FIXED_SCALE * (width - 1);
+            double zj = ring.get(j).zMillionths() / (double) TerrainIntentV2.FIXED_SCALE * (length - 1);
+            if ((zi > z) != (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) {
+                in = !in;
+            }
+        }
+        return in;
+    }
+
+    /** Reads the published ACTUAL land-water sidecar through the strict, checksum-verifying reader. */
+    static int[] readActualLandWater(Path releaseDirectory) throws IOException {
+        Path constraintRoot = releaseDirectory.resolve("constraints");
+        ConstraintFieldIndexV2 index =
+                new ConstraintFieldIndexCodecV2().readAndVerify(constraintRoot.resolve("index.json"), constraintRoot);
+        FieldArtifactDescriptorV2 actual = index.fields().stream()
+                .filter(field -> field.definition().semantic()
+                        == FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_LAND_WATER)
+                .findFirst()
+                .orElseThrow(() -> new IOException("published Release carries no ACTUAL land-water field"));
+        try (LfcGridReaderV1 reader = LfcGridReaderV1.open(constraintRoot, actual)) {
+            return reader.readWindow(0, 0, actual.definition().width(), actual.definition().length())
+                    .toRawArray();
+        }
+    }
+
+    /** Exposes the published raster to the production EDGE evaluator under its contract field id. */
+    static ValidationFieldSamplerV2 sampler(int[] land, int width, int length) {
+        return new ValidationFieldSamplerV2() {
+            @Override
+            public int width() {
+                return width;
+            }
+
+            @Override
+            public int length() {
+                return length;
+            }
+
+            @Override
+            public int valueAt(String fieldId, int globalX, int globalZ) {
+                if (!BuiltInLandformModuleCatalogV2.CONTRACT_FIELD_ID.equals(fieldId)) {
+                    throw new IllegalArgumentException("portfolio sampler only publishes the contract field");
+                }
+                if (globalX < 0 || globalX >= width || globalZ < 0 || globalZ >= length) {
+                    throw new IndexOutOfBoundsException("coordinate outside the published field");
+                }
+                return land[globalZ * width + globalX];
+            }
+        };
+    }
+
+    /** 4-connected land components of the published raster; the mainland is the largest one. */
+    static final class LandComponentsV2 {
+        private final int[] component;
+        private final int componentCount;
+        private final int mainland;
+        private final int mainlandCells;
+        private final int landCells;
+
+        private LandComponentsV2(int[] component, int componentCount, int mainland, int mainlandCells,
+                                 int landCells) {
+            this.component = component;
+            this.componentCount = componentCount;
+            this.mainland = mainland;
+            this.mainlandCells = mainlandCells;
+            this.landCells = landCells;
+        }
+
+        static LandComponentsV2 of(int[] land, int width, int length) {
+            int[] component = new int[land.length];
+            int count = 0;
+            int mainland = 0;
+            int mainlandCells = 0;
+            int landCells = 0;
+            ArrayDeque<Integer> queue = new ArrayDeque<>();
+            for (int start = 0; start < land.length; start++) {
+                if (land[start] != LAND || component[start] != 0) {
+                    continue;
+                }
+                count++;
+                component[start] = count;
+                queue.add(start);
+                int size = 0;
+                while (!queue.isEmpty()) {
+                    int cell = queue.poll();
+                    size++;
+                    int x = cell % width;
+                    int z = cell / width;
+                    enqueue(land, component, queue, width, length, x + 1, z, count);
+                    enqueue(land, component, queue, width, length, x - 1, z, count);
+                    enqueue(land, component, queue, width, length, x, z + 1, count);
+                    enqueue(land, component, queue, width, length, x, z - 1, count);
+                }
+                landCells += size;
+                // Ties resolve to the lower component id, which scan order fixes deterministically.
+                if (size > mainlandCells) {
+                    mainland = count;
+                    mainlandCells = size;
+                }
+            }
+            return new LandComponentsV2(component, count, mainland, mainlandCells, landCells);
+        }
+
+        private static void enqueue(int[] land, int[] component, ArrayDeque<Integer> queue,
+                                    int width, int length, int x, int z, int label) {
+            if (x < 0 || z < 0 || x >= width || z >= length) {
+                return;
+            }
+            int index = z * width + x;
+            if (land[index] == LAND && component[index] == 0) {
+                component[index] = label;
+                queue.add(index);
+            }
+        }
+
+        int componentAt(int index) {
+            return component[index];
+        }
+
+        boolean isMainland(int index) {
+            return mainland != 0 && component[index] == mainland;
+        }
+
+        int componentCount() {
+            return componentCount;
+        }
+
+        int mainlandCells() {
+            return mainlandCells;
+        }
+
+        int landCells() {
+            return landCells;
+        }
+    }
+
+    /**
+     * The four coastal generators and their compositor, rebuilt from the <em>published</em> blueprint.
+     * This mirrors the export spine's own runtime assembly, so the portfolio reads the same effective
+     * owner the release was composed with without reaching into pipeline-private state.
+     */
+    private record CoastalRuntimeV2(
+            SandyBeachGeneratorV2 beach,
+            BreakwaterHarborGeneratorV2 breakwater,
+            CoastalTransitionCompositorV2 compositor,
+            int beachOwnerIndex,
+            int breakwaterOwnerIndex
+    ) {
+        static CoastalRuntimeV2 of(WorldBlueprintV2 blueprint, int width, int length) {
+            CoastalTransitionPlanV2 plan = blueprint.coastalTransitionPlans().getFirst();
+            SandyBeachGeneratorV2 beach = null;
+            BreakwaterHarborGeneratorV2 breakwater = null;
+            int beachOwner = 0;
+            int breakwaterOwner = 0;
+            List<CoastalTransitionCompositorV2.LayerBinding> bindings = new ArrayList<>();
+            for (CoastalTransitionPlanV2.Contributor contributor : plan.contributors()) {
+                CoastalFeaturePlanV2 coastal = blueprint.coastalFeaturePlans().stream()
+                        .filter(candidate -> candidate.featureId().equals(contributor.featureId()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException(
+                                "published blueprint has no plan for contributor " + contributor.featureId()));
+                switch (contributor.kind()) {
+                    case SANDY_BEACH -> {
+                        beach = new SandyBeachGeneratorV2(blueprint.sandyBeachPlans().getFirst(),
+                                new CoastalRasterKernelV2(coastal, width, length));
+                        beachOwner = contributor.ownerIndex();
+                        bindings.add(CoastalTransitionLayerSourcesV2.beach(
+                                contributor, beach, HardLandWaterSourceV2.NONE));
+                    }
+                    case HARBOR_BASIN -> bindings.add(CoastalTransitionLayerSourcesV2.harbor(contributor,
+                            new HarborBasinGeneratorV2(blueprint.harborBasinPlans().getFirst(), coastal,
+                                    width, length),
+                            HardLandWaterSourceV2.NONE));
+                    case BREAKWATER_HARBOR -> {
+                        breakwater = new BreakwaterHarborGeneratorV2(
+                                blueprint.breakwaterHarborPlans().getFirst(), coastal, width, length);
+                        breakwaterOwner = contributor.ownerIndex();
+                        bindings.add(CoastalTransitionLayerSourcesV2.breakwater(contributor, breakwater));
+                    }
+                    case ROCKY_CAPE -> bindings.add(CoastalTransitionLayerSourcesV2.cape(contributor,
+                            new RockyCapeGeneratorV2(blueprint.rockyCapePlans().getFirst(), coastal,
+                                    width, length),
+                            HardLandWaterSourceV2.NONE));
+                    default -> throw new IllegalStateException(
+                            "portfolio does not model coastal contributor kind " + contributor.kind());
+                }
+            }
+            if (beach == null || breakwater == null) {
+                throw new IllegalStateException("portfolio case is missing the beach or breakwater contributor");
+            }
+            return new CoastalRuntimeV2(beach, breakwater,
+                    new CoastalTransitionCompositorV2(plan, width, length, bindings),
+                    beachOwner, breakwaterOwner);
+        }
+
+        int ownerAt(int x, int z) {
+            return compositor.sampleAt(x, z, HardLandWaterSourceV2.NONE).ownerIndex();
+        }
+    }
+}

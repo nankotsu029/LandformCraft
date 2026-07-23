@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -25,8 +26,14 @@ import java.util.regex.Pattern;
 public interface ProductionExportPipelineV2 {
     PipelineDescriptor descriptor();
 
+    /**
+     * {@code requestSource} is the path of the sealed generation-request file the caller read;
+     * the V2-18-09 macro foundation stage resolves constraint-map bytes relative to it through the
+     * secure loader, so the pipeline never guesses an input location.
+     */
     GeneratedSurface generate(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -40,6 +47,7 @@ public interface ProductionExportPipelineV2 {
      */
     default GeneratedHydrology generateHydrology(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -56,6 +64,7 @@ public interface ProductionExportPipelineV2 {
      */
     default GeneratedEnvironment generateEnvironment(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -72,6 +81,7 @@ public interface ProductionExportPipelineV2 {
      */
     default GeneratedSparseVolume generateSparseVolume(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -84,11 +94,15 @@ public interface ProductionExportPipelineV2 {
 
     record GeneratedSurface(
             SurfaceReleaseSourceV2 source,
-            WorldBlueprintV2 blueprint
+            WorldBlueprintV2 blueprint,
+            Optional<IntentContributionCoverageV2> intentContributionCoverage,
+            List<ExportWarningV2> warnings
     ) {
         public GeneratedSurface {
             Objects.requireNonNull(source, "source");
             Objects.requireNonNull(blueprint, "blueprint");
+            Objects.requireNonNull(intentContributionCoverage, "intentContributionCoverage");
+            warnings = List.copyOf(warnings);
         }
     }
 

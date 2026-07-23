@@ -80,6 +80,7 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
     @Override
     public GeneratedSurface generate(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -93,6 +94,7 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
     @Override
     public GeneratedHydrology generateHydrology(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -106,6 +108,7 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
     @Override
     public GeneratedEnvironment generateEnvironment(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 draftIntent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -125,7 +128,7 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
         Files.createDirectories(environmentRoot);
 
         GeneratedHydrology hydrologyGenerated = hydrology.generateHydrology(
-                request, draftIntent, baseline, hydrologyRoot, budget, token);
+                request, requestSource, draftIntent, baseline, hydrologyRoot, budget, token);
         WorldBlueprintV2 blueprint = hydrologyGenerated.blueprint();
         int width = request.bounds().width();
         int length = request.bounds().length();

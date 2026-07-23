@@ -20,7 +20,9 @@ public record Release2ExportResultV2(
         String manifestChecksum,
         List<String> requiredCapabilities,
         List<String> tileIds,
-        ReleasePlacementEligibilityVerifierV2.EligibilityResultV2 eligibility
+        ReleasePlacementEligibilityVerifierV2.EligibilityResultV2 eligibility,
+        Optional<IntentContributionCoverageV2> intentContributionCoverage,
+        List<ExportWarningV2> warnings
 ) {
     public Release2ExportResultV2 {
         Objects.requireNonNull(releaseId, "releaseId");
@@ -29,6 +31,8 @@ public record Release2ExportResultV2(
         Objects.requireNonNull(blueprintChecksum, "blueprintChecksum");
         Objects.requireNonNull(manifestChecksum, "manifestChecksum");
         Objects.requireNonNull(eligibility, "eligibility");
+        Objects.requireNonNull(intentContributionCoverage, "intentContributionCoverage");
+        warnings = List.copyOf(warnings);
         requiredCapabilities = List.copyOf(requiredCapabilities);
         tileIds = List.copyOf(tileIds);
         if (requiredCapabilities.isEmpty() || tileIds.isEmpty()) {

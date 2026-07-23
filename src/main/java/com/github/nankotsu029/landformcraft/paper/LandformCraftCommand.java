@@ -437,6 +437,12 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             case REQUEST_CONSTRAINT_MAP -> report(sender, v2Workflow.setConstraintMap(tokens[3],
                     tokens[4], tokens[5], tokens[6], integer(tokens[7]), integer(tokens[8])),
                     request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_GENERATION -> report(sender,
+                    v2Workflow.setGeneration(tokens[3], Long.parseLong(tokens[4]), integer(tokens[5])),
+                    request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_FOUNDATION_BASE_LEVELS -> report(sender,
+                    v2Workflow.setFoundationBaseLevels(tokens[3], integer(tokens[4]), integer(tokens[5])),
+                    request -> reportAuthoredRequest(sender, route, request));
             case REQUEST_SELECTION -> applySelectionBounds(sender, route, tokens[3]);
             case REQUEST_PROMPT -> beginV2PromptCapture(sender, route, tokens[3]);
             case EXPORT_PLAN -> report(sender, v2Workflow.planExport(tokens[3], tokens[4], tokens[6],
@@ -494,6 +500,10 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 + " y" + request.bounds().minY() + ".." + request.bounds().maxY()
                 + " water=" + request.bounds().waterLevel()));
         sender.sendMessage(detail("constraint maps", Integer.toString(request.constraintMaps().size())));
+        sender.sendMessage(detail("seed", Long.toString(request.generation().globalSeed())));
+        sender.sendMessage(detail("foundation base levels", request.foundationBaseLevels()
+                .map(levels -> "land=" + levels.landSurfaceY() + " waterBed=" + levels.waterBedY())
+                .orElse("(none)")));
         sender.sendMessage(detail("argument", v2Workflow.requestArgument(request.requestId())));
         sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
     }
@@ -916,7 +926,9 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 "version表示／read-only診断／運用metrics／asset管理");
         helpSection(sender, "設計・生成（既定v2）");
         if (v2Workflow != null) {
-            help(sender, "/" + label + " request create|bounds|selection|constraint-map|prompt|list …",
+            help(sender, "/" + label
+                            + " request create|bounds|selection|constraint-map|generation"
+                            + "|foundation-base-levels|prompt|list …",
                     "v2 requestを作成・編集・列挙");
             help(sender, "/" + label + " request validate|info <request-v2.json>",
                     "v2 requestを厳密に検証");

@@ -19,15 +19,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** V2-12-03 CLI surface for the official {@code lfc v2 <verb>} path. */
 class LandformCraftCliV2Test {
-    private static final String REQUEST = "examples/v2/diagnostic/harbor-cove-64.request-v2.json";
-    private static final String INTENT = "examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json";
+    private static final String REQUEST = "examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json";
+    private static final String INTENT = "examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json";
 
     @Test
     void requestVerbStrictlyReadsAV2Request() {
         Result result = run("v2", "request", "info", REQUEST);
 
         assertEquals(0, result.exitCode(), result.error());
-        assertTrue(result.output().contains("requestId: harbor-cove-64"), result.output());
+        assertTrue(result.output().contains("requestId: harbor-cove-64-honored"), result.output());
         assertTrue(result.output().contains("v2CorrelationId: v2-"), result.output());
     }
 
@@ -106,25 +106,41 @@ class LandformCraftCliV2Test {
     }
 
     @Test
-    void anAuthoredRequestIsAcceptedByTheValidateAndExportVerbs(@TempDir Path root) {
+    void anAuthoredRequestIsAcceptedByTheValidateAndExportVerbs(@TempDir Path root) throws Exception {
         String data = root.resolve("data").toString();
         // The export path pairs a request with the intent whose intentId matches its requestId, so
-        // authoring reproduces the sealed fixture request and exports it with the sealed intent.
-        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64").exitCode());
-        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64",
+        // authoring reproduces the sealed honored fixture request and exports it with the sealed intent.
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64-honored").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64-honored",
                 "64", "64", "32", "72", "50").exitCode());
-        assertEquals(0, run("--data-dir", data, "v2", "request", "constraint-map", "harbor-cove-64",
-                "coast-mask", "maps/harbor-cove-64-land-water-u8.png",
-                "d".repeat(64), "64", "64").exitCode());
-        assertEquals(0, run("--data-dir", data, "v2", "request", "prompt", "harbor-cove-64",
+        // V2-18-09/10: the mask is resolved into generation and must agree with the composed coastal
+        // geometry, which the seed determines, so the authored request reproduces the fixture's seed.
+        assertEquals(0, run("--data-dir", data, "v2", "request", "generation", "harbor-cove-64-honored",
+                "827413", "64").exitCode());
+        // V2-18-03: declare the real mask + digest so the HARD preflight gate can resolve it.
+        assertEquals(0, run("--data-dir", data, "v2", "request", "constraint-map", "harbor-cove-64-honored",
+                "coast-mask", "maps/harbor-cove-64-honored-land-water-u8.png",
+                "b1d98bff54aa3fa8a6df022df9057f05ee0ad2ece1873c13982222614989a48e", "64", "64").exitCode());
+        // V2-18-10: the surface owner gate is fail-closed, so the authored request must also declare
+        // the explicit foundation input's per-medium base elevation.
+        Result levels = run("--data-dir", data, "v2", "request", "foundation-base-levels",
+                "harbor-cove-64-honored", "54", "46");
+        assertEquals(0, levels.exitCode(), levels.error());
+        assertTrue(levels.output().contains("landSurfaceY=54"), levels.output());
+        assertTrue(levels.output().contains("waterBedY=46"), levels.output());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "prompt", "harbor-cove-64-honored",
                 "A", "sheltered", "cove.").exitCode());
-        Path stored = root.resolve("data").resolve("v2").resolve("requests")
-                .resolve("harbor-cove-64.request-v2.json");
+        Path requests = root.resolve("data").resolve("v2").resolve("requests");
+        Path stored = requests.resolve("harbor-cove-64-honored.request-v2.json");
         assertTrue(Files.isRegularFile(stored));
+        // The gate resolves the mask relative to the request's own directory.
+        Files.createDirectories(requests.resolve("maps"));
+        Files.copy(Path.of("examples/v2/diagnostic/maps/harbor-cove-64-honored-land-water-u8.png"),
+                requests.resolve("maps").resolve("harbor-cove-64-honored-land-water-u8.png"));
 
         Result validated = run("v2", "request", "validate", stored.toString());
         assertEquals(0, validated.exitCode(), validated.error());
-        assertTrue(validated.output().contains("requestId: harbor-cove-64"), validated.output());
+        assertTrue(validated.output().contains("requestId: harbor-cove-64-honored"), validated.output());
 
         // F1 is only closed if an authored request reaches the production export path.
         Result exported = run("v2", "export", stored.toString(), INTENT,
@@ -351,7 +367,7 @@ class LandformCraftCliV2Test {
         // `request validate` (no v2 prefix) resolves to the v2 request verb after the switch.
         Result result = run("request", "validate", REQUEST);
         assertEquals(0, result.exitCode(), result.error());
-        assertTrue(result.output().contains("requestId: harbor-cove-64"), result.output());
+        assertTrue(result.output().contains("requestId: harbor-cove-64-honored"), result.output());
         assertTrue(result.output().contains("v2CorrelationId: v2-"), result.output());
     }
 
@@ -402,7 +418,8 @@ class LandformCraftCliV2Test {
     void extractPromoteDeclareAndExportRunsTheWholeImageFidelityChain(@TempDir Path root) throws Exception {
         // 抽出: an untrusted colour PNG becomes a sealed V2-7 land/water draft bundle.
         Path image = root.resolve("coast.png");
-        writeLandWaterPng(image, 64, 64);
+        writeLandWaterPngFromMask(image,
+                Path.of("examples/v2/diagnostic/maps/harbor-cove-64-honored-land-water-u8.png"));
         Path draftDir = root.resolve("draft");
         Result extracted = run("v2", "extract", "land-water", image.toString(), draftDir.toString());
         assertEquals(0, extracted.exitCode(), extracted.error());
@@ -421,18 +438,28 @@ class LandformCraftCliV2Test {
 
         // request宣言: the extracted map is declared as the request's single constraint source.
         String data = root.resolve("data").toString();
-        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64").exitCode());
-        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64",
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64-honored").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64-honored",
                 "64", "64", "32", "72", "50").exitCode());
-        // The sealed intent binds to constraint-source:coast-mask, so the declared slug reuses it; the
-        // export reads the source id and extracted digest for provenance and never rereads the file.
-        Result declared = run("--data-dir", data, "v2", "request", "constraint-map", "harbor-cove-64",
+        assertEquals(0, run("--data-dir", data, "v2", "request", "generation", "harbor-cove-64-honored",
+                "827413", "64").exitCode());
+        // The sealed intent binds to constraint-source:coast-mask, so the declared slug reuses it. Since
+        // V2-18-03 the HARD preflight gate resolves the declared mask (existence + digest + dimensions),
+        // so the extracted PNG is placed beside the stored request rather than merely declared.
+        Result declared = run("--data-dir", data, "v2", "request", "constraint-map", "harbor-cove-64-honored",
                 "coast-mask", "maps/extracted-coast-land-water.png", sha256, "64", "64");
         assertEquals(0, declared.exitCode(), declared.error());
         assertTrue(declared.output().contains("constraintMaps: 1"), declared.output());
+        // V2-18-10: the extracted map is the export's macro foundation input, which also needs the
+        // declared per-medium base elevation before the owner coverage gate can pass.
+        assertEquals(0, run("--data-dir", data, "v2", "request", "foundation-base-levels",
+                "harbor-cove-64-honored", "54", "46").exitCode());
 
-        Path stored = root.resolve("data").resolve("v2").resolve("requests")
-                .resolve("harbor-cove-64.request-v2.json");
+        Path requests = root.resolve("data").resolve("v2").resolve("requests");
+        Path stored = requests.resolve("harbor-cove-64-honored.request-v2.json");
+        Files.createDirectories(requests.resolve("maps"));
+        Files.copy(promoteDir.resolve("land-water.png"),
+                requests.resolve("maps").resolve("extracted-coast-land-water.png"));
         Result validated = run("v2", "request", "validate", stored.toString());
         assertEquals(0, validated.exitCode(), validated.error());
 
@@ -516,6 +543,27 @@ class LandformCraftCliV2Test {
                 root.resolve("promoted").toString(), "1", "maybe");
         assertEquals(1, promoted.exitCode());
         assertTrue(promoted.error().contains("unknown-handling"), promoted.error());
+    }
+
+    /**
+     * Colour source image whose classification reproduces the honored fixture's macro land-water
+     * composition (V2-18-10 fixture migration): since the surface owner gate is fail-closed, the
+     * extracted map is now the export's foundation input, so it must carry the same composition the
+     * sealed intent's coastal modifiers were authored against — an arbitrary half-and-half pattern
+     * would contradict them and be rejected by the modifier compositor rather than by anything the
+     * image-fidelity chain is proving.
+     */
+    private static void writeLandWaterPngFromMask(Path path, Path maskPng) throws IOException {
+        BufferedImage mask = ImageIO.read(maskPng.toFile());
+        BufferedImage image = new BufferedImage(
+                mask.getWidth(), mask.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        for (int z = 0; z < mask.getHeight(); z++) {
+            for (int x = 0; x < mask.getWidth(); x++) {
+                boolean land = mask.getRaster().getSample(x, z, 0) != 0;
+                image.setRGB(x, z, land ? argb(255, 70, 140, 70) : argb(255, 10, 40, 220));
+            }
+        }
+        writePng(image, path);
     }
 
     private static void writeLandWaterPng(Path path, int width, int length) throws IOException {

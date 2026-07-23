@@ -84,6 +84,7 @@ final class SparseVolumeExportPipelineV2 implements ProductionExportPipelineV2 {
     @Override
     public GeneratedSurface generate(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -97,6 +98,7 @@ final class SparseVolumeExportPipelineV2 implements ProductionExportPipelineV2 {
     @Override
     public GeneratedHydrology generateHydrology(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -110,6 +112,7 @@ final class SparseVolumeExportPipelineV2 implements ProductionExportPipelineV2 {
     @Override
     public GeneratedEnvironment generateEnvironment(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 intent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -123,6 +126,7 @@ final class SparseVolumeExportPipelineV2 implements ProductionExportPipelineV2 {
     @Override
     public GeneratedSparseVolume generateSparseVolume(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 draftIntent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -142,7 +146,7 @@ final class SparseVolumeExportPipelineV2 implements ProductionExportPipelineV2 {
         Files.createDirectories(volumeRoot);
 
         GeneratedEnvironment generatedEnvironment = environment.generateEnvironment(
-                request, draftIntent, baseline, environmentRoot, budget, token);
+                request, requestSource, draftIntent, baseline, environmentRoot, budget, token);
         WorldBlueprintV2 blueprint = generatedEnvironment.blueprint();
         TerrainQuery base = generatedEnvironment.baseTerrain();
         requireIdentityCell(base, request.bounds().minY());

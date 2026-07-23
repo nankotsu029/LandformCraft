@@ -64,8 +64,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MigrationPhaseGateV2Test {
 
     private static final Path MAIN = Path.of("src/main/java/com/github/nankotsu029/landformcraft");
-    private static final Path REQUEST = Path.of("examples/v2/diagnostic/harbor-cove-64.request-v2.json");
-    private static final Path INTENT = Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json");
+    private static final Path REQUEST = Path.of("examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json");
+    private static final Path INTENT = Path.of("examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json");
 
     /** ADR 0035 D2a production writers/orchestration/provider SPI removed by V2-12-06. */
     private static final List<String> RETIRED_PRODUCTION_TYPES = List.of(
@@ -188,7 +188,7 @@ class MigrationPhaseGateV2Test {
             V2WorkflowServiceV2 workflow = new V2WorkflowServiceV2(executors, null);
 
             Map<String, Object> request = workflow.inspectRequest(REQUEST);
-            assertEquals("harbor-cove-64", request.get("requestId"));
+            assertEquals("harbor-cove-64-honored", request.get("requestId"));
 
             // createZip=false is the `v2 generate` form: the strict Release directory without a ZIP.
             Release2ExportResultV2 generated = workflow.export(REQUEST, INTENT, root.resolve("work"),

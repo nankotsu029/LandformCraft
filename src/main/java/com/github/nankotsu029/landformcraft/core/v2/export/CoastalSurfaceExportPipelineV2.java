@@ -3,14 +3,19 @@ package com.github.nankotsu029.landformcraft.core.v2.export;
 import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticBlueprintCompilerV2;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticCompileRequestV2;
+import com.github.nankotsu029.landformcraft.core.v2.DiagnosticGateContractV2;
+import com.github.nankotsu029.landformcraft.core.v2.foundation.SurfaceFoundationExceptionV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.field.ConstraintFieldIndexCodecV2;
+import com.github.nankotsu029.landformcraft.format.v2.field.FieldValueSource;
 import com.github.nankotsu029.landformcraft.format.v2.field.LfcGridWriterV1;
 import com.github.nankotsu029.landformcraft.format.v2.release.SurfaceReleaseSourceV2;
 import com.github.nankotsu029.landformcraft.format.v2.tile.OfflineTileArtifactCodecV2;
 import com.github.nankotsu029.landformcraft.format.v2.tile.OfflineTileSchematicWriterV2;
 import com.github.nankotsu029.landformcraft.format.v2.validation.CoastalValidationArtifactCodecV2;
 import com.github.nankotsu029.landformcraft.generator.v2.TerrainBlockResolver;
+import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionException;
+import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionModuleV2;
 import com.github.nankotsu029.landformcraft.model.GenerationBounds;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalPreviewIndexV2;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalValidationArtifactV2;
@@ -26,9 +31,12 @@ import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleProfileV2;
 import com.github.nankotsu029.landformcraft.model.v2.scale.TilePlanV2;
 import com.github.nankotsu029.landformcraft.preview.v2.CoastalDiagnosticFieldFactoryV2;
 import com.github.nankotsu029.landformcraft.preview.v2.CoastalDiagnosticPreviewRendererV2;
+import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalFieldSamplerV2;
 import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalValidationInputV2;
 import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalValidationReportV2;
 import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalValidatorV2;
+import com.github.nankotsu029.landformcraft.validation.v2.target.TargetDrivenValidatorV2;
+import com.github.nankotsu029.landformcraft.validation.v2.target.TargetValidationReportV2;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,6 +44,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Production generation stage of the Release 2 export path (V2-12-02).
@@ -72,6 +82,10 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
 
     private final LandformV2DataCodec data = new LandformV2DataCodec();
     private final ConstraintFieldIndexCodecV2 indexCodec = new ConstraintFieldIndexCodecV2();
+    private final DiagnosticGateContractV2 gateContract = DiagnosticGateContractV2.builtIn();
+    private final TargetDrivenValidatorV2 targetValidator = TargetDrivenValidatorV2.builtIn();
+    private final MacroFoundationStageV2 foundationStage = new MacroFoundationStageV2();
+    private final SurfaceFoundationOwnerGateV2 ownerGate = new SurfaceFoundationOwnerGateV2();
 
     @Override
     public PipelineDescriptor descriptor() {
@@ -81,13 +95,15 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
     @Override
     public GeneratedSurface generate(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 draftIntent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
             ExportBudgetV2 budget,
             CancellationToken token
     ) throws IOException {
-        return generateWithFields(request, draftIntent, baseline, workRoot, budget, token).surface();
+        return generateWithFields(request, requestSource, draftIntent, baseline, workRoot, budget, token)
+                .surface();
     }
 
     /**
@@ -96,6 +112,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
      */
     GeneratedCoastalSurface generateWithFields(
             GenerationRequestV2 request,
+            Path requestSource,
             TerrainIntentV2 draftIntent,
             SurfaceBaselineV2 baseline,
             Path workRoot,
@@ -103,6 +120,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             CancellationToken token
     ) throws IOException {
         Objects.requireNonNull(request, "request");
+        Objects.requireNonNull(requestSource, "requestSource");
         Objects.requireNonNull(draftIntent, "draftIntent");
         Objects.requireNonNull(baseline, "baseline");
         token.throwIfCancellationRequested();
@@ -110,7 +128,6 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             throw new IOException("terrain intent does not belong to the generation request");
         }
         GenerationRequestV2.Bounds bounds = request.bounds();
-        baseline.requireWithin(bounds.minY(), bounds.maxY());
         int width = bounds.width();
         int length = bounds.length();
         ScaleClassV2 scale = ScaleClassV2.forDimensions(width, length);
@@ -128,19 +145,54 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
 
         WorldBlueprintV2 draftBlueprint = compile(request, draftIntent, requestChecksum, bounds);
         CoastalGeneratorRuntimeV2 runtime = CoastalGeneratorRuntimeV2.create(draftBlueprint);
-        CoastalSurfaceFieldsV2 fields = CoastalSurfaceFieldsV2.generate(
-                runtime, width, length, baseline, token);
+        // V2-18-09 macro foundation stage (ADR 0038 D5-1): with a complete explicit foundation input
+        // (HARD LAND_WATER_MASK + declared per-medium base levels) the coastal four compose as
+        // modifiers over the mask-derived background owner and the baseline argument is ignored
+        // (D8-1). Without it the legacy baseline path stays byte-identical (D8-2).
+        Optional<MacroFoundationV2> foundation;
+        try {
+            foundation = foundationStage.resolve(request, requestSource, draftIntent, token);
+        } catch (SurfaceFoundationExceptionV2 exception) {
+            throw new IOException("macro foundation resolution failed [" + exception.failureCode() + "]: "
+                    + exception.getMessage(), exception);
+        }
+        // ADR 0038 D8-1: on the foundation path the baseline argument is fully ignored — not even
+        // validated — because it contributes nothing; the legacy path still validates and uses it.
+        if (foundation.isEmpty()) {
+            baseline.requireWithin(bounds.minY(), bounds.maxY());
+        }
+        CoastalSurfaceFieldsV2 fields;
+        try {
+            fields = foundation.isPresent()
+                    ? CoastalSurfaceFieldsV2.generate(runtime, width, length, foundation.get(), token)
+                    : CoastalSurfaceFieldsV2.generate(runtime, width, length, baseline, token);
+        } catch (SurfaceFoundationExceptionV2 exception) {
+            throw new IOException("macro foundation kernel invariant violated [" + exception.failureCode()
+                    + "]: " + exception.getMessage(), exception);
+        } catch (CoastalTransitionException exception) {
+            // A modifier claiming a cell against the HARD mask is an intent/geometry contradiction;
+            // the export spine surfaces it as the usual fail-closed IOException instead of leaking a
+            // generator runtime exception (rule id preserved for the operator).
+            throw new IOException("coastal modifier composition rejected the HARD land-water input ["
+                    + exception.ruleId() + "]: " + exception.getMessage(), exception);
+        }
         if (fields.hardProtectedCells() < 1) {
             throw new IOException("coastal export produced no HARD-protected land-water cells");
         }
 
         Path constraintRoot = workRoot.resolve("constraints");
         List<FieldArtifactDescriptorV2> descriptors = writeConstraintFields(
-                constraintRoot, request, fields, width, length, token);
+                constraintRoot, request, fields, foundation, width, length, token);
         FieldArtifactDescriptorV2 desired = descriptorFor(
                 descriptors, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER);
 
-        TerrainIntentV2 intent = withLandWaterBinding(draftIntent, desired.semanticChecksum());
+        // V2-18-07: bind the land-water desired reference to the declared INPUT mask digest, not to the
+        // field the pipeline just generated. The old self-rebinding to desired.semanticChecksum() made
+        // "desired" indistinguishable from "actual"; binding to the request's declared constraint-map
+        // digest records the honest provenance (the input mask the desired field is meant to reproduce).
+        // The mask bytes are still not resolved into the field here — that is V2-18-09.
+        String maskDigest = request.constraintMaps().getFirst().expectedSha256();
+        TerrainIntentV2 intent = withLandWaterBinding(draftIntent, maskDigest);
         Path intentPath = workRoot.resolve("terrain-intent.json");
         data.writeTerrainIntent(intentPath, intent);
         String intentChecksum = data.terrainIntentChecksum(intent);
@@ -157,10 +209,38 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
         indexCodec.write(indexPath, index);
         indexCodec.readAndVerify(indexPath, constraintRoot, requestChecksum, intentChecksum, token);
 
-        CoastalValidationInputV2 validationInput = new CoastalValidationInputV2(blueprint, fields, fields);
+        Set<TerrainIntentV2.ConstraintMapRole> consumedMapRoles = foundation.isPresent()
+                ? Set.of(TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK)
+                : Set.of();
+        IntentContributionCoverageV2 coverage = IntentContributionCoverageV2.compute(
+                intent, fields, DESCRIPTOR.contractOnlyKinds(), gateContract, consumedMapRoles);
+        // V2-18-10 (ADR 0038 D7-2/D8-2): the foundation owner metric V2-18-02 reported and V2-18-09
+        // raised to 100% is now an export requirement. A legacy request without an explicit
+        // foundation input reaches 0% here — a baseline fill is not an owner — and is rejected, and
+        // the deprecated baseline argument cannot override it. Nothing is published; the gate runs
+        // before the diagnostic previews and offline tiles so a doomed run stops early.
+        ownerGate.requireFullCoverage(PIPELINE_ID, coverage, foundation.isPresent()
+                ? "the resolved macro foundation does not cover the whole surface domain"
+                : "the request declares no explicit macro foundation input (a HARD LAND_WATER_MASK "
+                        + "map reference plus foundationBaseLevels), so no cell has a foundation owner");
+
+        // V2-18-09: on the foundation path the desired sampler reads the resolved INPUT mask, so the
+        // residual metrics measure conformance against the declared intent instead of the former
+        // desired == actual self-reference (audit item 3). The legacy path keeps the self-sampled
+        // input unchanged until V2-18-10 retires it.
+        CoastalValidationInputV2 validationInput = foundation.isPresent()
+                ? new CoastalValidationInputV2(blueprint, maskDesiredSampler(foundation.get(), fields), fields)
+                : new CoastalValidationInputV2(blueprint, fields, fields);
         CoastalValidationReportV2 report = new CoastalValidatorV2().validate(validationInput, token);
         if (!report.passesHardValidation()) {
             throw new IOException("coastal HARD validation failed: " + report.issues());
+        }
+        // V2-18-04: the common target-driven path evaluates the blueprint's ValidationTargetV2 list.
+        // The built-in registry consumes v2.edge-classification targets; a HARD EDGE violation gates
+        // export here, after generation produced the land-water field, before anything is published.
+        TargetValidationReportV2 targetReport = targetValidator.validate(blueprint.validationTargets(), fields);
+        if (targetReport.hasHardViolation()) {
+            throw new IOException("target-driven HARD validation failed: " + targetReport.hardViolations());
         }
         Path validationPath = workRoot.resolve("coastal-validation.json");
         new CoastalValidationArtifactCodecV2().write(validationPath, new CoastalValidationArtifactV2(
@@ -180,7 +260,42 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
         SurfaceReleaseSourceV2 source = new SurfaceReleaseSourceV2(
                 requestPath, intentPath, blueprintPath, indexPath, constraintRoot,
                 validationPath, previewRoot.resolve("index.json"), previewRoot, tiles);
-        return new GeneratedCoastalSurface(new GeneratedSurface(source, blueprint), fields);
+        List<ExportWarningV2> warnings = foundation.isPresent()
+                ? List.of(ExportWarningV2.surfaceBaselineDeprecated())
+                : List.of();
+        return new GeneratedCoastalSurface(
+                new GeneratedSurface(source, blueprint, Optional.of(coverage), warnings), fields);
+    }
+
+    /**
+     * Desired sampler over the resolved input mask: land-water comes straight from the mask (role
+     * no-data cells excluded from comparison), and no other field — in particular no surface height,
+     * which the mask does not constrain — declares a desired value.
+     */
+    private static CoastalFieldSamplerV2 maskDesiredSampler(
+            MacroFoundationV2 foundation,
+            CoastalSurfaceFieldsV2 fields
+    ) {
+        return new CoastalFieldSamplerV2() {
+            @Override
+            public int width() {
+                return fields.width();
+            }
+
+            @Override
+            public int length() {
+                return fields.length();
+            }
+
+            @Override
+            public int valueAt(String fieldId, int globalX, int globalZ) {
+                if (CoastalTransitionModuleV2.LAND_WATER_FIELD_ID.equals(fieldId)) {
+                    int desired = foundation.desiredLandWaterAt(globalX, globalZ);
+                    return desired == 0 || desired == 1 ? desired : CoastalValidationInputV2.NO_DATA;
+                }
+                return CoastalValidationInputV2.NO_DATA;
+            }
+        };
     }
 
     record GeneratedCoastalSurface(GeneratedSurface surface, CoastalSurfaceFieldsV2 fields) {
@@ -207,7 +322,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
     }
 
     /**
-     * The land-water binding is rebound to the generated field artifact, so the sealed Blueprint is
+     * The land-water binding is rebound to the input mask digest (V2-18-07), so the sealed Blueprint is
      * recompiled. Any change to the coastal geometry would silently invalidate the already sampled
      * fields, so it fails closed instead.
      */
@@ -222,7 +337,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
         }
     }
 
-    private static TerrainIntentV2 withLandWaterBinding(TerrainIntentV2 intent, String semanticChecksum) {
+    private static TerrainIntentV2 withLandWaterBinding(TerrainIntentV2 intent, String maskDigest) {
         List<TerrainIntentV2.ConstraintMapBinding> bindings = intent.mapReferences();
         if (bindings.size() != 1
                 || bindings.getFirst().role() != TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK) {
@@ -234,7 +349,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                 binding.id(),
                 binding.sourceId(),
                 binding.role(),
-                "constraint:land-water:sha256-" + semanticChecksum,
+                "constraint:land-water:sha256-" + maskDigest,
                 binding.strength(),
                 binding.sampling(),
                 binding.toleranceBlocks(),
@@ -251,9 +366,14 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             List<FieldArtifactDescriptorV2> descriptors
     ) {
         TerrainIntentV2.ConstraintMapBinding binding = intent.mapReferences().getFirst();
+        // V2-18-07 decouples the two artifact references that used to be conflated. The constraint field
+        // index's canonical artifact id keeps identifying the DESIRED field artifact by its own semantic
+        // checksum (an integrity invariant of the index), while the intent binding's artifactId now records
+        // the INPUT mask provenance. They are different concerns and are no longer forced to be equal.
+        String canonicalArtifactId = "constraint:land-water:sha256-" + desired.semanticChecksum();
         return new ConstraintFieldIndexV2.AppliedBinding(
                 binding.id(), binding.sourceId(), binding.role(), binding.strength(), binding.sampling(),
-                binding.toleranceBlocks(), binding.weightMillionths(), binding.artifactId(),
+                binding.toleranceBlocks(), binding.weightMillionths(), canonicalArtifactId,
                 desired.definition().fieldId(),
                 descriptors.stream().map(field -> field.definition().fieldId()).toList(),
                 List.of(new ConstraintFieldIndexV2.LabelEntry(0, 0, "water"),
@@ -264,6 +384,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             Path root,
             GenerationRequestV2 request,
             CoastalSurfaceFieldsV2 fields,
+            Optional<MacroFoundationV2> foundation,
             int width,
             int length,
             CancellationToken token
@@ -277,11 +398,19 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                 map.sourceId(), map.expectedSha256(), "numeric-png", "1", "pixel-center-v1");
         LfcGridWriterV1 writer = new LfcGridWriterV1();
         List<FieldArtifactDescriptorV2> result = new ArrayList<>(3);
+        // V2-18-09: on the foundation path DESIRED is the decoded input mask (with the established
+        // role no-data sentinel), ACTUAL is the composed output, and RESIDUAL is their measured
+        // difference — no longer the definitionally zero self-copy. The legacy path keeps the
+        // self-sampled sidecars byte-identical.
         result.add(writer.write(root, "fields/coast-land-desired.lfgrid",
                 definition("constraint.coast.land.desired",
                         FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER,
                         FieldArtifactDescriptorV2.FieldValueType.U8, 1_000_000L, width, length),
-                provenance, (x, z) -> fields.landWaterAt(z * width + x), token));
+                provenance,
+                foundation.<FieldValueSource>map(value ->
+                        (x, z) -> value.desiredLandWaterAt(x, z))
+                        .orElse((x, z) -> fields.landWaterAt(z * width + x)),
+                token));
         result.add(writer.write(root, "fields/coast-land-actual.lfgrid",
                 definition("constraint.coast.land.actual",
                         FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_LAND_WATER,
@@ -291,7 +420,15 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                 definition("constraint.coast.land.residual",
                         FieldArtifactDescriptorV2.FieldSemantic.RESIDUAL_LAND_WATER,
                         FieldArtifactDescriptorV2.FieldValueType.I32, 1L, width, length),
-                provenance, (x, z) -> 0, token));
+                provenance,
+                foundation.<FieldValueSource>map(value -> (x, z) -> {
+                    int desired = value.desiredLandWaterAt(x, z);
+                    if (desired != 0 && desired != 1) {
+                        return 0;
+                    }
+                    return fields.landWaterAt(z * width + x) - desired;
+                }).orElse((x, z) -> 0),
+                token));
         return List.copyOf(result);
     }
 

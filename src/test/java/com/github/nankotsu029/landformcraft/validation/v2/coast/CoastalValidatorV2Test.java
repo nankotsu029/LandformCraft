@@ -16,6 +16,7 @@ import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.Coast
 import com.github.nankotsu029.landformcraft.model.GenerationBounds;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalFeaturePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalTransitionPlanV2;
+import com.github.nankotsu029.landformcraft.model.v2.MetricResultV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,14 @@ class CoastalValidatorV2Test {
         assertTrue(report.metrics().stream().anyMatch(metric -> metric.metricId().equals("coastal.harbor.depth-p50")));
         assertTrue(report.metrics().stream().anyMatch(metric -> metric.metricId().equals("coastal.cape.rock-exposure")));
         assertTrue(report.metrics().stream().anyMatch(metric -> metric.metricId().equals("coastal.transition.conflict-cells")));
+        // V2-18-05: the breakwater clear-opening metric is now measured from the field. Its actual value
+        // is the realized crest-to-crest gap, which sits strictly above the plan's edge-to-edge width —
+        // i.e. it is no longer the plan value compared against itself.
+        MetricResultV2 opening = report.metrics().stream()
+                .filter(metric -> metric.metricId().equals("coastal.breakwater.clear-opening"))
+                .findFirst().orElseThrow();
+        assertTrue(opening.actualMillionths() > opening.expected().minimumMillionths(),
+                opening.actualMillionths() + " vs " + opening.expected().minimumMillionths());
 
         CoastalValidationReportV2 second = new CoastalValidatorV2().validate(
                 new CoastalValidationInputV2(fixture.blueprint(), tiled(fixture.source(), 128), tiled(fixture.source(), 128)),
@@ -90,6 +99,17 @@ class CoastalValidatorV2Test {
         CoastalValidationReportV2 report = new CoastalValidatorV2().validate(
                 new CoastalValidationInputV2(fixture.blueprint(), desired, fixture.source()), () -> false);
         assertTrue(report.issues().stream().anyMatch(issue -> issue.ruleId().equals("coastal.land-water.residual")));
+    }
+
+    @Test
+    void detectsABlockedBreakwaterOpeningFromTheRegionField() throws Exception {
+        Fixture fixture = fixture();
+        // Making the whole region crest merges the two arms into a single connected crest structure,
+        // so the two-component opening measurement collapses to zero and the metric fails — impossible
+        // under the previous plan-versus-itself tautology, which always passed.
+        int crest = BreakwaterHarborGeneratorV2.BreakwaterRegion.CREST.rawValue();
+        assertIssue(fixture, replacing(fixture.source(), CoastalFoundationModuleV2.BREAKWATER_REGION_FIELD_ID,
+                (value, x, z) -> crest), "coastal.breakwater.opening");
     }
 
     private static void assertIssue(Fixture fixture, CoastalFieldSamplerV2 actual, String ruleId) {

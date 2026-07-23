@@ -62,7 +62,8 @@ public final class V2RequestStoreV2 {
                 List.of(),
                 List.of(),
                 DEFAULT_GENERATION,
-                GenerationRequestV2.ConstraintMapBudget.defaults());
+                GenerationRequestV2.ConstraintMapBudget.defaults(),
+                java.util.Optional.empty());
         publish(target, request);
         return request;
     }
@@ -157,7 +158,59 @@ public final class V2RequestStoreV2 {
         GenerationRequestV2 updated = new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
                 current.referenceImages(), List.of(source), current.generation(),
-                current.constraintMapBudget());
+                current.constraintMapBudget(), current.foundationBaseLevels());
+        publish(target, updated);
+        return updated;
+    }
+
+    /**
+     * Replaces the generation settings (global seed and tile size).
+     *
+     * <p>Authoring could not set them, which was harmless while the surface path filled unowned cells
+     * from a baseline. Since {@code V2-18-09} the HARD {@code LAND_WATER_MASK} is resolved into
+     * generation and must agree with the composed feature geometry, and since {@code V2-18-10} every
+     * surface export takes that path — so a request whose seed does not match the mask's provenance
+     * can never export. Exposing the seed keeps authoring able to reproduce a mask's request instead
+     * of silently producing an unexportable one.</p>
+     */
+    public GenerationRequestV2 generation(String requestId, long globalSeed, int tileSize)
+            throws IOException {
+        String id = requireRequestId(requestId);
+        Path target = resolve(id);
+        GenerationRequestV2 current = read(target, id);
+        GenerationRequestV2 updated = new GenerationRequestV2(
+                current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
+                current.referenceImages(), current.constraintMaps(),
+                new GenerationRequestV2.GenerationSettings(globalSeed, tileSize),
+                current.constraintMapBudget(), current.foundationBaseLevels());
+        publish(target, updated);
+        return updated;
+    }
+
+    /**
+     * Declares the per-medium provisional base elevation of the macro foundation (ADR 0038 D2-2(b)).
+     *
+     * <p>Since {@code V2-18-10} a {@code surface-2_5d} export requires an effective foundation owner
+     * on every cell, and the only wired foundation input is a HARD {@code LAND_WATER_MASK} map
+     * reference together with these declared levels. Authoring could set the map source but not the
+     * levels, so an authored request could not reach a passing export; this verb closes that gap
+     * without widening the contract — both values are plain block Y and are validated against the
+     * request bounds by {@link GenerationRequestV2}. Nothing is inferred from the bounds or the mask.
+     * </p>
+     */
+    public GenerationRequestV2 foundationBaseLevels(
+            String requestId,
+            int landSurfaceY,
+            int waterBedY
+    ) throws IOException {
+        String id = requireRequestId(requestId);
+        Path target = resolve(id);
+        GenerationRequestV2 current = read(target, id);
+        GenerationRequestV2 updated = new GenerationRequestV2(
+                current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
+                current.referenceImages(), current.constraintMaps(), current.generation(),
+                current.constraintMapBudget(),
+                java.util.Optional.of(new GenerationRequestV2.FoundationBaseLevels(landSurfaceY, waterBedY)));
         publish(target, updated);
         return updated;
     }
@@ -176,7 +229,7 @@ public final class V2RequestStoreV2 {
         GenerationRequestV2 updated = new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), current.bounds(), prompt,
                 current.referenceImages(), current.constraintMaps(), current.generation(),
-                current.constraintMapBudget());
+                current.constraintMapBudget(), current.foundationBaseLevels());
         publish(target, updated);
         return updated;
     }
@@ -261,7 +314,7 @@ public final class V2RequestStoreV2 {
         return new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), bounds, current.prompt(),
                 current.referenceImages(), current.constraintMaps(), current.generation(),
-                current.constraintMapBudget());
+                current.constraintMapBudget(), current.foundationBaseLevels());
     }
 
     private static String requireRequestId(String value) {

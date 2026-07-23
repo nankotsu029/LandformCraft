@@ -106,6 +106,8 @@ public final class Release2FoundationSurfaceExportApplicationServiceV2 {
                 directory.manifest().canonicalChecksum(),
                 directory.manifest().requiredCapabilities(),
                 tileIds,
-                eligibility);
+                eligibility,
+                generated.intentContributionCoverage(),
+                generated.warnings());
     }
 }

@@ -23,8 +23,10 @@ class DiagnosticGateContractV2Test {
     void builtInLocksTheClassificationTableAndProductionKinds() {
         DiagnosticGateContractV2 contract = DiagnosticGateContractV2.builtIn();
 
-        // Golden: every blueprint diagnostic rule is currently NON_GATING (export gates on none).
+        // Golden: every registered rule is currently NON_GATING (export gates on none).
         Map<String, DiagnosticGateContractV2.GateClass> expected = new LinkedHashMap<>();
+        // V2-18-09 (ADR 0038 D8-1): CLI-surface deprecation warning for the ignored baseline argument.
+        expected.put("v2.cli.surface-baseline-deprecated", DiagnosticGateContractV2.GateClass.NON_GATING);
         expected.put("v2.missing-preview-capability", DiagnosticGateContractV2.GateClass.NON_GATING);
         expected.put("v2.missing-validator-capability", DiagnosticGateContractV2.GateClass.NON_GATING);
         expected.put("v2.unsupported-capability", DiagnosticGateContractV2.GateClass.NON_GATING);

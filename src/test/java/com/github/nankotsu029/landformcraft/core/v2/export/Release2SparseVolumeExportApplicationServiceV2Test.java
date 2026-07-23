@@ -40,9 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class Release2SparseVolumeExportApplicationServiceV2Test {
     private static final Path REQUEST =
-            Path.of("examples/v2/diagnostic/harbor-cove-64.request-v2.json");
+            Path.of("examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json");
     private static final Path INTENT =
-            Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json");
+            Path.of("examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json");
     private static final SurfaceBaselineV2 BASELINE =
             new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 42);
 
@@ -178,6 +178,25 @@ class Release2SparseVolumeExportApplicationServiceV2Test {
                         .startsWith(".release-v2-sparse-volume-")));
             }
         }
+    }
+
+    @Test
+    void theSharedSurfaceChainInheritsTheFoundationOwnerCoverageGate(@TempDir Path root) throws Exception {
+        // V2-18-10: the gate lives in the shared coastal surface stage, so every capability built on
+        // it — hydrology, environment, and this sparse-volume chain — rejects a foundation-free
+        // request identically instead of publishing over ownerless cells.
+        Path legacyRequest = LegacyFoundationFreeRequestFixtureV2.write(REQUEST, root.resolve("legacy"));
+        Path exportsRoot = root.resolve("exports");
+
+        SurfaceFoundationOwnerRejectedV2 rejected = assertThrows(SurfaceFoundationOwnerRejectedV2.class,
+                () -> service().exportNow(new Release2ExportRequestV2(
+                        legacyRequest, INTENT, root.resolve("work"), exportsRoot,
+                        "legacy-sparse-volume", BASELINE)));
+
+        assertEquals(SurfaceFoundationOwnerGateV2.RULE_FOUNDATION_OWNER_COVERAGE_INCOMPLETE,
+                rejected.ruleId());
+        assertEquals(0, rejected.ownedCells());
+        assertFalse(Files.exists(exportsRoot.resolve("legacy-sparse-volume")));
     }
 
     private static Release2SparseVolumeExportApplicationServiceV2 service() {

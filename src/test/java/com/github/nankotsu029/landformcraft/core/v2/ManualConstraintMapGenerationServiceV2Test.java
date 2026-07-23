@@ -147,7 +147,8 @@ class ManualConstraintMapGenerationServiceV2Test {
         GenerationRequestV2 request = new GenerationRequestV2(
                 fixture.request().requestVersion(), fixture.request().requestId(), fixture.request().bounds(),
                 fixture.request().prompt(), fixture.request().referenceImages(), sources,
-                fixture.request().generation(), fixture.request().constraintMapBudget());
+                fixture.request().generation(), fixture.request().constraintMapBudget(),
+                fixture.request().foundationBaseLevels());
         List<TerrainIntentV2.ConstraintMapBinding> bindings = new ArrayList<>(fixture.intent().mapReferences());
         bindings.add(new TerrainIntentV2.ConstraintMapBinding(
                 "land-water-two-binding", "constraint-source:land-water-two",
@@ -184,7 +185,8 @@ class ManualConstraintMapGenerationServiceV2Test {
         GenerationRequestV2 request = new GenerationRequestV2(
                 fixture.request().requestVersion(), fixture.request().requestId(), fixture.request().bounds(),
                 fixture.request().prompt(), fixture.request().referenceImages(), sources,
-                fixture.request().generation(), fixture.request().constraintMapBudget());
+                fixture.request().generation(), fixture.request().constraintMapBudget(),
+                fixture.request().foundationBaseLevels());
         List<TerrainIntentV2.ConstraintMapBinding> bindings = new ArrayList<>(fixture.intent().mapReferences());
         bindings.add(new TerrainIntentV2.ConstraintMapBinding(
                 "land-water-soft-binding", "constraint-source:land-water-soft",
@@ -340,7 +342,8 @@ class ManualConstraintMapGenerationServiceV2Test {
                 2, id, new GenerationRequestV2.Bounds(1, 1, -20, 100, 50),
                 "explicit height meaning", List.of(), List.of(source),
                 new GenerationRequestV2.GenerationSettings(1L, 32),
-                GenerationRequestV2.ConstraintMapBudget.defaults());
+                GenerationRequestV2.ConstraintMapBudget.defaults(),
+                java.util.Optional.empty());
         TerrainIntentV2.ConstraintMapBinding binding = new TerrainIntentV2.ConstraintMapBinding(
                 "height-binding", source.sourceId(), TerrainIntentV2.ConstraintMapRole.HEIGHT_GUIDE,
                 "constraint:height-guide:sha256-" + "f".repeat(64),
@@ -394,7 +397,8 @@ class ManualConstraintMapGenerationServiceV2Test {
         return new GenerationRequestV2(
                 2, "manual-constraint-island", new GenerationRequestV2.Bounds(width, length, 0, 100, 50),
                 "AI-free constraint fixture", List.of(), sources,
-                new GenerationRequestV2.GenerationSettings(827_413L, 32), budget);
+                new GenerationRequestV2.GenerationSettings(827_413L, 32), budget,
+                java.util.Optional.empty());
     }
 
     private static List<TerrainIntentV2.ConstraintMapBinding> draftBindings() {
@@ -450,7 +454,8 @@ class ManualConstraintMapGenerationServiceV2Test {
     ) {
         return new GenerationRequestV2(
                 source.requestVersion(), source.requestId(), source.bounds(), source.prompt(),
-                source.referenceImages(), source.constraintMaps(), source.generation(), budget);
+                source.referenceImages(), source.constraintMaps(), source.generation(), budget,
+                source.foundationBaseLevels());
     }
 
     private static GenerationRequestV2 replaceChecksum(
@@ -468,7 +473,8 @@ class ManualConstraintMapGenerationServiceV2Test {
                 .toList();
         return new GenerationRequestV2(
                 request.requestVersion(), request.requestId(), request.bounds(), request.prompt(),
-                request.referenceImages(), sources, request.generation(), request.constraintMapBudget());
+                request.referenceImages(), sources, request.generation(), request.constraintMapBudget(),
+                request.foundationBaseLevels());
     }
 
     private static GenerationRequestV2.CoordinateMapping mapping(int width, int length) {

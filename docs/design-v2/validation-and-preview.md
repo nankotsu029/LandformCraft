@@ -310,6 +310,16 @@ validation/candidates/<candidateId>.json
 - format 2 directory/ZIPのstrict read-backとtampering test
 - peak memory、1枚ずつ解放、cancel時にpartial Releaseを公開しないtest
 
+### 13.1 Intent-conformance portfolio（V2-18-11）
+
+決定性・checksum・strict verify・budget拒否だけでは「地形の形がintentどおりか」を誰も検査しない（[macro foundation監査](../audits/macro-foundation-conformance-audit-2026-07-22.md) item 5）。これを埋める常設回帰がintent-conformance portfolio（test scopeの`integration.v2.conformance`）である。
+
+- 入力は**公開済みRelease**だけとする。sealed intent（`source/terrain-intent.json`）、frozen blueprint（`blueprint/world-blueprint.json`）、ACTUAL land-water sidecar（`constraints/`）から測り、生成process内部の状態を読まない。
+- 測定は3系統である。**EDGE実測**（published blueprintの`v2.edge-classification` targetをproduction evaluatorで再評価）、**beach↔backshore land連続性**（beachがeffective ownerであるforeshore／backshore cellが全てland・単一land component・mainland所属で、宣言hinterland polygonも同一mainlandに載る。nearshoreは全てwater）、**breakwater両armのland接続**（arm footprintがbreakwater以外のmainland landへ接触し、宣言landfall endpoint cellがmainlandにある）。
+- portfolioは計測専用であり、production経路へgateを追加しない。Phase gateへの昇格は`V2-18-12`が行う。
+- 期待値は case ごとに明示宣言する。非適合が見つかった場合は期待値を緩めず、現状をpinしたうえで是正Task IDを登録する（`coastal-honored-400`東armのlandfall非適合＝`V2-18-13`）。
+- 新しいkindをproduction接続するTaskは、portfolioへ1 caseを追加して形状conformanceを固定する。
+
 ## 14. 完了条件
 
 featureを「supported」と呼べるのは、少なくとも以下をすべて満たす場合である。

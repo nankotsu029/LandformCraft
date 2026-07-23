@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -30,6 +31,7 @@ public final class Release2SparseVolumeExportApplicationServiceV2 {
     private final GenerationExecutors executors;
     private final LandformV2DataCodec codec;
     private final ProductionDispatchRegistryV2 dispatchRegistry;
+    private final HardPreflightGateV2 preflightGate = new HardPreflightGateV2();
     private final ReleaseSparseVolumePublisherV2 publisher;
     private final ReleaseSparseVolumeVerifierV2 verifier;
     private final ReleasePlacementEligibilityVerifierV2 eligibilityVerifier;
@@ -90,9 +92,11 @@ public final class Release2SparseVolumeExportApplicationServiceV2 {
             throw new IOException("production sparse-volume dispatch rejected terrain intent: "
                     + exception.getMessage(), exception);
         }
+        preflightGate.requireHonorable(generationRequest, request.generationRequest(), intent, token);
         ProductionExportPipelineV2.GeneratedSparseVolume generated =
                 dispatch.pipeline().generateSparseVolume(
                         generationRequest,
+                        request.generationRequest(),
                         intent,
                         request.baseline(),
                         request.workRoot(),
@@ -130,6 +134,8 @@ public final class Release2SparseVolumeExportApplicationServiceV2 {
                 directory.manifest().canonicalChecksum(),
                 directory.manifest().requiredCapabilities(),
                 tileIds,
-                eligibility);
+                eligibility,
+                Optional.empty(),
+                List.of());
     }
 }

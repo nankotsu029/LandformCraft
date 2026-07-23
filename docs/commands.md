@@ -62,6 +62,8 @@ lfc v2 request list
 lfc v2 request create <request-id>
 lfc v2 request bounds <request-id> <width> <length> <min-y> <max-y> <water-level>
 lfc v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width> <length>
+lfc v2 request generation <request-id> <global-seed> <tile-size>
+lfc v2 request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>
 lfc v2 request prompt <request-id> <prompt...>
 lfc v2 design <import|fixture|openai|anthropic> <request-v2.json> <intent-or-model> [designs-root]
 lfc v2 generate <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
@@ -84,7 +86,7 @@ lfc v2 migrate apply   <intent|design|release> <v1-source> <output-root> <migrat
 
 ### v2 request authoring（V2-12-08）
 
-`create`／`bounds`／`selection`／`constraint-map`／`prompt`／`list` はv2 requestを**作成・編集**します。`V2-12-05`のカバレッジ監査で、v1にはあった request authoring がv2に無い（F1）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。`validate`／`info` の意味は従来どおりで、**pathを引数に取ります**。
+`create`／`bounds`／`selection`／`constraint-map`／`generation`／`foundation-base-levels`／`prompt`／`list` はv2 requestを**作成・編集**します。`V2-12-05`のカバレッジ監査で、v1にはあった request authoring がv2に無い（F1）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。`validate`／`info` の意味は従来どおりで、**pathを引数に取ります**。
 
 保存先はPaperが`plugins/LandformCraft/data/v2/requests/<request-id>.request-v2.json`、CLIが`<--data-dir>/v2/requests/<request-id>.request-v2.json`です。`request-id` はlowercaseのportable slug（`[a-z0-9][a-z0-9._-]{0,63}`）で、pathは受け取りません。作成・編集は毎回strict schemaで検証してからatomicに publish するため、途中状態のrequestは残りません。
 
@@ -94,20 +96,34 @@ lfc v2 migrate apply   <intent|design|release> <v1-source> <output-root> <migrat
 | `bounds <id> <w> <l> <min-y> <max-y> <water>` | 範囲を置換します。`water` は新しい範囲へclampされます |
 | `selection <id>` | **Paper専用**。operatorの現在のWorldEdit選択範囲からwidth／length／min-y／max-yを取り込みます。保存済みwater levelは維持（新範囲へclamp）されます。CLIから呼ぶと`V2_PAPER_ONLY`です |
 | `constraint-map <id> <slug> <file> <sha256> <w> <l>` | `surface-2_5d` exportが要求する land/water constraint map source を1件宣言します（既存の宣言は置換）。形式はU8 grayscale・north-west原点・east/south軸・pixel中心・回転／反転なし・全面crop・`0=water` `1=land`・no-data禁止に固定です。これ以外の形式は手書きJSONのままとし、推測しません |
+| `generation <id> <global-seed> <tile-size>` | 生成settings（seedとtile size）を置換します。`V2-18-09`以降maskは生成へ解決され合成形状と一致する必要があるため、**maskはそれを作ったseedに束縛されます**。authoringがmask側のseedを再現できるよう公開しています（`V2-18-10`） |
+| `foundation-base-levels <id> <land-surface-y> <water-bed-y>` | macro foundationのmedium別provisional base elevationを宣言します（[ADR 0038](adr/0038-macro-foundation-contract.md) D2-2(b)）。HARD `LAND_WATER_MASK`と併せて**明示foundation入力**を構成し、`V2-18-10`のowner gateを通過するために必須です。値はrequest boundsの範囲内である必要があり、推測はしません |
 | `prompt <id>` / `prompt <id> <text...>` | Paperは**次のchat 1件**をpromptとして保存します（5分で失効、`cancel`で取消）。CLIは引数のtextを保存します。いずれもcredentialに見えるtextは拒否します |
 | `list` | 保存済みrequest IDを決定的な順序で列挙します |
 
-permissionは`landformcraft.v2.request.create`（作成）と`landformcraft.v2.request.edit`（`bounds`／`selection`／`constraint-map`／`prompt`）、read系（`validate`／`info`／`list`）は従来どおり`landformcraft.v2.request`です。
+permissionは`landformcraft.v2.request.create`（作成）と`landformcraft.v2.request.edit`（`bounds`／`selection`／`constraint-map`／`generation`／`foundation-base-levels`／`prompt`）、read系（`validate`／`info`／`list`）は従来どおり`landformcraft.v2.request`です。
 
 authoringからexportまでの最短経路は次のとおりです。`export`はrequestの`requestId`と intentの`intentId`が一致することを要求します。
 
 ```text
 lfc v2 request create harbor-cove-64
 lfc v2 request bounds harbor-cove-64 64 64 32 72 50
+lfc v2 request generation harbor-cove-64 827413 64
 lfc v2 request constraint-map harbor-cove-64 coast-mask maps/coast-u8.png <sha256> 64 64
+lfc v2 request foundation-base-levels harbor-cove-64 54 46
 lfc v2 request prompt harbor-cove-64 A sheltered cove with a stone breakwater.
 lfc v2 export <上記request path> <intent path> <exports-root> <release-id> water 54 46
 ```
+
+`generation`と`foundation-base-levels`は`V2-18-10`以降の必須手順です。maskは`seed`が決める合成coastal形状と一致している必要があり、`foundationBaseLevels`が無いrequestはowner gateで拒否されます。
+
+`V2-18-03`以降、`export`／`generate`は生成前にHARD preflight gateを通ります。宣言したHARD `LAND_WATER_MASK`は実体（request directory相対のPNG）が存在し、`<sha256>`と宣言寸法に一致する必要があります。評価器を持たないHARD constraint（現状は`METRIC_RANGE`）やconsumerを持たないHARD relation（contract-only／未接続kind宛）は`v2.preflight.*` ruleで拒否されます。override flagはありません。
+
+`V2-18-04`以降、HARD `EDGE_CLASSIFICATION`はpreflightを通過し、生成後にtarget-driven validatorが該当world edge（外周band）のland／water share を実測します。HARD違反（例: 北端land率が`minimumShare01`未満）はexport拒否になります。
+
+`V2-18-10`以降、surface exportは**foundation owner被覆100%**を必須とします（[ADR 0038](adr/0038-macro-foundation-contract.md) D7-2）。明示foundation入力（HARD `LAND_WATER_MASK`＋`foundationBaseLevels`）を持たないrequestは、feature非所有cellにfoundation ownerが存在しないため、生成後・publish前に安定rule `v2.export.foundation-owner-coverage-incomplete` でfail closedに拒否されます。**override flagはなく、baseline引数でも回避できません**（D8-2）。gateの対象はsurface foundation ownerだけで、modifier（active contributor）被覆・volume／material被覆・request domain外は対象外です。coverage分母はrequest domainの全cell（width×length）であり、no-data cellを分母から除外することはありません。HARD maskのno-dataはbinding（`INVALID_NO_DATA`）が生成前に、ownerを持たないcellはkernel不変条件（`OWNERLESS_CELL`）が生成時に拒否するため、gateへ到達するfieldに未所有cellが「covered扱い」で混入することはできません。owner候補（candidate）は0..N個許容されますが、merge後のeffective ownerは各cellちょうど1つで、未解決tie／undeclared overlapはmerge kernelがgate到達前に拒否します（ADR 0038 D1）。
+
+`V2-18-09`以降、requestがHARD `LAND_WATER_MASK`と`foundationBaseLevels`（medium別のprovisional base elevation宣言）の両方を持つ場合、macro foundation stageがmaskを解決して全cellのland-water＋provisional elevationを確定し、coastal featureはその基礎の上のsurface modifierとして合成されます（ADR 0038）。この**foundation経路**では末尾のbaseline引数（`<land|water> <land-y> <water-y>`）は受理されますが**無視**され、CLI summaryへNON_GATING警告 `v2.cli.surface-baseline-deprecated` が表示されます。maskとfeature形状が矛盾するcell（HARD maskをmodifierが上書きしようとする等）はexport拒否です。maskの大域構図はEDGE実測を充足できるため、edge意図をHARDで宣言できます。
 
 ### v2 retention／read-onlyなplacement state確認（V2-12-10）
 
@@ -147,7 +163,7 @@ job storeはPaperが`plugins/LandformCraft/data/v2/jobs/`、CLIが`<--data-dir>/
 
 新しいSchemaは`generation-job-v2.schema.json`（example: `examples/v2/job/export-job-v2.json`）です。v1の`generation-job.schema.json`は凍結されたままで、拡張も再利用もしていません。
 
-`generate` は `export` のZIP無し版（strict Release directoryのみ）です。`<land|water> <land-y> <water-y>` はcoastal featureが所有しないcellのbaselineで、推測しないため必須です（`V2-12-02`）。
+`generate` は `export` のZIP無し版（strict Release directoryのみ）です。`<land|water> <land-y> <water-y>` は引数としては必須のまま受理されますが（`V2-12-02`）、`V2-18-10`でfoundation owner gateがfail closedになったため、**この引数だけで成立するlegacy exportはもうありません**。明示foundation入力を持つrequestでは無視され`v2.cli.surface-baseline-deprecated`警告が出ます（`V2-18-09`）。引数自体の削除はV2-18-12後の独立Task＋ADR amendmentです（ADR 0038 D8-3）。
 
 ### v1→v2 migration（V2-12-04）
 

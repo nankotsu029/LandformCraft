@@ -14,7 +14,7 @@
     {
       "sourceId": "constraint-source:coast-mask",
       "file": "maps/coastal-fishing-map-land-water-u8.png",
-      "expectedSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "expectedSha256": "e9027eaa5a003c40e2a3f16150301cd7a134526da5a6259a5c4d1814399736fb",
       "expectedWidth": 400,
       "expectedLength": 400,
       "decoderKind": "CATEGORICAL_RASTER",

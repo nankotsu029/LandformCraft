@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Offline adapter that packages V2-9／V2-10 foundation 2.5D merge output into the existing
@@ -58,6 +59,7 @@ public final class FoundationSurfaceExportAdapterV2 {
     private final LandformV2DataCodec data = new LandformV2DataCodec();
     private final ConstraintFieldIndexCodecV2 indexCodec = new ConstraintFieldIndexCodecV2();
     private final FoundationPlainHillSliceCompilerV2 plainHillCompiler = new FoundationPlainHillSliceCompilerV2();
+    private final SurfaceFoundationOwnerGateV2 ownerGate = new SurfaceFoundationOwnerGateV2();
 
     public ProductionExportPipelineV2.GeneratedSurface generatePlainHill(
             GenerationRequestV2 request,
@@ -102,9 +104,13 @@ public final class FoundationSurfaceExportAdapterV2 {
 
         FoundationSurfaceFieldsV2 fields = FoundationSurfaceFieldsV2.fromMerge(
                 merge, width, length, bounds.minY(), bounds.maxY(), bounds.waterLevel());
-        if (fields.coveredCells() != Math.multiplyExact(width, length)) {
-            throw new IOException("foundation surface export requires full owner coverage");
-        }
+        // V2-18-10 (ADR 0038 D7-2): the same fail-closed surface foundation owner gate as the coastal
+        // spine, over this path's own merge owners (plain/hill are foundation-eligible, ADR 0038 D4).
+        // The merge kernel already rejects an ownerless cell, so this restates the requirement with
+        // the shared rule id instead of trusting one code path's invariant.
+        ownerGate.requireFullCoverage(ADAPTER_ID, fields.foundationOwnerCells(),
+                Math.multiplyExact(width, length),
+                "the plain/hill foundation merge left cells of the request domain without an owner");
 
         Path constraintRoot = workRoot.resolve("constraints");
         List<FieldArtifactDescriptorV2> descriptors = writeConstraintFields(
@@ -112,7 +118,11 @@ public final class FoundationSurfaceExportAdapterV2 {
         FieldArtifactDescriptorV2 desired = descriptorFor(
                 descriptors, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER);
 
-        TerrainIntentV2 intent = withLandWaterBinding(draftIntent, desired.semanticChecksum());
+        // V2-18-07: bind the land-water desired reference to the declared INPUT mask digest instead of the
+        // generated field's own checksum, so the provenance is not a self-reference. See the coastal
+        // pipeline for the full rationale; mask resolution into the field remains V2-18-09.
+        String maskDigest = request.constraintMaps().getFirst().expectedSha256();
+        TerrainIntentV2 intent = withLandWaterBinding(draftIntent, maskDigest);
         Path intentPath = workRoot.resolve("terrain-intent.json");
         data.writeTerrainIntent(intentPath, intent);
         String intentChecksum = data.terrainIntentChecksum(intent);
@@ -151,7 +161,7 @@ public final class FoundationSurfaceExportAdapterV2 {
         SurfaceReleaseSourceV2 source = new SurfaceReleaseSourceV2(
                 requestPath, intentPath, blueprintPath, indexPath, constraintRoot,
                 validationPath, previewRoot.resolve("index.json"), previewRoot, tiles);
-        return new ProductionExportPipelineV2.GeneratedSurface(source, blueprint);
+        return new ProductionExportPipelineV2.GeneratedSurface(source, blueprint, Optional.empty(), List.of());
     }
 
     private static void requireFoundationSurfaceKinds(TerrainIntentV2 intent) throws IOException {
@@ -187,7 +197,7 @@ public final class FoundationSurfaceExportAdapterV2 {
                 DiagnosticCompileRequestV2.defaultBudget()), intent);
     }
 
-    private static TerrainIntentV2 withLandWaterBinding(TerrainIntentV2 intent, String semanticChecksum) {
+    private static TerrainIntentV2 withLandWaterBinding(TerrainIntentV2 intent, String maskDigest) {
         List<TerrainIntentV2.ConstraintMapBinding> existing = intent.mapReferences();
         TerrainIntentV2.ConstraintMapBinding template;
         if (existing.isEmpty()) {
@@ -211,7 +221,7 @@ public final class FoundationSurfaceExportAdapterV2 {
                 template.id(),
                 template.sourceId(),
                 template.role(),
-                "constraint:land-water:sha256-" + semanticChecksum,
+                "constraint:land-water:sha256-" + maskDigest,
                 template.strength(),
                 template.sampling(),
                 template.toleranceBlocks(),
@@ -228,9 +238,13 @@ public final class FoundationSurfaceExportAdapterV2 {
             List<FieldArtifactDescriptorV2> descriptors
     ) {
         TerrainIntentV2.ConstraintMapBinding binding = intent.mapReferences().getFirst();
+        // V2-18-07: the field index keeps referencing the DESIRED field by its own checksum (integrity),
+        // while the intent binding's artifactId now records the input mask provenance. See the coastal
+        // pipeline for the rationale.
+        String canonicalArtifactId = "constraint:land-water:sha256-" + desired.semanticChecksum();
         return new ConstraintFieldIndexV2.AppliedBinding(
                 binding.id(), binding.sourceId(), binding.role(), binding.strength(), binding.sampling(),
-                binding.toleranceBlocks(), binding.weightMillionths(), binding.artifactId(),
+                binding.toleranceBlocks(), binding.weightMillionths(), canonicalArtifactId,
                 desired.definition().fieldId(),
                 descriptors.stream().map(field -> field.definition().fieldId()).toList(),
                 List.of(new ConstraintFieldIndexV2.LabelEntry(0, 0, "water"),

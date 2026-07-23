@@ -1,0 +1,58 @@
+{
+  "requestVersion": 2,
+  "requestId": "coastal-honored-400",
+  "bounds": {
+    "width": 400,
+    "length": 400,
+    "minY": 32,
+    "maxY": 72,
+    "waterLevel": 50
+  },
+  "prompt": "Generate the gate-passing 400x400 coastal contract used by the V2-18-03 HARD preflight gate: a sandy beach, harbor basin, breakwater harbor, and rocky cape whose HARD requirements are all honorable and whose LAND_WATER_MASK resolves.",
+  "referenceImages": [],
+  "constraintMaps": [
+    {
+      "sourceId": "constraint-source:coast-mask",
+      "file": "maps/coastal-honored-400-land-water-u8.png",
+      "expectedSha256": "8b3f04df90d89e84e4d9c389200bd5d0278a7dc72df0216da8f75cf72aa88c0f",
+      "expectedWidth": 400,
+      "expectedLength": 400,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": { "x": 0, "z": 0, "width": 400, "length": 400 }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "labels": [
+          { "sample": 0, "label": "water" },
+          { "sample": 1, "label": "land" }
+        ],
+        "noData": { "mode": "FORBIDDEN" }
+      }
+    }
+  ],
+  "generation": { "globalSeed": 827413, "tileSize": 128 },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  },
+  "foundationBaseLevels": {
+    "landSurfaceY": 54,
+    "waterBedY": 42
+  }
+}

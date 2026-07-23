@@ -34,6 +34,7 @@ public final class Release2ExportApplicationServiceV2 {
     private final GenerationExecutors executors;
     private final LandformV2DataCodec codec;
     private final ProductionDispatchRegistryV2 dispatchRegistry;
+    private final HardPreflightGateV2 preflightGate = new HardPreflightGateV2();
     private final ReleaseSurfacePublisherV2 publisher;
     private final ReleaseSurfaceVerifierV2 verifier;
     private final ReleasePlacementEligibilityVerifierV2 eligibilityVerifier;
@@ -98,8 +99,10 @@ public final class Release2ExportApplicationServiceV2 {
         } catch (IllegalArgumentException exception) {
             throw new IOException("production dispatch rejected terrain intent: " + exception.getMessage(), exception);
         }
+        preflightGate.requireHonorable(generationRequest, request.generationRequest(), intent, token);
         ProductionExportPipelineV2.GeneratedSurface generated = dispatch.pipeline().generate(
-                generationRequest, intent, request.baseline(), request.workRoot(), request.budget(), token);
+                generationRequest, request.generationRequest(), intent, request.baseline(),
+                request.workRoot(), request.budget(), token);
 
         SurfaceReleaseSourceV2 source = generated.source();
         ReleaseSurfaceArtifactsV2 published = publisher.publish(
@@ -128,6 +131,8 @@ public final class Release2ExportApplicationServiceV2 {
                 directory.manifest().canonicalChecksum(),
                 directory.manifest().requiredCapabilities(),
                 tileIds,
-                eligibility);
+                eligibility,
+                generated.intentContributionCoverage(),
+                generated.warnings());
     }
 }

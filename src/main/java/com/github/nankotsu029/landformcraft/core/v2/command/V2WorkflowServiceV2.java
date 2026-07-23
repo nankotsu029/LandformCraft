@@ -163,6 +163,17 @@ public final class V2WorkflowServiceV2 {
         summary.put("tiles", result.tileIds().size());
         summary.put("placementEligible", result.eligibility().eligible());
         summary.put("verifiedFiles", result.eligibility().verifiedFiles());
+        // V2-18-02 report-only diagnostic: never written to the sealed blueprint or Release
+        // manifest, so its presence here has no effect on any checksum.
+        result.intentContributionCoverage().ifPresent(
+                coverage -> summary.put("intentContributionCoverage", coverage.toSummaryMap()));
+        // V2-18-09 NON_GATING warnings (ADR 0038 D8-1), e.g. the deprecated surface-baseline
+        // argument being ignored on an explicit-foundation request. CLI summary only, never sealed.
+        if (!result.warnings().isEmpty()) {
+            summary.put("warnings", result.warnings().stream()
+                    .map(warning -> Map.of("ruleId", warning.ruleId(), "message", warning.message()))
+                    .toList());
+        }
         return java.util.Collections.unmodifiableMap(summary);
     }
 

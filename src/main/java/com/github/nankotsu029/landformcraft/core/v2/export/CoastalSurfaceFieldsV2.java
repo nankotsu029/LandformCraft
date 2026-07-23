@@ -1,6 +1,7 @@
 package com.github.nankotsu029.landformcraft.core.v2.export;
 
 import com.github.nankotsu029.landformcraft.core.CancellationToken;
+import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
 import com.github.nankotsu029.landformcraft.generator.v2.TerrainBlockResolver;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalFoundationModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.HardLandWaterSourceV2;
@@ -10,6 +11,7 @@ import com.github.nankotsu029.landformcraft.generator.v2.coast.cape.RockyCapeGen
 import com.github.nankotsu029.landformcraft.generator.v2.coast.harbor.HarborBasinGeneratorV2;
 import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionCompositorV2;
 import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionModuleV2;
+import com.github.nankotsu029.landformcraft.model.v2.foundation.SurfaceFoundationPlanV2;
 import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalFieldSamplerV2;
 import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalValidationInputV2;
 
@@ -49,12 +51,19 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
     private final int width;
     private final int length;
     private final int hardProtectedCells;
+    /**
+     * Effective foundation owner index in the {@code foundation.owner-index} namespace, or 0 on the
+     * legacy baseline path where no foundation owner exists (V2-18-09). Constant because the only
+     * wired candidate is the mask-derived background owner; producers arrive with V2-15 wiring.
+     */
+    private final int foundationOwnerIndex;
 
     private CoastalSurfaceFieldsV2(
             Map<String, int[]> values,
             int width,
             int length,
-            int hardProtectedCells
+            int hardProtectedCells,
+            int foundationOwnerIndex
     ) {
         this.values = Map.copyOf(values);
         this.landWater = values.get(CoastalTransitionModuleV2.LAND_WATER_FIELD_ID);
@@ -62,6 +71,7 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
         this.width = width;
         this.length = length;
         this.hardProtectedCells = hardProtectedCells;
+        this.foundationOwnerIndex = foundationOwnerIndex;
     }
 
     /** Estimated resident bytes for the dense descriptor working set. */
@@ -150,7 +160,97 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
                 }
             }
         }
-        return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells);
+        return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells, 0);
+    }
+
+    /**
+     * Foundation-path generation (V2-18-09): the coastal four compose as surface modifiers over the
+     * resolved macro foundation. Feature-unowned cells take the background owner's medium and
+     * provisional elevation from the explicit mask input — never a {@code SurfaceBaselineV2}
+     * fallback — and the mask is injected into the transition compositor as the HARD land-water
+     * source, so every mask-specified cell is either honored or rejected fail-closed.
+     */
+    static CoastalSurfaceFieldsV2 generate(
+            CoastalGeneratorRuntimeV2 runtime,
+            int width,
+            int length,
+            MacroFoundationV2 foundation,
+            CancellationToken cancellationToken
+    ) {
+        if (foundation.width() != width || foundation.length() != length) {
+            throw new IllegalStateException("macro foundation dimensions do not match the export bounds");
+        }
+        int cells = Math.multiplyExact(width, length);
+        Map<String, int[]> fields = new LinkedHashMap<>();
+        for (String id : FIELD_IDS) {
+            fields.put(id, new int[cells]);
+        }
+        boolean[] active = new boolean[cells];
+        for (int z = 0; z < length; z++) {
+            cancellationToken.throwIfCancellationRequested();
+            for (int x = 0; x < width; x++) {
+                active[z * width + x] = runtime.compositor()
+                        .sampleAt(x, z, HardLandWaterSourceV2.NONE).active();
+            }
+        }
+
+        HardLandWaterSourceV2 hard = foundation.hardLandWaterSource();
+        int protectedCells = 0;
+        for (int z = 0; z < length; z++) {
+            cancellationToken.throwIfCancellationRequested();
+            for (int x = 0; x < width; x++) {
+                int index = z * width + x;
+                SandyBeachGeneratorV2.BeachSample beach =
+                        runtime.beach().sampleAt(x, z, HardLandWaterSourceV2.NONE);
+                HarborBasinGeneratorV2.HarborSample harbor =
+                        runtime.harbor().sampleAt(x, z, HardLandWaterSourceV2.NONE);
+                BreakwaterHarborGeneratorV2.BreakwaterSample breakwater = runtime.breakwater().sampleAt(x, z);
+                RockyCapeGeneratorV2.CapeSample cape =
+                        runtime.cape().sampleAt(x, z, HardLandWaterSourceV2.NONE);
+                put(fields, CoastalFoundationModuleV2.BEACH_LOCAL_WIDTH_FIELD_ID, index,
+                        beach.localWidthMillionths());
+                put(fields, CoastalFoundationModuleV2.BEACH_BAND_FIELD_ID, index, beach.band().rawValue());
+                put(fields, CoastalFoundationModuleV2.HARBOR_REGION_FIELD_ID, index, harbor.region().rawValue());
+                put(fields, CoastalFoundationModuleV2.HARBOR_WATER_FIELD_ID, index, harbor.water());
+                put(fields, CoastalFoundationModuleV2.HARBOR_DEPTH_FIELD_ID, index, harbor.depthMillionths());
+                put(fields, CoastalFoundationModuleV2.BREAKWATER_REGION_FIELD_ID, index,
+                        breakwater.region().rawValue());
+                put(fields, CoastalFoundationModuleV2.CAPE_REGION_FIELD_ID, index, cape.region().rawValue());
+                put(fields, CoastalFoundationModuleV2.CAPE_ROCK_EXPOSURE_FIELD_ID, index, cape.rockExposure());
+                put(fields, CoastalFoundationModuleV2.CAPE_DESCRIPTOR_INDEX_FIELD_ID, index,
+                        cape.descriptorIndex());
+
+                HardLandWaterSourceV2.Classification maskClass = hard.classificationAt(x, z);
+                if (active[index]) {
+                    CoastalTransitionCompositorV2.CompositionSample composed =
+                            runtime.compositor().sampleAt(x, z, hard);
+                    if (maskClass != HardLandWaterSourceV2.Classification.UNSPECIFIED) {
+                        if (!composed.hardProtected() || composed.landWater() != maskClass.rawValue()) {
+                            throw new IllegalStateException(
+                                    "coastal export did not preserve the HARD land-water cell at " + x + ',' + z);
+                        }
+                        protectedCells++;
+                    }
+                    put(fields, CoastalTransitionModuleV2.LAND_WATER_FIELD_ID, index, composed.landWater());
+                    put(fields, CoastalTransitionModuleV2.SURFACE_HEIGHT_FIELD_ID, index,
+                            composed.surfaceHeightMillionths());
+                    put(fields, CoastalTransitionModuleV2.OWNER_INDEX_FIELD_ID, index, composed.ownerIndex());
+                    put(fields, CoastalTransitionModuleV2.CONFLICT_FIELD_ID, index, composed.conflict());
+                } else {
+                    if (maskClass != HardLandWaterSourceV2.Classification.UNSPECIFIED) {
+                        protectedCells++;
+                    }
+                    put(fields, CoastalTransitionModuleV2.LAND_WATER_FIELD_ID, index,
+                            foundation.mediumAt(x, z));
+                    put(fields, CoastalTransitionModuleV2.SURFACE_HEIGHT_FIELD_ID, index,
+                            foundation.elevationMillionthsAt(x, z));
+                    put(fields, CoastalTransitionModuleV2.OWNER_INDEX_FIELD_ID, index, 0);
+                    put(fields, CoastalTransitionModuleV2.CONFLICT_FIELD_ID, index, 0);
+                }
+            }
+        }
+        return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells,
+                MacroFoundationV2.BACKGROUND_OWNER_INDEX);
     }
 
     private static void put(Map<String, int[]> fields, String id, int index, int value) {
@@ -170,6 +270,20 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
     @Override
     public int valueAt(String fieldId, int globalX, int globalZ) {
         int[] field = values.get(fieldId);
+        if (field == null && BuiltInLandformModuleCatalogV2.CONTRACT_FIELD_ID.equals(fieldId)) {
+            // The generic land-water contract field (V2-18-04 EDGE evaluator reads this id) resolves to
+            // the composed land-water field: at export time they carry the same land(1)/water(0) values.
+            field = landWater;
+        }
+        if (field == null && SurfaceFoundationPlanV2.OWNER_INDEX_FIELD_ID.equals(fieldId)) {
+            // V2-18-09: the effective foundation owner (background candidate) covers the whole
+            // domain on the foundation path; 0 on the legacy baseline path, where no cell has a
+            // foundation owner. Surface modifiers never own foundation cells (ADR 0038 D5-3).
+            if (globalX < 0 || globalX >= width || globalZ < 0 || globalZ >= length) {
+                throw new IndexOutOfBoundsException("coordinate outside release-local coastal fields");
+            }
+            return foundationOwnerIndex;
+        }
         if (field == null) return CoastalValidationInputV2.NO_DATA;
         if (globalX < 0 || globalX >= width || globalZ < 0 || globalZ >= length) {
             throw new IndexOutOfBoundsException("coordinate outside release-local coastal fields");

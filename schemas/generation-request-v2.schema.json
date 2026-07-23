@@ -23,7 +23,8 @@
       "items": { "$ref": "#/$defs/constraintMapSource" }
     },
     "generation": { "$ref": "#/$defs/generation" },
-    "constraintMapBudget": { "$ref": "#/$defs/budget" }
+    "constraintMapBudget": { "$ref": "#/$defs/budget" },
+    "foundationBaseLevels": { "$ref": "#/$defs/foundationBaseLevels" }
   },
   "$defs": {
     "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
@@ -235,6 +236,15 @@
         "maximumPixels": { "type": "integer", "minimum": 1, "maximum": 16000000 },
         "maximumArtifactBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
         "maximumResidentBytes": { "type": "integer", "minimum": 1, "maximum": 100663296 }
+      }
+    },
+    "foundationBaseLevels": {
+      "type": "object", "additionalProperties": false,
+      "description": "ADR 0038 D2-2(b): declared per-medium provisional base elevation (fixed Y per LAND / WATER medium) for the macro foundation stage. Optional; a request without it keeps the legacy surface-baseline path (ADR 0038 D8-2).",
+      "required": [ "landSurfaceY", "waterBedY" ],
+      "properties": {
+        "landSurfaceY": { "type": "integer", "minimum": -2147, "maximum": 2147 },
+        "waterBedY": { "type": "integer", "minimum": -2147, "maximum": 2147 }
       }
     }
   }

@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.validation.v2.coast;
 
 import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.beach.SandyBeachGeneratorV2;
+import com.github.nankotsu029.landformcraft.generator.v2.coast.breakwater.BreakwaterHarborGeneratorV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.cape.RockyCapeGeneratorV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.harbor.HarborBasinGeneratorV2;
 import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionModuleV2;
@@ -17,6 +18,7 @@ import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HexFormat;
@@ -37,6 +39,19 @@ public final class CoastalValidatorV2 {
     public static final String VERSION = "coastal-validator-v1";
     private static final int FIXED_SCALE = 1_000_000;
     private static final int CAPE_EXPOSURE_TOLERANCE = 10_000;
+    /**
+     * V2-18-05 breakwater clear-opening acceptance band. The field measurement (minimum centre-to-centre
+     * distance between the two crest components on either side of the entrance) sits a few blocks
+     * <em>above</em> the plan's edge-to-edge clear width: the two nearest crest cells lie inside their
+     * structure edges, so their separation always exceeds the clear gap. The band is therefore one-sided
+     * — the realized gap must be at least the planned clear width (allowing one block of lower rounding
+     * tolerance) and no more than {@code UPPER_MARGIN} blocks above it. A blocked or narrowed opening
+     * (measured below the plan, or a single/absent crest component reported as 0) fails; a grossly
+     * over-wide opening also fails. Measured offsets on the shipped fixtures are +3.09 (400²) and +2.49
+     * (64²) blocks, comfortably inside the band.
+     */
+    private static final long CLEAR_OPENING_UPPER_MARGIN = 6L * FIXED_SCALE;
+    private static final long CLEAR_OPENING_LOWER_TOLERANCE = FIXED_SCALE;
 
     public CoastalValidationReportV2 validate(
             CoastalValidationInputV2 input,
@@ -71,8 +86,14 @@ public final class CoastalValidatorV2 {
                     "coastal.harbor.overlay");
         }
         for (BreakwaterHarborPlanV2 plan : blueprint.breakwaterHarborPlans()) {
+            // V2-18-05: measure the realized clear opening from the generated field (minimum distance
+            // between the two arms' crest cells) instead of comparing the plan value to itself.
+            long measuredOpening = measureBreakwaterClearOpening(input.actualFields(), plan, cancellationToken);
+            long planClearOpening = plan.actualClearOpeningWidthMillionths();
             metric(metrics, issues, issueSequence, plan.featureId(), "coastal.breakwater.clear-opening", 1,
-                    plan.actualClearOpeningWidthMillionths(), exact(plan.actualClearOpeningWidthMillionths()), 0,
+                    measuredOpening,
+                    new TerrainIntentV2.FixedRange(planClearOpening, planClearOpening + CLEAR_OPENING_UPPER_MARGIN),
+                    CLEAR_OPENING_LOWER_TOLERANCE,
                     "block-millionths", "coastal.breakwater.overlay", "coastal.breakwater.opening");
         }
         for (RockyCapePlanV2 plan : blueprint.rockyCapePlans()) {
@@ -154,6 +175,96 @@ public final class CoastalValidatorV2 {
         }
         return new HarborEvidence(water == 0 ? 0 : percentile50(depths, water) * (long) FIXED_SCALE,
                 maximum, interior, entranceWater, outside);
+    }
+
+    /**
+     * V2-18-05 field measurement of the realized breakwater clear opening: the minimum centre-to-centre
+     * distance (block-millionths) between the two crest structures on either side of the entrance. The
+     * two arms are the two connected components of crest cells (the opening separates them); anything
+     * other than exactly two components (a bridged/blocked or fragmented opening) returns 0 so the
+     * metric fails closed. The composed field exposes only the crest region, so components are recovered
+     * from it rather than from an arm-index field.
+     */
+    private static long measureBreakwaterClearOpening(
+            CoastalFieldSamplerV2 fields, BreakwaterHarborPlanV2 plan, CancellationToken token
+    ) {
+        int crestValue = BreakwaterHarborGeneratorV2.BreakwaterRegion.CREST.rawValue();
+        int width = fields.width();
+        Set<Integer> crestCells = new HashSet<>();
+        for (int z = 0; z < fields.length(); z++) {
+            token.throwIfCancellationRequested();
+            for (int x = 0; x < width; x++) {
+                if (fields.valueAt(plan.regionFieldId(), x, z) == crestValue) {
+                    crestCells.add(z * width + x);
+                }
+            }
+        }
+        List<List<int[]>> components = crestComponents(crestCells, width, token);
+        if (components.size() != 2) {
+            return 0L;
+        }
+        long minSquared = Long.MAX_VALUE;
+        for (int[] a : components.get(0)) {
+            token.throwIfCancellationRequested();
+            for (int[] b : components.get(1)) {
+                long dx = (long) a[0] - b[0];
+                long dz = (long) a[1] - b[1];
+                minSquared = Math.min(minSquared, dx * dx + dz * dz);
+            }
+        }
+        return integerSquareRoot(Math.multiplyExact(minSquared, (long) FIXED_SCALE * FIXED_SCALE));
+    }
+
+    /** 8-connected components of the crest-cell set, each as a list of {x, z}. */
+    private static List<List<int[]>> crestComponents(Set<Integer> crestCells, int width, CancellationToken token) {
+        List<List<int[]>> components = new ArrayList<>();
+        Set<Integer> unvisited = new HashSet<>(crestCells);
+        ArrayDeque<Integer> frontier = new ArrayDeque<>();
+        while (!unvisited.isEmpty()) {
+            token.throwIfCancellationRequested();
+            Integer seed = unvisited.iterator().next();
+            unvisited.remove(seed);
+            frontier.add(seed);
+            List<int[]> component = new ArrayList<>();
+            while (!frontier.isEmpty()) {
+                int cell = frontier.poll();
+                int cx = cell % width;
+                int cz = cell / width;
+                component.add(new int[] {cx, cz});
+                for (int dz = -1; dz <= 1; dz++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        if (dx == 0 && dz == 0) {
+                            continue;
+                        }
+                        int nx = cx + dx;
+                        if (nx < 0 || nx >= width) {
+                            continue;
+                        }
+                        int neighbour = (cz + dz) * width + nx;
+                        if (unvisited.remove(neighbour)) {
+                            frontier.add(neighbour);
+                        }
+                    }
+                }
+            }
+            components.add(component);
+        }
+        return components;
+    }
+
+    /** Deterministic floor(sqrt(value)) for non-negative longs (no floating-point in the result). */
+    private static long integerSquareRoot(long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("integer square root of a negative value");
+        }
+        long guess = (long) Math.sqrt((double) value);
+        while (guess > 0 && guess * guess > value) {
+            guess--;
+        }
+        while ((guess + 1) * (guess + 1) <= value) {
+            guess++;
+        }
+        return guess;
     }
 
     private static CapeEvidence measureCape(

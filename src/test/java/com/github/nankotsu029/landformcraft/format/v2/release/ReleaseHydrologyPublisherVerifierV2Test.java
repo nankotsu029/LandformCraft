@@ -187,14 +187,10 @@ class ReleaseHydrologyPublisherVerifierV2Test {
 
         Path fieldRoot = root.resolve("constraints");
         List<FieldArtifactDescriptorV2> fields = writeFields(fieldRoot);
+        // V2-18-07: the intent bindings reference the declared INPUT source digests (a/b/c×64, matching the
+        // request's expectedSha256); the field index keeps each field's own content-address, so they differ.
         String sourceIntent = Files.readString(Path.of("examples/v2/manual-constraint-island/terrain-intent-v2.json"));
-        String landChecksum = field(fields, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER).semanticChecksum();
-        String heightChecksum = field(fields, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_HEIGHT).semanticChecksum();
-        String zoneChecksum = field(fields, FieldArtifactDescriptorV2.FieldSemantic.ZONE_LABEL_MAP).semanticChecksum();
-        TerrainIntentV2 intent = data.readTerrainIntent(sourceIntent
-                .replace("a".repeat(64), landChecksum)
-                .replace("b".repeat(64), heightChecksum)
-                .replace("c".repeat(64), zoneChecksum), "hydrology-fixture-intent");
+        TerrainIntentV2 intent = data.readTerrainIntent(sourceIntent, "hydrology-fixture-intent");
         Path intentPath = root.resolve("intent.json");
         data.writeTerrainIntent(intentPath, intent);
         String intentChecksum = data.terrainIntentChecksum(intent);

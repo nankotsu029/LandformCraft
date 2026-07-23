@@ -157,6 +157,37 @@ class V2RequestStoreV2Test {
     }
 
     @Test
+    void foundationBaseLevelsDeclareTheExplicitMacroFoundationInput(@TempDir Path root) throws IOException {
+        // V2-18-10: since the surface owner gate is fail-closed, an authored request must be able to
+        // declare the per-medium base elevation, otherwise authoring can never reach a passing export.
+        V2RequestStoreV2 store = new V2RequestStoreV2(root);
+        store.create("harbor-cove");
+        store.bounds("harbor-cove", 64, 64, 32, 72, 50);
+
+        GenerationRequestV2 updated = store.foundationBaseLevels("harbor-cove", 54, 46);
+
+        assertEquals(java.util.Optional.of(new GenerationRequestV2.FoundationBaseLevels(54, 46)),
+                updated.foundationBaseLevels());
+        assertEquals(updated, codec.readGenerationRequest(store.pathOf("harbor-cove")));
+        // Editing another field keeps the declaration.
+        assertEquals(java.util.Optional.of(new GenerationRequestV2.FoundationBaseLevels(54, 46)),
+                store.prompt("harbor-cove", "A sheltered cove.").foundationBaseLevels());
+    }
+
+    @Test
+    void foundationBaseLevelsOutsideTheRequestBoundsAreRejectedAndNothingIsWritten(@TempDir Path root)
+            throws IOException {
+        V2RequestStoreV2 store = new V2RequestStoreV2(root);
+        store.create("harbor-cove");
+        GenerationRequestV2 bounded = store.bounds("harbor-cove", 64, 64, 32, 72, 50);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> store.foundationBaseLevels("harbor-cove", 54, 12));
+
+        assertEquals(bounded, codec.readGenerationRequest(store.pathOf("harbor-cove")));
+    }
+
+    @Test
     void promptIsStoredAndSecretLookingTextIsRefused(@TempDir Path root) throws IOException {
         V2RequestStoreV2 store = new V2RequestStoreV2(root);
         store.create("harbor-cove");

@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ExportJobServiceV2Test {
     private static final Path REQUEST =
-            Path.of("examples/v2/diagnostic/harbor-cove-64.request-v2.json");
+            Path.of("examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json");
     private static final Path INTENT =
-            Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json");
+            Path.of("examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json");
 
     private GenerationExecutors executors;
 
@@ -54,7 +54,7 @@ class ExportJobServiceV2Test {
         ExportJobSnapshotV2 queued = jobs.submit(submission(root, "async-export", ExportJobKindV2.EXPORT));
 
         assertEquals(ExportJobStateV2.QUEUED, queued.state());
-        assertEquals("harbor-cove-64", queued.requestId());
+        assertEquals("harbor-cove-64-honored", queued.requestId());
         ExportJobSnapshotV2 finished = awaitTerminal(jobs, queued.jobId());
         assertEquals(ExportJobStateV2.PUBLISHED, finished.state(), finished.message());
         assertEquals(1_000_000, finished.progressMillionths());
@@ -62,7 +62,7 @@ class ExportJobServiceV2Test {
         assertTrue(Files.isRegularFile(root.resolve("exports").resolve("async-export.zip")));
 
         // The published job is what `v2 candidate list <request-id>` enumerates.
-        List<ExportJobSnapshotV2> candidates = jobs.candidates("harbor-cove-64");
+        List<ExportJobSnapshotV2> candidates = jobs.candidates("harbor-cove-64-honored");
         assertEquals(List.of(queued.jobId()), candidates.stream().map(ExportJobSnapshotV2::jobId).toList());
         assertEquals(List.of(), jobs.candidates("some-other-request"));
     }
@@ -141,9 +141,9 @@ class ExportJobServiceV2Test {
             awaitTerminal(jobs, queued.jobId());
         }
 
-        List<String> first = jobs.candidates("harbor-cove-64").stream()
+        List<String> first = jobs.candidates("harbor-cove-64-honored").stream()
                 .map(ExportJobSnapshotV2::jobId).toList();
-        List<String> second = jobs.candidates("harbor-cove-64").stream()
+        List<String> second = jobs.candidates("harbor-cove-64-honored").stream()
                 .map(ExportJobSnapshotV2::jobId).toList();
 
         assertEquals(3, first.size());
@@ -221,7 +221,7 @@ class ExportJobServiceV2Test {
 
     private ExportJobSubmissionV2 submission(Path root, String releaseId, ExportJobKindV2 kind) {
         return new ExportJobSubmissionV2(
-                "harbor-cove-64",
+                "harbor-cove-64-honored",
                 releaseId,
                 kind,
                 REQUEST,

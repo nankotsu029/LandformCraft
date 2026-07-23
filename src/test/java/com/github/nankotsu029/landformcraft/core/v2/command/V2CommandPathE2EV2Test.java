@@ -47,8 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link V2CommandRouterV2}, so the grammar the operator types is the grammar under test.
  */
 class V2CommandPathE2EV2Test {
-    private static final Path REQUEST = Path.of("examples/v2/diagnostic/harbor-cove-64.request-v2.json");
-    private static final Path INTENT = Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json");
+    private static final Path REQUEST = Path.of("examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json");
+    private static final Path INTENT = Path.of("examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json");
     private static final UUID WORLD = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static final V2CommandVerbV2.Surface PAPER = V2CommandVerbV2.Surface.PAPER;
 
@@ -63,7 +63,7 @@ class V2CommandPathE2EV2Test {
                     "v2", "request", "info", REQUEST.toString()});
             Map<String, Object> inspected = workflow.inspectRequest(
                     Path.of(requestRoute.arguments().get(3)));
-            assertEquals("harbor-cove-64", inspected.get("requestId"));
+            assertEquals("harbor-cove-64-honored", inspected.get("requestId"));
             assertEquals(64, inspected.get("width"));
             assertEquals(64, inspected.get("length"));
 

@@ -130,7 +130,8 @@ public final class LandformCraftCli {
                     inspected.put("v2CorrelationId", route.correlationId());
                     emit(standardOutput, inspected);
                 }
-                case REQUEST_CREATE, REQUEST_BOUNDS, REQUEST_CONSTRAINT_MAP, REQUEST_PROMPT_INLINE, REQUEST_LIST ->
+                case REQUEST_CREATE, REQUEST_BOUNDS, REQUEST_CONSTRAINT_MAP, REQUEST_GENERATION,
+                     REQUEST_FOUNDATION_BASE_LEVELS, REQUEST_PROMPT_INLINE, REQUEST_LIST ->
                         emit(standardOutput, authorRequest(verb, tokens, route));
                 case JOB_STATUS, JOB_CANCEL, JOB_LIST, CANDIDATE_LIST, CANDIDATE_INFO ->
                         emit(standardOutput, inspectJobs(verb, tokens, route, executors));
@@ -317,6 +318,10 @@ public final class LandformCraftCli {
                     integer(tokens.get(6)), integer(tokens.get(7)), integer(tokens.get(8)));
             case REQUEST_CONSTRAINT_MAP -> store.constraintMap(requestId, tokens.get(4), tokens.get(5),
                     tokens.get(6), integer(tokens.get(7)), integer(tokens.get(8)));
+            case REQUEST_GENERATION -> store.generation(requestId,
+                    Long.parseLong(tokens.get(4)), integer(tokens.get(5)));
+            case REQUEST_FOUNDATION_BASE_LEVELS -> store.foundationBaseLevels(requestId,
+                    integer(tokens.get(4)), integer(tokens.get(5)));
             case REQUEST_PROMPT_INLINE -> store.prompt(requestId,
                     String.join(" ", tokens.subList(4, tokens.size())));
             default -> throw new IllegalStateException("not a request authoring verb: " + verb);
@@ -328,6 +333,17 @@ public final class LandformCraftCli {
         result.put("maxY", request.bounds().maxY());
         result.put("waterLevel", request.bounds().waterLevel());
         result.put("constraintMaps", request.constraintMaps().size());
+        result.put("globalSeed", request.generation().globalSeed());
+        result.put("tileSize", request.generation().tileSize());
+        // V2-18-10: the explicit foundation input is now export-relevant state, so authoring reports it.
+        result.put("foundationBaseLevels", request.foundationBaseLevels()
+                .<Object>map(levels -> {
+                    Map<String, Object> declared = new LinkedHashMap<>();
+                    declared.put("landSurfaceY", levels.landSurfaceY());
+                    declared.put("waterBedY", levels.waterBedY());
+                    return declared;
+                })
+                .orElse("absent"));
         result.put("path", store.pathOf(request.requestId()).toString());
         return result;
     }
@@ -884,6 +900,10 @@ public final class LandformCraftCli {
                 "v2 requestのboundsを更新");
         helpLine(output, "request constraint-map <request-id> <source-slug> <file> <sha256> "
                 + "<width> <length>", "land/water constraint map sourceを宣言（surface-2_5d exportに必須）");
+        helpLine(output, "request generation <request-id> <global-seed> <tile-size>",
+                "seedとtile sizeを更新（maskはseedの合成形状と一致する必要があります）");
+        helpLine(output, "request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>",
+                "macro foundationのmedium別base elevationを宣言（surface-2_5d exportに必須）");
         helpLine(output, "request prompt <request-id> <prompt...>", "v2 requestのpromptを更新");
         helpLine(output, "request list", "保存済みv2 requestを列挙");
         helpLine(output, "design <import|fixture|openai|anthropic> <request-v2.json> <intent-or-model> "

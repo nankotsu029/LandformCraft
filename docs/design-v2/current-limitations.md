@@ -1,12 +1,12 @@
 # 現行実装の制約と再設計の出発点
 
-> Status: V2-12-06でv1 production writer／generator／placement／commandを削除し、v1はpackaged legacy read／verify／migrate境界とimmutable goldenへ隔離した。productionで通常利用できるRelease 2は`surface-2_5d`の実測済み4 entryに限られ、FAWE 2.15.2は1000×1000、WorldEdit 7.3.19単独は64×64、1000超は未測定で拒否する。Track Aの次は`V2-18-01`である。
+> Status: V2-12-06でv1 production writer／generator／placement／commandを削除し、v1はpackaged legacy read／verify／migrate境界とimmutable goldenへ隔離した。productionで通常利用できるRelease 2は`surface-2_5d`の実測済み4 entryに限られ、FAWE 2.15.2は1000×1000、WorldEdit 7.3.19単独は64×64、1000超は未測定で拒否する。Track Aの次は`V2-18-11`である。
 
 `V2-12-02`のproduction export経路（`core.v2.export`）には次の既知の境界がある。いずれも推測fallbackを避けるためのfail closedであり、緩和は後続Taskで行う。
 
 - **対象capabilityのproduction Application Serviceは`surface-2_5d`、`hydrology-plan`、`environment-fields`（いずれもshared artifact）**である。`hydrology-plan`は`Release2HydrologyExportApplicationServiceV2`、`environment-fields`は`Release2EnvironmentExportApplicationServiceV2`経由でcoastal production featureへoverlayでき、hydrology dependencyは同一Releaseでstrict verifyされる。個別hydrology／environment Featureの公開配線は`V2-15-10`以降である。`sparse-volume`のproduction export経路は未接続で、既存のcapability別publisherを直接呼ぶ必要がある。
 - **V2-2の4 coastal contributorが全て必要**である。sealed coastal transition planがSANDY_BEACH／HARBOR_BASIN／BREAKWATER_HARBOR／ROCKY_CAPEを1個ずつ持たない場合、部分集合を推測補完せずrejectする。
-- **coastal featureが所有しないcellのbaselineは生成しない。** land-waterと地表高は`SurfaceBaselineV2`として呼び出し側が宣言する。汎用base landformはV2-9 foundation側の契約であり、export経路は独自の地形を発明しない。2026-07-22の[macro foundation監査](../audits/macro-foundation-conformance-audit-2026-07-22.md)で、この一律fallbackが大域land-water構図を破壊すること（400×400実測でfeature非所有cell 73.0%）を確定し、恒久解消を`V2-18-08`／`V2-18-09`（macro foundation契約ADR／production spine）へ登録した。
+- **surface exportは明示foundation入力を必須とする（`V2-18-10`以降）。** feature非所有cellを`SurfaceBaselineV2`で一律に埋める旧経路は、2026-07-22の[macro foundation監査](../audits/macro-foundation-conformance-audit-2026-07-22.md)が大域land-water構図の破壊（400×400実測でfeature非所有cell 73.0%）を確定し、`V2-18-09`のmacro foundation stageで置換され、`V2-18-10`でfoundation owner被覆100%がexport必須になった。requestはHARD `LAND_WATER_MASK`と`foundationBaseLevels`を宣言する必要があり、欠けたrequestは`v2.export.foundation-owner-coverage-incomplete`でfail closedに拒否される（baseline引数はoverrideにならない。[ADR 0038](../adr/0038-macro-foundation-contract.md) D7-2／D8-2）。export経路は依然として独自の地形を発明せず、maskとfeature形状の矛盾も拒否する。
 - **desired constraint fieldはcomposition結果をsealしたものである。** 外部由来のHARD land-water maskをbundleとして持ち込んで束縛する経路（画像由来maskの直接binding）は`V2-7`／`V2-12-04`の入力側Taskに残る。同監査でdesired＝actualの自己参照（residual恒等0）とHARD `EDGE_CLASSIFICATION`未評価を確定し、入力mask束縛を`V2-18-06`、target-driven検証を`V2-18-04`、desired／actual分離を`V2-18-07`へ登録した。
 - **LARGE（1024超）は拒否する。** V2-8のstreaming gateが閉じるまでexportしない。
 - **CLI／Paper command接続は`V2-12-03`で解消済み**で、`V2-12-05`から既定v2である。ただし本production export serviceが扱うのは`surface-2_5d`だけであり、未接続capabilityを推測してworld mutationへ流さない。詳細は [Task Index](task-index.md)、進捗は [docs/roadmap.md](../roadmap.md) を正本とする。

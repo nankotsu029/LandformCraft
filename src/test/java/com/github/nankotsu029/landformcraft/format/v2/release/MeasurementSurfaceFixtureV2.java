@@ -110,15 +110,12 @@ public final class MeasurementSurfaceFixtureV2 {
 
         Path fieldRoot = root.resolve("constraints");
         List<FieldArtifactDescriptorV2> fields = writeFields(fieldRoot, width, length);
+        // V2-18-07: keep the intent bindings referencing the declared INPUT source digests (a/b/c×64,
+        // matching the request's expectedSha256). The field index below keeps each field's own
+        // content-address, so intent-binding and field-index artifact ids are intentionally different.
         String sourceIntent = Files.readString(Path.of("examples/v2/manual-constraint-island/terrain-intent-v2.json"))
                 .replace("\"manual-constraint-island\"", "\"" + requestId + "\"");
-        String landChecksum = field(fields, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER).semanticChecksum();
-        String heightChecksum = field(fields, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_HEIGHT).semanticChecksum();
-        String zoneChecksum = field(fields, FieldArtifactDescriptorV2.FieldSemantic.ZONE_LABEL_MAP).semanticChecksum();
-        TerrainIntentV2 intent = DATA.readTerrainIntent(sourceIntent
-                .replace("a".repeat(64), landChecksum)
-                .replace("b".repeat(64), heightChecksum)
-                .replace("c".repeat(64), zoneChecksum), "measurement-fixture-intent");
+        TerrainIntentV2 intent = DATA.readTerrainIntent(sourceIntent, "measurement-fixture-intent");
         Path intentPath = root.resolve("intent.json");
         DATA.writeTerrainIntent(intentPath, intent);
         String intentChecksum = DATA.terrainIntentChecksum(intent);

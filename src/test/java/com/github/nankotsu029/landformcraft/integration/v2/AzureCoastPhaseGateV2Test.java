@@ -321,8 +321,12 @@ class AzureCoastPhaseGateV2Test {
                     constraintRoot, request, draftFields);
             FieldArtifactDescriptorV2 desired = field(
                     descriptors, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER);
+            // V2-18-07: the sealed intent binding references the declared INPUT mask digest (its desired
+            // source), not the generated field's own checksum. The field index below keeps the field's
+            // content-address as its canonicalArtifactId.
+            String inputMaskDigest = request.constraintMaps().getFirst().expectedSha256();
             String frozenJson = Files.readString(INTENT)
-                    .replace("0".repeat(64), desired.semanticChecksum());
+                    .replace("0".repeat(64), inputMaskDigest);
             TerrainIntentV2 intent = data.readTerrainIntent(frozenJson, "azure-coast-phase-gate-intent");
             Path intentPath = root.resolve("terrain-intent.json");
             data.writeTerrainIntent(intentPath, intent);

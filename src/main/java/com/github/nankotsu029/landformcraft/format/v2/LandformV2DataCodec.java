@@ -4813,7 +4813,12 @@ public final class LandformV2DataCodec {
                         budget.path("maximumDecodedBytes").longValue(),
                         budget.path("maximumPixels").longValue(),
                         budget.path("maximumArtifactBytes").longValue(),
-                        budget.path("maximumResidentBytes").longValue()));
+                        budget.path("maximumResidentBytes").longValue()),
+                root.has("foundationBaseLevels")
+                        ? java.util.Optional.of(new GenerationRequestV2.FoundationBaseLevels(
+                                root.path("foundationBaseLevels").path("landSurfaceY").intValue(),
+                                root.path("foundationBaseLevels").path("waterBedY").intValue()))
+                        : java.util.Optional.empty());
     }
 
     private GenerationRequestV2.ConstraintMapSource parseConstraintMapSource(JsonNode node) {
@@ -5326,6 +5331,13 @@ public final class LandformV2DataCodec {
         budget.put("maximumPixels", request.constraintMapBudget().maximumPixels());
         budget.put("maximumArtifactBytes", request.constraintMapBudget().maximumArtifactBytes());
         budget.put("maximumResidentBytes", request.constraintMapBudget().maximumResidentBytes());
+        // Absent foundation base levels serialize as an absent property, so every pre-V2-18-09
+        // request keeps its canonical byte stream and checksum unchanged.
+        request.foundationBaseLevels().ifPresent(levels -> {
+            ObjectNode foundation = node.putObject("foundationBaseLevels");
+            foundation.put("landSurfaceY", levels.landSurfaceY());
+            foundation.put("waterBedY", levels.waterBedY());
+        });
         return node;
     }
 

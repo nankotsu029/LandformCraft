@@ -69,6 +69,9 @@ public final class DiagnosticGateContractV2 {
         classes.put("v2.missing-preview-capability", GateClass.NON_GATING);
         classes.put("v2.unsupported-constraint-map", GateClass.NON_GATING);
         classes.put("v2.unsupported-structure-capability", GateClass.NON_GATING);
+        // V2-18-09 (ADR 0038 D8-1): the surface-baseline argument is ignored on a request with an
+        // explicit macro foundation input. CLI-surface warning, advisory only; never blocks export.
+        classes.put("v2.cli.surface-baseline-deprecated", GateClass.NON_GATING);
         BUILT_IN_RULE_CLASSES = Map.copyOf(classes);
     }
 

@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
@@ -20,7 +21,8 @@ public record GenerationRequestV2(
         List<ReferenceImageSource> referenceImages,
         List<ConstraintMapSource> constraintMaps,
         GenerationSettings generation,
-        ConstraintMapBudget constraintMapBudget
+        ConstraintMapBudget constraintMapBudget,
+        Optional<FoundationBaseLevels> foundationBaseLevels
 ) {
     public static final int VERSION = 2;
     public static final int MAX_REFERENCE_IMAGES = 16;
@@ -52,7 +54,24 @@ public record GenerationRequestV2(
                 Comparator.comparing(ConstraintMapSource::sourceId));
         Objects.requireNonNull(generation, "generation");
         Objects.requireNonNull(constraintMapBudget, "constraintMapBudget");
+        Objects.requireNonNull(foundationBaseLevels, "foundationBaseLevels");
+        foundationBaseLevels.ifPresent(levels -> levels.requireWithin(bounds));
         validateSources(referenceImages, constraintMaps, bounds, constraintMapBudget);
+    }
+
+    /**
+     * ADR 0038 D2-2(b): declared per-medium provisional base elevation for the macro foundation
+     * stage. Together with a HARD {@code LAND_WATER_MASK} map reference this forms the explicit
+     * foundation input; a request without it keeps the legacy surface-baseline path (ADR 0038 D8-2).
+     */
+    public record FoundationBaseLevels(int landSurfaceY, int waterBedY) {
+        void requireWithin(Bounds bounds) {
+            if (landSurfaceY < bounds.minY() || landSurfaceY > bounds.maxY()
+                    || waterBedY < bounds.minY() || waterBedY > bounds.maxY()) {
+                throw new IllegalArgumentException(
+                        "foundation base levels are outside the request bounds");
+            }
+        }
     }
 
     private static void validateSources(

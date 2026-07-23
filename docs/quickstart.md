@@ -19,17 +19,19 @@ Java 21とPaper 1.21.11を用意し、`LandformCraft-0.9.0-beta.1.jar`とWorldEd
 
 ## 2. v2 requestからReleaseを作る
 
-同梱のv2 fixture（`harbor-cove-64`）を使う最短経路です。CLIは既定でv2経路を通ります。
+同梱のv2 fixture（`harbor-cove-64-honored`）を使う最短経路です。CLIは既定でv2経路を通ります。このfixtureはHARD要件がすべて充足可能（`LAND_WATER_MASK`は実在mask PNGを解決し、HARD relationはproduction接続済みkind間のみ）なため、V2-18-03のHARD preflight gateを通過します。fixtureは`foundationBaseLevels`を宣言しているため、V2-18-09のmacro foundation経路（maskが全cellのland-waterを確定し、coastal featureはその上のmodifier）で生成されます。V2-18-10以降、この明示foundation入力は**必須**です。持たないrequestはfoundation owner被覆が0のまま`v2.export.foundation-owner-coverage-incomplete`で拒否され、baseline引数では回避できません。V2-18-11以降、このfixtureはHARDな`EDGE_CLASSIFICATION`（北端は陸 ≥0.85、南端は海 ≥0.90）も宣言します。生成後にtarget-driven validationが公開前に実測し、満たさないexportは拒否されます。
 
 ```bash
 # requestを厳密に検証
-./gradlew run --args="request validate examples/v2/diagnostic/harbor-cove-64.request-v2.json"
+./gradlew run --args="request validate examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json"
 
 # Release 2 directory＋ZIPを公開し、placement適格性まで検証
-#   末尾は baseline: <land|water> <land-surface-y> <water-bed-y>（coastal featureが所有しないcellの明示値）
+#   末尾の baseline: <land|water> <land-surface-y> <water-bed-y> は引数としては必須のまま受理されますが、
+#   明示foundation入力（HARD mask＋foundationBaseLevels）を持つrequestでは無視され、
+#   summaryへ v2.cli.surface-baseline-deprecated 警告が出ます（V2-18-09／V2-18-10）
 ./gradlew run --args="export \
-  examples/v2/diagnostic/harbor-cove-64.request-v2.json \
-  examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json \
+  examples/v2/diagnostic/harbor-cove-64-honored.request-v2.json \
+  examples/v2/diagnostic/harbor-cove-64-honored.terrain-intent-v2.json \
   build/quickstart-exports harbor-cove-64 water 54 46"
 
 # 検証済みReleaseのpreview indexを表示
