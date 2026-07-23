@@ -26,6 +26,7 @@ secrets.yml
 *.key
 
 # Generated LandformCraft data
+/out/
 /data/
 requests/
 designs/

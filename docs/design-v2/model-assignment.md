@@ -133,7 +133,7 @@ Paper実機smoke、WorldEdit／FAWE測定、MSPT／tick stall測定、Recovery d
 
 ## 9. 現在の未完了Task割当
 
-現在実行可能なPhaseはV2-15（Track E）である。V2-18は2026-07-23の人間承認でPhase gate `V2-18-12`が完了し、全13 Task完了で閉鎖した。V2-16／V2-17は依存待ち、V2-8-03〜08はHOLDで§10に置く。完了済みTask（V2-0〜V2-7、V2-9〜V2-14、V2-15-01〜09、V2-18全13）は本表へ掲載しない（履歴は§15とroadmap）。
+現在実行可能なPhaseはV2-19（Track A主担当・横断）とV2-15（Track E。ただし公開配線leafは`V2-19-01` stage gate待ち）である。V2-18は2026-07-23の人間承認でPhase gate `V2-18-12`が完了し、全13 Task完了で閉鎖した。V2-19は2026-07-23の[横断監査](../audits/cross-cutting-audit-2026-07-23.md)人間承認で登録した（§9.3）。V2-16／V2-17は依存待ち、V2-8-03〜08はHOLDで§10に置く。完了済みTask（V2-0〜V2-7、V2-9〜V2-14、V2-15-01〜10、V2-18全13）は本表へ掲載しない（履歴は§15とroadmap）。
 
 ### 9.1 V2-18 Macro foundation and intent conformance（Track A、完了）
 
@@ -148,14 +148,14 @@ Paper実機smoke、WorldEdit／FAWE測定、MSPT／tick stall測定、Recovery d
 
 ### 9.2 V2-15 Canonical catalog／existing-generator wiring（Track E、残り38）
 
-進捗: `V2-15-01`〜`10`完了（10/47）。次のTaskは`V2-15-11`。**[ADR 0039](../adr/0039-offline-production-route-eligibility.md) Gate 0 は2026-07-23の人間承認で`Accepted`（候補A採択: offline production route は dispatch `production-dispatch-registry-v1→v2` contract bump で追加）となり、`V2-15-10`が候補Aパターンの最初の適用leafとして完了した**。`PRODUCTION_CONNECTED`（Paper込み完全接続＝coastal 4）の意味・Paper `SUPPORTED` exact setは不変（`RIVER`／`MEANDERING_RIVER`はexport-SUPPORTEDのまま`OFFLINE_PRODUCTION`route、Paper `paper_apply`はEXPERIMENTALで昇格なし）。後続`V2-15-11`〜`46`は同一パターンをコピーする。
+進捗: `V2-15-01`〜`10`完了（10/47）。次のTaskは`V2-15-11`だが、**2026-07-23横断監査により公開配線leafは`V2-19-01`（semantic materialization gate、§9.3）完了を待つ**。**[ADR 0039](../adr/0039-offline-production-route-eligibility.md) Gate 0 は2026-07-23の人間承認で`Accepted`（候補A採択: offline production route は dispatch `production-dispatch-registry-v1→v2` contract bump で追加）となり、`V2-15-10`が候補Aパターンの最初の適用leafとして完了した**。`PRODUCTION_CONNECTED`（Paper込み完全接続＝coastal 4）の意味・Paper `SUPPORTED` exact setは不変（`RIVER`／`MEANDERING_RIVER`はexport-SUPPORTEDのまま`OFFLINE_PRODUCTION`route、Paper `paper_apply`はEXPERIMENTALで昇格なし）。後続`V2-15-11`〜`46`は同一パターンをコピーする。
 
-**Stage gate（全行共通、2026-07-23解除済み）:** 一律保留（`V2-18-09`完了までの待機）は`V2-18-12`の裁定と2026-07-23の人間承認で解除された。以後、production export／placement昇格系の作業・Acceptanceは各配線leafの**per-leaf義務**として次を負う: (1) 対象kindのcomposition profileをfield監査でPROVISIONAL→確定する（ADR 0038 D4。`CompositionProfileRegistryV2`にNORMATIVE登録済みなのは現状coastal 4種＋`PLAIN`／`HILL_RANGE`のみ。対応表の変更が必要ならADR 0038 amendmentを先行させ、Phase gate期待値はregistry変更と同一commitで更新する — test期待値だけの変更は禁止）、(2) 新規接続kindのintent-conformance portfolio caseを追加し、portfolio全case適合（登録済み非適合ゼロ）を維持する。registry／Schema／codec／offline plan／determinism系の作業は従来どおり制約なし。加えて ADR 0039 Accepted 後は、承認された offline production route パターンだけを 10〜46 でコピーする（A/B 混在禁止）。
+**Stage gate（全行共通、2026-07-23解除済み）:** 一律保留（`V2-18-09`完了までの待機）は`V2-18-12`の裁定と2026-07-23の人間承認で解除された。以後、production export／placement昇格系の作業・Acceptanceは各配線leafの**per-leaf義務**として次を負う: (1) 対象kindのcomposition profileをfield監査でPROVISIONAL→確定する（ADR 0038 D4。`CompositionProfileRegistryV2`にNORMATIVE登録済みなのは現状coastal 4種＋`PLAIN`／`HILL_RANGE`のみ。対応表の変更が必要ならADR 0038 amendmentを先行させ、Phase gate期待値はregistry変更と同一commitで更新する — test期待値だけの変更は禁止）、(2) 新規接続kindのintent-conformance portfolio caseを追加し、portfolio全case適合（登録済み非適合ゼロ）を維持する。registry／Schema／codec／offline plan／determinism系の作業は従来どおり制約なし。加えて ADR 0039 Accepted 後は、承認された offline production route パターンだけを 10〜46 でコピーする（A/B 混在禁止）。**さらに2026-07-23の[横断監査](../audits/cross-cutting-audit-2026-07-23.md)人間承認により、(3) 公開配線leaf（production wiring系）は`V2-19-01`が確立するsemantic materialization義務 — 対象Featureのfinal canonical block streamからの非空効果・形状conformance測定、plan-only metricとblock metricの別欄化 — をAcceptanceへ含み、`V2-19-01`完了までは着手しない**（registry／Schema／codec／offline plan／determinism系leafは従来どおり制約なし）。
 
 | Task | 状態 | 内容 | リスク | 主担当 | Effort | 第一レビュー | 第二レビュー／人間gate | 昇格条件 |
 |---|---|---|---|---|---|---|---|---|
 | V2-15-10 | **完了（2026-07-23）** | `RIVER`＋meandering subtype wiring＋dispatch `v1→v2` bump（ADR 0039候補Aの最初の適用leaf） | 中高（alias互換／meander checksum不変） | Sonnet 5 | High | Grok 4.5 | — | checksum互換の設計判断が必要ならOpus |
-| V2-15-11 | 依存03,06 | `LAKE`＋oxbow subtype wiring | 中高（hydrology relation） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
+| V2-15-11 | 依存03,06,`V2-19-01` | `LAKE`＋oxbow subtype wiring（materialization義務込み） | 中高（hydrology relation＋block実体化） | Sonnet 5 | High | Grok 4.5 | — | §6既定 |
 | V2-15-12 | 依存06 | `CANYON` wiring | 中（通常public wiring） | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
 | V2-15-13 | 依存06,08 | `WATERFALL`＋volume overlay wiring | 中高（graph／CSG ordering接続） | Sonnet 5 | High | Grok 4.5 | — | ordering不変条件が争点ならOpus |
 | V2-15-14 | 依存06 | `DELTA` wiring | 中 | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
@@ -194,6 +194,31 @@ Paper実機smoke、WorldEdit／FAWE測定、MSPT／tick stall測定、Recovery d
 | V2-15-47 | 依存10..46 | Phase gate（full suite、既存20＋全leaf E2E） | 最高（47 Task Phaseの最終監査／false promotion防止） | **Fable 5** | Highest available | Grok 4.5 | Opus 4.8＋**人間承認** | — |
 
 割当根拠: 旧割当はwiring系の大半をOpus相当以上としていたが、`V2-15-05`〜`09`でdispatch spine・shared pipeline・export adapterが完了済みのため、確立パターンへ載せるだけのwiringはGrok（通常）／Sonnet（互換・checksum・subtype解釈あり）へ引き下げた。Opusは数学・memory・ordering・public Schema新設を含む行だけに残す。`V2-15-47`は公開カタログ全面の最終監査でfalse promotionが製品保証へ直結するためFableとする。
+
+### 9.3 V2-19 Input integrity and block materialization（Track A主担当・横断、16 Task）
+
+進捗: 未着手（2026-07-23登録、[横断監査](../audits/cross-cutting-audit-2026-07-23.md)人間承認済み）。次のTaskは`V2-19-01`。Scope正本は[Task Index §19](task-index.md)。`V2-19-01`はV2-15公開配線leafのstage gateを兼ねるため最優先で実行する。`V2-19-09`／`12`／`14`はADR＋人間承認必須（承認前に実装しない）。
+
+| Task | 状態 | 内容 | リスク | 主担当 | Effort | 第一レビュー | 第二レビュー／人間gate | 昇格条件 |
+|---|---|---|---|---|---|---|---|---|
+| V2-19-01 | 未着手 | Semantic materialization gate（V2-15／16 per-leaf義務へfinal block stream実体化・形状conformanceを追加、plan-only／block metric別欄化、catalog支持と公開到達性の別表示） | 最高（Phase横断Acceptance遡及変更） | Opus 4.8 | High | Grok 4.5 | **人間承認** | 裁定が割れたらFable |
+| V2-19-02 | 未着手 | Gradle test input修正（inventory testの走査対象をtest inputへ登録、cache無効化のCI固定） | 低中（build設定） | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-19-03 | 未着手 | Reference-image public design修理（secure prepare／budget／EXIF非漏洩／provider handoff／実E2E） | 中高（画像decode security） | Sonnet 5 | High | Grok 4.5 | — | security境界の設計争点はOpus |
+| V2-19-04 | 未着手 | Generic constraint source＋Intent binding authoring（3 role共通宣言・binding生成verb・E2E） | 中高（Schema／binding契約） | Sonnet 5 | High | Grok 4.5 | — | binding契約の設計争点はOpus |
+| V2-19-05 | 未着手 | RIVER block materialization（bed carve＋water fill、responsibility分離、final tile検査） | 高（production spine＋checksum影響） | Opus 4.8 | High | Grok 4.5 | Sonnet 5 | — |
+| V2-19-06 | 未着手 | HEIGHT_GUIDE macro foundation consumer（D2-2範囲、1枚制約のrole別緩和、RasterResidual有効化） | 高（foundation契約＋決定性） | Opus 4.8 | High | Grok 4.5 | Sonnet 5 | — |
+| V2-19-07 | 未着手 | Foundation producer tier＋PLAIN vertical slice（ProducerLayer初接続、candidate→effective、dispatch到達） | 高（merge kernel＋composition） | Opus 4.8 | High | Grok 4.5 | Sonnet 5 | — |
+| V2-19-08 | 未着手 | Design-time support lint（reachable集合提示＋dispatch dry-run、report-only） | 中（通常実装） | Grok 4.5 | — | Sonnet 5 | — | §6既定 |
+| V2-19-09 | 未着手 | Coastal 4種必須の緩和ADR＋実装（部分集合許可条件・checksum影響） | 高（V2-2契約変更） | Opus 4.8 | High | Grok 4.5 | **ADR人間承認** | — |
+| V2-19-10 | 未着手 | Material／palette block反映（resolver接続、11 state→profile allowlist、実field validation） | 中高（semantic checksum計画） | Sonnet 5 | High | Grok 4.5 | ADR承認範囲確認 | checksum戦略が争点ならOpus |
+| V2-19-11 | 未着手 | Docs current-state同期（stale表記4文書＋README、公開到達性列追加） | 低（docs-only） | Haiku 4.5 | — | Grok 4.5 | — | §6既定 |
+| V2-19-12 | 未着手 | Coherent detail kernel設計ADR＋実装（連続multi-scale detail、budget固定、erosion分離） | 高（新表現契約） | Opus 4.8 | High | Grok 4.5 | **ADR人間承認** | 設計裁定が割れたらFable |
+| V2-19-13 | 未着手 | Blueprint拡張面積縮小のADR検討（typed plan envelope案、Proposed著述まで） | 中高（設計文書） | Opus 4.8 | High | Sonnet 5 | — | — |
+| V2-19-14 | 未着手 | mask⇔feature SOFT reconcile pre-pass ADR＋実装（決定論的snap、tolerance超拒否） | 高（HARD不発明原則との整合） | Opus 4.8 | High | Grok 4.5 | **ADR人間承認** | — |
+| V2-19-15 | 未着手 | Commit message規約（Task ID必須等、docs-only） | 低 | Haiku 4.5 | — | Grok 4.5 | — | §6既定 |
+| V2-19-16 | 依存01..15 | Phase gate（全leaf再検証、materialization gate発効確認、full clean suite） | 最高（Phase横断） | **Fable 5** | Highest available | Grok 4.5 | Opus 4.8＋**人間承認** | — |
+
+割当根拠: `V2-19-01`はV2-15／V2-16のAcceptanceへ遡及する契約変更のためOpus＋人間承認とし、`V2-18-12`と同型の複数Phase横断裁定が必要になった場合のみFableへ昇格する。`V2-19-05`〜`07`はproduction export spine（`core.v2.export`）とmerge kernelへ触れる高リスク実装のためOpus主担当・二重レビューとする。共有領域（`core.v2.export`等）を触るTask（05／06／07／09／10）はV2-15配線leafと直列にする。
 
 ## 10. HOLD／BLOCKED／承認待ちTask
 

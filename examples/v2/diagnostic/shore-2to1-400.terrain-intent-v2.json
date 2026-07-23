@@ -1,0 +1,449 @@
+{
+  "intentVersion": 2,
+  "intentId": "shore-2to1-400",
+  "theme": "400x400 coastal map with a 2:1 land-to-sea split: grassland mainland to the north, open sea across the southern third, and the shore split into a sandy beach, a stone breakwater harbour and a rocky cape. Derived from coastal-honored-400 by translating every feature 84 blocks south.",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "main-beach",
+      "kind": "SANDY_BEACH",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [
+          [
+            0.02,
+            0.63
+          ],
+          [
+            0.2,
+            0.56
+          ],
+          [
+            0.42,
+            0.62
+          ]
+        ],
+        "interpolation": "CATMULL_ROM"
+      },
+      "parameters": {
+        "widthBlocks": {
+          "min": 20,
+          "max": 55
+        },
+        "shoreSlopeDegrees": {
+          "min": 2,
+          "max": 8
+        },
+        "nearshoreDepthBlocks": {
+          "atDistance": 40,
+          "target": 6
+        },
+        "foreshoreShare01": 0.6,
+        "endpointTaperBlocks": 64,
+        "landSide": "LEFT"
+      },
+      "priority": 10,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "shore-2to1",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "central-breakwater",
+      "kind": "BREAKWATER_HARBOR",
+      "geometry": {
+        "type": "MULTI_SPLINE",
+        "paths": [
+          {
+            "id": "west-arm",
+            "startEndpointId": "west-landfall",
+            "endEndpointId": "west-opening",
+            "points": [
+              [
+                0.43,
+                0.6
+              ],
+              [
+                0.46,
+                0.69
+              ],
+              [
+                0.475,
+                0.74
+              ]
+            ]
+          },
+          {
+            "id": "east-arm",
+            "startEndpointId": "east-landfall",
+            "endEndpointId": "east-opening",
+            "points": [
+              [
+                0.61,
+                0.68
+              ],
+              [
+                0.59,
+                0.72
+              ],
+              [
+                0.5625,
+                0.74
+              ]
+            ]
+          }
+        ],
+        "interpolation": "CATMULL_ROM"
+      },
+      "parameters": {
+        "crestWidthBlocks": 7,
+        "crestAboveWaterBlocks": 3,
+        "outerDepthBlocks": 14,
+        "crestProfile": "FLAT",
+        "foundationProfile": "LINEAR_SIDE_SLOPE",
+        "foundationSideSlopeRunPerRise": 1.5,
+        "opening": {
+          "betweenEndpointIds": [
+            "west-opening",
+            "east-opening"
+          ],
+          "widthBlocks": 28,
+          "measurement": "CLEAR_EDGE_TO_EDGE"
+        },
+        "innerSide": "NORTH"
+      },
+      "priority": 20,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "shore-2to1",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "harbor-basin",
+      "kind": "HARBOR_BASIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.43,
+              0.6
+            ],
+            [
+              0.61,
+              0.68
+            ],
+            [
+              0.5625,
+              0.74
+            ],
+            [
+              0.475,
+              0.74
+            ],
+            [
+              0.43,
+              0.6
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "waterDepthBlocks": {
+          "min": 8,
+          "max": 10
+        },
+        "entranceEndpointIds": [
+          "west-opening",
+          "east-opening"
+        ],
+        "entranceCorridorLengthBlocks": 24,
+        "bottomProfile": "EDGE_TO_CENTER_LINEAR",
+        "profileTransitionBlocks": 8
+      },
+      "priority": 15,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "shore-2to1",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "east-cape",
+      "kind": "ROCKY_CAPE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.6,
+              0.49
+            ],
+            [
+              0.94,
+              0.43
+            ],
+            [
+              1.0,
+              0.77
+            ],
+            [
+              0.685,
+              0.81
+            ],
+            [
+              0.6,
+              0.49
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "cliffHeightBlocks": {
+          "min": 6,
+          "max": 10
+        },
+        "localReliefAboveSeaBlocks": {
+          "min": 12,
+          "max": 14
+        },
+        "cliffBandWidthBlocks": {
+          "min": 6,
+          "max": 10
+        },
+        "seaStackCount": {
+          "min": 3,
+          "max": 5
+        },
+        "seaStackRadiusBlocks": {
+          "min": 2,
+          "max": 3
+        },
+        "seaStackOffshoreDistanceBlocks": {
+          "min": 6,
+          "max": 10
+        },
+        "channelCount": {
+          "min": 1,
+          "max": 2
+        },
+        "channelWidthBlocks": {
+          "min": 2,
+          "max": 4
+        },
+        "channelLengthBlocks": {
+          "min": 10,
+          "max": 18
+        },
+        "channelDepthBlocks": {
+          "min": 2,
+          "max": 4
+        },
+        "rockExposure01": {
+          "min": 0.68,
+          "max": 0.92
+        },
+        "seawardSide": "EAST",
+        "capeMode": "TWO_POINT_FIVE_D_ONLY"
+      },
+      "priority": 10,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "shore-2to1",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "backshore-plains",
+      "kind": "BACKSHORE_PLAINS",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.02,
+              0.23
+            ],
+            [
+              0.98,
+              0.23
+            ],
+            [
+              0.94,
+              0.41
+            ],
+            [
+              0.12,
+              0.46
+            ],
+            [
+              0.02,
+              0.23
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "elevationAboveWaterBlocks": {
+          "min": 4,
+          "max": 12
+        },
+        "grassCover01": {
+          "min": 0.45,
+          "max": 0.8
+        }
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "shore-2to1",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "breakwater-encloses-basin",
+      "kind": "ENCLOSES",
+      "from": "feature:central-breakwater",
+      "to": "feature:harbor-basin",
+      "strength": "HARD"
+    },
+    {
+      "id": "basin-overlaps-beach",
+      "kind": "OVERLAPS",
+      "from": "feature:harbor-basin",
+      "to": "feature:main-beach",
+      "strength": "SOFT",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 6
+      }
+    },
+    {
+      "id": "harbor-adjoins-beach",
+      "kind": "ADJACENT_TO",
+      "from": "feature:central-breakwater",
+      "to": "feature:main-beach",
+      "strength": "HARD",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 6
+      }
+    },
+    {
+      "id": "cape-adjoins-harbor",
+      "kind": "ADJACENT_TO",
+      "from": "feature:east-cape",
+      "to": "feature:central-breakwater",
+      "strength": "SOFT",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 8
+      }
+    },
+    {
+      "id": "backshore-adjoins-beach",
+      "kind": "ADJACENT_TO",
+      "from": "feature:backshore-plains",
+      "to": "feature:main-beach",
+      "strength": "SOFT"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "south-is-sea",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "SOUTH",
+        "classification": "SEA",
+        "minimumShare01": 0.9
+      }
+    },
+    {
+      "id": "north-is-land",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "NORTH",
+        "classification": "LAND",
+        "minimumShare01": 0.85
+      }
+    },
+    {
+      "id": "beach-width",
+      "strength": "SOFT",
+      "kind": "METRIC_RANGE",
+      "subject": "feature:main-beach",
+      "metric": "BEACH_WIDTH_BLOCKS_P50",
+      "range": {
+        "min": 20,
+        "max": 55
+      },
+      "tolerance": 2,
+      "weight": 0.5
+    },
+    {
+      "id": "cape-irregularity",
+      "strength": "SOFT",
+      "kind": "METRIC_RANGE",
+      "subject": "feature:east-cape",
+      "metric": "COASTLINE_TURNING_PER_100_BLOCKS",
+      "range": {
+        "min": 1.8,
+        "max": 4.2
+      },
+      "tolerance": 0.1,
+      "weight": 0.7
+    }
+  ],
+  "environment": {
+    "geologyPreset": "MIXED_SEDIMENT_AND_ANDESITE",
+    "climatePreset": "TEMPERATE_MARITIME",
+    "ecologyPreset": "SPARSE_COASTAL"
+  },
+  "mapReferences": [
+    {
+      "id": "coast-mask-binding",
+      "sourceId": "constraint-source:shore-mask",
+      "role": "LAND_WATER_MASK",
+      "artifactId": "constraint:land-water:sha256-0000000000000000000000000000000000000000000000000000000000000000",
+      "strength": "HARD",
+      "sampling": "NEAREST",
+      "toleranceBlocks": 0
+    }
+  ],
+  "structures": [
+    {
+      "id": "small-pier-request",
+      "kind": "SMALL_PIER",
+      "count": 1,
+      "preferredFeatureId": "harbor-basin"
+    }
+  ],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "shore-2to1",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

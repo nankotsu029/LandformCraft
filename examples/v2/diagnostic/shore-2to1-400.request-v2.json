@@ -1,0 +1,74 @@
+{
+  "requestVersion": 2,
+  "requestId": "shore-2to1-400",
+  "bounds": {
+    "width": 400,
+    "length": 400,
+    "minY": 32,
+    "maxY": 72,
+    "waterLevel": 50
+  },
+  "prompt": "Generate a 400x400 coastal map whose southern third is open sea and whose northern two thirds are grassland mainland, with a sandy beach, breakwater harbour and rocky cape along the shore.",
+  "referenceImages": [],
+  "constraintMaps": [
+    {
+      "sourceId": "constraint-source:shore-mask",
+      "file": "maps/shore-2to1-400-land-water-u8.png",
+      "expectedSha256": "52a43be00e9e263afd2d50f35c9b442c2f59a87f294102a967ba43fcc798f040",
+      "expectedWidth": 400,
+      "expectedLength": 400,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": {
+          "x": 0,
+          "z": 0,
+          "width": 400,
+          "length": 400
+        }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "labels": [
+          {
+            "sample": 0,
+            "label": "water"
+          },
+          {
+            "sample": 1,
+            "label": "land"
+          }
+        ],
+        "noData": {
+          "mode": "FORBIDDEN"
+        }
+      }
+    }
+  ],
+  "generation": {
+    "globalSeed": 827413,
+    "tileSize": 128
+  },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  },
+  "foundationBaseLevels": {
+    "landSurfaceY": 54,
+    "waterBedY": 42
+  }
+}
