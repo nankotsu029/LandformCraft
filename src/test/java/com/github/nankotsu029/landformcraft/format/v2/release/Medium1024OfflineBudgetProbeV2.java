@@ -36,8 +36,8 @@ final class Medium1024OfflineBudgetProbeV2 {
     static final int WIDTH = 1_024;
     static final int LENGTH = 1_024;
     static final long CELLS = (long) WIDTH * (long) LENGTH;
-    /** Matches {@code CoastalSurfaceFieldsV2.estimatedResidentBytes} (13 descriptor fields + 2). */
-    private static final long DESCRIPTOR_INT_ARRAYS = 15L;
+    /** Matches {@code CoastalSurfaceFieldsV2.estimatedResidentBytes} (13 descriptor fields + 3). */
+    private static final long DESCRIPTOR_INT_ARRAYS = 16L;
 
     private Medium1024OfflineBudgetProbeV2() {
     }

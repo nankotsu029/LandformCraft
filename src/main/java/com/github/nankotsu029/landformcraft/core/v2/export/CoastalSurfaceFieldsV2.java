@@ -52,18 +52,19 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
     private final int length;
     private final int hardProtectedCells;
     /**
-     * Effective foundation owner index in the {@code foundation.owner-index} namespace, or 0 on the
-     * legacy baseline path where no foundation owner exists (V2-18-09). Constant because the only
-     * wired candidate is the mask-derived background owner; producers arrive with V2-15 wiring.
+     * Effective foundation owner index per cell in the {@code foundation.owner-index} namespace, or
+     * {@code null} on the legacy baseline path where no cell has a foundation owner (V2-18-09).
+     * V2-19-07 made it per-cell: with the producer tier wired, a cell is owned either by the
+     * mask-derived background or by the producer whose footprint replaced it (ADR 0038 D1-3/D1-4).
      */
-    private final int foundationOwnerIndex;
+    private final int[] foundationOwnerIndex;
 
     private CoastalSurfaceFieldsV2(
             Map<String, int[]> values,
             int width,
             int length,
             int hardProtectedCells,
-            int foundationOwnerIndex
+            int[] foundationOwnerIndex
     ) {
         this.values = Map.copyOf(values);
         this.landWater = values.get(CoastalTransitionModuleV2.LAND_WATER_FIELD_ID);
@@ -74,11 +75,15 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
         this.foundationOwnerIndex = foundationOwnerIndex;
     }
 
-    /** Estimated resident bytes for the dense descriptor working set. */
+    /**
+     * Estimated resident bytes for the dense descriptor working set: the declared fields plus the
+     * per-cell scratch the two generation paths hold (desired land-water / desired height on the
+     * legacy path, the foundation owner index since V2-19-07).
+     */
     static long estimatedResidentBytes(int width, int length) {
         return Math.multiplyExact(
                 Math.multiplyExact((long) width, (long) length),
-                (long) (FIELD_IDS.size() + 2) * Integer.BYTES);
+                (long) (FIELD_IDS.size() + 3) * Integer.BYTES);
     }
 
     static CoastalSurfaceFieldsV2 generate(
@@ -160,15 +165,16 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
                 }
             }
         }
-        return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells, 0);
+        return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells, null);
     }
 
     /**
      * Foundation-path generation (V2-18-09): the coastal four compose as surface modifiers over the
      * resolved macro foundation. Feature-unowned cells take the background owner's medium and
-     * provisional elevation from the explicit mask input — never a {@code SurfaceBaselineV2}
-     * fallback — and the mask is injected into the transition compositor as the HARD land-water
-     * source, so every mask-specified cell is either honored or rejected fail-closed.
+     * provisional elevation from the explicit foundation input — the mask plus, since V2-19-06, the
+     * optional {@code HEIGHT_GUIDE} — never a {@code SurfaceBaselineV2} fallback, and the mask is
+     * injected into the transition compositor as the HARD land-water source, so every mask-specified
+     * cell is either honored or rejected fail-closed.
      */
     static CoastalSurfaceFieldsV2 generate(
             CoastalGeneratorRuntimeV2 runtime,
@@ -186,11 +192,18 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
             fields.put(id, new int[cells]);
         }
         boolean[] active = new boolean[cells];
+        // V2-19-07: resolving the effective foundation owner of every cell up front is also where the
+        // ADR 0038 D7-1 kernel invariants run — undeclared producer overlap, a producer medium the
+        // HARD mask contradicts, an out-of-extent producer elevation — so a contradictory foundation
+        // input fails closed before a single field value is written.
+        int[] foundationOwner = new int[cells];
         for (int z = 0; z < length; z++) {
             cancellationToken.throwIfCancellationRequested();
             for (int x = 0; x < width; x++) {
-                active[z * width + x] = runtime.compositor()
+                int index = z * width + x;
+                active[index] = runtime.compositor()
                         .sampleAt(x, z, HardLandWaterSourceV2.NONE).active();
+                foundationOwner[index] = foundation.effectiveOwnerIndexAt(x, z);
             }
         }
 
@@ -231,6 +244,10 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
                         }
                         protectedCells++;
                     }
+                    // V2-19-06: a modifier owns the height of the cell it claims (ADR 0038 D5-3), so a
+                    // HARD guide specifying that same cell is a conflict between two declared sources
+                    // and fails closed here rather than being silently overwritten.
+                    foundation.requireModifierHonorsHeightGuide(x, z, composed.surfaceHeightMillionths());
                     put(fields, CoastalTransitionModuleV2.LAND_WATER_FIELD_ID, index, composed.landWater());
                     put(fields, CoastalTransitionModuleV2.SURFACE_HEIGHT_FIELD_ID, index,
                             composed.surfaceHeightMillionths());
@@ -249,8 +266,7 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
                 }
             }
         }
-        return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells,
-                MacroFoundationV2.BACKGROUND_OWNER_INDEX);
+        return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells, foundationOwner);
     }
 
     private static void put(Map<String, int[]> fields, String id, int index, int value) {
@@ -276,13 +292,14 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
             field = landWater;
         }
         if (field == null && SurfaceFoundationPlanV2.OWNER_INDEX_FIELD_ID.equals(fieldId)) {
-            // V2-18-09: the effective foundation owner (background candidate) covers the whole
-            // domain on the foundation path; 0 on the legacy baseline path, where no cell has a
-            // foundation owner. Surface modifiers never own foundation cells (ADR 0038 D5-3).
+            // V2-18-09: on the foundation path every cell carries an effective foundation owner —
+            // the background candidate, or since V2-19-07 the producer that replaced it inside its
+            // footprint; 0 on the legacy baseline path, where no cell has a foundation owner.
+            // Surface modifiers never own foundation cells (ADR 0038 D5-3).
             if (globalX < 0 || globalX >= width || globalZ < 0 || globalZ >= length) {
                 throw new IndexOutOfBoundsException("coordinate outside release-local coastal fields");
             }
-            return foundationOwnerIndex;
+            return foundationOwnerIndex == null ? 0 : foundationOwnerIndex[globalZ * width + globalX];
         }
         if (field == null) return CoastalValidationInputV2.NO_DATA;
         if (globalX < 0 || globalX >= width || globalZ < 0 || globalZ >= length) {

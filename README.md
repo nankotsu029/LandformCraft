@@ -31,7 +31,7 @@ V2のRelease 2配置はPaperの既定`/lfc place`経路（明示形`/lfc v2 plac
 ## できること
 
 - 手動JSON、OpenAI Responses API、Anthropic Messages APIからTerrainIntentを作成
-- v2の6 reference image role付きPNG／JPEGを安全に前処理してDesign Packageへ記録
+- v2の6 reference image role付きPNG／JPEGを安全に前処理してAI providerへ送信（metadata除去・path非送信。Design Packageに残るのはintentとauditで、画像は再配布しない）
 - seed再現可能な地形、8種類のbuilt-in小規模構造物、8種類のPNG previewを生成
 - tiled Sponge Schematic v3、checksum、directory／ZIPを含むRelease Packageを生成・検証
 - WorldEditまたはFAWEの公開APIでsnapshot付き配置、verify、rollback、Undo、明示Recovery

@@ -1,6 +1,6 @@
 # 画像由来Constraint Map
 
-> Status: V2-1〜V2-3のmap contractと回帰を完了した。geology／lithology／strata／climate planはいずれも画像constraintの意味、field index、security envelopeを変更していない。2026-07-17再設計で、通常画像からの**決定論的（AI非依存）抽出**がTrack B（V2-7）として追加され、`V2-7-01`〜`V2-7-07`（抽出core／secure封筒／draft artifact＋confidence preview／明示昇格／height／zone／多入力競合＋Phase gate）を完了した（15節、[Phase gate audit](audits/v2-7-phase-gate.md)）。抽出経路はSUPPORTED候補・runtime `EXPERIMENTAL`。`V2-14-01`（2026-07-21）でCLI `v2 extract`／`v2 promote`と`v2 request constraint-map`宣言連携を配線し、CLIから抽出→昇格→request宣言→`v2 export`到達が可能になった（16節）。Paper UIは未接続、`SUPPORTED`昇格は別承認。AIによるdraft生成は引き続き未実装で、実装する場合も同じdraft／明示昇格契約を通す。詳細は [Task Index](task-index.md) と [ADR 0017](../adr/0017-deterministic-image-mask-extraction.md) を参照する。
+> Status: V2-1〜V2-3のmap contractと回帰を完了した。geology／lithology／strata／climate planはいずれも画像constraintの意味、field index、security envelopeを変更していない。2026-07-17再設計で、通常画像からの**決定論的（AI非依存）抽出**がTrack B（V2-7）として追加され、`V2-7-01`〜`V2-7-07`（抽出core／secure封筒／draft artifact＋confidence preview／明示昇格／height／zone／多入力競合＋Phase gate）を完了した（15節、[Phase gate audit](audits/v2-7-phase-gate.md)）。抽出経路はSUPPORTED候補・runtime `EXPERIMENTAL`。`V2-14-01`（2026-07-21）でCLI `v2 extract`／`v2 promote`と`v2 request constraint-map`宣言連携を配線し、CLIから抽出→昇格→request宣言→`v2 export`到達が可能になった（16節）。`V2-19-04`（2026-07-23）が3 role共通の`request constraint-source`と`intent bind`／`intent bindings`を追加し、`V2-19-06`（同日）が`HEIGHT_GUIDE`をmacro foundationのbackground elevation sourceとして接続した（5.2節）。surface exportのconstraint map要求はrole別（`LAND_WATER_MASK`ちょうど1＋`HEIGHT_GUIDE`任意1）である。Paper UIは未接続、`SUPPORTED`昇格は別承認。AIによるdraft生成は引き続き未実装で、実装する場合も同じdraft／明示昇格契約を通す。詳細は [Task Index](task-index.md) と [ADR 0017](../adr/0017-deterministic-image-mask-extraction.md) を参照する。
 
 ## 1. 結論
 
@@ -50,20 +50,22 @@ Request v2の `GenerationRequestV2.ReferenceImageRole`（AI提案入力専用、
 
 V2-1で実装済みなのは先頭3 roleだけである。残りは後続Phaseの設計catalogであり、Request v2の現行strict unionでは受理しない。
 
-| Role | 型 | sampling | 用途 |
-|---|---|---|---|
-| `LAND_WATER_MASK` | categorical U8/U16 | nearest | hard/soft海陸境界 |
-| `ZONE_LABEL_MAP` | categorical U8/U16 | nearest | region／feature assignment |
-| `HEIGHT_GUIDE` | continuous U8/U16 | fixed bilinear | 相対／絶対標高guide |
-| `COASTLINE_REFERENCE` | binary/vector | nearest/vectorize | coast curve corridor |
-| `RIVER_PATH_REFERENCE` | binary/vector | vectorize | river centerline／route cost |
-| `FLOW_DIRECTION_GUIDE` | vector/angle | fixed vector interpolation | drainage direction bias |
-| `RIDGE_LINE_REFERENCE` | binary/vector | vectorize | ridge corridor |
-| `FEATURE_MASK_REFERENCE` | categorical | nearest | featureごとのregion |
-| `CAVE_MASK_REFERENCE` | 2D/stack descriptor | nearest | volume footprint／slice |
-| `VEGETATION_REFERENCE` | categorical/continuous | nearest/fixed | habitat／density guide |
-| `GEOLOGY_REFERENCE` | categorical | nearest | lithology province |
-| `MATERIAL_REFERENCE` | categorical | nearest | semantic material guide |
+生成側consumerを持つのは`LAND_WATER_MASK`（`V2-18-09`）と`HEIGHT_GUIDE`（`V2-19-06`）の2 roleだけである。`ZONE_LABEL_MAP`は宣言・binding・検証まで可能だがconsumerを持たず、surface exportは宣言されたbindingを受理せず拒否する（無視しない）。
+
+| Role | 型 | sampling | 用途 | 生成側consumer |
+|---|---|---|---|---|
+| `LAND_WATER_MASK` | categorical U8/U16 | nearest | hard/soft海陸境界 | macro foundation（medium、必須1件） |
+| `ZONE_LABEL_MAP` | categorical U8/U16 | nearest | region／feature assignment | なし |
+| `HEIGHT_GUIDE` | continuous U8/U16 | fixed bilinear | 相対／絶対標高guide | macro foundation（background elevation、任意1件） |
+| `COASTLINE_REFERENCE` | binary/vector | nearest/vectorize | coast curve corridor | なし（後続Phase設計） |
+| `RIVER_PATH_REFERENCE` | binary/vector | vectorize | river centerline／route cost | なし（後続Phase設計） |
+| `FLOW_DIRECTION_GUIDE` | vector/angle | fixed vector interpolation | drainage direction bias | なし（後続Phase設計） |
+| `RIDGE_LINE_REFERENCE` | binary/vector | vectorize | ridge corridor | なし（後続Phase設計） |
+| `FEATURE_MASK_REFERENCE` | categorical | nearest | featureごとのregion | なし（後続Phase設計） |
+| `CAVE_MASK_REFERENCE` | 2D/stack descriptor | nearest | volume footprint／slice | なし（後続Phase設計） |
+| `VEGETATION_REFERENCE` | categorical/continuous | nearest/fixed | habitat／density guide | なし（後続Phase設計） |
+| `GEOLOGY_REFERENCE` | categorical | nearest | lithology province | なし（後続Phase設計） |
+| `MATERIAL_REFERENCE` | categorical | nearest | semantic material guide | なし（後続Phase設計） |
 
 unknown roleを汎用RGB画像として推測しない。
 
@@ -159,6 +161,8 @@ V2-1の実装は `SecureConstraintMapSourceLoader`、`NumericPngDecoder`、`Cons
 - hard heightはblock単位toleranceを要求する。
 
 heightの意味は`ABSOLUTE_BLOCK_Y`、`BLOCKS_ABOVE_REQUEST_MIN_Y`、`BLOCKS_RELATIVE_TO_WATER_LEVEL`のいずれかをRequestで必須にする。scale／offsetとvalid sample rangeをこの基準へ適用した全域がRequest bounds内に入ることをdecode前に検査し、画像内容から意味を推測しない。
+
+**生成側consumer（`V2-19-06`、2026-07-23）:** `HEIGHT_GUIDE`は macro foundation stage（[ADR 0038](../adr/0038-macro-foundation-contract.md) D2-2の明示source (a)）が**background elevation source**として読む。優先順位はcellごとに guide＞request宣言のmedium別base levelで、guideがno-dataを宣言したcellだけがbase levelへfallbackする。逆転もblendも行わない。guide値がRequestのvertical extentを外れる場合はclampせず拒否する（宣言範囲は上記のdecode前検査、per-cellは`v2.foundation.height-guide-out-of-contract`）。surface modifier（coastal 4種）が所有するcellの高さはmodifierのものであり（ADR 0038 D5-3）、HARD guideが同じcellをtolerance超で指定した場合はHARD同士の矛盾として`v2.foundation.height-guide-modifier-conflict`で拒否、SOFT guideはmodifierへ譲りその差をresidual fieldとconformance residualへ記録する。resamplingはcanonical登録（`NEAREST`／`BILINEAR_FIXED`）が行い、新しい補間規則を追加しない。
 
 ### 5.3 Curve extraction（V2-1未実装）
 

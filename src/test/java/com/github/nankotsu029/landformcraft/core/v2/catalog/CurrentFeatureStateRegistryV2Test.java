@@ -44,9 +44,10 @@ class CurrentFeatureStateRegistryV2Test {
 
         registry.requireConsistent();
         assertEquals(60, registry.entries().size());
-        assertEquals(17, registry.entries().stream().filter(entry ->
+        // V2-19-07 bound PLAIN to the dedicated V2-9-02 plain module (dedicated 17 -> 18).
+        assertEquals(18, registry.entries().stream().filter(entry ->
                 entry.moduleBinding() == CurrentFeatureStateRegistryV2.ModuleBinding.DEDICATED).count());
-        assertEquals(43, registry.entries().stream().filter(entry ->
+        assertEquals(42, registry.entries().stream().filter(entry ->
                 entry.moduleBinding() == CurrentFeatureStateRegistryV2.ModuleBinding.DIAGNOSTIC).count());
         assertEquals(Set.of("SANDY_BEACH", "BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE"),
                 names(registry, CurrentFeatureStateRegistryV2.CurrentState.PRODUCTION_CONNECTED));

@@ -140,7 +140,7 @@ retired v1 `ReferenceImageProcessor` は、path、symlink、magic、byte、pixel
 
 したがって画像は `画像 → AI要約 → TerrainIntent v1` で情報が圧縮され、正確なmask、curve、height guideとして再現性の入力にならない。
 
-この制約はv1経路についての記述である。V2-1ではreference imageとは別のRequest契約で`LAND_WATER_MASK`、`HEIGHT_GUIDE`、`ZONE_LABEL_MAP`をcanonical fieldへ変換するmanual pathを実装済みである。ただし、それらを読むspecialized generatorはまだないため、地形表現の制約が解消するのはV2-2以降の各feature Taskと親Phase gateが完了した後である。
+この制約はv1経路についての記述である。V2-1ではreference imageとは別のRequest契約で`LAND_WATER_MASK`、`HEIGHT_GUIDE`、`ZONE_LABEL_MAP`をcanonical fieldへ変換するmanual pathを実装済みである。生成側consumerは`V2-18-09`（`LAND_WATER_MASK`＝macro foundationのland-water medium）と`V2-19-06`（`HEIGHT_GUIDE`＝同foundationのbackground elevation、medium別base levelはfallback）で接続済みで、`ZONE_LABEL_MAP`は宣言・binding・検証まで可能だが読む生成側を持たない。したがって地形表現の制約が完全に解消するのは、残るroleと各feature Taskの配線、および親Phase gateが完了した後である。
 
 ## 9. validationとpreviewの限界
 

@@ -185,11 +185,35 @@ public record GenerationRequestV2(
         MULTI_VIEW_REFERENCE
     }
 
-    public record ReferenceImageSource(String id, String file, ReferenceImageRole role) {
+    /**
+     * Declared AI reference image. {@code expectedSha256} is optional (V2-19-03): when present the
+     * design path admits the file only if the bytes on disk hash to it, so an image swapped after
+     * authoring cannot reach a provider unnoticed. Absent means "no declared digest" and leaves the
+     * canonical request bytes unchanged for requests written before the field existed.
+     */
+    public record ReferenceImageSource(
+            String id,
+            String file,
+            ReferenceImageRole role,
+            Optional<String> expectedSha256
+    ) {
+        private static final Pattern SHA_256 = Pattern.compile("[0-9a-f]{64}");
+
         public ReferenceImageSource {
             id = V2Validation.slug(id, "reference image id");
             file = V2Validation.safeRelativePath(file, "reference image file");
             Objects.requireNonNull(role, "role");
+            Objects.requireNonNull(expectedSha256, "expectedSha256");
+            expectedSha256.ifPresent(value -> {
+                if (!SHA_256.matcher(value).matches()) {
+                    throw new IllegalArgumentException(
+                            "reference image expectedSha256 must be a lowercase SHA-256");
+                }
+            });
+        }
+
+        public ReferenceImageSource(String id, String file, ReferenceImageRole role) {
+            this(id, file, role, Optional.empty());
         }
     }
 

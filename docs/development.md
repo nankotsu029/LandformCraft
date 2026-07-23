@@ -33,6 +33,18 @@ build/libs/LandformCraft-<version>.jar
 
 これはPaper用の配布JARです。CLI用JARには`-cli` classifierが付きます。`PluginArtifactTest`がmain classとplugin metadataの存在、core classの同梱、Paper／WorldEdit本体の非同梱を検査します。
 
+### filesystem inventory testとGradle input（V2-19-02）
+
+`SchemaContractTest`／`DocsLinkConsistencyTest`／`PackageBoundaryTest`等は実行時に作業treeを走査して判定します。走査rootは`test` taskのinputとして`build.gradle.kts`の`filesystemInventoryRoots`（`AGENTS.md`／`CHANGELOG.md`／`README.md`／`build.gradle.kts`／`docs`／`examples`／`schemas`／`src`）に宣言されており、未追跡ファイルを含む変更でもup-to-date／build cacheが無効化されます。走査rootの正本は`buildcontract.FilesystemInventoryRootsV2`、宣言との一致と新規testのdriftは`GradleTestInputContractV2Test`が検査します。作業treeを読む新しいtestを追加する場合は、読むrootがこの宣言に含まれているか確認してください。
+
+同値性の再現checkは次で実行します（cache有効／無効で同一判定になることを確認し、probeは自動削除されます）。
+
+```bash
+scripts/ci/v2-19-02-inventory-input-check.sh
+```
+
+証跡は [V2-19-02 audit](design-v2/audits/v2-19-02-test-input-tracking.md) です。
+
 ## 依存バージョン
 
 | 対象 | 設定 | 根拠 |

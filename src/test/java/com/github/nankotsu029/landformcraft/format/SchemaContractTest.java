@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.format;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.nankotsu029.landformcraft.buildcontract.FilesystemInventoryRootsV2;
 import com.github.nankotsu029.landformcraft.model.GenerationStage;
 import com.github.nankotsu029.landformcraft.model.ImageTransformation;
 import com.github.nankotsu029.landformcraft.model.PlacementState;
@@ -105,6 +106,7 @@ class SchemaContractTest {
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/harbor-cove-64.terrain-intent-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/manual-constraint-island/request-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/diagnostic/oblique-multi-view.request-v2.json"));
+        v2.readTerrainIntent(Path.of("examples/v2/diagnostic/oblique-multi-view.terrain-intent-v2.json"));
         v2.readGenerationRequest(Path.of("examples/v2/diagnostic/medium-1024.request-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/manual-constraint-island/terrain-intent-v2.json"));
         v2.readTerrainIntent(Path.of("examples/v2/diagnostic/scenarios/lush-cave.terrain-intent-v2.json"));
@@ -296,7 +298,7 @@ class SchemaContractTest {
      */
     @Test
     void everyExampleDocumentIsReferencedBySourceOrDocs() throws Exception {
-        String corpus = readAll(List.of(Path.of("src"), Path.of("docs"), Path.of("README.md")));
+        String corpus = readAll(FilesystemInventoryRootsV2.REFERENCE_CORPUS);
         List<String> orphans = new ArrayList<>();
         for (Path example : exampleDocuments()) {
             if (!referenced(corpus, example)) {
@@ -344,13 +346,13 @@ class SchemaContractTest {
     }
 
     private static List<Path> schemaFiles() throws Exception {
-        try (var files = Files.list(Path.of("schemas"))) {
+        try (var files = Files.list(FilesystemInventoryRootsV2.SCHEMAS)) {
             return files.filter(path -> path.toString().endsWith(".json")).sorted().toList();
         }
     }
 
     private static List<Path> exampleDocuments() throws Exception {
-        try (var walk = Files.walk(Path.of("examples"))) {
+        try (var walk = Files.walk(FilesystemInventoryRootsV2.EXAMPLES)) {
             return walk.filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".json") || path.toString().endsWith(".yml"))
                     .sorted()

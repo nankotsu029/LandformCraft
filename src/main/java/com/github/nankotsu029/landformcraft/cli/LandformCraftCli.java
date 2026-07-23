@@ -11,6 +11,7 @@ import com.github.nankotsu029.landformcraft.core.v2.ExtractedHeightGuidePromotio
 import com.github.nankotsu029.landformcraft.core.v2.ExtractedMaskPromotionOptionsV2;
 import com.github.nankotsu029.landformcraft.core.v2.ExtractedZoneLabelPromotionOptionsV2;
 import com.github.nankotsu029.landformcraft.core.v2.ImageExtractionWorkflowServiceV2;
+import com.github.nankotsu029.landformcraft.core.v2.command.IntentConstraintBindingServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandRouteV2;
 import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandRouterV2;
 import com.github.nankotsu029.landformcraft.core.v2.command.V2CommandVerbV2;
@@ -130,9 +131,12 @@ public final class LandformCraftCli {
                     inspected.put("v2CorrelationId", route.correlationId());
                     emit(standardOutput, inspected);
                 }
-                case REQUEST_CREATE, REQUEST_BOUNDS, REQUEST_CONSTRAINT_MAP, REQUEST_GENERATION,
-                     REQUEST_FOUNDATION_BASE_LEVELS, REQUEST_PROMPT_INLINE, REQUEST_LIST ->
+                case REQUEST_CREATE, REQUEST_BOUNDS, REQUEST_CONSTRAINT_MAP, REQUEST_CONSTRAINT_SOURCE,
+                     REQUEST_GENERATION, REQUEST_FOUNDATION_BASE_LEVELS, REQUEST_PROMPT_INLINE,
+                     REQUEST_LIST ->
                         emit(standardOutput, authorRequest(verb, tokens, route));
+                case INTENT_BIND, INTENT_BINDINGS ->
+                        emit(standardOutput, authorIntentBinding(verb, tokens, route));
                 case JOB_STATUS, JOB_CANCEL, JOB_LIST, CANDIDATE_LIST, CANDIDATE_INFO ->
                         emit(standardOutput, inspectJobs(verb, tokens, route, executors));
                 case JOURNAL_VERIFY, RECOVERY_INSPECT ->
@@ -334,6 +338,8 @@ public final class LandformCraftCli {
                     integer(tokens.get(6)), integer(tokens.get(7)), integer(tokens.get(8)));
             case REQUEST_CONSTRAINT_MAP -> store.constraintMap(requestId, tokens.get(4), tokens.get(5),
                     tokens.get(6), integer(tokens.get(7)), integer(tokens.get(8)));
+            case REQUEST_CONSTRAINT_SOURCE -> store.constraintSource(requestId, tokens.get(4),
+                    constraintMapRole(tokens.get(5)), Path.of(tokens.get(6)), tokens.get(7));
             case REQUEST_GENERATION -> store.generation(requestId,
                     Long.parseLong(tokens.get(4)), integer(tokens.get(5)));
             case REQUEST_FOUNDATION_BASE_LEVELS -> store.foundationBaseLevels(requestId,
@@ -362,6 +368,131 @@ public final class LandformCraftCli {
                 .orElse("absent"));
         result.put("path", store.pathOf(request.requestId()).toString());
         return result;
+    }
+
+    /**
+     * Writes or confirms the intent bindings of a request's declared constraint sources (V2-19-04).
+     *
+     * <p>{@code bind} is the only place the canonical {@code artifactId} is composed: its digest half
+     * is copied from the request declaration, never typed by an author or invented by a provider.
+     * {@code bindings} re-derives the same value and re-resolves the map bytes, and fails closed when
+     * anything disagrees.</p>
+     */
+    private static Map<String, Object> authorIntentBinding(
+            V2CommandVerbV2 verb,
+            List<String> tokens,
+            V2CommandRouteV2 route
+    ) throws IOException {
+        LandformV2DataCodec codec = new LandformV2DataCodec();
+        IntentConstraintBindingServiceV2 service = new IntentConstraintBindingServiceV2();
+        Path requestPath = Path.of(tokens.get(3));
+        GenerationRequestV2 request = codec.readGenerationRequest(requestPath);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("v2CorrelationId", route.correlationId());
+        if (verb == V2CommandVerbV2.INTENT_BINDINGS) {
+            var report = service.verify(
+                    requestPath, request, codec.readTerrainIntent(Path.of(tokens.get(4))), INTERRUPTIBLE);
+            result.put("requestId", request.requestId());
+            result.put("bindings", report.bindings().stream().map(status -> {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("id", status.binding().id());
+                row.put("sourceId", status.binding().sourceId());
+                row.put("role", status.binding().role().name());
+                row.put("strength", status.binding().strength().name());
+                row.put("sampling", status.binding().sampling().name());
+                row.put("toleranceBlocks", status.binding().toleranceBlocks());
+                row.put("weightMillionths", status.binding().weightMillionths());
+                row.put("artifactId", status.binding().artifactId());
+                row.put("consistent", status.consistent());
+                if (!status.consistent()) {
+                    row.put("problems", status.problems());
+                }
+                row.put("generatorConsumer", consumerState(status.binding().role()));
+                return row;
+            }).toList());
+            result.put("unboundSources", report.unboundSourceIds());
+            result.put("consistent", report.consistent());
+            if (!report.consistent()) {
+                throw new IllegalArgumentException(
+                        "intent bindings do not match the request declaration; see 'problems'");
+            }
+            return result;
+        }
+        Path intentIn = Path.of(tokens.get(4));
+        Path intentOut = Path.of(tokens.get(5));
+        var bound = service.bind(
+                request,
+                codec.readTerrainIntent(intentIn),
+                tokens.get(6),
+                constraintMapRole(tokens.get(7)),
+                bindingStrength(tokens.get(8)),
+                bindingSampling(tokens.get(9)),
+                integer(tokens.get(10)),
+                tokens.size() >= 12 ? integer(tokens.get(11)) : 0);
+        codec.writeTerrainIntent(intentOut, bound);
+        var written = codec.readTerrainIntent(intentOut);
+        result.put("intentId", written.intentId());
+        result.put("mapReferences", written.mapReferences().size());
+        result.put("intentChecksum", codec.terrainIntentChecksum(written));
+        result.put("path", intentOut.toAbsolutePath().normalize().toString());
+        written.mapReferences().stream()
+                .filter(binding -> binding.id().equals(tokens.get(6)))
+                .findFirst()
+                .ifPresent(binding -> {
+                    result.put("boundSourceId", binding.sourceId());
+                    result.put("artifactId", binding.artifactId());
+                    result.put("generatorConsumer", consumerState(binding.role()));
+                });
+        return result;
+    }
+
+    /**
+     * Which roles a generator actually reads today. V2-19-06 wired {@code HEIGHT_GUIDE} into the same
+     * macro foundation stage that consumes the mask; {@code ZONE_LABEL_MAP} can still be declared and
+     * verified but nothing consumes it, so authoring says so instead of implying use.
+     */
+    private static String consumerState(com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+            .ConstraintMapRole role) {
+        return switch (role) {
+            case LAND_WATER_MASK, HEIGHT_GUIDE -> "MACRO_FOUNDATION";
+            case ZONE_LABEL_MAP -> "NONE";
+        };
+    }
+
+    private static com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2.ConstraintMapRole
+            constraintMapRole(String value) {
+        return switch (value) {
+            case "land-water" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+                    .ConstraintMapRole.LAND_WATER_MASK;
+            case "height-guide" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+                    .ConstraintMapRole.HEIGHT_GUIDE;
+            case "zone-label" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+                    .ConstraintMapRole.ZONE_LABEL_MAP;
+            default -> throw new IllegalArgumentException(
+                    "constraint map role must be one of land-water, height-guide, zone-label; not '"
+                            + value + "'");
+        };
+    }
+
+    private static com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2.Strength
+            bindingStrength(String value) {
+        return switch (value) {
+            case "hard" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2.Strength.HARD;
+            case "soft" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2.Strength.SOFT;
+            default -> throw new IllegalArgumentException(
+                    "binding strength must be hard or soft; not '" + value + "'");
+        };
+    }
+
+    private static com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2.Sampling
+            bindingSampling(String value) {
+        return switch (value) {
+            case "nearest" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2.Sampling.NEAREST;
+            case "bilinear-fixed" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+                    .Sampling.BILINEAR_FIXED;
+            default -> throw new IllegalArgumentException(
+                    "binding sampling must be nearest or bilinear-fixed; not '" + value + "'");
+        };
     }
 
     /**
@@ -781,6 +912,13 @@ public final class LandformCraftCli {
                         ? LandformErrorCode.PROVIDER_TIMEOUT : LandformErrorCode.PROVIDER_FAILED;
             } else if (actual instanceof com.github.nankotsu029.landformcraft.validation.ImageInputException) {
                 code = LandformErrorCode.IMAGE_UNSAFE;
+            } else if (actual instanceof com.github.nankotsu029.landformcraft.ai.spi.v2.DesignExceptionV2 design) {
+                // V2-19-03: a rejected design input (unsafe or over-budget reference image, wrong
+                // digest, unsupported model) is a caller-visible request failure, not LFC-INTERNAL.
+                code = switch (design.code()) {
+                    case PROVIDER_TRANSPORT, INVALID_RESPONSE -> LandformErrorCode.PROVIDER_FAILED;
+                    default -> LandformErrorCode.REQUEST_INVALID;
+                };
             } else if (operation.equals("verify")) {
                 code = LandformErrorCode.RELEASE_TAMPERED;
             } else if (actual instanceof IllegalArgumentException
@@ -790,7 +928,10 @@ public final class LandformCraftCli {
             } else {
                 code = LandformErrorCode.INTERNAL;
             }
-            String safe = actual instanceof IllegalArgumentException && actual.getMessage() != null
+            String safe = actual instanceof com.github.nankotsu029.landformcraft.ai.spi.v2.DesignExceptionV2 design
+                    // The stable failure code is safe to show; the message text is not repeated here.
+                    ? "Design failed safely (" + design.code() + ")."
+                    : actual instanceof IllegalArgumentException && actual.getMessage() != null
                     ? actual.getMessage() : switch (operation) {
                         case "journal-verify" -> "Journal verification failed safely.";
                         case "design-verify" -> "Design verification failed safely.";
@@ -916,6 +1057,15 @@ public final class LandformCraftCli {
                 "v2 requestのboundsを更新");
         helpLine(output, "request constraint-map <request-id> <source-slug> <file> <sha256> "
                 + "<width> <length>", "land/water constraint map sourceを宣言（surface-2_5d exportに必須）");
+        helpLine(output, "request constraint-source <request-id> <source-slug> "
+                + "<land-water|height-guide|zone-label> <promotion-dir> <request-relative-file>",
+                "promote済みmapを任意roleのsourceとして追加・更新（宣言は置換しません）");
+        helpLine(output, "intent bind <request-v2.json> <intent-in> <intent-out> <source-slug> "
+                + "<land-water|height-guide|zone-label> <hard|soft> <nearest|bilinear-fixed> "
+                + "<tolerance-blocks> [weight-millionths]",
+                "宣言済みsourceのintent bindingを生成（artifactIdは宣言digestから計算）");
+        helpLine(output, "intent bindings <request-v2.json> <terrain-intent-v2.json>",
+                "binding宣言とmap実体をread-onlyで照合（不一致はfail closed）");
         helpLine(output, "request generation <request-id> <global-seed> <tile-size>",
                 "seedとtile sizeを更新（maskはseedの合成形状と一致する必要があります）");
         helpLine(output, "request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>",
@@ -950,7 +1100,8 @@ public final class LandformCraftCli {
         helpLine(output, "promote zone-label <draft-dir> <output-dir> <request-v2.json> "
                 + "<confidence-threshold> [nodata-sample]",
                 "draftを明示昇格しzone-label constraint mapを公開");
-        output.println("      昇格後は 'request constraint-map' でsourceを宣言し 'v2 export' へ渡します。"
+        output.println("      昇格後は 'request constraint-source' でsourceを宣言し（land-waterだけの旧形は "
+                + "'request constraint-map'）、'intent bind' でbindingを生成して 'v2 export' へ渡します。"
                 + "暗黙昇格は行いません。");
         output.println();
         output.println("移行:");

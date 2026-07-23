@@ -44,6 +44,30 @@ public enum V2CommandVerbV2 {
             "v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width> <length>",
             "request.edit", Surface.BOTH, null),
     /**
+     * Declares one constraint map source of any role from a sealed {@code promote} record (V2-19-04).
+     * Unlike {@code constraint-map} this adds to the declaration set rather than replacing it, and
+     * covers {@code HEIGHT_GUIDE} / {@code ZONE_LABEL_MAP}, whose encodings (value meaning, scale,
+     * sample range, label legend) cannot be passed as command arguments and are read from the record.
+     */
+    REQUEST_CONSTRAINT_SOURCE("request", "constraint-source", 8, 8,
+            "v2 request constraint-source <request-id> <source-slug> "
+                    + "<land-water|height-guide|zone-label> <promotion-dir> <request-relative-file>",
+            "request.edit", Surface.BOTH, null),
+    /**
+     * Writes the intent binding for a declared source (V2-19-04). The canonical artifact id embeds
+     * the declared input digest, which authoring previously had to copy into JSON by hand.
+     * Operator-workstation verb: it reads and writes intent artifacts at caller-supplied paths.
+     */
+    INTENT_BIND("intent", "bind", 11, 12,
+            "v2 intent bind <request-v2.json> <terrain-intent-in> <terrain-intent-out> <source-slug> "
+                    + "<land-water|height-guide|zone-label> <hard|soft> <nearest|bilinear-fixed> "
+                    + "<tolerance-blocks> [weight-millionths]",
+            "request.edit", Surface.CLI, null),
+    /** Read-only confirmation of every binding against the request declaration and the map bytes. */
+    INTENT_BINDINGS("intent", "bindings", 5, 5,
+            "v2 intent bindings <request-v2.json> <terrain-intent-v2.json>",
+            "request", Surface.CLI, null),
+    /**
      * Replaces the generation settings. Export-relevant since the resolved mask must match the
      * seed's composed geometry (V2-18-09/10), so authoring must be able to reproduce a mask's seed.
      */

@@ -490,14 +490,15 @@ public final class BuiltInFeatureSupportCatalogV2 {
                 "FND9",
                 FeaturePrimaryRoleV2.STANDALONE_FEATURE,
                 List.of(FeaturePrimaryRoleV2.STANDALONE_FEATURE),
-                caps(FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.NOT_APPLICABLE,FeatureSupportLevelV2.NOT_APPLICABLE),
+                caps(FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.SUPPORTED,FeatureSupportLevelV2.PARTIAL,FeatureSupportLevelV2.NOT_APPLICABLE,FeatureSupportLevelV2.NOT_APPLICABLE),
                 "PLAIN",
                 ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,
                 "",
                 "",
-                "docs/design-v2/audits/v2-9-phase-gate.md",
+                "docs/design-v2/audits/v2-9-phase-gate.md + V2-19-07 macro foundation producer wiring (ADR 0038 D1, ADR 0039 Candidate A)",
                 List.of(
-                        "V2-9 plan-level offline G/V/P SUPPORTED; intent/standalone/export PARTIAL")));
+                        "V2-19-07 / ADR 0039 Candidate A: dedicated module binding, offline production route on the surface-2_5d coastal pipeline's foundation tier; intent compile and export SUPPORTED with published-Release block materialization evidence",
+                        "standalone_usage stays PARTIAL: the surface path still requires the four coastal contributors, so a PLAIN-only intent cannot export (V2-19-09 owns that relaxation). requiredReleaseCapability stays empty and every Paper column stays UNSUPPORTED — it records the Release path behind a Paper claim, and this leaf makes none (V2-17)")));
         result.add(entry(
                 "HILL_RANGE",
                 "FND9",

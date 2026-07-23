@@ -19,15 +19,19 @@ final class CoastalSurfaceTerrainQueryV2 implements TerrainQuery {
     private final QueryBounds bounds;
     private final TerrainBlockResolver resolver;
 
+    /**
+     * V2-19-05: the resolver is supplied rather than derived, so this query answers from exactly the
+     * same block source the published tiles were written from — including a frozen river overlay.
+     */
     CoastalSurfaceTerrainQueryV2(
             CoastalSurfaceFieldsV2 fields,
+            TerrainBlockResolver resolver,
             int minY,
-            int maxY,
-            int waterLevel
+            int maxY
     ) {
         Objects.requireNonNull(fields, "fields");
         this.bounds = new QueryBounds(0, 0, fields.width(), fields.length(), minY, maxY);
-        this.resolver = fields.resolver(minY, waterLevel);
+        this.resolver = Objects.requireNonNull(resolver, "resolver");
     }
 
     @Override

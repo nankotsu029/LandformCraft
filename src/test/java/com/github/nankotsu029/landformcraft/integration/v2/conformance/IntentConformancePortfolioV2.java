@@ -139,6 +139,8 @@ final class IntentConformancePortfolioV2 {
                         // route so this leaf's per-leaf intent-conformance obligation is measured from a
                         // published Release rather than in-process generator state. The coastal shape
                         // fixture and land-water mask are otherwise identical to harbor-cove-64-honored.
+                        // V2-19-05 shortened the reach so it stays on the macro foundation background:
+                        // a channel crossing a coastal modifier's cells is now rejected fail-closed.
                         "harbor-cove-64-honored-river",
                         Path.of("examples/v2/diagnostic/harbor-cove-64-honored-river.request-v2.json"),
                         Path.of("examples/v2/diagnostic/harbor-cove-64-honored-river.terrain-intent-v2.json"),
@@ -146,11 +148,64 @@ final class IntentConformancePortfolioV2 {
                         64, 64,
                         Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.HYDROLOGY),
+                new CaseV2(
+                        // V2-19-06: the same coastal contract plus an explicit HEIGHT_GUIDE, which the
+                        // macro foundation reads as its background elevation source. The land-water
+                        // mask is byte-identical to harbor-cove-64-honored, so every shape assertion
+                        // of the portfolio must give the same answer while the heights change.
+                        "harbor-cove-64-honored-guided",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-guided.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-guided.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.SURFACE),
+                new CaseV2(
+                        // V2-19-07: the same coastal contract plus one inland PLAIN feature — the
+                        // first macro foundation producer. The land-water mask is byte-identical to
+                        // harbor-cove-64-honored, so every shape assertion of the portfolio must give
+                        // the same answer while the terrain the producer owns rises.
+                        "harbor-cove-64-honored-plain",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-plain.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-plain.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.SURFACE),
+                new CaseV2(
+                        // V2-19-05: the same reach declared as the MEANDERING_RIVER kind. Both kinds
+                        // share one materialization (V2-15-10 bridges RIVER onto the MEANDERING_RIVER
+                        // compile path), so promoting both to MATERIALIZED needs the block effect of
+                        // both measured here rather than inferred from one another.
+                        "harbor-cove-64-honored-meander",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-meander.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-meander.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
                         ExportRouteV2.HYDROLOGY));
     }
 
-    /** The declared {@code RIVER} / {@code MEANDERING_RIVER} feature id measured by the river case. */
+    /** The declared {@code RIVER} / {@code MEANDERING_RIVER} feature id measured by the river cases. */
     static final String RIVER_FEATURE_ID = "inland-stem";
+
+    /** The declared {@code PLAIN} feature id measured by the V2-19-07 foundation producer case. */
+    static final String PLAIN_FEATURE_ID = "inland-plain";
+
+    /**
+     * The two {@link ExportRouteV2#HYDROLOGY} cases, by declared FeatureKind: the block-materialization
+     * evidence {@code public-dispatch-reachability-v1} requires before an {@code OFFLINE_PRODUCTION}
+     * route may be displayed as MATERIALIZED.
+     */
+    static Map<TerrainIntentV2.FeatureKind, String> riverCaseIdsByKind() {
+        return Map.of(
+                TerrainIntentV2.FeatureKind.RIVER, "harbor-cove-64-honored-river",
+                TerrainIntentV2.FeatureKind.MEANDERING_RIVER, "harbor-cove-64-honored-meander");
+    }
 
     /** Everything the portfolio measures, all of it read back from the published Release. */
     record MeasurementsV2(
@@ -506,18 +561,47 @@ final class IntentConformancePortfolioV2 {
 
     /** Reads the published ACTUAL land-water sidecar through the strict, checksum-verifying reader. */
     static int[] readActualLandWater(Path releaseDirectory) throws IOException {
+        return readPublishedField(
+                releaseDirectory, FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_LAND_WATER);
+    }
+
+    /**
+     * Reads one published constraint-field sidecar by semantic, through the strict, checksum-verifying
+     * reader (V2-19-06 generalised this from the land-water-only form). Raw values are returned as
+     * stored: land/water cells are 0/1, height cells are block-millionths with
+     * {@link Integer#MIN_VALUE} for the no-data sentinel.
+     */
+    static int[] readPublishedField(
+            Path releaseDirectory,
+            FieldArtifactDescriptorV2.FieldSemantic semantic
+    ) throws IOException {
         Path constraintRoot = releaseDirectory.resolve("constraints");
         ConstraintFieldIndexV2 index =
                 new ConstraintFieldIndexCodecV2().readAndVerify(constraintRoot.resolve("index.json"), constraintRoot);
-        FieldArtifactDescriptorV2 actual = index.fields().stream()
-                .filter(field -> field.definition().semantic()
-                        == FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_LAND_WATER)
+        FieldArtifactDescriptorV2 field = index.fields().stream()
+                .filter(candidate -> candidate.definition().semantic() == semantic)
                 .findFirst()
-                .orElseThrow(() -> new IOException("published Release carries no ACTUAL land-water field"));
-        try (LfcGridReaderV1 reader = LfcGridReaderV1.open(constraintRoot, actual)) {
-            return reader.readWindow(0, 0, actual.definition().width(), actual.definition().length())
+                .orElseThrow(() -> new IOException("published Release carries no " + semantic + " field"));
+        try (LfcGridReaderV1 reader = LfcGridReaderV1.open(constraintRoot, field)) {
+            return reader.readWindow(0, 0, field.definition().width(), field.definition().length())
                     .toRawArray();
         }
+    }
+
+    /**
+     * Cells no coastal modifier claims — the macro foundation background (V2-19-06). Rebuilt from the
+     * published blueprint through the same compositor the export composed with, so "background" means
+     * exactly what it meant at generation time.
+     */
+    static boolean[] backgroundCells(WorldBlueprintV2 blueprint, int width, int length) {
+        CoastalRuntimeV2 runtime = CoastalRuntimeV2.of(blueprint, width, length);
+        boolean[] background = new boolean[Math.multiplyExact(width, length)];
+        for (int z = 0; z < length; z++) {
+            for (int x = 0; x < width; x++) {
+                background[z * width + x] = !runtime.activeAt(x, z);
+            }
+        }
+        return background;
     }
 
     /** Exposes the published raster to the production EDGE evaluator under its contract field id. */
@@ -692,6 +776,11 @@ final class IntentConformancePortfolioV2 {
 
         int ownerAt(int x, int z) {
             return compositor.sampleAt(x, z, HardLandWaterSourceV2.NONE).ownerIndex();
+        }
+
+        /** Whether any coastal modifier contributes at the cell; false means the foundation owns it. */
+        boolean activeAt(int x, int z) {
+            return compositor.sampleAt(x, z, HardLandWaterSourceV2.NONE).active();
         }
     }
 }

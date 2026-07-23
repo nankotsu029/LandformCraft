@@ -53,6 +53,20 @@ public final class BoundConstraintFieldV2 {
         return binding.role();
     }
 
+    /**
+     * The intent binding this field was resolved from. A consumer that has to record the binding it
+     * honored — the export's constraint field index does, one applied binding per bound field — reads
+     * it here instead of re-searching the intent and risking a different match (V2-19-06).
+     */
+    public TerrainIntentV2.ConstraintMapBinding binding() {
+        return binding;
+    }
+
+    /** The declared source this field was resolved from, including its declared input digest. */
+    public GenerationRequestV2.ConstraintMapSource source() {
+        return source;
+    }
+
     /** Declared source id of the constraint map this field was bound from. */
     public String sourceId() {
         return source.sourceId();

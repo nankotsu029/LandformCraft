@@ -29,10 +29,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -214,6 +216,107 @@ class TerrainDesignApplicationServiceV2Test {
         }
     }
 
+    /**
+     * V2-19-03: a request declaring reference images used to fail before any provider was called,
+     * because the orchestrator handed the provider an empty image list. Every design path shares
+     * that construction, so the offline fixture path is the cheapest place to pin the repair.
+     */
+    @Test
+    void aRequestDeclaringReferenceImagesReachesTheProvider(@TempDir Path root) throws Exception {
+        Path workspace = copyObliqueMultiView(root.resolve("images"));
+        try (GenerationExecutors executors = GenerationExecutors.create(2, 1, 4)) {
+            TerrainDesignApplicationServiceV2 service = new TerrainDesignApplicationServiceV2(executors, null);
+            DesignArtifactsV2 artifacts = service.design(new DesignDispatchRequestV2(
+                    2,
+                    DesignPathKindV2.FIXTURE,
+                    EnumSet.of(DesignCapabilityV2.TERRAIN_INTENT_V2_STRUCTURED),
+                    workspace.resolve("request-v2.json"),
+                    root.resolve("designs-images"),
+                    "terrain-intent-v2.json",
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty()
+            )).get(30, TimeUnit.SECONDS);
+
+            assertEquals("oblique-multi-view-64", artifacts.audit().requestId());
+            assertTrue(Files.isRegularFile(artifacts.directory().resolve("terrain-intent-v2.json")));
+            assertTrue(artifacts.intent().mapReferences().isEmpty(),
+                    "reference images stay soft cues and never become HARD map references");
+        }
+    }
+
+    /** The declared image must arrive as re-encoded PNG bytes, with no path and no source metadata. */
+    @Test
+    void theProviderPayloadCarriesPreparedImagesWithoutPathsOrSourceMetadata(@TempDir Path root)
+            throws Exception {
+        Path workspace = copyObliqueMultiView(root.resolve("provider-images"));
+        String secret = "camera-serial-and-gps-fix";
+        Path mood = workspace.resolve("references/mood.png");
+        Files.write(mood, insertAfterIhdr(
+                Files.readAllBytes(mood),
+                pngChunk("tEXt", ("Comment " + secret).getBytes(StandardCharsets.ISO_8859_1))));
+        // The pinned digest belongs to the committed example file, which this test just rewrote.
+        Path requestPath = workspace.resolve("request-v2.json");
+        Files.writeString(
+                requestPath,
+                Files.readString(requestPath, StandardCharsets.UTF_8)
+                        .replaceAll("\"expectedSha256\": \"[0-9a-f]{64}\"", "\"expectedSha256\": \""
+                                + Sha256.file(mood) + "\""),
+                StandardCharsets.UTF_8);
+        String intentJson = Files.readString(workspace.resolve("terrain-intent-v2.json"));
+        AtomicReference<String> captured = new AtomicReference<>("");
+
+        try (GenerationExecutors executors = GenerationExecutors.create(2, 1, 4);
+             TestServer anthropicServer = new TestServer(exchange -> {
+                 captured.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+                 respond(exchange, 200, """
+                         {
+                           "id": "msg_anthropic_v2",
+                           "model": "claude-test-v2",
+                           "content": [{ "type": "text", "text": %s }],
+                           "usage": { "input_tokens": 11, "output_tokens": 21 }
+                         }
+                         """.formatted(jsonString(intentJson)));
+             })) {
+            TerrainDesignPolicy policy = new TerrainDesignPolicy(
+                    Duration.ofSeconds(5), 2, Duration.ofMillis(10), 4_096, 20, 100_000);
+            TerrainDesignApplicationServiceV2 service = new TerrainDesignApplicationServiceV2(
+                    executors,
+                    (path, model) -> new AnthropicTerrainDesignProviderV2(
+                            executors, "test-secret", model, anthropicServer.uri(), policy,
+                            Clock.systemUTC(), HttpClient.newHttpClient()));
+
+            DesignArtifactsV2 artifacts = service.design(new DesignDispatchRequestV2(
+                    2,
+                    DesignPathKindV2.ANTHROPIC,
+                    EnumSet.of(DesignCapabilityV2.TERRAIN_INTENT_V2_STRUCTURED),
+                    requestPath,
+                    root.resolve("designs-provider-images"),
+                    "claude-test-v2",
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty()
+            )).get(30, TimeUnit.SECONDS);
+            assertEquals("anthropic-v2", artifacts.audit().providerId());
+        }
+
+        String body = captured.get();
+        assertEquals(4, countOccurrences(body, "\"media_type\":\"image/png\""), body.length() + " byte body");
+        assertTrue(body.contains("Reference image role MULTI_VIEW_REFERENCE"), "role text is missing");
+        assertFalse(body.contains("references/mood.png"), "the filesystem path must not be sent");
+        assertFalse(body.contains(Base64.getEncoder().encodeToString(secret.getBytes(StandardCharsets.UTF_8))),
+                "source metadata must not survive re-encoding");
+        assertFalse(body.contains(secret));
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        for (int index = haystack.indexOf(needle); index >= 0; index = haystack.indexOf(needle, index + 1)) {
+            count++;
+        }
+        return count;
+    }
+
     private static DesignExceptionV2 unwrapDesign(Runnable action) {
         try {
             action.run();
@@ -310,6 +413,53 @@ class TerrainDesignApplicationServiceV2Test {
                 Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json"),
                 target.resolve("terrain-intent-v2.json"));
         return target;
+    }
+
+    private Path copyObliqueMultiView(Path target) throws IOException {
+        Files.createDirectories(target.resolve("references"));
+        Files.copy(
+                Path.of("examples/v2/diagnostic/oblique-multi-view.request-v2.json"),
+                target.resolve("request-v2.json"));
+        Files.copy(
+                Path.of("examples/v2/diagnostic/oblique-multi-view.terrain-intent-v2.json"),
+                target.resolve("terrain-intent-v2.json"));
+        for (String imageId : ReferenceImageExampleFixtureV2.IMAGE_IDS) {
+            Files.copy(
+                    ReferenceImageExampleFixtureV2.EXAMPLE_DIRECTORY.resolve(imageId + ".png"),
+                    target.resolve("references").resolve(imageId + ".png"));
+        }
+        return target;
+    }
+
+    private static byte[] insertAfterIhdr(byte[] png, byte[] chunk) {
+        int position = 8;
+        while (position + 12 <= png.length) {
+            int length = java.nio.ByteBuffer.wrap(png, position, 4).getInt();
+            String type = new String(png, position + 4, 4, StandardCharsets.US_ASCII);
+            int next = position + 12 + length;
+            if ("IHDR".equals(type)) {
+                byte[] result = new byte[png.length + chunk.length];
+                System.arraycopy(png, 0, result, 0, next);
+                System.arraycopy(chunk, 0, result, next, chunk.length);
+                System.arraycopy(png, next, result, next + chunk.length, png.length - next);
+                return result;
+            }
+            position = next;
+        }
+        throw new IllegalStateException("IHDR not found");
+    }
+
+    private static byte[] pngChunk(String type, byte[] payload) {
+        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+        output.write(java.nio.ByteBuffer.allocate(4).putInt(payload.length).array(), 0, 4);
+        byte[] typeBytes = type.getBytes(StandardCharsets.US_ASCII);
+        output.write(typeBytes, 0, 4);
+        output.write(payload, 0, payload.length);
+        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+        crc.update(typeBytes);
+        crc.update(payload);
+        output.write(java.nio.ByteBuffer.allocate(4).putInt((int) crc.getValue()).array(), 0, 4);
+        return output.toByteArray();
     }
 
     private Path copyMinimalNoMaps(Path target) throws IOException {

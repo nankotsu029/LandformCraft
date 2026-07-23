@@ -1,5 +1,6 @@
 package com.github.nankotsu029.landformcraft.docs;
 
+import com.github.nankotsu029.landformcraft.buildcontract.FilesystemInventoryRootsV2;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -86,13 +87,13 @@ class DocsLinkConsistencyTest {
 
     private static List<Path> markdownFiles() throws Exception {
         List<Path> documents = new ArrayList<>();
-        try (var walk = Files.walk(Path.of("docs"))) {
+        try (var walk = Files.walk(FilesystemInventoryRootsV2.DOCS)) {
             documents.addAll(walk.filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".md"))
                     .sorted()
                     .toList());
         }
-        for (String root : List.of("README.md", "AGENTS.md", "CHANGELOG.md")) {
+        for (String root : FilesystemInventoryRootsV2.ROOT_MARKDOWN_DOCUMENTS) {
             // Keep a parent component so relative link resolution works for repository-root documents.
             Path path = Path.of(".", root);
             if (Files.isRegularFile(path)) {

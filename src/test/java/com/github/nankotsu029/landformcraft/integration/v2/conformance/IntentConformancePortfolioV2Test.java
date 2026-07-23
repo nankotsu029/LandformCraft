@@ -1,15 +1,22 @@
 package com.github.nankotsu029.landformcraft.integration.v2.conformance;
 
 import com.github.nankotsu029.landformcraft.core.GenerationExecutors;
+import com.github.nankotsu029.landformcraft.core.v2.export.HeightGuideExampleFixtureV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportApplicationServiceV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportRequestV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportResultV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2HydrologyExportApplicationServiceV2;
+import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
 import com.github.nankotsu029.landformcraft.model.v2.HydrologyValidationArtifactV2;
 import com.github.nankotsu029.landformcraft.model.v2.MetricResultV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
+import com.github.nankotsu029.landformcraft.validation.v2.conformance.ConformanceMeasurementsV2;
+import com.github.nankotsu029.landformcraft.validation.v2.conformance.ConformanceResidualEvaluatorV2;
+import com.github.nankotsu029.landformcraft.validation.v2.conformance.ConformanceResidualV2;
+import com.github.nankotsu029.landformcraft.validation.v2.conformance.ConformanceTargetSetV2;
 import com.github.nankotsu029.landformcraft.validation.v2.target.TargetEvaluationV2;
+import com.github.nankotsu029.landformcraft.validation.v2.target.ValidationFieldSamplerV2;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
@@ -32,6 +40,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -171,12 +180,254 @@ class IntentConformancePortfolioV2Test {
     }
 
     @Test
-    void theRiverOfflineWiringPublishesPassingHydrologyMetrics() throws Exception {
-        // V2-15-10 / ADR 0039 Candidate A per-leaf intent-conformance obligation: read the RIVER
-        // reach-shape evidence back from the published hydrology-plan Release (never in-process
-        // generator state) and confirm the shared HydrologyValidatorV2 metrics it wired for
-        // MEANDERING_RIVER are computed and pass for this FeatureKind.RIVER-declared feature too.
-        Path release = RELEASES.get("harbor-cove-64-honored-river");
+    void theDeclaredHeightGuideIsTheBackgroundElevationAndItsResidualIsMeasured() throws Exception {
+        // V2-19-06: the elevation guide is an input to generation, not decoration. Read back from the
+        // published Release: every background cell the guide specifies carries exactly the guide's
+        // height, the cells it marks no-data fall back to the declared per-medium base level, and the
+        // only cells that differ are the ones a coastal modifier owns (ADR 0038 D5-3).
+        Path release = RELEASES.get("harbor-cove-64-honored-guided");
+        WorldBlueprintV2 blueprint = IntentConformancePortfolioV2.blueprintOf(release);
+        int[] desired = IntentConformancePortfolioV2.readPublishedField(
+                release, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_HEIGHT);
+        int[] actual = IntentConformancePortfolioV2.readPublishedField(
+                release, FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_HEIGHT);
+        int[] residual = IntentConformancePortfolioV2.readPublishedField(
+                release, FieldArtifactDescriptorV2.FieldSemantic.RESIDUAL_HEIGHT);
+        boolean[] background = IntentConformancePortfolioV2.backgroundCells(blueprint, 64, 64);
+        int[] mask = HeightGuideExampleFixtureV2.maskSamples();
+
+        int guidedBackgroundCells = 0;
+        int noDataBackgroundCells = 0;
+        int modifierMismatches = 0;
+        for (int z = 0; z < 64; z++) {
+            for (int x = 0; x < 64; x++) {
+                int index = z * 64 + x;
+                int expectedDesired = HeightGuideExampleFixtureV2.isNoDataCell(x, z)
+                        ? Integer.MIN_VALUE
+                        : HeightGuideExampleFixtureV2.sampleAt(x, z, mask[index]) * 1_000_000;
+                assertEquals(expectedDesired, desired[index], "desired height at " + x + ',' + z);
+                if (!background[index]) {
+                    if (desired[index] != Integer.MIN_VALUE && actual[index] != desired[index]) {
+                        modifierMismatches++;
+                    }
+                    continue;
+                }
+                if (desired[index] == Integer.MIN_VALUE) {
+                    // The documented fallback: the per-medium base level, never a guessed height.
+                    noDataBackgroundCells++;
+                    assertEquals(mask[index] == 1 ? 54_000_000 : 46_000_000, actual[index],
+                            "no-data fallback at " + x + ',' + z);
+                    assertEquals(Integer.MIN_VALUE, residual[index], "residual at " + x + ',' + z);
+                    continue;
+                }
+                guidedBackgroundCells++;
+                assertEquals(desired[index], actual[index], "background height at " + x + ',' + z);
+                assertEquals(0, residual[index], "residual at " + x + ',' + z);
+            }
+        }
+        // Pinned: 3122 background cells take the guide verbatim, the 16 no-data cells fall back, and
+        // the 955 remaining specified cells are the ones a coastal modifier owns. A drift in any of
+        // the three is a change in who owns the surface, not a rounding detail.
+        assertEquals(3122, guidedBackgroundCells);
+        assertEquals(16, noDataBackgroundCells, "the no-data patch must stay on the background");
+        assertEquals(955, modifierMismatches,
+                "a SOFT guide must record where the modifiers own the height instead");
+
+        // The RasterResidual the guide enables: one target per bound map, both resolved against the
+        // declared input digest rather than a self-derived reference. Before V2-19-06 the height
+        // binding produced no target at all, so its conformance was silently absent.
+        int[] desiredLand = IntentConformancePortfolioV2.readPublishedField(
+                release, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER);
+        int[] actualLand = IntentConformancePortfolioV2.readPublishedField(
+                release, FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_LAND_WATER);
+        List<ConformanceResidualV2> residuals = new ConformanceResidualEvaluatorV2().evaluate(
+                ConformanceTargetSetV2.from(
+                        List.of(),
+                        IntentConformancePortfolioV2.intentOf(release).mapReferences(),
+                        declaredDigests(release)),
+                new ConformanceMeasurementsV2(
+                        Optional.of(rasterSampler(desiredLand, desired)),
+                        Optional.of(rasterSampler(actualLand, actual)),
+                        Map.of(), Map.of()));
+        Map<String, ConformanceResidualV2.RasterResidual> byTarget = residuals.stream()
+                .filter(ConformanceResidualV2.RasterResidual.class::isInstance)
+                .map(ConformanceResidualV2.RasterResidual.class::cast)
+                .collect(Collectors.toMap(ConformanceResidualV2.RasterResidual::targetId, value -> value));
+        assertEquals(2, residuals.size(), residuals::toString);
+        assertEquals(residuals.size(), byTarget.size(),
+                "every declared map must yield a measured raster residual, never an unconsumed target");
+        ConformanceResidualV2.RasterResidual land =
+                byTarget.get("conformance-desired-raster-coast-mask-binding");
+        assertEquals(64L * 64L, land.comparedCells());
+        assertEquals(0L, land.mismatchCells(), "the HARD mask must still be reproduced exactly");
+        ConformanceResidualV2.RasterResidual height =
+                byTarget.get("conformance-desired-raster-coast-height-binding");
+        assertEquals(64L * 64L - 16L, height.comparedCells(),
+                "the no-data patch is not compared, everything else is");
+        assertEquals(modifierMismatches, height.mismatchCells());
+    }
+
+    @Test
+    void theHeightGuideReachesTheFinalCanonicalBlockStream() throws Exception {
+        // The guide changes the published blocks, measured the V2-19-01 way: the guided Release
+        // against the otherwise identical unguided one. A guide that only reached a report would show
+        // up here as an empty diff.
+        FeatureMaterializationV2.BlockEffectV2 block = FeatureMaterializationV2.measureBlockEffect(
+                RELEASES.get("harbor-cove-64-honored"), RELEASES.get("harbor-cove-64-honored-guided"));
+
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertTrue(block.changedCells() > 0, () -> "the height guide changed no block: " + block);
+        // The terraces move the surface itself (SOLID_SHAPE), which drags the water column above a
+        // deepened sea bed (FLUID) and the surface material with it (MATERIAL).
+        assertEquals(13289L, block.changedCells(), block::toString);
+        assertEquals(3103L, block.solidShapeChanges(), block::toString);
+        assertEquals(4940L, block.fluidChanges(), block::toString);
+        assertEquals(5246L, block.materialChanges(), block::toString);
+    }
+
+    @Test
+    void thePlainFoundationProducerMaterializesTheDeclaredBlockEffectClasses() throws Exception {
+        // V2-19-07: the first macro foundation producer, measured the V2-19-01 way against the
+        // otherwise identical Release without the PLAIN feature. Raising the land it owns lifts solid
+        // mass into what used to be air (SOLID_SHAPE) and moves the surface/subsurface materials with
+        // it (MATERIAL); the footprint is inland, so no fluid column is touched at all.
+        FeatureMaterializationV2.BlockEffectV2 block = FeatureMaterializationV2.measureBlockEffect(
+                RELEASES.get("harbor-cove-64-honored"), RELEASES.get("harbor-cove-64-honored-plain"));
+
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertEquals(1238L, block.changedCells(), block::toString);
+        assertEquals(713L, block.solidShapeChanges(), block::toString);
+        assertEquals(525L, block.materialChanges(), block::toString);
+        assertEquals(0L, block.fluidChanges(),
+                () -> "an inland PLAIN must not own any fluid: " + block);
+
+        FeatureMaterializationV2.requireMaterialized(
+                new FeatureMaterializationV2.MaterializationClaimV2(
+                        IntentConformancePortfolioV2.PLAIN_FEATURE_ID,
+                        TerrainIntentV2.FeatureKind.PLAIN,
+                        Set.of("foundation.plain.mask", "foundation.plain.base-elevation",
+                                "foundation.plain.micro-relief"),
+                        Set.of(FeatureMaterializationV2.EffectClassV2.SOLID_SHAPE,
+                                FeatureMaterializationV2.EffectClassV2.MATERIAL)),
+                block);
+    }
+
+    @Test
+    void theFinalTileStreamCarriesTheDeclaredPlainElevationAndBoundedReplacement() throws Exception {
+        // V2-19-07 block column: the producer owns the elevation of every cell in its footprint, the
+        // declared micro-relief band is really exercised, and the replacement stops at the footprint —
+        // every other background cell still stands at the request's own per-medium base level.
+        PlainBlockConformanceV2.MeasurementsV2 plain =
+                PlainBlockConformanceV2.measure(RELEASES.get("harbor-cove-64-honored-plain"));
+
+        assertEquals(IntentConformancePortfolioV2.PLAIN_FEATURE_ID, plain.featureId());
+        assertEquals(50, plain.waterLevel());
+        // Datum: water level + declared base elevation (midpoint 6) + the declared micro relief 1..3.
+        assertEquals(57, plain.declaredMinimumSurfaceY());
+        assertEquals(59, plain.declaredMaximumSurfaceY());
+        assertTrue(plain.raisedCells() > 0, "the declared PLAIN raised no published column");
+        assertEquals(175, plain.raisedCells(), plain::toString);
+        assertEquals(plain.raisedCells(), plain.raisedCellsInsideDeclaredExtent(),
+                "the producer changed a column outside its declared polygon extent");
+        assertEquals(plain.raisedCells(), plain.raisedCellsWithinDeclaredBand(),
+                "a producer column stands outside the declared elevation band");
+        assertEquals(plain.raisedCells(), plain.raisedCellsSolidToSurface());
+        assertEquals(plain.raisedCells(), plain.raisedCellsDryColumn());
+        // The micro relief is a band, not a constant: all three declared steps occur.
+        assertEquals(Map.of(57, 54, 58, 54, 59, 67), plain.raisedCellsBySurfaceY(), plain::toString);
+        // Bounded replacement: every background cell the producer does not own keeps the declared
+        // per-medium base level, on both mediums.
+        assertEquals(plain.backgroundLandCells() - plain.raisedCells(),
+                plain.backgroundLandCellsAtBaseLevel(), plain::toString);
+        assertEquals(plain.backgroundWaterCells(), plain.backgroundWaterCellsAtBedLevel(),
+                plain::toString);
+    }
+
+    @Test
+    void thePlainProducerLeavesEveryModifierOwnedColumnUntouched() throws Exception {
+        // Tier separation (ADR 0038 D5-3): the foundation producer resolves under the modifiers, so a
+        // cell a coastal modifier owns must be block-identical to the baseline Release.
+        Path baseline = RELEASES.get("harbor-cove-64-honored");
+        Path plain = RELEASES.get("harbor-cove-64-honored-plain");
+        FeatureMaterializationV2.FinalBlockStreamV2 baselineStream =
+                FeatureMaterializationV2.readFinalBlockStream(baseline);
+        FeatureMaterializationV2.FinalBlockStreamV2 plainStream =
+                FeatureMaterializationV2.readFinalBlockStream(plain);
+        boolean[] background = IntentConformancePortfolioV2.backgroundCells(
+                IntentConformancePortfolioV2.blueprintOf(plain), 64, 64);
+
+        int modifierColumns = 0;
+        int changedModifierColumns = 0;
+        int changedBackgroundColumns = 0;
+        for (int z = 0; z < 64; z++) {
+            for (int x = 0; x < 64; x++) {
+                boolean changed = PlainBlockConformanceV2.surfaceY(plainStream, x, z)
+                        != PlainBlockConformanceV2.surfaceY(baselineStream, x, z);
+                if (background[z * 64 + x]) {
+                    changedBackgroundColumns += changed ? 1 : 0;
+                    continue;
+                }
+                modifierColumns++;
+                changedModifierColumns += changed ? 1 : 0;
+            }
+        }
+        assertTrue(modifierColumns > 0, "the case has no coastal modifier column to protect");
+        assertEquals(0, changedModifierColumns,
+                "the foundation producer overwrote a surface modifier's column");
+        assertEquals(175, changedBackgroundColumns);
+    }
+
+    private static Map<String, String> declaredDigests(Path release) throws Exception {
+        return new com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec()
+                .readGenerationRequest(release.resolve("source/generation-request.json"))
+                .constraintMaps().stream()
+                .collect(Collectors.toMap(
+                        source -> source.sourceId(),
+                        source -> source.expectedSha256()));
+    }
+
+    /** Publishes the two already-read rasters under the contract field id of their own role. */
+    private static ValidationFieldSamplerV2 rasterSampler(int[] land, int[] height) {
+        return new ValidationFieldSamplerV2() {
+            @Override
+            public int width() {
+                return 64;
+            }
+
+            @Override
+            public int length() {
+                return 64;
+            }
+
+            @Override
+            public int valueAt(String fieldId, int globalX, int globalZ) {
+                int index = globalZ * 64 + globalX;
+                if (ConformanceTargetSetV2.LAND_WATER_FIELD_ID.equals(fieldId)) {
+                    return land[index];
+                }
+                if (ConformanceTargetSetV2.HEIGHT_GUIDE_FIELD_ID.equals(fieldId)) {
+                    return height[index];
+                }
+                throw new IllegalArgumentException("no published raster for field " + fieldId);
+            }
+        };
+    }
+
+    static Stream<Map.Entry<TerrainIntentV2.FeatureKind, String>> riverCases() {
+        return IntentConformancePortfolioV2.riverCaseIdsByKind().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("riverCases")
+    void theRiverOfflineWiringPublishesPassingHydrologyMetrics(
+            Map.Entry<TerrainIntentV2.FeatureKind, String> riverCase) throws Exception {
+        // V2-15-10 / ADR 0039 Candidate A per-leaf intent-conformance obligation: read the reach-shape
+        // evidence back from the published hydrology-plan Release (never in-process generator state)
+        // and confirm the shared HydrologyValidatorV2 metrics are computed and pass for both kinds.
+        // This is the portfolio's PLAN-ONLY column; the block column is measured separately below and
+        // neither may stand in for the other (V2-19-01).
+        Path release = RELEASES.get(riverCase.getValue());
         HydrologyValidationArtifactV2.HydrologyValidationReport report =
                 IntentConformancePortfolioV2.readHydrologyValidationReport(release);
         assertTrue(report.passesHardValidation(), () -> String.valueOf(report.issues()));
@@ -194,6 +445,109 @@ class IntentConformancePortfolioV2Test {
         assertEquals(0L, riverMetrics.get("hydrology.river.channel-gaps").actualMillionths());
         assertEquals(0L, riverMetrics.get("hydrology.river.reverse-gradient-cells").actualMillionths());
         assertEquals(1L, riverMetrics.get("hydrology.river.source-mouth-reachable").actualMillionths());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("riverCases")
+    void theRiverRouteMaterializesTheDeclaredBlockEffectClasses(
+            Map.Entry<TerrainIntentV2.FeatureKind, String> riverCase) throws Exception {
+        // V2-19-05, the first application of the V2-19-01 gate's positive direction: the offline
+        // production route must change the final canonical block stream, and exactly in the classes
+        // the leaf declares. CARVE_SOLID voids the trench above the bed (SOLID_SHAPE) and ADD_FLUID
+        // owns the water it leaves behind (FLUID); nothing re-lines the bed, so MATERIAL stays absent.
+        Path baseline = RELEASES.get("harbor-cove-64-honored");
+        Path river = RELEASES.get(riverCase.getValue());
+
+        FeatureMaterializationV2.BlockEffectV2 block =
+                FeatureMaterializationV2.measureBlockEffect(baseline, river);
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertTrue(block.changedCells() > 0, () -> "the river route changed no block: " + block);
+        assertEquals(0L, block.materialChanges(), () -> "the river re-lined the bed: " + block);
+
+        FeatureMaterializationV2.requireMaterialized(
+                new FeatureMaterializationV2.MaterializationClaimV2(
+                        IntentConformancePortfolioV2.RIVER_FEATURE_ID,
+                        riverCase.getKey(),
+                        Set.of("hydrology.river.channel-mask", "hydrology.bed.elevation",
+                                "hydrology.water.surface"),
+                        Set.of(FeatureMaterializationV2.EffectClassV2.SOLID_SHAPE,
+                                FeatureMaterializationV2.EffectClassV2.FLUID)),
+                block);
+    }
+
+    @Test
+    void bothRiverKindsShareOneMaterializationAndPinItsSize() throws Exception {
+        // V2-15-10 bridges RIVER onto the MEANDERING_RIVER compile path, so the same declared reach
+        // must produce the identical block effect under either kind. Pinned exactly: a drift in the
+        // carve or fill footprint is a shape regression to look at, not a rounding detail.
+        Path baseline = RELEASES.get("harbor-cove-64-honored");
+        FeatureMaterializationV2.BlockEffectV2 river = FeatureMaterializationV2.measureBlockEffect(
+                baseline, RELEASES.get("harbor-cove-64-honored-river"));
+        FeatureMaterializationV2.BlockEffectV2 meander = FeatureMaterializationV2.measureBlockEffect(
+                baseline, RELEASES.get("harbor-cove-64-honored-meander"));
+
+        assertEquals(river, meander);
+        assertEquals(575L, river.changedCells(), river::toString);
+        assertEquals(458L, river.solidShapeChanges(), river::toString);
+        assertEquals(117L, river.fluidChanges(), river::toString);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("riverCases")
+    void theFinalTileStreamCarriesTheDeclaredBedDepthContinuityAndContainment(
+            Map.Entry<TerrainIntentV2.FeatureKind, String> riverCase) throws Exception {
+        // V2-19-05 block column, measured from the published tiles alone: bed depth, water
+        // continuity, source→mouth reachability and the leak envelope.
+        Path release = RELEASES.get(riverCase.getValue());
+        RiverBlockConformanceV2.MeasurementsV2 river = RiverBlockConformanceV2.measure(
+                release, IntentConformancePortfolioV2.blueprintOf(release));
+
+        assertEquals(IntentConformancePortfolioV2.RIVER_FEATURE_ID, river.featureId());
+        assertTrue(river.channelCells() > 0, "the published reach rasterizes to no channel cell");
+        // Bed depth: every channel column is cut to its declared bed, carries exactly the declared
+        // water depth, and is open to the sky above it.
+        assertEquals(1, river.declaredWaterDepthBlocks());
+        assertEquals(river.channelCells(), river.channelCellsAtDeclaredBedDepth());
+        assertEquals(river.channelCells(), river.channelCellsOpenAbove());
+        assertEquals(river.channelCells(), river.waterCells());
+        // Water continuity and reachability: one water body, and the declared source reaches the
+        // declared mouth inside it.
+        assertEquals(1, river.waterComponentCount());
+        assertTrue(river.sourceToMouthReachable(), river::toString);
+        // Leak envelope: no channel water block touches non-channel air, and the surrounding terrain
+        // stands solid at the water surface all the way around the reach.
+        assertEquals(0, river.leakCells(), river::toString);
+        assertTrue(river.envelopeCells() > 0, "the reach has no containment envelope");
+        assertEquals(river.envelopeCells(), river.envelopeCellsSolidAtWaterSurface(), river::toString);
+    }
+
+    @Test
+    void aPassingPlanColumnStillCannotSubstituteForAnEmptyBlockColumn() throws Exception {
+        // V2-19-01's mandated separation, kept executable after V2-19-05 filled the block column:
+        // the gate accepts nothing but a measured BlockEffectV2, and an empty one fails however
+        // complete the plan-only evidence is. The identity diff is the exact block-stream shape of
+        // every intentional no-op (constant healthy sampler, ADD_FLUID-into-solid identity slice).
+        Path river = RELEASES.get("harbor-cove-64-honored-river");
+        HydrologyValidationArtifactV2.HydrologyValidationReport plan =
+                IntentConformancePortfolioV2.readHydrologyValidationReport(river);
+        assertTrue(plan.passesHardValidation(), () -> String.valueOf(plan.issues()));
+
+        FeatureMaterializationV2.BlockEffectV2 identity =
+                FeatureMaterializationV2.measureBlockEffect(river, river);
+        assertTrue(identity.comparedCells() > 0);
+        assertEquals(0L, identity.changedCells());
+
+        IllegalStateException rejected = assertThrows(IllegalStateException.class,
+                () -> FeatureMaterializationV2.requireMaterialized(
+                        new FeatureMaterializationV2.MaterializationClaimV2(
+                                IntentConformancePortfolioV2.RIVER_FEATURE_ID,
+                                TerrainIntentV2.FeatureKind.RIVER,
+                                Set.of("hydrology.river.channel-mask"),
+                                Set.of(FeatureMaterializationV2.EffectClassV2.SOLID_SHAPE,
+                                        FeatureMaterializationV2.EffectClassV2.FLUID)),
+                        identity));
+        assertTrue(rejected.getMessage().contains("no effect on the final canonical block stream"),
+                rejected::getMessage);
     }
 
     @Test

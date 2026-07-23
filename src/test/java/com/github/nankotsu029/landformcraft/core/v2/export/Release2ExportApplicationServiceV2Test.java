@@ -275,12 +275,16 @@ class Release2ExportApplicationServiceV2Test {
             if (feature.kind() != TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS) {
                 return feature;
             }
+            // V2-19-07 wired PLAIN, so the unrouted stand-in is now PLATEAU: a foundation-eligible
+            // kind whose own V2-15 wiring leaf has not run. Dispatch must still reject it before any
+            // artifact exists.
             return new TerrainIntentV2.Feature(
-                    feature.id(), TerrainIntentV2.FeatureKind.PLAIN, feature.geometry(),
-                    new TerrainIntentV2.PlainParameters(
-                            new TerrainIntentV2.IntRange(4, 12),
-                            new TerrainIntentV2.IntRange(1, 2),
-                            new TerrainIntentV2.IntRange(1, 4)),
+                    feature.id(), TerrainIntentV2.FeatureKind.PLATEAU, feature.geometry(),
+                    new TerrainIntentV2.PlateauParameters(
+                            new TerrainIntentV2.IntRange(12, 20),
+                            new TerrainIntentV2.IntRange(1, 3),
+                            TerrainIntentV2.PlateauProfile.MESA,
+                            4),
                     feature.priority(), feature.provenance());
         }).toList();
         TerrainIntentV2 unsupported = new TerrainIntentV2(
@@ -296,7 +300,7 @@ class Release2ExportApplicationServiceV2Test {
                 new Release2ExportRequestV2(
                         REQUEST, intentPath, workRoot, exportsRoot, "unsupported", BASELINE)));
 
-        assertTrue(failure.getMessage().contains("no production dispatch route: PLAIN"), failure.getMessage());
+        assertTrue(failure.getMessage().contains("no production dispatch route: PLATEAU"), failure.getMessage());
         assertTrue(Files.isDirectory(workRoot));
         try (var entries = Files.list(workRoot)) {
             assertTrue(entries.findAny().isEmpty(), "dispatch rejection must precede work artifacts");

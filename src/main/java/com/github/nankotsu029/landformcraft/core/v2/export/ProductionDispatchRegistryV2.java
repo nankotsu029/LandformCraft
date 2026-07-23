@@ -47,6 +47,14 @@ public final class ProductionDispatchRegistryV2 {
      */
     public enum RouteClass { PRODUCTION_CONNECTED, OFFLINE_PRODUCTION }
 
+    /**
+     * Kinds the {@code surface-2_5d} coastal pipeline executes as {@link RouteClass#OFFLINE_PRODUCTION}
+     * rather than as production-connected coastal modifiers (V2-19-07): the macro foundation producers
+     * of ADR 0038 D1, wired one kind per leaf.
+     */
+    private static final Set<TerrainIntentV2.FeatureKind> COASTAL_OFFLINE_PRODUCTION_KINDS =
+            EnumSet.of(TerrainIntentV2.FeatureKind.PLAIN);
+
     private final Map<TerrainIntentV2.FeatureKind, Route> routes;
     private final Map<TerrainIntentV2.FeatureKind, String> contractOnlyPipelines;
     private final Map<String, ProductionExportPipelineV2> pipelines;
@@ -75,7 +83,12 @@ public final class ProductionDispatchRegistryV2 {
         ProductionExportPipelineV2.PipelineDescriptor hydrologyDescriptor = hydrology.descriptor();
         Map<TerrainIntentV2.FeatureKind, CurrentFeatureStateRegistryV2.Entry> sourceEntries =
                 sourceEntries(source.entries());
+        // V2-19-07: the coastal pipeline now executes one kind that is not a coastal modifier — the
+        // PLAIN macro foundation producer — so the PRODUCTION_CONNECTED routes are the executable
+        // kinds minus the offline ones rather than "all executable kinds". The exact-cover check at
+        // the end of the constructor still proves the coastal four are all routed.
         List<Route> routes = new ArrayList<>(coastalDescriptor.executableKinds().stream()
+                .filter(kind -> !COASTAL_OFFLINE_PRODUCTION_KINDS.contains(kind))
                 .map(kind -> new Route(
                         kind,
                         sourceEntries.get(kind).moduleId(),
@@ -96,6 +109,18 @@ public final class ProductionDispatchRegistryV2 {
                     hydrologyDescriptor.pipelineId(),
                     hydrologyDescriptor.handlers(),
                     hydrologyDescriptor.requiredCapabilities(),
+                    RouteClass.OFFLINE_PRODUCTION));
+        }
+        // V2-19-07: the second application of the same ADR 0039 Candidate A pattern, for the first
+        // wired macro foundation producer. PLAIN runs on the coastal surface pipeline's foundation
+        // tier (ADR 0038 D1) rather than as a coastal modifier, and stays below Paper SUPPORTED.
+        for (TerrainIntentV2.FeatureKind offlineKind : COASTAL_OFFLINE_PRODUCTION_KINDS) {
+            routes.add(new Route(
+                    offlineKind,
+                    sourceEntries.get(offlineKind).moduleId(),
+                    coastalDescriptor.pipelineId(),
+                    coastalDescriptor.handlers(),
+                    coastalDescriptor.requiredCapabilities(),
                     RouteClass.OFFLINE_PRODUCTION));
         }
         return new ProductionDispatchRegistryV2(
@@ -315,6 +340,15 @@ public final class ProductionDispatchRegistryV2 {
         return routes.values().stream()
                 .sorted(Comparator.comparing(route -> route.featureKind().name()))
                 .toList();
+    }
+
+    /**
+     * Contract-only compatibility kinds mapped to the pipeline owning each fixture contract. These
+     * kinds are accepted as diagnostic inputs alongside a routed kind but never select a production
+     * pipeline themselves; the V2-19-01 reachability projection displays them as their own class.
+     */
+    public Map<TerrainIntentV2.FeatureKind, String> contractOnlyKinds() {
+        return contractOnlyPipelines;
     }
 
     private List<String> canonicalRegistryLines() {

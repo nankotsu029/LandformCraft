@@ -87,6 +87,7 @@ import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.ValidationTargetV2;
 import com.github.nankotsu029.landformcraft.model.v2.WaterfallPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
+import com.github.nankotsu029.landformcraft.model.v2.foundation.PlainPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.GeologyPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.ClimatePlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.environment.LithologyPlanV2;
@@ -1365,7 +1366,21 @@ public final class DiagnosticBlueprintCompilerV2 {
                         WorldBlueprintV2.FieldValueType.U8),
                 hydrologyField(request, LandformVolcanicModuleV2.PROVISIONAL_SURFACE_FIELD_ID,
                         WorldBlueprintV2.FieldSemantic.LANDFORM_VOLCANIC_PROVISIONAL_SURFACE,
-                        WorldBlueprintV2.FieldValueType.I32)));
+                        WorldBlueprintV2.FieldValueType.I32),
+                // V2-19-07: the foundation producer tier's first wired module (PLAIN) declares these
+                // four plan fields, so every blueprint carries their descriptors and ownership.
+                hydrologyField(request, PlainPlanV2.PLAIN_MASK_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.FOUNDATION_PLAIN_MASK,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, PlainPlanV2.BASE_ELEVATION_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.FOUNDATION_PLAIN_BASE_ELEVATION,
+                        WorldBlueprintV2.FieldValueType.I32),
+                hydrologyField(request, PlainPlanV2.MICRO_RELIEF_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.FOUNDATION_PLAIN_MICRO_RELIEF,
+                        WorldBlueprintV2.FieldValueType.U8),
+                hydrologyField(request, PlainPlanV2.GROUNDWATER_HANDOFF_FIELD_ID,
+                        WorldBlueprintV2.FieldSemantic.FOUNDATION_PLAIN_GROUNDWATER_HANDOFF,
+                        WorldBlueprintV2.FieldValueType.U8)));
         return List.copyOf(result);
     }
 

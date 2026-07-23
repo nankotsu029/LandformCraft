@@ -1,7 +1,7 @@
 {
   "intentVersion": 2,
   "intentId": "harbor-cove-64-honored-river",
-  "theme": "V2-15-10 / ADR 0039 Candidate A intent-conformance fixture: the harbor-cove-64-honored coastal contract plus one RIVER feature, exported through the hydrology-plan offline production route so the portfolio also measures the new RIVER wiring end-to-end. Same land-water mask and coastal shape as harbor-cove-64-honored",
+  "theme": "V2-15-10 / ADR 0039 Candidate A intent-conformance fixture, extended by V2-19-05: the harbor-cove-64-honored coastal contract plus one RIVER feature, exported through the hydrology-plan offline production route so the portfolio measures the RIVER wiring end-to-end from the final canonical block stream. The reach stays on the macro foundation background north of the beach's backshore band, because a channel crossing a coastal modifier's cells is rejected fail-closed (v2.river.coastal-owner-conflict). Same land-water mask and coastal shape as harbor-cove-64-honored",
   "coordinateSystem": {
     "horizontal": "NORMALIZED_XZ",
     "origin": "NORTH_WEST",
@@ -325,11 +325,11 @@
           ],
           [
             0.13,
-            0.12
+            0.09
           ],
           [
-            0.17,
-            0.2
+            0.16,
+            0.15
           ]
         ],
         "interpolation": "POLYLINE"

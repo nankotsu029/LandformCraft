@@ -1,0 +1,115 @@
+{
+  "requestVersion": 2,
+  "requestId": "harbor-cove-64-honored-guided",
+  "bounds": {
+    "width": 64,
+    "length": 64,
+    "minY": 32,
+    "maxY": 72,
+    "waterLevel": 50
+  },
+  "prompt": "Generate the V2-19-06 64x64 coastal contract whose macro foundation reads a declared HEIGHT_GUIDE as its background elevation source, with a no-data patch that falls back to the declared per-medium base levels.",
+  "referenceImages": [],
+  "constraintMaps": [
+    {
+      "sourceId": "constraint-source:coast-mask",
+      "file": "maps/harbor-cove-64-honored-land-water-u8.png",
+      "expectedSha256": "b1d98bff54aa3fa8a6df022df9057f05ee0ad2ece1873c13982222614989a48e",
+      "expectedWidth": 64,
+      "expectedLength": 64,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": {
+          "x": 0,
+          "z": 0,
+          "width": 64,
+          "length": 64
+        }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "labels": [
+          {
+            "sample": 0,
+            "label": "water"
+          },
+          {
+            "sample": 1,
+            "label": "land"
+          }
+        ],
+        "noData": {
+          "mode": "FORBIDDEN"
+        }
+      }
+    },
+    {
+      "sourceId": "constraint-source:coast-height",
+      "file": "maps/harbor-cove-64-honored-height-guide-u8.png",
+      "expectedSha256": "86b959a2bd5d14bc4a9d3dc7fe3013a72b3b2088a4e6d2509004f63d899b856b",
+      "expectedWidth": 64,
+      "expectedLength": 64,
+      "decoderKind": "HEIGHT_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": {
+          "x": 0,
+          "z": 0,
+          "width": 64,
+          "length": 64
+        }
+      },
+      "encoding": {
+        "kind": "HEIGHT",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "valueMeaning": "ABSOLUTE_BLOCK_Y",
+        "valueScaleMillionths": 1000000,
+        "valueOffsetMillionths": 0,
+        "validSampleRange": {
+          "minimum": 40,
+          "maximum": 60
+        },
+        "noData": {
+          "mode": "SENTINEL",
+          "sample": 255
+        }
+      }
+    }
+  ],
+  "generation": {
+    "globalSeed": 827413,
+    "tileSize": 64
+  },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  },
+  "foundationBaseLevels": {
+    "landSurfaceY": 54,
+    "waterBedY": 46
+  }
+}

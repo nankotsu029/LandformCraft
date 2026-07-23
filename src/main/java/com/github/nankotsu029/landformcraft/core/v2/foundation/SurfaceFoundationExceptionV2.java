@@ -14,6 +14,16 @@ public final class SurfaceFoundationExceptionV2 extends RuntimeException {
         this.failureCode = Objects.requireNonNull(failureCode, "failureCode");
     }
 
+    /** Keeps the originating compiler failure attached when a plan rejection is re-coded (V2-19-07). */
+    public SurfaceFoundationExceptionV2(
+            SurfaceFoundationFailureCodeV2 failureCode,
+            String message,
+            Throwable cause
+    ) {
+        super(Objects.requireNonNull(message, "message"), cause);
+        this.failureCode = Objects.requireNonNull(failureCode, "failureCode");
+    }
+
     public SurfaceFoundationFailureCodeV2 failureCode() {
         return failureCode;
     }

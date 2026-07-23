@@ -10,7 +10,7 @@
   },
   "prompt": "Diagnostic request showing V2-14-02 oblique and multi-view reference roles. These images are AI proposal cues only and never produce coordinate constraints, height guides, or HARD geometry; deterministic terrain still comes from constraint maps or the prompt.",
   "referenceImages": [
-    { "id": "mood", "file": "references/mood.png", "role": "MOOD_REFERENCE" },
+    { "id": "mood", "file": "references/mood.png", "role": "MOOD_REFERENCE", "expectedSha256": "5854c1fa96120e5c0f4023a9f7da411fb62924b11de3d1588234ed2f3b4c3fd4" },
     { "id": "oblique-ridge", "file": "references/oblique-ridge.png", "role": "OBLIQUE_TERRAIN_REFERENCE" },
     { "id": "cove-north", "file": "references/cove-north.png", "role": "MULTI_VIEW_REFERENCE" },
     { "id": "cove-east", "file": "references/cove-east.png", "role": "MULTI_VIEW_REFERENCE" }

@@ -25,6 +25,7 @@ inputは`plugins/LandformCraft/data/releases-v2/`（配置）および`plugins/L
 /lfc v2 request selection <request-id>
 /lfc v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width> <length>
 /lfc v2 request prompt <request-id>
+/lfc v2 request constraint-source <request-id> <source-slug> <land-water|height-guide|zone-label> <promotion-dir> <request-relative-file>
 /lfc v2 design <import|fixture|openai|anthropic> <request-v2.json> <intent-or-model> [designs-root]
 /lfc v2 generate <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
 /lfc v2 export   <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
@@ -62,9 +63,12 @@ lfc v2 request list
 lfc v2 request create <request-id>
 lfc v2 request bounds <request-id> <width> <length> <min-y> <max-y> <water-level>
 lfc v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width> <length>
+lfc v2 request constraint-source <request-id> <source-slug> <land-water|height-guide|zone-label> <promotion-dir> <request-relative-file>
 lfc v2 request generation <request-id> <global-seed> <tile-size>
 lfc v2 request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>
 lfc v2 request prompt <request-id> <prompt...>
+lfc v2 intent bind <request-v2.json> <intent-in> <intent-out> <source-slug> <land-water|height-guide|zone-label> <hard|soft> <nearest|bilinear-fixed> <tolerance-blocks> [weight-millionths]
+lfc v2 intent bindings <request-v2.json> <terrain-intent-v2.json>
 lfc v2 design <import|fixture|openai|anthropic> <request-v2.json> <intent-or-model> [designs-root]
 lfc v2 generate <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
 lfc v2 export   <request> <intent> <exports-root> <release-id> <land|water> <land-y> <water-y>
@@ -86,7 +90,7 @@ lfc v2 migrate apply   <intent|design|release> <v1-source> <output-root> <migrat
 
 ### v2 request authoring（V2-12-08）
 
-`create`／`bounds`／`selection`／`constraint-map`／`generation`／`foundation-base-levels`／`prompt`／`list` はv2 requestを**作成・編集**します。`V2-12-05`のカバレッジ監査で、v1にはあった request authoring がv2に無い（F1）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。`validate`／`info` の意味は従来どおりで、**pathを引数に取ります**。
+`create`／`bounds`／`selection`／`constraint-map`／`constraint-source`／`generation`／`foundation-base-levels`／`prompt`／`list` はv2 requestを**作成・編集**します。`V2-12-05`のカバレッジ監査で、v1にはあった request authoring がv2に無い（F1）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。`validate`／`info` の意味は従来どおりで、**pathを引数に取ります**。
 
 保存先はPaperが`plugins/LandformCraft/data/v2/requests/<request-id>.request-v2.json`、CLIが`<--data-dir>/v2/requests/<request-id>.request-v2.json`です。`request-id` はlowercaseのportable slug（`[a-z0-9][a-z0-9._-]{0,63}`）で、pathは受け取りません。作成・編集は毎回strict schemaで検証してからatomicに publish するため、途中状態のrequestは残りません。
 
@@ -96,12 +100,13 @@ lfc v2 migrate apply   <intent|design|release> <v1-source> <output-root> <migrat
 | `bounds <id> <w> <l> <min-y> <max-y> <water>` | 範囲を置換します。`water` は新しい範囲へclampされます |
 | `selection <id>` | **Paper専用**。operatorの現在のWorldEdit選択範囲からwidth／length／min-y／max-yを取り込みます。保存済みwater levelは維持（新範囲へclamp）されます。CLIから呼ぶと`V2_PAPER_ONLY`です |
 | `constraint-map <id> <slug> <file> <sha256> <w> <l>` | `surface-2_5d` exportが要求する land/water constraint map source を1件宣言します（既存の宣言は置換）。形式はU8 grayscale・north-west原点・east/south軸・pixel中心・回転／反転なし・全面crop・`0=water` `1=land`・no-data禁止に固定です。これ以外の形式は手書きJSONのままとし、推測しません |
+| `constraint-source <id> <slug> <land-water｜height-guide｜zone-label> <promotion-dir> <file>` | `promote` が封印したrecordからrole・encoding・寸法・digestを読み、constraint map sourceを1件**追加または更新**します（他の宣言は保持）。3 role共通で、height guideのvalue meaning／scale／sample範囲やzoneのlabel legendはrecordの値をそのまま使い、command引数からは推測しません。map file自体はコピーせず、`<file>`（request相対path）へ置くのはoperatorの作業です（`constraint-map`と同じ） |
 | `generation <id> <global-seed> <tile-size>` | 生成settings（seedとtile size）を置換します。`V2-18-09`以降maskは生成へ解決され合成形状と一致する必要があるため、**maskはそれを作ったseedに束縛されます**。authoringがmask側のseedを再現できるよう公開しています（`V2-18-10`） |
 | `foundation-base-levels <id> <land-surface-y> <water-bed-y>` | macro foundationのmedium別provisional base elevationを宣言します（[ADR 0038](adr/0038-macro-foundation-contract.md) D2-2(b)）。HARD `LAND_WATER_MASK`と併せて**明示foundation入力**を構成し、`V2-18-10`のowner gateを通過するために必須です。値はrequest boundsの範囲内である必要があり、推測はしません |
 | `prompt <id>` / `prompt <id> <text...>` | Paperは**次のchat 1件**をpromptとして保存します（5分で失効、`cancel`で取消）。CLIは引数のtextを保存します。いずれもcredentialに見えるtextは拒否します |
 | `list` | 保存済みrequest IDを決定的な順序で列挙します |
 
-permissionは`landformcraft.v2.request.create`（作成）と`landformcraft.v2.request.edit`（`bounds`／`selection`／`constraint-map`／`generation`／`foundation-base-levels`／`prompt`）、read系（`validate`／`info`／`list`）は従来どおり`landformcraft.v2.request`です。
+permissionは`landformcraft.v2.request.create`（作成）と`landformcraft.v2.request.edit`（`bounds`／`selection`／`constraint-map`／`constraint-source`／`generation`／`foundation-base-levels`／`prompt`／`intent bind`）、read系（`validate`／`info`／`list`）は従来どおり`landformcraft.v2.request`です。
 
 authoringからexportまでの最短経路は次のとおりです。`export`はrequestの`requestId`と intentの`intentId`が一致することを要求します。
 
@@ -123,7 +128,36 @@ lfc v2 export <上記request path> <intent path> <exports-root> <release-id> wat
 
 `V2-18-10`以降、surface exportは**foundation owner被覆100%**を必須とします（[ADR 0038](adr/0038-macro-foundation-contract.md) D7-2）。明示foundation入力（HARD `LAND_WATER_MASK`＋`foundationBaseLevels`）を持たないrequestは、feature非所有cellにfoundation ownerが存在しないため、生成後・publish前に安定rule `v2.export.foundation-owner-coverage-incomplete` でfail closedに拒否されます。**override flagはなく、baseline引数でも回避できません**（D8-2）。gateの対象はsurface foundation ownerだけで、modifier（active contributor）被覆・volume／material被覆・request domain外は対象外です。coverage分母はrequest domainの全cell（width×length）であり、no-data cellを分母から除外することはありません。HARD maskのno-dataはbinding（`INVALID_NO_DATA`）が生成前に、ownerを持たないcellはkernel不変条件（`OWNERLESS_CELL`）が生成時に拒否するため、gateへ到達するfieldに未所有cellが「covered扱い」で混入することはできません。owner候補（candidate）は0..N個許容されますが、merge後のeffective ownerは各cellちょうど1つで、未解決tie／undeclared overlapはmerge kernelがgate到達前に拒否します（ADR 0038 D1）。
 
+`V2-19-06`以降、requestは任意で`HEIGHT_GUIDE` source（`request constraint-source … height-guide …`＋`intent bind … height-guide …`）を1件宣言でき、macro foundationがそれをbackground elevation sourceとして読みます。**優先順位はcellごとにguide＞`foundation-base-levels`**で、guideがno-dataを宣言したcellだけがmedium別base levelへ戻ります。guideが宣言するvalue rangeがrequestのvertical extentを外れる場合はrequest宣言時点で拒否されます（clampしません）。coastal featureが所有するcellの高さはfeature側のものであり、HARD guideが同じcellをtolerance超で指定した場合は`v2.foundation.height-guide-modifier-conflict`でexport拒否、SOFT guideの差は公開Releaseの`constraint.coast.height.residual` sidecarへ記録されます。
+
 `V2-18-09`以降、requestがHARD `LAND_WATER_MASK`と`foundationBaseLevels`（medium別のprovisional base elevation宣言）の両方を持つ場合、macro foundation stageがmaskを解決して全cellのland-water＋provisional elevationを確定し、coastal featureはその基礎の上のsurface modifierとして合成されます（ADR 0038）。この**foundation経路**では末尾のbaseline引数（`<land|water> <land-y> <water-y>`）は受理されますが**無視**され、CLI summaryへNON_GATING警告 `v2.cli.surface-baseline-deprecated` が表示されます。maskとfeature形状が矛盾するcell（HARD maskをmodifierが上書きしようとする等）はexport拒否です。maskの大域構図はEDGE実測を充足できるため、edge意図をHARDで宣言できます。
+
+### v2 intent binding（V2-19-04）
+
+`intent bind`／`intent bindings` は、requestが宣言したconstraint sourceとTerrainIntentの`mapReferences`を接続する**CLI専用**verbです（operator workstation上のintent artifactを読み書きするため、`migrate`／`extract`／`promote`と同じ扱いです）。
+
+bindingのcanonicalな`artifactId`は`constraint:<semantic>:sha256-<宣言digest>`で、digest部分は**requestが宣言した入力mapのdigestと一致していなければなりません**（公開surface Releaseで`SurfaceReleaseCapabilityVerifierV2`が検査する規則、V2-18-07）。手書きでは64桁のSHA-256をJSONへ書き写すことになり、誤りはexport時まで表面化しませんでした。`intent bind` はこれをrequestから計算します。providerにこの値を発明させることはできず、させません。
+
+| verb | 動作 |
+|---|---|
+| `intent bind <request> <intent-in> <intent-out> <slug> <role> <hard｜soft> <nearest｜bilinear-fixed> <tolerance> [weight]` | 宣言済みsourceのbindingを1件追加または更新し、`<intent-out>`へstrictに書き出します（binding idはslug、既存の同一id／同一sourceIdの行は置換）。roleが宣言済みencodingと矛盾する場合（categorical mapをHEIGHT_GUIDEにする、water/land以外のlegendをLAND_WATER_MASKにする等）は拒否します。strength／sampling／tolerance／weightの組み合わせ規則は`TerrainIntentV2`が検査します |
+| `intent bindings <request> <intent>` | 各bindingについて、宣言済みsourceの存在、`artifactId`の再計算一致、roleとencodingの整合、map実体のsecure resolve・digest・IHDR寸法を照合します。read-onlyで、1件でも不一致があれば`LFC-REQUEST-INVALID`でfail closedします。bindingが無い宣言済みsourceは`unboundSources`として報告します |
+
+出力の`generatorConsumer`は、そのroleを**実際に読む生成側があるか**を示します。`V2-19-06`以降、`LAND_WATER_MASK`と`HEIGHT_GUIDE`が`MACRO_FOUNDATION`（前者はmedium、後者はbackground elevation）、`ZONE_LABEL_MAP`は`NONE`です。surface exportのconstraint map要求もrole別になり、**`LAND_WATER_MASK`ちょうど1件＋`HEIGHT_GUIDE`任意1件**を受理します。consumerを持たない`ZONE_LABEL_MAP` bindingを含むintentは、無視ではなく拒否されます。
+
+`V2-19-04`より前に書かれたfixture intentは`artifactId`のdigest部分を`0`で埋めています（exportが公開時に書き換えるため）。そうしたintentを`intent bindings`にかけると不一致として報告されます — 期待どおりの結果で、`intent bind` で作り直せば解消します。
+
+### v2 design のreference image（V2-19-03）
+
+`design`はrequestの`referenceImages`宣言をそのまま入力に取ります。宣言があるrequestは、以前はprovider呼出し前に必ず失敗していました（宣言数と送信数の不一致）。現在は宣言順（id昇順）に1件ずつ準備してproviderへ渡します。CLIとPaperの`import`／`fixture`／`openai`／`anthropic`の4 pathすべてが同じ準備を通ります。
+
+- **path解決**: requestファイルのdirectory配下の相対pathだけを受理します。絶対path、`..`、backslash、symlink、同一fileへのhard link別名、重複宣言は拒否します。
+- **受理条件**: PNG／JPEGのmagicと拡張子が一致すること、single frame（APNG不可）、source byte／寸法／aspect比／pixel数／decode working setが各上限内であること。読み取り中にfileが変化した場合も拒否します。
+- **送信内容**: EXIF orientationを適用したrasterから**PNGを再符号化**したものだけを送ります。EXIF・XMP・comment等のmetadataとfilesystem pathはprovider payloadにもログにも出ません。送信byteはper-image／合計16MiBが上限です。
+- **`expectedSha256`（任意）**: 宣言するとfile bytesのSHA-256と照合し、不一致（authoring後の差し替え等）をprovider呼出し前に拒否します。省略時はdigest検査を行いません。
+- **失敗**: いずれもartifactを一切作らずfail closedで、CLIは`LFC-REQUEST-INVALID`（transport／不正responseは`LFC-PROVIDER-FAILED`）と`Design failed safely (<code>).`を返します。`<code>`は`PATH_SECURITY`／`BUDGET_EXCEEDED`／`INVALID_REQUEST`等の安定codeです。
+
+reference imageはAI提案のためのSOFT cueであり、`mapReferences`（HARD constraint map）を生成しません。決定論的な形状入力はrequestの`constraintMaps`経路です（[Direct Constraint Maps v2](design-v2/image-constraint-maps.md)）。
 
 ### v2 retention／read-onlyなplacement state確認（V2-12-10）
 

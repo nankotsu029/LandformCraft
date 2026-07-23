@@ -294,6 +294,16 @@ module＋非production-connected kind限定の許可制）を追加した。`RIV
 shared pipelineのoffline routeへ登録し、既存coastal 4の`PRODUCTION_CONNECTED`route・意味・Paper
 `SUPPORTED` exact setは不変のまま、Paper非昇格のexport専用縦経路を実現した。
 
+`V2-19-07`は同じ候補Aパターンを**foundation producer tier**へ適用した。`surface-2_5d` coastal
+pipelineのmacro foundation stage（feature合成の前段、ADR 0038 D5-1）が、宣言された`PLAIN` featureを
+`MacroFoundationV2.ProducerLayer`として構築し、自身のfootprint内でbackground candidateを置換して
+land-water mediumとbase elevationを確定する（candidate→effective owner、ADR 0038 D1）。`PLAIN`は
+coastal modifierではないが実行pipelineは同じであるため、routeはcoastal pipelineの
+`OFFLINE_PRODUCTION`として登録し、`PRODUCTION_CONNECTED`はcoastal 4のexact coverのままとした。
+producerの標高datumはrequestのwater level（`waterLevel + baseElevation + microRelief`）という単一の
+明示規則で、mask medium矛盾・vertical extent外・HARD guideとの矛盾・producer同士の未宣言overlapは
+生成時にfail closedする。`HILL_RANGE`／`MOUNTAIN_RANGE`／`VALLEY`は同じ機構の上でV2-15対応leafが配線する。
+
 ## 4. Stage I/O表
 
 | Stage | 主なread | 主なwrite | 実行scope |

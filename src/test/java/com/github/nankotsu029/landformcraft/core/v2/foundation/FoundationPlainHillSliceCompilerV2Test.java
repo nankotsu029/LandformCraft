@@ -171,9 +171,10 @@ class FoundationPlainHillSliceCompilerV2Test {
     }
 
     @Test
-    void plainAndHillRemainExperimentalWithoutBlueprintEmbedding() {
-        // Dedicated modules exist but are not registered in the global catalog yet so that
-        // DiagnosticBlueprintCompiler / WorldBlueprint checksums stay unchanged (V2-9-02).
+    void plainAndHillStayExperimentalAndOnlyPlainIsRegistered() {
+        // Both dedicated modules stay EXPERIMENTAL. V2-19-07 registered the plain one in the global
+        // catalog and bound PLAIN to it (the macro foundation producer tier); the hill module is
+        // still unregistered, so HILL_RANGE keeps the diagnostic binding until V2-15-22 wires it.
         ModuleDescriptorV2 plainModule = new LandformPlainModuleV2().descriptor();
         ModuleDescriptorV2 hillModule = new LandformHillRangeModuleV2().descriptor();
         assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL, plainModule.lifecycleStatus());
@@ -181,11 +182,12 @@ class FoundationPlainHillSliceCompilerV2Test {
 
         ModuleDescriptorV2 catalogPlain = catalog.requireFor(TerrainIntentV2.FeatureKind.PLAIN);
         ModuleDescriptorV2 catalogHill = catalog.requireFor(TerrainIntentV2.FeatureKind.HILL_RANGE);
-        assertEquals(BuiltInLandformModuleCatalogV2.DIAGNOSTIC_MODULE_ID, catalogPlain.moduleId());
+        assertEquals(plainModule.moduleId(), catalogPlain.moduleId());
         assertEquals(BuiltInLandformModuleCatalogV2.DIAGNOSTIC_MODULE_ID, catalogHill.moduleId());
         assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL, catalogPlain.lifecycleStatus());
         assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL, catalogHill.lifecycleStatus());
-        assertFalse(catalog.hasValidatorCapability(TerrainIntentV2.FeatureKind.PLAIN));
+        assertTrue(catalog.hasValidatorCapability(TerrainIntentV2.FeatureKind.PLAIN));
+        assertFalse(catalog.hasValidatorCapability(TerrainIntentV2.FeatureKind.HILL_RANGE));
         assertFalse(catalog.hasPreviewCapability(TerrainIntentV2.FeatureKind.HILL_RANGE));
     }
 

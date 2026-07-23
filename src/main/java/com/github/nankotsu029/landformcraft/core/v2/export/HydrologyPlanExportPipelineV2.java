@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntPredicate;
 
@@ -149,11 +150,13 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
         Path hydrologyRoot = workRoot.resolve("hydrology-work");
         Files.createDirectories(hydrologyRoot);
 
-        CoastalSurfaceExportPipelineV2.GeneratedCoastalSurface coastalGenerated =
-                coastal.generateWithFields(request, requestSource, draftIntent, baseline, surfaceRoot, budget, token);
-        GeneratedSurface surface = coastalGenerated.surface();
-        WorldBlueprintV2 blueprint = surface.blueprint();
-        CoastalSurfaceFieldsV2 fields = coastalGenerated.fields();
+        // V2-19-05: the coastal surface is prepared without its tiles first, so routing,
+        // reconciliation and the river bed freeze all complete before the final canonical block
+        // stream is written. Nothing here re-derives geometry per tile.
+        CoastalSurfaceExportPipelineV2.PreparedCoastalSurfaceV2 prepared =
+                coastal.prepare(request, requestSource, draftIntent, baseline, surfaceRoot, budget, token);
+        WorldBlueprintV2 blueprint = prepared.blueprint();
+        CoastalSurfaceFieldsV2 fields = prepared.fields();
         int width = request.bounds().width();
         int length = request.bounds().length();
         requireSharedHydrologyOnly(blueprint);
@@ -186,6 +189,17 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
         Path reconciliationArtifactPath = hydrologyRoot.resolve("reconciliation-artifact.json");
         new HydrologyReconciliationArtifactCodecV2().write(
                 reconciliationArtifactPath, reconciliationArtifact);
+
+        // V2-19-05 global route freeze: the reconciled route becomes one bounded, immutable river bed
+        // field here — after routing and reconciliation, before the first tile — and is applied to the
+        // single resolver every tile is written from (CARVE_SOLID then ADD_FLUID, fluid owned by the
+        // fill). A run without a river plan freezes nothing and stays byte-identical.
+        Optional<RiverBedMaterializationV2.FrozenRiverBedV2> riverBed = RiverBedMaterializationV2.freeze(
+                blueprint.meanderingRiverPlans(), routingResult, reconciliationArtifact, fields,
+                request.bounds(), token);
+        CoastalSurfaceExportPipelineV2.GeneratedCoastalSurface coastalGenerated = coastal.completeWithTiles(
+                prepared, riverBed.map(bed -> bed::decorate), token);
+        GeneratedSurface surface = coastalGenerated.surface();
 
         HydrologyFieldSamplerV2 sampler = sharedFieldSampler(routingResult, blueprint.meanderingRiverPlans());
         HydrologyValidationInputV2 validationInput = new HydrologyValidationInputV2(
@@ -224,9 +238,9 @@ final class HydrologyPlanExportPipelineV2 implements ProductionExportPipelineV2 
                 blueprint,
                 new CoastalSurfaceTerrainQueryV2(
                         fields,
+                        coastalGenerated.blockResolver(),
                         request.bounds().minY(),
-                        request.bounds().maxY(),
-                        request.bounds().waterLevel()));
+                        request.bounds().maxY()));
     }
 
     private static void requireSharedHydrologyOnly(WorldBlueprintV2 blueprint) throws IOException {

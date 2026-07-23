@@ -17,6 +17,7 @@ import com.github.nankotsu029.landformcraft.model.v2.job.ExportJobSnapshotV2;
 import com.github.nankotsu029.landformcraft.format.v2.design.DesignArtifactsV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportResultV2;
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
+import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -103,6 +104,25 @@ public final class PaperV2WorkflowServiceV2 {
     ) {
         return executors.supplyIo(() -> io(() -> requests().constraintMap(
                 requestId, sourceSlug, file, expectedSha256, expectedWidth, expectedLength)));
+    }
+
+    /**
+     * Declares one constraint map source of any role from a sealed {@code promote} record (V2-19-04).
+     *
+     * <p>The promotion directory is operator-supplied and therefore resolved inside the plugin
+     * workspace like every other path this adapter accepts. Unlike {@link #setConstraintMap} the
+     * declaration is added rather than replacing the set.</p>
+     */
+    public CompletionStage<GenerationRequestV2> setConstraintSource(
+            String requestId,
+            String sourceSlug,
+            TerrainIntentV2.ConstraintMapRole role,
+            String relativePromotionDirectory,
+            String file
+    ) {
+        Path promotion = requireDirectory(relativePromotionDirectory, "promotion directory");
+        return executors.supplyIo(() -> io(() ->
+                requests().constraintSource(requestId, sourceSlug, role, promotion, file)));
     }
 
     /** Replaces the generation settings (seed／tile size); export-relevant since V2-18-09/10. */
@@ -328,6 +348,15 @@ public final class PaperV2WorkflowServiceV2 {
         if (!resolved.startsWith(workspaceRoot) || Files.isSymbolicLink(resolved)
                 || !Files.exists(resolved, LinkOption.NOFOLLOW_LINKS)) {
             throw new IllegalArgumentException("v2 " + description + " must exist inside the plugin workspace");
+        }
+        return resolved;
+    }
+
+    private Path requireDirectory(String relative, String description) {
+        Path resolved = requirePath(relative, description);
+        if (!Files.isDirectory(resolved, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IllegalArgumentException(
+                    "v2 " + description + " must be a directory inside the workspace");
         }
         return resolved;
     }

@@ -91,9 +91,10 @@ docs/design-v2/task-index.mdと対象Taskの関連docsを読み、
 - whole／tile／seam／thread／locale／timezone決定性
 - 1000角またはfeature最大寸法のresource budget test
 - Release 2 capabilityのstrict directory／ZIP read-back
+- 公開配線leafでは`V2-19-01`のsemantic materialization証拠（対象Featureのblock effect class宣言と、final canonical block streamからbaseline Releaseとの非空効果・形状conformanceを実測するintent-conformance portfolio case）
 - 親Phase統合TaskまたはV2-6能力catalog Taskの承認
 
-個別feature Taskでは実装した能力を `EXPERIMENTAL` または`PARTIAL`にできるが、親Phase統合Task前に `SUPPORTED` としない。child-plan限定をstandaloneへ、plan-level volumeをpublic Intentへ、offline exportをPaper applyへ波及させない。roleと能力定義の正本は [Terrain Feature Taxonomy](terrain-feature-taxonomy.md) とする。
+個別feature Taskでは実装した能力を `EXPERIMENTAL` または`PARTIAL`にできるが、親Phase統合Task前に `SUPPORTED` としない。child-plan限定をstandaloneへ、plan-level volumeをpublic Intentへ、offline exportをPaper applyへ波及させない。意図的no-op（capability spine smoke、定数healthy sampler、identity slice）はspine検証としては許容されるが、Feature昇格・materializationの証拠には使用できない（`V2-19-01`、2026-07-23人間承認）。plan-only metric（validation JSON等）はblock metricの代替にならず、support列と公開dispatch到達性は`public-dispatch-reachability-v1`で別軸として扱う。roleと能力定義の正本は [Terrain Feature Taxonomy](terrain-feature-taxonomy.md) とする。
 
 ### Release 2 capability
 

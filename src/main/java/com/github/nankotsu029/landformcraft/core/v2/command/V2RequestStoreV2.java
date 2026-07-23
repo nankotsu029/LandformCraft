@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.core.v2.command;
 
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
+import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +39,7 @@ public final class V2RequestStoreV2 {
             new GenerationRequestV2.GenerationSettings(0L, 64);
 
     private final LandformV2DataCodec codec = new LandformV2DataCodec();
+    private final PromotedConstraintSourceFactoryV2 sourceFactory = new PromotedConstraintSourceFactoryV2();
     private final Path root;
 
     public V2RequestStoreV2(Path root) {
@@ -158,6 +160,50 @@ public final class V2RequestStoreV2 {
         GenerationRequestV2 updated = new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
                 current.referenceImages(), List.of(source), current.generation(),
+                current.constraintMapBudget(), current.foundationBaseLevels());
+        publish(target, updated);
+        return updated;
+    }
+
+    /**
+     * Declares one constraint map source of any role from its sealed promotion record (V2-19-04).
+     *
+     * <p>Unlike {@link #constraintMap}, this adds to the declaration set instead of replacing it: a
+     * source with the same id is updated in place and every other source is preserved, which is what
+     * makes a multi-map request authorable at all. The role, encoding, dimensions and digest are read
+     * from the {@code promote} output rather than supplied as arguments, so a declaration always
+     * describes a map that was actually produced and nothing about the encoding is guessed.</p>
+     *
+     * <p>The map file itself is not copied here; the declaration names the request-relative path the
+     * operator places it at, exactly as {@link #constraintMap} does. Which roles a generator actually
+     * consumes is a separate question from which ones can be declared — today only a HARD
+     * {@code LAND_WATER_MASK} reaches a consumer.</p>
+     */
+    public GenerationRequestV2 constraintSource(
+            String requestId,
+            String sourceSlug,
+            TerrainIntentV2.ConstraintMapRole role,
+            Path promotionDirectory,
+            String file
+    ) throws IOException {
+        String id = requireRequestId(requestId);
+        Path target = resolve(id);
+        GenerationRequestV2 current = read(target, id);
+        GenerationRequestV2.ConstraintMapSource source = sourceFactory.fromPromotion(
+                promotionDirectory,
+                role,
+                "constraint-source:" + Objects.requireNonNull(sourceSlug, "sourceSlug"),
+                file);
+        List<GenerationRequestV2.ConstraintMapSource> sources = new ArrayList<>();
+        for (GenerationRequestV2.ConstraintMapSource existing : current.constraintMaps()) {
+            if (!existing.sourceId().equals(source.sourceId())) {
+                sources.add(existing);
+            }
+        }
+        sources.add(source);
+        GenerationRequestV2 updated = new GenerationRequestV2(
+                current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
+                current.referenceImages(), sources, current.generation(),
                 current.constraintMapBudget(), current.foundationBaseLevels());
         publish(target, updated);
         return updated;

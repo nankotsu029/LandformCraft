@@ -1,0 +1,35 @@
+{
+  "intentVersion": 2,
+  "intentId": "oblique-multi-view-64",
+  "theme": "V2-19-03 design fixture for the reference-image request: images stay soft AI cues and never become HARD geometry",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "cove-hinterland",
+      "kind": "PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      },
+      "parameters": {
+        "baseElevationAboveDatumBlocks": { "min": 2, "max": 4 },
+        "microReliefBlocks": { "min": 1, "max": 3 },
+        "groundwaterHandoffDepthBlocks": { "min": 4, "max": 8 }
+      },
+      "priority": 10,
+      "provenance": { "source": "MANUAL", "sourceId": "oblique-multi-view-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+    }
+  ],
+  "relations": [],
+  "constraints": [],
+  "environment": { "geologyPreset": "COASTAL_SAND_AND_GRAVEL", "climatePreset": "TEMPERATE_MARITIME", "ecologyPreset": "SPARSE_COASTAL" },
+  "mapReferences": [],
+  "structures": [],
+  "provenance": { "source": "MANUAL", "sourceId": "oblique-multi-view-fixture", "confidence": 1, "confirmationState": "CONFIRMED" }
+}

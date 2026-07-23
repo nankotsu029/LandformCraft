@@ -132,6 +132,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Strict codec for v2 diagnostic contracts. It does not publish a Release or invoke a generator. */
 public final class LandformV2DataCodec {
@@ -4790,7 +4791,8 @@ public final class LandformV2DataCodec {
         for (JsonNode reference : root.path("referenceImages")) {
             references.add(new GenerationRequestV2.ReferenceImageSource(
                     reference.path("id").textValue(), reference.path("file").textValue(),
-                    enumValue(reference, "role", GenerationRequestV2.ReferenceImageRole.class)));
+                    enumValue(reference, "role", GenerationRequestV2.ReferenceImageRole.class),
+                    Optional.ofNullable(reference.path("expectedSha256").textValue())));
         }
         List<GenerationRequestV2.ConstraintMapSource> maps = new ArrayList<>();
         for (JsonNode map : root.path("constraintMaps")) {
@@ -5316,6 +5318,8 @@ public final class LandformV2DataCodec {
             value.put("id", reference.id());
             value.put("file", reference.file());
             value.put("role", reference.role().name());
+            // Optional since V2-19-03: omitted when absent, so pre-existing requests keep their bytes.
+            reference.expectedSha256().ifPresent(sha -> value.put("expectedSha256", sha));
         }
         ArrayNode maps = node.putArray("constraintMaps");
         for (GenerationRequestV2.ConstraintMapSource map : request.constraintMaps()) {

@@ -17,6 +17,7 @@ import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformMars
 import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformMountainRangeModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformOceanBasinModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformPlainModuleV2;
+import com.github.nankotsu029.landformcraft.model.v2.foundation.PlainPlanV2;
 import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformRiverModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformRockyCoastModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformSeaCliffModuleV2;
@@ -63,7 +64,10 @@ class FoundationPhaseGateV2Test {
 
     /** Every FeatureKind whose foundation vertical slice was added or completed by V2-9-01..13. */
     private static final List<TerrainIntentV2.FeatureKind> FOUNDATION_KINDS = List.of(
-            TerrainIntentV2.FeatureKind.PLAIN,
+            // PLAIN moved off the diagnostic module onto LandformPlainModuleV2 in V2-19-07 (macro
+            // foundation producer tier, ADR 0038 D1 + ADR 0039 Candidate A offline production route),
+            // so it is no longer diagnostic-only and is removed from this V2-9 stability list; its own
+            // no-false-promotion assertions live below.
             TerrainIntentV2.FeatureKind.HILL_RANGE,
             TerrainIntentV2.FeatureKind.MOUNTAIN_RANGE,
             TerrainIntentV2.FeatureKind.VALLEY,
@@ -103,6 +107,15 @@ class FoundationPhaseGateV2Test {
             assertFalse(catalog.hasValidatorCapability(kind), kind.name());
             assertFalse(catalog.hasPreviewCapability(kind), kind.name());
         }
+
+        // V2-19-07 promoted exactly one of them, and only as far as a dedicated module binding: the
+        // module itself stays EXPERIMENTAL and the kind gains validator/preview dispatch because its
+        // own module declares those capabilities — not because this gate promoted anything.
+        ModuleDescriptorV2 plain = catalog.requireFor(TerrainIntentV2.FeatureKind.PLAIN);
+        assertEquals(PlainPlanV2.MODULE_ID, plain.moduleId());
+        assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL, plain.lifecycleStatus());
+        assertTrue(catalog.hasValidatorCapability(TerrainIntentV2.FeatureKind.PLAIN));
+        assertTrue(catalog.hasPreviewCapability(TerrainIntentV2.FeatureKind.PLAIN));
 
         for (Map.Entry<String, Supplier<ModuleDescriptorV2>> module : dedicatedModules().entrySet()) {
             assertEquals(ModuleDescriptorV2.LifecycleStatus.EXPERIMENTAL,

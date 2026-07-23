@@ -38,6 +38,13 @@ public record ConformanceTargetSetV2(
     public static final String CONTRACT_VERSION = "conformance-target-set-v1";
     /** Canonical land/water contract field the desired raster and actual field are both sampled through. */
     public static final String LAND_WATER_FIELD_ID = BuiltInLandformModuleCatalogV2.CONTRACT_FIELD_ID;
+    /**
+     * Canonical surface-height contract field of a {@code HEIGHT_GUIDE} desired raster (V2-19-06).
+     *
+     * <p>Values are block-millionths, matching the published {@code DESIRED_HEIGHT} /
+     * {@code ACTUAL_HEIGHT} sidecars a caller samples this id through.</p>
+     */
+    public static final String HEIGHT_GUIDE_FIELD_ID = "intent.height-guide";
 
     public ConformanceTargetSetV2 {
         contractVersion = Objects.requireNonNull(contractVersion, "contractVersion");
@@ -85,9 +92,10 @@ public record ConformanceTargetSetV2(
             targets.add(ConformanceTargetClassifierV2.classify(target));
         }
         for (TerrainIntentV2.ConstraintMapBinding binding : mapReferences) {
-            if (binding.role() != TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK) {
-                // Only the land/water mask has a per-cell desired raster today. Height guides and zone
-                // labels are not yet conformance-checked and are intentionally not fabricated here.
+            // V2-19-06 added the HEIGHT_GUIDE raster, whose generation-side consumer is the macro
+            // foundation's background elevation source. ZONE_LABEL_MAP still has no consumer and no
+            // per-cell desired field, and is intentionally not fabricated here.
+            if (binding.role() == TerrainIntentV2.ConstraintMapRole.ZONE_LABEL_MAP) {
                 continue;
             }
             targets.add(desiredRasterTarget(binding, declaredDigestBySourceId));
@@ -108,11 +116,25 @@ public record ConformanceTargetSetV2(
         ConformanceProvenanceV2 provenance = new ConformanceProvenanceV2(
                 binding.role(), binding.sourceId(), boundDigest, origin);
         return new ConformanceTargetV2.DesiredRaster(
-                "conformance-desired-raster-" + binding.id(), LAND_WATER_FIELD_ID, binding.strength(), provenance);
+                "conformance-desired-raster-" + binding.id(), fieldIdOf(binding.role()),
+                binding.strength(), provenance);
+    }
+
+    private static String fieldIdOf(TerrainIntentV2.ConstraintMapRole role) {
+        return switch (role) {
+            case LAND_WATER_MASK -> LAND_WATER_FIELD_ID;
+            case HEIGHT_GUIDE -> HEIGHT_GUIDE_FIELD_ID;
+            case ZONE_LABEL_MAP -> throw new IllegalArgumentException(
+                    "zone label maps carry no desired raster target");
+        };
     }
 
     private static String artifactDigest(TerrainIntentV2.ConstraintMapBinding binding) {
-        String prefix = "constraint:land-water:sha256-";
+        String prefix = switch (binding.role()) {
+            case LAND_WATER_MASK -> "constraint:land-water:sha256-";
+            case HEIGHT_GUIDE -> "constraint:height-guide:sha256-";
+            case ZONE_LABEL_MAP -> "constraint:zone-label-map:sha256-";
+        };
         String artifactId = binding.artifactId();
         return artifactId.startsWith(prefix) ? artifactId.substring(prefix.length()) : artifactId;
     }

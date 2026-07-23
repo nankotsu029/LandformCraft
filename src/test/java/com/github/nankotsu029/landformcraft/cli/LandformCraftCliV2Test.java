@@ -61,6 +61,23 @@ class LandformCraftCliV2Test {
     }
 
     @Test
+    void exportVerbPublishesTheFoundationProducerOfflineProductionRoute(@TempDir Path root) {
+        // V2-19-07: an intent declaring PLAIN reaches the public surface export path through the real
+        // CLI — the macro foundation producer runs inside the same surface-2_5d pipeline, so the
+        // capability set is unchanged and the Release stays placement-eligible.
+        String plainRequest = "examples/v2/diagnostic/harbor-cove-64-honored-plain.request-v2.json";
+        String plainIntent = "examples/v2/diagnostic/harbor-cove-64-honored-plain.terrain-intent-v2.json";
+        Result result = run("v2", "export", plainRequest, plainIntent,
+                root.resolve("exports").toString(), "cli-export-plain", "water", "54", "46");
+
+        assertEquals(0, result.exitCode(), result.error());
+        assertTrue(result.output().contains("requiredCapabilities: [surface-2_5d]"), result.output());
+        assertTrue(result.output().contains("placementEligible: true"), result.output());
+        assertTrue(Files.isDirectory(root.resolve("exports").resolve("cli-export-plain")));
+        assertTrue(Files.isRegularFile(root.resolve("exports").resolve("cli-export-plain.zip")));
+    }
+
+    @Test
     void generateVerbPublishesTheDirectoryWithoutAZip(@TempDir Path root) {
         Result result = run("v2", "generate", REQUEST, INTENT,
                 root.resolve("exports").toString(), "cli-generate", "water", "54", "46");
@@ -616,6 +633,231 @@ class LandformCraftCliV2Test {
             }
         }
         writePng(image, path);
+    }
+
+    /**
+     * V2-19-04: source → binding → compile → consumer, entirely from the public command surface.
+     *
+     * <p>Before this task the chain broke twice: only one land/water source could be declared (each
+     * declaration replacing the last), and the intent binding — whose canonical {@code artifactId}
+     * embeds the declared input digest — had to be hand-written, because no verb produced one.</p>
+     */
+    @Test
+    void constraintSourceAndIntentBindingCarryAnAuthoredRequestIntoTheExport(@TempDir Path root)
+            throws Exception {
+        Path image = root.resolve("coast.png");
+        writeLandWaterPngFromMask(image,
+                Path.of("examples/v2/diagnostic/maps/harbor-cove-64-honored-land-water-u8.png"));
+        Path draftDir = root.resolve("draft");
+        assertEquals(0, run("v2", "extract", "land-water", image.toString(), draftDir.toString()).exitCode());
+        Path promoteDir = root.resolve("promoted");
+        Result promoted = run("v2", "promote", "land-water", draftDir.toString(),
+                promoteDir.toString(), "1", "reject");
+        assertEquals(0, promoted.exitCode(), promoted.error());
+
+        String data = root.resolve("data").toString();
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64-honored").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64-honored",
+                "64", "64", "32", "72", "50").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "generation", "harbor-cove-64-honored",
+                "827413", "64").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "foundation-base-levels",
+                "harbor-cove-64-honored", "54", "46").exitCode());
+
+        // 宣言: the promoted map is declared with its role and encoding read from the promotion record.
+        Result declared = run("--data-dir", data, "v2", "request", "constraint-source",
+                "harbor-cove-64-honored", "coast-mask", "land-water", promoteDir.toString(),
+                "maps/extracted-coast-land-water.png");
+        assertEquals(0, declared.exitCode(), declared.error());
+        assertTrue(declared.output().contains("constraintMaps: 1"), declared.output());
+
+        Path requests = root.resolve("data").resolve("v2").resolve("requests");
+        Path stored = requests.resolve("harbor-cove-64-honored.request-v2.json");
+        Files.createDirectories(requests.resolve("maps"));
+        Files.copy(promoteDir.resolve("land-water.png"),
+                requests.resolve("maps").resolve("extracted-coast-land-water.png"));
+
+        // binding: the artifactId digest is computed from the declaration, never typed by the author.
+        Path boundIntent = root.resolve("bound.terrain-intent-v2.json");
+        Result bound = run("v2", "intent", "bind", stored.toString(), INTENT, boundIntent.toString(),
+                "coast-mask", "land-water", "hard", "nearest", "0");
+        assertEquals(0, bound.exitCode(), bound.error());
+        String sha256 = valueOf(promoted.output(), "sha256");
+        assertTrue(bound.output().contains("artifactId: constraint:land-water:sha256-" + sha256),
+                bound.output());
+        assertTrue(bound.output().contains("generatorConsumer: MACRO_FOUNDATION"), bound.output());
+
+        // 確認: the read-only verb re-derives the same value and re-resolves the map bytes.
+        Result verified = run("v2", "intent", "bindings", stored.toString(), boundIntent.toString());
+        assertEquals(0, verified.exitCode(), verified.error());
+        assertTrue(verified.output().contains("consistent: true"), verified.output());
+
+        // consumer: the authored request and its bound intent reach the production export.
+        Result exported = run("v2", "export", stored.toString(), boundIntent.toString(),
+                root.resolve("exports").toString(), "bound-export", "water", "54", "46");
+        assertEquals(0, exported.exitCode(), exported.error());
+        assertTrue(exported.output().contains("placementEligible: true"), exported.output());
+    }
+
+    /**
+     * V2-19-06: the same chain carrying a second map role through to a consumer. Before this task the
+     * export required exactly one constraint map, so a request that declared an elevation guide could
+     * be authored and verified but never exported.
+     */
+    @Test
+    void aDeclaredHeightGuideReachesTheProductionExportFromTheCli(@TempDir Path root) throws Exception {
+        String data = root.resolve("data").toString();
+        Path requests = root.resolve("data").resolve("v2").resolve("requests");
+        Path stored = requests.resolve("harbor-cove-64-honored.request-v2.json");
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64-honored").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64-honored",
+                "64", "64", "32", "72", "50").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "generation", "harbor-cove-64-honored",
+                "827413", "64").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "foundation-base-levels",
+                "harbor-cove-64-honored", "54", "46").exitCode());
+
+        Path maskImage = root.resolve("coast.png");
+        writeLandWaterPngFromMask(maskImage,
+                Path.of("examples/v2/diagnostic/maps/harbor-cove-64-honored-land-water-u8.png"));
+        assertEquals(0, run("v2", "extract", "land-water", maskImage.toString(),
+                root.resolve("mask-draft").toString()).exitCode());
+        assertEquals(0, run("v2", "promote", "land-water", root.resolve("mask-draft").toString(),
+                root.resolve("mask-promoted").toString(), "1", "reject").exitCode());
+
+        Path reliefImage = root.resolve("relief.png");
+        writeHeightGuidePng(reliefImage, 64, 64);
+        assertEquals(0, run("v2", "extract", "height-guide", reliefImage.toString(),
+                root.resolve("relief-draft").toString()).exitCode());
+        // 1/8-block per sample keeps the promoted guide's whole declared range inside the request's
+        // 32..72 extent; the request record refuses a height encoding that could leave it.
+        Result promotedGuide = run("v2", "promote", "height-guide", root.resolve("relief-draft").toString(),
+                root.resolve("relief-promoted").toString(), stored.toString(), "1",
+                "blocks-above-min-y", "125000", "0");
+        assertEquals(0, promotedGuide.exitCode(), promotedGuide.error());
+
+        assertEquals(0, run("--data-dir", data, "v2", "request", "constraint-source",
+                "harbor-cove-64-honored", "coast-mask", "land-water",
+                root.resolve("mask-promoted").toString(), "maps/coast-land-water.png").exitCode());
+        Result declared = run("--data-dir", data, "v2", "request", "constraint-source",
+                "harbor-cove-64-honored", "coast-height", "height-guide",
+                root.resolve("relief-promoted").toString(), "maps/coast-height-guide.png");
+        assertEquals(0, declared.exitCode(), declared.error());
+        assertTrue(declared.output().contains("constraintMaps: 2"), declared.output());
+
+        Files.createDirectories(requests.resolve("maps"));
+        Files.copy(root.resolve("mask-promoted").resolve("land-water.png"),
+                requests.resolve("maps").resolve("coast-land-water.png"));
+        Files.copy(root.resolve("relief-promoted").resolve("height-guide.png"),
+                requests.resolve("maps").resolve("coast-height-guide.png"));
+
+        Path boundIntent = root.resolve("bound.terrain-intent-v2.json");
+        assertEquals(0, run("v2", "intent", "bind", stored.toString(), INTENT, boundIntent.toString(),
+                "coast-mask", "land-water", "hard", "nearest", "0").exitCode());
+        Result boundGuide = run("v2", "intent", "bind", stored.toString(), boundIntent.toString(),
+                boundIntent.toString(), "coast-height", "height-guide", "soft", "nearest", "2", "500000");
+        assertEquals(0, boundGuide.exitCode(), boundGuide.error());
+        // The guide now has a real generation-side consumer, which authoring reports honestly.
+        assertTrue(boundGuide.output().contains("generatorConsumer: MACRO_FOUNDATION"), boundGuide.output());
+
+        Result exported = run("v2", "export", stored.toString(), boundIntent.toString(),
+                root.resolve("exports").toString(), "guided-export", "water", "54", "46");
+        assertEquals(0, exported.exitCode(), exported.error());
+        assertTrue(exported.output().contains("placementEligible: true"), exported.output());
+    }
+
+    @Test
+    void intentBindingsFailsClosedWhenTheMapBytesNoLongerMatchTheDeclaration(@TempDir Path root)
+            throws Exception {
+        Path promoteDir = root.resolve("promoted");
+        Path draftDir = root.resolve("draft");
+        Path image = root.resolve("coast.png");
+        writeLandWaterPng(image, 64, 64);
+        assertEquals(0, run("v2", "extract", "land-water", image.toString(), draftDir.toString()).exitCode());
+        assertEquals(0, run("v2", "promote", "land-water", draftDir.toString(),
+                promoteDir.toString(), "1", "reject").exitCode());
+
+        String data = root.resolve("data").toString();
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "harbor-cove-64-honored").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "harbor-cove-64-honored",
+                "64", "64", "32", "72", "50").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "constraint-source",
+                "harbor-cove-64-honored", "coast-mask", "land-water", promoteDir.toString(),
+                "maps/coast.png").exitCode());
+        Path requests = root.resolve("data").resolve("v2").resolve("requests");
+        Path stored = requests.resolve("harbor-cove-64-honored.request-v2.json");
+        Files.createDirectories(requests.resolve("maps"));
+        Files.copy(promoteDir.resolve("land-water.png"), requests.resolve("maps").resolve("coast.png"));
+        Path boundIntent = root.resolve("bound.terrain-intent-v2.json");
+        assertEquals(0, run("v2", "intent", "bind", stored.toString(), INTENT, boundIntent.toString(),
+                "coast-mask", "land-water", "hard", "nearest", "0").exitCode());
+
+        // Swapping the declared map after binding must be caught before any export runs.
+        writeLandWaterPng(requests.resolve("maps").resolve("coast.png"), 64, 64);
+        Files.write(requests.resolve("maps").resolve("coast.png"),
+                Files.readAllBytes(Path.of("examples/v2/diagnostic/maps/shore-2to1-400-land-water-u8.png")));
+
+        Result verified = run("v2", "intent", "bindings", stored.toString(), boundIntent.toString());
+        assertEquals(1, verified.exitCode(), verified.output());
+        assertTrue(verified.error().contains("LFC-REQUEST-INVALID"), verified.error());
+    }
+
+    /**
+     * V2-19-03: reference-image designs are reachable from the real CLI. Before this task the
+     * orchestrator dropped the declared images and the provider request rejected the mismatch, so
+     * this exact command failed for every request carrying an image.
+     */
+    @Test
+    void designWithReferenceImagesPublishesAPackageFromTheCli(@TempDir Path root) throws Exception {
+        Path workspace = copyObliqueMultiView(root);
+
+        Result result = run("v2", "design", "fixture",
+                workspace.resolve("request-v2.json").toString(),
+                "terrain-intent-v2.json",
+                root.resolve("designs").toString());
+
+        assertEquals(0, result.exitCode(), result.error());
+        assertTrue(result.output().contains("Published verified v2 design package"), result.output());
+        assertTrue(result.output().contains("requestId: oblique-multi-view-64"), result.output());
+        Path published = Path.of(valueOf(result.output(), "directory"));
+        assertTrue(Files.isRegularFile(published.resolve("terrain-intent-v2.json")), result.output());
+        assertTrue(Files.isRegularFile(published.resolve("audit-v2.json")), result.output());
+        // The design package seals the intent only; images are AI cues, not published artifacts.
+        assertFalse(Files.exists(published.resolve("references")), result.output());
+    }
+
+    @Test
+    void designFailsClosedWhenADeclaredReferenceImageIsMissing(@TempDir Path root) throws Exception {
+        Path workspace = copyObliqueMultiView(root);
+        Files.delete(workspace.resolve("references/cove-north.png"));
+
+        Result result = run("v2", "design", "fixture",
+                workspace.resolve("request-v2.json").toString(),
+                "terrain-intent-v2.json",
+                root.resolve("designs").toString());
+
+        assertEquals(1, result.exitCode(), result.output());
+        assertTrue(result.error().contains("LFC-REQUEST-INVALID"), result.error());
+        assertTrue(result.error().contains("Design failed safely (INVALID_REQUEST)."), result.error());
+        assertFalse(result.error().contains(root.toString()),
+                "the safe message must not echo an absolute filesystem path");
+        assertFalse(Files.exists(root.resolve("designs").resolve("oblique-multi-view-64")),
+                "a rejected design must not leave a package behind");
+    }
+
+    private static Path copyObliqueMultiView(Path root) throws IOException {
+        Path workspace = root.resolve("design-images");
+        Files.createDirectories(workspace.resolve("references"));
+        Files.copy(Path.of("examples/v2/diagnostic/oblique-multi-view.request-v2.json"),
+                workspace.resolve("request-v2.json"));
+        Files.copy(Path.of("examples/v2/diagnostic/oblique-multi-view.terrain-intent-v2.json"),
+                workspace.resolve("terrain-intent-v2.json"));
+        try (var images = Files.list(Path.of("examples/v2/diagnostic/references"))) {
+            for (Path image : images.sorted().toList()) {
+                Files.copy(image, workspace.resolve("references").resolve(image.getFileName().toString()));
+            }
+        }
+        return workspace;
     }
 
     private static void writePng(BufferedImage image, Path path) throws IOException {

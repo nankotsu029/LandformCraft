@@ -6,6 +6,7 @@ import com.github.nankotsu029.landformcraft.model.v2.WorldBlueprintV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalFoundationModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalLandformModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionModuleV2;
+import com.github.nankotsu029.landformcraft.generator.v2.foundation.LandformPlainModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.geology.GeologyFoundationModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.climate.ClimateFieldModulesV2;
 import com.github.nankotsu029.landformcraft.generator.v2.environment.water.WaterConditionFieldModulesV2;
@@ -51,6 +52,7 @@ public final class BuiltInLandformModuleCatalogV2 {
             new CoastalValidationPreviewModuleV2();
     private static final HydrologyValidationPreviewModuleV2 HYDROLOGY_VALIDATION_PREVIEW_MODULE =
             new HydrologyValidationPreviewModuleV2();
+    private static final LandformPlainModuleV2 LANDFORM_PLAIN_MODULE = new LandformPlainModuleV2();
     private static final GeologyFoundationModuleV2 GEOLOGY_FOUNDATION_MODULE =
             new GeologyFoundationModuleV2();
     private static final ClimateFieldModulesV2 CLIMATE_FIELD_MODULES = new ClimateFieldModulesV2();
@@ -74,6 +76,10 @@ public final class BuiltInLandformModuleCatalogV2 {
     private static final List<WorldBlueprintV2.StageDescriptor> STAGES = List.of(
             new WorldBlueprintV2.StageDescriptor(INPUT_STAGE_ID, List.of()),
             new WorldBlueprintV2.StageDescriptor(FEATURE_STAGE_ID, List.of(INPUT_STAGE_ID)),
+            // V2-19-07: the foundation producer tier resolves before feature composition (ADR 0038
+            // D5-1), so its stage depends only on the compiled inputs.
+            new WorldBlueprintV2.StageDescriptor(
+                    LandformPlainModuleV2.STAGE_ID, List.of(INPUT_STAGE_ID)),
             new WorldBlueprintV2.StageDescriptor(
                     GeologyFoundationModuleV2.STAGE_ID, List.of(FEATURE_STAGE_ID)),
             new WorldBlueprintV2.StageDescriptor(
@@ -173,6 +179,7 @@ public final class BuiltInLandformModuleCatalogV2 {
                     List.of("diagnostic.contract", "diagnostic.geometry"),
                     List.of("diagnostic.geometry")
             ),
+            LANDFORM_PLAIN_MODULE.descriptor(),
             GEOLOGY_FOUNDATION_MODULE.descriptor(),
             CLIMATE_FIELD_MODULES.priorDescriptor(),
             CLIMATE_FIELD_MODULES.finalDescriptor(),
@@ -386,6 +393,7 @@ public final class BuiltInLandformModuleCatalogV2 {
         result.put(TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR, CoastalFoundationModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.HARBOR_BASIN, CoastalFoundationModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.ROCKY_CAPE, CoastalFoundationModuleV2.MODULE_ID);
+        result.put(TerrainIntentV2.FeatureKind.PLAIN, LandformPlainModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.MEANDERING_RIVER, HydrologyRiverModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.RIVER, HydrologyRiverModuleV2.MODULE_ID);
         result.put(TerrainIntentV2.FeatureKind.LAKE, HydrologyLakeModuleV2.MODULE_ID);
@@ -411,6 +419,7 @@ public final class BuiltInLandformModuleCatalogV2 {
                         && kind != TerrainIntentV2.FeatureKind.LAKE
                         && kind != TerrainIntentV2.FeatureKind.CANYON
                         && kind != TerrainIntentV2.FeatureKind.WATERFALL)
+                .filter(kind -> kind != TerrainIntentV2.FeatureKind.PLAIN)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.DELTA)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.TIDAL_CHANNEL_NETWORK)
                 .filter(kind -> kind != TerrainIntentV2.FeatureKind.MANGROVE_WETLAND)

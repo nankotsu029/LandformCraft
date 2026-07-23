@@ -42,10 +42,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Production generation stage of the Release 2 export path (V2-12-02).
@@ -75,6 +77,11 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             List.of(
                     TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
                     TerrainIntentV2.FeatureKind.HARBOR_BASIN,
+                    // V2-19-07: PLAIN executes on this pipeline as a macro foundation producer, not as
+                    // a fifth coastal modifier — the macro foundation stage resolves it before the
+                    // modifiers compose (ADR 0038 D1/D5-1). Its dispatch route is OFFLINE_PRODUCTION
+                    // (ADR 0039 Candidate A): the coastal four stay the exact PRODUCTION_CONNECTED set.
+                    TerrainIntentV2.FeatureKind.PLAIN,
                     TerrainIntentV2.FeatureKind.ROCKY_CAPE,
                     TerrainIntentV2.FeatureKind.SANDY_BEACH),
             List.of(TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS),
@@ -111,6 +118,31 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
      * hydrology overlay can sample provisional surface height without regenerating the coast.
      */
     GeneratedCoastalSurface generateWithFields(
+            GenerationRequestV2 request,
+            Path requestSource,
+            TerrainIntentV2 draftIntent,
+            SurfaceBaselineV2 baseline,
+            Path workRoot,
+            ExportBudgetV2 budget,
+            CancellationToken token
+    ) throws IOException {
+        return completeWithTiles(
+                prepare(request, requestSource, draftIntent, baseline, workRoot, budget, token),
+                Optional.empty(), token);
+    }
+
+    /**
+     * Everything of a coastal surface Release except the offline tiles: sealed request and intent,
+     * constraint field sidecars, frozen Blueprint, the fail-closed gates, field-only validation and
+     * the diagnostic preview set.
+     *
+     * <p>V2-19-05 split this out of {@link #generateWithFields} so a downstream stage can freeze its
+     * own global route — the reconciled river route — from the frozen Blueprint and the finished
+     * surface fields <em>before</em> the first tile is written, and then contribute one
+     * {@link SurfaceBlockOverlayV2} to {@link #completeWithTiles}. Tile writing stays the single
+     * place the final canonical block stream is produced.</p>
+     */
+    PreparedCoastalSurfaceV2 prepare(
             GenerationRequestV2 request,
             Path requestSource,
             TerrainIntentV2 draftIntent,
@@ -183,16 +215,13 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
         Path constraintRoot = workRoot.resolve("constraints");
         List<FieldArtifactDescriptorV2> descriptors = writeConstraintFields(
                 constraintRoot, request, fields, foundation, width, length, token);
-        FieldArtifactDescriptorV2 desired = descriptorFor(
-                descriptors, FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER);
 
-        // V2-18-07: bind the land-water desired reference to the declared INPUT mask digest, not to the
+        // V2-18-07: bind each desired reference to the declared INPUT digest of its source, not to the
         // field the pipeline just generated. The old self-rebinding to desired.semanticChecksum() made
         // "desired" indistinguishable from "actual"; binding to the request's declared constraint-map
-        // digest records the honest provenance (the input mask the desired field is meant to reproduce).
-        // The mask bytes are still not resolved into the field here — that is V2-18-09.
-        String maskDigest = request.constraintMaps().getFirst().expectedSha256();
-        TerrainIntentV2 intent = withLandWaterBinding(draftIntent, maskDigest);
+        // digest records the honest provenance (the input map the desired field is meant to reproduce).
+        // V2-19-06 does this per declared source instead of for the single map the path used to allow.
+        TerrainIntentV2 intent = withDeclaredInputDigests(draftIntent, request, foundation.isPresent());
         Path intentPath = workRoot.resolve("terrain-intent.json");
         data.writeTerrainIntent(intentPath, intent);
         String intentChecksum = data.terrainIntentChecksum(intent);
@@ -204,14 +233,14 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
 
         ConstraintFieldIndexV2 index = new ConstraintFieldIndexV2(
                 1, request.requestId(), requestChecksum, intentChecksum,
-                List.of(landWaterBinding(intent, desired, descriptors)), descriptors);
+                appliedBindings(intent, descriptors), descriptors);
         Path indexPath = constraintRoot.resolve("index.json");
         indexCodec.write(indexPath, index);
         indexCodec.readAndVerify(indexPath, constraintRoot, requestChecksum, intentChecksum, token);
 
-        Set<TerrainIntentV2.ConstraintMapRole> consumedMapRoles = foundation.isPresent()
-                ? Set.of(TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK)
-                : Set.of();
+        // V2-19-06: the guide is consumed by the same macro foundation stage as the mask, so an
+        // honored HEIGHT_GUIDE stops being reported as an unconsumed HARD map reference.
+        Set<TerrainIntentV2.ConstraintMapRole> consumedMapRoles = consumedMapRoles(foundation);
         IntentContributionCoverageV2 coverage = IntentContributionCoverageV2.compute(
                 intent, fields, DESCRIPTOR.contractOnlyKinds(), gateContract, consumedMapRoles);
         // V2-18-10 (ADR 0038 D7-2/D8-2): the foundation owner metric V2-18-02 reported and V2-18-09
@@ -226,10 +255,11 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
 
         // V2-18-09: on the foundation path the desired sampler reads the resolved INPUT mask, so the
         // residual metrics measure conformance against the declared intent instead of the former
-        // desired == actual self-reference (audit item 3). The legacy path keeps the self-sampled
-        // input unchanged until V2-18-10 retires it.
+        // desired == actual self-reference (audit item 3). V2-19-06 adds the declared elevation guide,
+        // which turns coastal.height.residual-max from a structurally-zero metric into a measurement.
+        // The legacy path keeps the self-sampled input unchanged until V2-18-10 retires it.
         CoastalValidationInputV2 validationInput = foundation.isPresent()
-                ? new CoastalValidationInputV2(blueprint, maskDesiredSampler(foundation.get(), fields), fields)
+                ? new CoastalValidationInputV2(blueprint, inputDesiredSampler(foundation.get(), fields), fields)
                 : new CoastalValidationInputV2(blueprint, fields, fields);
         CoastalValidationReportV2 report = new CoastalValidatorV2().validate(validationInput, token);
         if (!report.passesHardValidation()) {
@@ -252,27 +282,93 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                 previewRoot, blueprint.canonicalChecksum(),
                 CoastalDiagnosticFieldFactoryV2.create(validationInput, report), token);
 
-        List<SurfaceReleaseSourceV2.TileSource> tiles = writeTiles(
-                workRoot.resolve("tiles"), tilePlan, blueprint,
-                fields.resolver(bounds.minY(), bounds.waterLevel()),
-                bounds.minY(), bounds.maxY(), token);
-
-        SurfaceReleaseSourceV2 source = new SurfaceReleaseSourceV2(
-                requestPath, intentPath, blueprintPath, indexPath, constraintRoot,
-                validationPath, previewRoot.resolve("index.json"), previewRoot, tiles);
         List<ExportWarningV2> warnings = foundation.isPresent()
                 ? List.of(ExportWarningV2.surfaceBaselineDeprecated())
                 : List.of();
-        return new GeneratedCoastalSurface(
-                new GeneratedSurface(source, blueprint, Optional.of(coverage), warnings), fields);
+        return new PreparedCoastalSurfaceV2(
+                bounds, tilePlan, blueprint, fields, coverage, warnings,
+                workRoot.resolve("tiles"), requestPath, intentPath, blueprintPath, indexPath,
+                constraintRoot, validationPath, previewRoot);
     }
 
     /**
-     * Desired sampler over the resolved input mask: land-water comes straight from the mask (role
-     * no-data cells excluded from comparison), and no other field — in particular no surface height,
-     * which the mask does not constrain — declares a desired value.
+     * Writes the final canonical block stream and assembles the Release source. The optional overlay
+     * is applied once, to the single resolver every tile is written from, so a route frozen before
+     * this call cannot drift between tiles or across a seam.
      */
-    private static CoastalFieldSamplerV2 maskDesiredSampler(
+    GeneratedCoastalSurface completeWithTiles(
+            PreparedCoastalSurfaceV2 prepared,
+            Optional<SurfaceBlockOverlayV2> overlay,
+            CancellationToken token
+    ) throws IOException {
+        Objects.requireNonNull(prepared, "prepared");
+        Objects.requireNonNull(overlay, "overlay");
+        GenerationRequestV2.Bounds bounds = prepared.bounds();
+        TerrainBlockResolver resolver = prepared.resolver(overlay);
+        List<SurfaceReleaseSourceV2.TileSource> tiles = writeTiles(
+                prepared.tilesRoot(), prepared.tilePlan(), prepared.blueprint(), resolver,
+                bounds.minY(), bounds.maxY(), token);
+
+        SurfaceReleaseSourceV2 source = new SurfaceReleaseSourceV2(
+                prepared.requestPath(), prepared.intentPath(), prepared.blueprintPath(),
+                prepared.indexPath(), prepared.constraintRoot(), prepared.validationPath(),
+                prepared.previewRoot().resolve("index.json"), prepared.previewRoot(), tiles);
+        return new GeneratedCoastalSurface(
+                new GeneratedSurface(source, prepared.blueprint(),
+                        Optional.of(prepared.coverage()), prepared.warnings()),
+                prepared.fields(), resolver);
+    }
+
+    /**
+     * Decorates the canonical surface block resolver before any tile is written (V2-19-05). The
+     * decorated resolver is the only block source of the published Release, so an overlay is by
+     * construction visible in the final canonical block stream the materialization gate measures.
+     */
+    @FunctionalInterface
+    interface SurfaceBlockOverlayV2 {
+        TerrainBlockResolver decorate(TerrainBlockResolver base);
+    }
+
+    /** Complete coastal surface state, tiles excluded. */
+    record PreparedCoastalSurfaceV2(
+            GenerationRequestV2.Bounds bounds,
+            TilePlanV2 tilePlan,
+            WorldBlueprintV2 blueprint,
+            CoastalSurfaceFieldsV2 fields,
+            IntentContributionCoverageV2 coverage,
+            List<ExportWarningV2> warnings,
+            Path tilesRoot,
+            Path requestPath,
+            Path intentPath,
+            Path blueprintPath,
+            Path indexPath,
+            Path constraintRoot,
+            Path validationPath,
+            Path previewRoot
+    ) {
+        PreparedCoastalSurfaceV2 {
+            Objects.requireNonNull(bounds, "bounds");
+            Objects.requireNonNull(tilePlan, "tilePlan");
+            Objects.requireNonNull(blueprint, "blueprint");
+            Objects.requireNonNull(fields, "fields");
+            Objects.requireNonNull(coverage, "coverage");
+            warnings = List.copyOf(warnings);
+        }
+
+        TerrainBlockResolver resolver(Optional<SurfaceBlockOverlayV2> overlay) {
+            TerrainBlockResolver base = fields.resolver(bounds.minY(), bounds.waterLevel());
+            return overlay.map(value -> value.decorate(base)).orElse(base);
+        }
+    }
+
+    /**
+     * Desired sampler over the resolved foundation input: land-water comes straight from the mask and
+     * surface height from the declared elevation guide, each only where its map specifies a value
+     * (role no-data cells are excluded from comparison). A field no declared input constrains — and,
+     * without a guide, that still includes surface height — has no desired value at all rather than a
+     * self-sampled one.
+     */
+    private static CoastalFieldSamplerV2 inputDesiredSampler(
             MacroFoundationV2 foundation,
             CoastalSurfaceFieldsV2 fields
     ) {
@@ -293,15 +389,30 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                     int desired = foundation.desiredLandWaterAt(globalX, globalZ);
                     return desired == 0 || desired == 1 ? desired : CoastalValidationInputV2.NO_DATA;
                 }
+                if (CoastalTransitionModuleV2.SURFACE_HEIGHT_FIELD_ID.equals(fieldId)) {
+                    // MacroFoundationV2.NO_HEIGHT and CoastalValidationInputV2.NO_DATA are the same
+                    // sentinel, so an unguided cell simply drops out of the comparison.
+                    return foundation.desiredHeightMillionthsAt(globalX, globalZ);
+                }
                 return CoastalValidationInputV2.NO_DATA;
             }
         };
     }
 
-    record GeneratedCoastalSurface(GeneratedSurface surface, CoastalSurfaceFieldsV2 fields) {
+    /**
+     * {@code blockResolver} is the exact resolver the published tiles were written from (V2-19-05):
+     * downstream stages answer semantic queries from the final canonical block stream instead of
+     * re-deriving a second, possibly divergent one.
+     */
+    record GeneratedCoastalSurface(
+            GeneratedSurface surface,
+            CoastalSurfaceFieldsV2 fields,
+            TerrainBlockResolver blockResolver
+    ) {
         GeneratedCoastalSurface {
             Objects.requireNonNull(surface, "surface");
             Objects.requireNonNull(fields, "fields");
+            Objects.requireNonNull(blockResolver, "blockResolver");
         }
     }
 
@@ -337,47 +448,125 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
         }
     }
 
-    private static TerrainIntentV2 withLandWaterBinding(TerrainIntentV2 intent, String maskDigest) {
-        List<TerrainIntentV2.ConstraintMapBinding> bindings = intent.mapReferences();
-        if (bindings.size() != 1
-                || bindings.getFirst().role() != TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK) {
+    /**
+     * Rebinds every declared map reference to the declared input digest of its own source (V2-19-06).
+     *
+     * <p>The single-binding form this replaces could only ever describe the land-water mask. Roles and
+     * cardinality are validated by {@link MacroFoundationStageV2.FoundationInputRolesV2} on the
+     * foundation path, so an intent that reaches here declares exactly what the foundation consumed;
+     * on the legacy baseline path the pre-V2-19-06 single-mask requirement is kept verbatim.</p>
+     */
+    private static TerrainIntentV2 withDeclaredInputDigests(
+            TerrainIntentV2 intent,
+            GenerationRequestV2 request,
+            boolean foundationPath
+    ) {
+        List<TerrainIntentV2.ConstraintMapBinding> declared = intent.mapReferences();
+        if (!foundationPath && (declared.size() != 1
+                || declared.getFirst().role() != TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK)) {
             throw new IllegalArgumentException(
                     "surface-2_5d export requires exactly one LAND_WATER_MASK map binding");
         }
-        TerrainIntentV2.ConstraintMapBinding binding = bindings.getFirst();
-        TerrainIntentV2.ConstraintMapBinding bound = new TerrainIntentV2.ConstraintMapBinding(
-                binding.id(),
-                binding.sourceId(),
-                binding.role(),
-                "constraint:land-water:sha256-" + maskDigest,
-                binding.strength(),
-                binding.sampling(),
-                binding.toleranceBlocks(),
-                binding.weightMillionths());
+        List<TerrainIntentV2.ConstraintMapBinding> bound = new ArrayList<>(declared.size());
+        for (TerrainIntentV2.ConstraintMapBinding binding : declared) {
+            GenerationRequestV2.ConstraintMapSource source = declaredSource(request, binding.sourceId());
+            bound.add(new TerrainIntentV2.ConstraintMapBinding(
+                    binding.id(),
+                    binding.sourceId(),
+                    binding.role(),
+                    artifactPrefix(binding.role()) + source.expectedSha256(),
+                    binding.strength(),
+                    binding.sampling(),
+                    binding.toleranceBlocks(),
+                    binding.weightMillionths()));
+        }
         return new TerrainIntentV2(
                 intent.intentVersion(), intent.intentId(), intent.theme(), intent.coordinateSystem(),
                 intent.features(), intent.relations(), intent.constraints(), intent.environment(),
-                List.of(bound), intent.structures(), intent.provenance());
+                List.copyOf(bound), intent.structures(), intent.provenance());
     }
 
-    private static ConstraintFieldIndexV2.AppliedBinding landWaterBinding(
+    /** Canonical artifact-id prefix per role, matching {@code TerrainIntentV2.ConstraintMapBinding}. */
+    private static String artifactPrefix(TerrainIntentV2.ConstraintMapRole role) {
+        return switch (role) {
+            case LAND_WATER_MASK -> "constraint:land-water:sha256-";
+            case HEIGHT_GUIDE -> "constraint:height-guide:sha256-";
+            case ZONE_LABEL_MAP -> "constraint:zone-label-map:sha256-";
+        };
+    }
+
+    private static GenerationRequestV2.ConstraintMapSource declaredSource(
+            GenerationRequestV2 request,
+            String sourceId
+    ) {
+        return request.constraintMaps().stream()
+                .filter(source -> source.sourceId().equals(sourceId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "no declared constraint-map source matches the binding sourceId " + sourceId));
+    }
+
+    /** One applied binding per sealed map reference, each owning exactly its own three sidecars. */
+    private static List<ConstraintFieldIndexV2.AppliedBinding> appliedBindings(
             TerrainIntentV2 intent,
-            FieldArtifactDescriptorV2 desired,
             List<FieldArtifactDescriptorV2> descriptors
     ) {
-        TerrainIntentV2.ConstraintMapBinding binding = intent.mapReferences().getFirst();
+        List<ConstraintFieldIndexV2.AppliedBinding> bindings = new ArrayList<>(intent.mapReferences().size());
+        for (TerrainIntentV2.ConstraintMapBinding binding : intent.mapReferences()) {
+            bindings.add(switch (binding.role()) {
+                case LAND_WATER_MASK -> appliedBinding(binding, descriptors,
+                        FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER,
+                        List.of(FieldArtifactDescriptorV2.FieldSemantic.DESIRED_LAND_WATER,
+                                FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_LAND_WATER,
+                                FieldArtifactDescriptorV2.FieldSemantic.RESIDUAL_LAND_WATER),
+                        List.of(new ConstraintFieldIndexV2.LabelEntry(0, 0, "water"),
+                                new ConstraintFieldIndexV2.LabelEntry(1, 1, "land")));
+                case HEIGHT_GUIDE -> appliedBinding(binding, descriptors,
+                        FieldArtifactDescriptorV2.FieldSemantic.DESIRED_HEIGHT,
+                        List.of(FieldArtifactDescriptorV2.FieldSemantic.DESIRED_HEIGHT,
+                                FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_HEIGHT,
+                                FieldArtifactDescriptorV2.FieldSemantic.RESIDUAL_HEIGHT),
+                        List.of());
+                case ZONE_LABEL_MAP -> throw new IllegalStateException(
+                        "surface-2_5d export has no zone label consumer");
+            });
+        }
+        return List.copyOf(bindings);
+    }
+
+    private static ConstraintFieldIndexV2.AppliedBinding appliedBinding(
+            TerrainIntentV2.ConstraintMapBinding binding,
+            List<FieldArtifactDescriptorV2> descriptors,
+            FieldArtifactDescriptorV2.FieldSemantic canonicalSemantic,
+            List<FieldArtifactDescriptorV2.FieldSemantic> ownedSemantics,
+            List<ConstraintFieldIndexV2.LabelEntry> labels
+    ) {
         // V2-18-07 decouples the two artifact references that used to be conflated. The constraint field
         // index's canonical artifact id keeps identifying the DESIRED field artifact by its own semantic
         // checksum (an integrity invariant of the index), while the intent binding's artifactId now records
-        // the INPUT mask provenance. They are different concerns and are no longer forced to be equal.
-        String canonicalArtifactId = "constraint:land-water:sha256-" + desired.semanticChecksum();
+        // the INPUT map provenance. They are different concerns and are no longer forced to be equal.
+        FieldArtifactDescriptorV2 canonical = descriptorFor(descriptors, canonicalSemantic);
+        String canonicalArtifactId = artifactPrefix(binding.role()) + canonical.semanticChecksum();
         return new ConstraintFieldIndexV2.AppliedBinding(
                 binding.id(), binding.sourceId(), binding.role(), binding.strength(), binding.sampling(),
                 binding.toleranceBlocks(), binding.weightMillionths(), canonicalArtifactId,
-                desired.definition().fieldId(),
-                descriptors.stream().map(field -> field.definition().fieldId()).toList(),
-                List.of(new ConstraintFieldIndexV2.LabelEntry(0, 0, "water"),
-                        new ConstraintFieldIndexV2.LabelEntry(1, 1, "land")));
+                canonical.definition().fieldId(),
+                ownedSemantics.stream()
+                        .map(semantic -> descriptorFor(descriptors, semantic).definition().fieldId())
+                        .toList(),
+                labels);
+    }
+
+    private static Set<TerrainIntentV2.ConstraintMapRole> consumedMapRoles(
+            Optional<MacroFoundationV2> foundation
+    ) {
+        if (foundation.isEmpty()) {
+            return Set.of();
+        }
+        return foundation.get().heightGuide().isPresent()
+                ? Set.of(TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK,
+                        TerrainIntentV2.ConstraintMapRole.HEIGHT_GUIDE)
+                : Set.of(TerrainIntentV2.ConstraintMapRole.LAND_WATER_MASK);
     }
 
     private static List<FieldArtifactDescriptorV2> writeConstraintFields(
@@ -389,15 +578,13 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             int length,
             CancellationToken token
     ) throws IOException {
-        if (request.constraintMaps().size() != 1) {
-            throw new IOException("surface-2_5d export requires exactly one declared constraint map source");
-        }
-        GenerationRequestV2.ConstraintMapSource map = request.constraintMaps().getFirst();
-        FieldArtifactDescriptorV2.Provenance provenance = new FieldArtifactDescriptorV2.Provenance(
-                FieldArtifactDescriptorV2.SourceKind.CONSTRAINT_MAP,
-                map.sourceId(), map.expectedSha256(), "numeric-png", "1", "pixel-center-v1");
+        requireEveryDeclaredSourceIsConsumed(request, foundation);
+        GenerationRequestV2.ConstraintMapSource map = foundation
+                .map(value -> declaredSource(request, value.maskField().sourceId()))
+                .orElseGet(() -> request.constraintMaps().getFirst());
+        FieldArtifactDescriptorV2.Provenance provenance = provenanceOf(map);
         LfcGridWriterV1 writer = new LfcGridWriterV1();
-        List<FieldArtifactDescriptorV2> result = new ArrayList<>(3);
+        List<FieldArtifactDescriptorV2> result = new ArrayList<>(6);
         // V2-18-09: on the foundation path DESIRED is the decoded input mask (with the established
         // role no-data sentinel), ACTUAL is the composed output, and RESIDUAL is their measured
         // difference — no longer the definitionally zero self-copy. The legacy path keeps the
@@ -429,7 +616,101 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                     return fields.landWaterAt(z * width + x) - desired;
                 }).orElse((x, z) -> 0),
                 token));
+        Optional<MacroFoundationV2.HeightGuideV2> guide = foundation.flatMap(MacroFoundationV2::heightGuide);
+        if (guide.isPresent()) {
+            result.addAll(writeHeightGuideFields(root, request, fields, foundation.orElseThrow(),
+                    guide.orElseThrow(), width, length, writer, token));
+        }
         return List.copyOf(result);
+    }
+
+    /**
+     * The elevation guide's desired / actual / residual sidecars (V2-19-06).
+     *
+     * <p>DESIRED is the decoded guide itself, ACTUAL is the composed surface height the Release was
+     * written from, and RESIDUAL is {@code actual - desired} — the same orientation as the land-water
+     * residual beside it. Where the guide declares no-data there is nothing to compare, so DESIRED and
+     * RESIDUAL carry the canonical no-data sentinel while ACTUAL still records the height that was
+     * actually generated there from the per-medium base level.</p>
+     */
+    private static List<FieldArtifactDescriptorV2> writeHeightGuideFields(
+            Path root,
+            GenerationRequestV2 request,
+            CoastalSurfaceFieldsV2 fields,
+            MacroFoundationV2 foundation,
+            MacroFoundationV2.HeightGuideV2 guide,
+            int width,
+            int length,
+            LfcGridWriterV1 writer,
+            CancellationToken token
+    ) throws IOException {
+        GenerationRequestV2.ConstraintMapSource source = declaredSource(request, guide.field().sourceId());
+        FieldArtifactDescriptorV2.Provenance provenance = provenanceOf(source);
+        boolean hasNoData = source.encoding().noData() instanceof GenerationRequestV2.NoDataSentinel;
+        FieldArtifactDescriptorV2.Sampling sampling =
+                guide.field().binding().sampling() == TerrainIntentV2.Sampling.NEAREST
+                        ? FieldArtifactDescriptorV2.Sampling.NEAREST
+                        : FieldArtifactDescriptorV2.Sampling.BILINEAR_FIXED;
+        FieldValueSource actual = (x, z) ->
+                fields.valueAt(CoastalTransitionModuleV2.SURFACE_HEIGHT_FIELD_ID, x, z);
+        return List.of(
+                writer.write(root, "fields/coast-height-desired.lfgrid",
+                        heightDefinition("constraint.coast.height.desired",
+                                FieldArtifactDescriptorV2.FieldSemantic.DESIRED_HEIGHT,
+                                sampling, hasNoData, width, length),
+                        provenance, foundation::desiredHeightMillionthsAt, token),
+                writer.write(root, "fields/coast-height-actual.lfgrid",
+                        heightDefinition("constraint.coast.height.actual",
+                                FieldArtifactDescriptorV2.FieldSemantic.ACTUAL_HEIGHT,
+                                sampling, hasNoData, width, length),
+                        provenance, actual, token),
+                writer.write(root, "fields/coast-height-residual.lfgrid",
+                        heightDefinition("constraint.coast.height.residual",
+                                FieldArtifactDescriptorV2.FieldSemantic.RESIDUAL_HEIGHT,
+                                sampling, hasNoData, width, length),
+                        provenance, (x, z) -> {
+                            int desired = foundation.desiredHeightMillionthsAt(x, z);
+                            return desired == MacroFoundationV2.NO_HEIGHT
+                                    ? MacroFoundationV2.NO_HEIGHT
+                                    : Math.subtractExact(actual.rawValueAt(x, z), desired);
+                        }, token));
+    }
+
+    /**
+     * Every declared constraint-map source must be consumed by a binding this path honors, because a
+     * published Release binds the two sets to each other. A source nothing reads would otherwise ship
+     * as unverifiable provenance.
+     */
+    private static void requireEveryDeclaredSourceIsConsumed(
+            GenerationRequestV2 request,
+            Optional<MacroFoundationV2> foundation
+    ) throws IOException {
+        if (foundation.isEmpty()) {
+            if (request.constraintMaps().size() != 1) {
+                throw new IOException(
+                        "surface-2_5d export requires exactly one declared constraint map source");
+            }
+            return;
+        }
+        MacroFoundationV2 resolved = foundation.orElseThrow();
+        Set<String> consumed = new LinkedHashSet<>();
+        consumed.add(resolved.maskField().sourceId());
+        resolved.heightGuide().ifPresent(guide -> consumed.add(guide.field().sourceId()));
+        Set<String> declared = request.constraintMaps().stream()
+                .map(GenerationRequestV2.ConstraintMapSource::sourceId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (!declared.equals(consumed)) {
+            throw new IOException("surface-2_5d export requires every declared constraint map source to "
+                    + "be bound to a consumed role; declared " + declared + ", consumed " + consumed);
+        }
+    }
+
+    private static FieldArtifactDescriptorV2.Provenance provenanceOf(
+            GenerationRequestV2.ConstraintMapSource source
+    ) {
+        return new FieldArtifactDescriptorV2.Provenance(
+                FieldArtifactDescriptorV2.SourceKind.CONSTRAINT_MAP,
+                source.sourceId(), source.expectedSha256(), "numeric-png", "1", "pixel-center-v1");
     }
 
     private static FieldArtifactDescriptorV2.Definition definition(
@@ -444,6 +725,21 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                 id, semantic, type, width, length,
                 FieldArtifactDescriptorV2.CoordinateSpace.RELEASE_LOCAL_XZ,
                 FieldArtifactDescriptorV2.Sampling.NEAREST, scale, 0L, false, 0);
+    }
+
+    /** The canonical HEIGHT_GUIDE sidecar shape the constraint field index requires for the role. */
+    private static FieldArtifactDescriptorV2.Definition heightDefinition(
+            String id,
+            FieldArtifactDescriptorV2.FieldSemantic semantic,
+            FieldArtifactDescriptorV2.Sampling sampling,
+            boolean hasNoData,
+            int width,
+            int length
+    ) {
+        return new FieldArtifactDescriptorV2.Definition(
+                id, semantic, FieldArtifactDescriptorV2.FieldValueType.I32, width, length,
+                FieldArtifactDescriptorV2.CoordinateSpace.RELEASE_LOCAL_XZ,
+                sampling, 1L, 0L, hasNoData, hasNoData ? MacroFoundationV2.NO_HEIGHT : 0);
     }
 
     private static FieldArtifactDescriptorV2 descriptorFor(

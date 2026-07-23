@@ -55,6 +55,7 @@ public final class TerrainDesignApplicationServiceV2 {
     private final DesignArtifactPublisherV2 publisher;
     private final ManualConstraintMapGenerationServiceV2 manualService;
     private final ReferenceImageSoftDraftServiceV2 softDraftService;
+    private final ReferenceImagePreparationServiceV2 imageService;
 
     public TerrainDesignApplicationServiceV2(GenerationExecutors executors, ProviderFactory providerFactory) {
         this(executors, providerFactory, Clock.systemUTC());
@@ -72,7 +73,8 @@ public final class TerrainDesignApplicationServiceV2 {
                 new LandformV2DataCodec(),
                 new DesignArtifactPublisherV2(),
                 new ManualConstraintMapGenerationServiceV2(),
-                new ReferenceImageSoftDraftServiceV2()
+                new ReferenceImageSoftDraftServiceV2(),
+                new ReferenceImagePreparationServiceV2()
         );
     }
 
@@ -83,7 +85,8 @@ public final class TerrainDesignApplicationServiceV2 {
             LandformV2DataCodec codec,
             DesignArtifactPublisherV2 publisher,
             ManualConstraintMapGenerationServiceV2 manualService,
-            ReferenceImageSoftDraftServiceV2 softDraftService
+            ReferenceImageSoftDraftServiceV2 softDraftService,
+            ReferenceImagePreparationServiceV2 imageService
     ) {
         this.executors = Objects.requireNonNull(executors, "executors");
         this.providerFactory = providerFactory;
@@ -92,6 +95,7 @@ public final class TerrainDesignApplicationServiceV2 {
         this.publisher = Objects.requireNonNull(publisher, "publisher");
         this.manualService = Objects.requireNonNull(manualService, "manualService");
         this.softDraftService = Objects.requireNonNull(softDraftService, "softDraftService");
+        this.imageService = Objects.requireNonNull(imageService, "imageService");
     }
 
     public boolean isRelease2Path() {
@@ -158,7 +162,8 @@ public final class TerrainDesignApplicationServiceV2 {
                     "provider factory returned null");
         }
         TerrainDesignResultV2 result = awaitProvider(
-                provider.design(buildProviderRequest(request, generationRequest, jobId)),
+                provider.design(buildProviderRequest(
+                        request, generationRequest, jobId, cancellationToken)),
                 cancellationToken);
         return publishStructured(
                 request, jobId, startedAt, generationRequest, requestChecksum, result, Optional.empty());
@@ -180,7 +185,8 @@ public final class TerrainDesignApplicationServiceV2 {
             default -> throw new IllegalStateException("unexpected built-in provider path");
         };
         TerrainDesignResultV2 result = awaitProvider(
-                provider.design(buildProviderRequest(request, generationRequest, jobId)),
+                provider.design(buildProviderRequest(
+                        request, generationRequest, jobId, cancellationToken)),
                 cancellationToken);
         return publishStructured(
                 request, jobId, startedAt, generationRequest, requestChecksum, result, Optional.empty());
@@ -352,17 +358,23 @@ public final class TerrainDesignApplicationServiceV2 {
         }
     }
 
+    /**
+     * V2-19-03: the declared reference images are prepared here, in request order, instead of being
+     * dropped. An empty declaration still yields an empty list, so image-free requests keep their
+     * previous behaviour exactly.
+     */
     private TerrainDesignRequestV2 buildProviderRequest(
             DesignDispatchRequestV2 request,
             GenerationRequestV2 generationRequest,
-            UUID jobId
+            UUID jobId,
+            CancellationToken cancellationToken
     ) {
         return new TerrainDesignRequestV2(
                 request.intentContractVersion(),
                 request.path(),
                 request.capabilities(),
                 generationRequest,
-                List.of(),
+                imageService.prepare(request.requestPath(), generationRequest, cancellationToken),
                 jobId
         );
     }

@@ -56,7 +56,8 @@
         "file": { "$ref": "#/$defs/safePath" },
         "role": {
           "enum": ["MOOD_REFERENCE", "TOP_DOWN_SKETCH", "MATERIAL_REFERENCE", "STRUCTURE_REFERENCE", "OBLIQUE_TERRAIN_REFERENCE", "MULTI_VIEW_REFERENCE"]
-        }
+        },
+        "expectedSha256": { "$ref": "#/$defs/checksum" }
       }
     },
     "constraintMapSource": {

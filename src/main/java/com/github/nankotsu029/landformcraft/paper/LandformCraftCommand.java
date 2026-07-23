@@ -454,6 +454,9 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             case REQUEST_CONSTRAINT_MAP -> report(sender, v2Workflow.setConstraintMap(tokens[3],
                     tokens[4], tokens[5], tokens[6], integer(tokens[7]), integer(tokens[8])),
                     request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_CONSTRAINT_SOURCE -> report(sender, v2Workflow.setConstraintSource(tokens[3],
+                    tokens[4], constraintMapRole(tokens[5]), tokens[6], tokens[7]),
+                    request -> reportAuthoredRequest(sender, route, request));
             case REQUEST_GENERATION -> report(sender,
                     v2Workflow.setGeneration(tokens[3], Long.parseLong(tokens[4]), integer(tokens[5])),
                     request -> reportAuthoredRequest(sender, route, request));
@@ -971,7 +974,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         helpSection(sender, "設計・生成（既定v2）");
         if (v2Workflow != null) {
             help(sender, "/" + label
-                            + " request create|bounds|selection|constraint-map|generation"
+                            + " request create|bounds|selection|constraint-map|constraint-source|generation"
                             + "|foundation-base-levels|prompt|list …",
                     "v2 requestを作成・編集・列挙");
             help(sender, "/" + label + " request validate|info <request-v2.json>",
@@ -1108,6 +1111,21 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("座標は整数で入力してください: " + value, exception);
         }
+    }
+
+    /** Role token of {@code request constraint-source} (V2-19-04); nothing is inferred from the map. */
+    private static com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2.ConstraintMapRole
+            constraintMapRole(String value) {
+        return switch (value) {
+            case "land-water" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+                    .ConstraintMapRole.LAND_WATER_MASK;
+            case "height-guide" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+                    .ConstraintMapRole.HEIGHT_GUIDE;
+            case "zone-label" -> com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2
+                    .ConstraintMapRole.ZONE_LABEL_MAP;
+            default -> throw new IllegalArgumentException(
+                    "constraint map roleは land-water／height-guide／zone-label のいずれかです: " + value);
+        };
     }
 
     private static void requirePermission(CommandSender sender, String permission) {

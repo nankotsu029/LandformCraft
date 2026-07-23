@@ -30,7 +30,7 @@ class ProductionDispatchRegistryV2Test {
             Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json");
     // Updated when capability overlays change; recompute via builtIn().registryChecksum().
     private static final String EXPECTED_REGISTRY_CHECKSUM =
-            "2fdb87e658b19df3129e68aabcae679c7966ff4a51124c6449d08d2396aa50c5";
+            "182f713ed16309183a72f237c32429d01cb08703c3e194c99a4991d8e65de219";
     private static final String EXPECTED_ENVIRONMENT_PLAN_CHECKSUM =
             "e9064809b5864b8ed817e7a6090581cb89d96f5d9473ab7e46ccd3cefd4f4325";
 
@@ -296,8 +296,16 @@ class ProductionDispatchRegistryV2Test {
                 .map(ProductionDispatchRegistryV2.Route::featureKind)
                 .collect(java.util.stream.Collectors.toCollection(
                         () -> java.util.EnumSet.noneOf(TerrainIntentV2.FeatureKind.class)));
+        // V2-19-07 added the PLAIN macro foundation producer to the same offline class, on the
+        // coastal surface pipeline rather than the hydrology one.
         assertEquals(java.util.EnumSet.of(
-                TerrainIntentV2.FeatureKind.RIVER, TerrainIntentV2.FeatureKind.MEANDERING_RIVER), offline);
+                TerrainIntentV2.FeatureKind.RIVER,
+                TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
+                TerrainIntentV2.FeatureKind.PLAIN), offline);
+        assertEquals(CoastalSurfaceExportPipelineV2.PIPELINE_ID, registry.routes().stream()
+                .filter(route -> route.featureKind() == TerrainIntentV2.FeatureKind.PLAIN)
+                .map(ProductionDispatchRegistryV2.Route::pipelineId)
+                .findFirst().orElseThrow());
     }
 
     private static Set<TerrainIntentV2.FeatureKind> exportSupportedKinds() {
@@ -310,9 +318,12 @@ class ProductionDispatchRegistryV2Test {
         ProductionDispatchRegistryV2 registry = ProductionDispatchRegistryV2.builtIn();
         TerrainIntentV2 coastal = new LandformV2DataCodec().readTerrainIntent(INTENT);
 
+        // PLATEAU is a foundation-eligible kind whose own V2-15 wiring leaf has not run, so it must
+        // still fail dispatch rather than be silently dropped. PLAIN stopped being an example of this
+        // when V2-19-07 wired it as the first macro foundation producer.
         IllegalArgumentException unsupported = assertThrows(IllegalArgumentException.class,
-                () -> registry.select(replaceBackshore(coastal, TerrainIntentV2.FeatureKind.PLAIN)));
-        assertTrue(unsupported.getMessage().contains("no production dispatch route: PLAIN"),
+                () -> registry.select(replaceBackshore(coastal, TerrainIntentV2.FeatureKind.PLATEAU)));
+        assertTrue(unsupported.getMessage().contains("no production dispatch route: PLATEAU"),
                 unsupported.getMessage());
 
         TerrainIntentV2.Feature backshore = coastal.features().stream()
@@ -386,12 +397,18 @@ class ProductionDispatchRegistryV2Test {
             if (feature.kind() != TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS) {
                 return feature;
             }
-            TerrainIntentV2.FeatureParameters parameters = replacementKind == TerrainIntentV2.FeatureKind.PLAIN
-                    ? new TerrainIntentV2.PlainParameters(
-                            new TerrainIntentV2.IntRange(4, 12),
-                            new TerrainIntentV2.IntRange(1, 2),
-                            new TerrainIntentV2.IntRange(1, 4))
-                    : new TerrainIntentV2.NoParameters();
+            TerrainIntentV2.FeatureParameters parameters = switch (replacementKind) {
+                case PLAIN -> new TerrainIntentV2.PlainParameters(
+                        new TerrainIntentV2.IntRange(4, 12),
+                        new TerrainIntentV2.IntRange(1, 2),
+                        new TerrainIntentV2.IntRange(1, 4));
+                case PLATEAU -> new TerrainIntentV2.PlateauParameters(
+                        new TerrainIntentV2.IntRange(12, 20),
+                        new TerrainIntentV2.IntRange(1, 3),
+                        TerrainIntentV2.PlateauProfile.MESA,
+                        4);
+                default -> new TerrainIntentV2.NoParameters();
+            };
             return new TerrainIntentV2.Feature(
                     feature.id(), replacementKind, feature.geometry(), parameters,
                     feature.priority(), feature.provenance());

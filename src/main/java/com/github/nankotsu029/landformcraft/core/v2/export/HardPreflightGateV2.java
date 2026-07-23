@@ -4,6 +4,7 @@ import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticGateContractV2;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapDecodeLimits;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapInputException;
+import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapPngHeaderV2;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapSourceSpec;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.LoadedConstraintMapSource;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.SecureConstraintMapSourceLoader;
@@ -223,30 +224,8 @@ public final class HardPreflightGateV2 {
         } catch (ConstraintMapInputException exception) {
             return exception.code() + ": " + exception.getMessage();
         }
-        return dimensionMismatch(loaded.contentCopy(), source.expectedWidth(), source.expectedLength());
-    }
-
-    /** Returns null when IHDR dimensions match the declared ones; otherwise a reason. */
-    private static String dimensionMismatch(byte[] pngBytes, int expectedWidth, int expectedLength) {
-        // The loader already verified the 8-byte PNG signature, so the IHDR chunk (length + "IHDR"
-        // + width + height) begins at byte 8 and width/height are the two big-endian ints at 16/20.
-        if (pngBytes.length < 24) {
-            return "PNG is too short to carry an IHDR header";
-        }
-        int width = readBigEndianInt(pngBytes, 16);
-        int height = readBigEndianInt(pngBytes, 20);
-        if (width != expectedWidth || height != expectedLength) {
-            return "PNG dimensions " + width + "x" + height
-                    + " do not match the declared " + expectedWidth + "x" + expectedLength;
-        }
-        return null;
-    }
-
-    private static int readBigEndianInt(byte[] bytes, int offset) {
-        return ((bytes[offset] & 0xFF) << 24)
-                | ((bytes[offset + 1] & 0xFF) << 16)
-                | ((bytes[offset + 2] & 0xFF) << 8)
-                | (bytes[offset + 3] & 0xFF);
+        return ConstraintMapPngHeaderV2.dimensionMismatch(
+                loaded.contentCopy(), source.expectedWidth(), source.expectedLength());
     }
 
     private static String compiledConstraintRule(TerrainIntentV2.Constraint constraint) {

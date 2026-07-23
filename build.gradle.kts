@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import xyz.jpenilla.runpaper.task.RunServer
@@ -40,6 +41,23 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
+
+// V2-19-02: working-tree roots that the filesystem inventory tests walk at run time
+// (SchemaContractTest, DocsLinkConsistencyTest, PackageBoundaryTest and the registry drift tests).
+// Undeclared changes under these roots — including untracked files — would otherwise leave the test
+// task up-to-date or cache-hit and hide a real failure. Keep this list byte-identical to
+// FilesystemInventoryRootsV2.SCANNED_ROOTS; GradleTestInputContractV2Test asserts the equality.
+val filesystemInventoryRoots = listOf(
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "README.md",
+    // GradleTestInputContractV2Test reads this script, so the script decides that test's verdict.
+    "build.gradle.kts",
+    "docs",
+    "examples",
+    "schemas",
+    "src"
+)
 
 application {
     mainClass = "com.github.nankotsu029.landformcraft.cli.LandformCraftCli"
@@ -123,14 +141,14 @@ tasks {
         dependsOn(shadowJar)
         val pluginJar = layout.buildDirectory.file("libs/LandformCraft-${project.version}.jar")
         inputs.file(pluginJar).withPropertyName("pluginJar")
-        // V2-15-02/V2-15-04: registry tests read these source-of-truth files directly.
-        // Declare them so local and remote Gradle caches cannot skip CI drift detection.
-        inputs.files(
-            "schemas/terrain-intent-v2.schema.json",
-            "schemas/terrain-intent-v2-canonical.schema.json",
-            "docs/design-v2/current-feature-state-machine-registry.md",
-            "docs/design-v2/canonical-feature-target-registry.md"
-        ).withPropertyName("currentFeatureStateRegistrySources")
+        // V2-15-02/V2-15-04 declared four registry source-of-truth files here so local and remote
+        // Gradle caches could not skip CI drift detection. V2-19-02 widens that to every working-tree
+        // root the tests actually read (the four files are subsumed by "schemas" and "docs"), because
+        // the audit measured the same working tree producing different verdicts depending on whether
+        // the task was executed or reused. RELATIVE path sensitivity keeps the cache key relocatable.
+        inputs.files(filesystemInventoryRoots)
+            .withPropertyName("filesystemInventoryRoots")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
         systemProperty("landformcraft.pluginJar", pluginJar.get().asFile.absolutePath)
     }
 }
