@@ -50,6 +50,7 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.logging.Logger;
 import com.github.nankotsu029.landformcraft.model.v2.scale.ScaleDimensionPolicyV2;
 
 /** Colored administrative commands with confirm-gated mutations and non-blocking completion caches. */
@@ -65,12 +66,19 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     private final CustomAssetService assets;
     private final Path dataRoot;
     private final ConsoleConfirmationFileStore consoleConfirmations;
+    private final CommandAuditLogV2 audit;
     private final String pluginVersion;
     private final String worldEditStatus;
     private final Map<UUID, PromptSession> prompts = new ConcurrentHashMap<>();
     private final Set<String> placementIds = ConcurrentHashMap.newKeySet();
     private final AtomicLong nextCompletionRefresh = new AtomicLong();
     private volatile List<String> releaseDirectories = List.of();
+    /**
+     * The command currently being handled, captured synchronously on the Paper main thread. Async
+     * completions read this into a local before the callback fires so the audit trail attributes the
+     * outcome to the right invocation even while later commands run.
+     */
+    private volatile Invocation currentInvocation = Invocation.NONE;
 
     public LandformCraftCommand(
             PaperRelease2PlacementServiceV2 release2Placements,
@@ -82,7 +90,8 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             CustomAssetService assets,
             Path dataRoot,
             String pluginVersion,
-            String worldEditStatus
+            String worldEditStatus,
+            Logger logger
     ) {
         this.v2Workflow = v2Workflow;
         this.release2Placements = release2Placements;
@@ -94,6 +103,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         this.dataRoot = Objects.requireNonNull(dataRoot, "dataRoot").toAbsolutePath().normalize();
         this.consoleConfirmations = new ConsoleConfirmationFileStore(
                 this.dataRoot.resolve("confirmations"));
+        this.audit = new CommandAuditLogV2(Objects.requireNonNull(logger, "logger"));
         this.pluginVersion = Objects.requireNonNull(pluginVersion, "pluginVersion");
         this.worldEditStatus = Objects.requireNonNull(worldEditStatus, "worldEditStatus");
         refreshCompletionCaches();
@@ -106,6 +116,12 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             @NotNull String label,
             @NotNull String[] args
     ) {
+        // Audit the invocation before any permission or argument check so even rejected attempts are
+        // attributable in the server log. The command text is redacted of any confirmation token.
+        Invocation invocation = new Invocation(
+                auditActor(sender), CommandAuditLogV2.redactedCommand(label, args));
+        audit.invoked(invocation.actor(), invocation.command());
+        this.currentInvocation = invocation;
         try {
             if (args.length == 0 || args.length == 1 && args[0].equalsIgnoreCase("help")) {
                 requirePermission(sender, "landformcraft.help");
@@ -147,7 +163,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             handleV2(sender, prependV2Root(args));
             return true;
         } catch (IllegalArgumentException | LandformException exception) {
-            sendFailure(sender, exception);
+            handleFailure(sender, exception, invocation);
             return true;
         }
     }
@@ -236,6 +252,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     }
 
     private void reportSelection(CommandSender sender, Player player) {
+        Invocation invocation = currentInvocation;
         selections.selection(player).whenComplete((bounds, failure) -> dispatcher.run(() -> {
             if (failure != null) {
                 Throwable actual = unwrap(failure);
@@ -244,7 +261,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                     sender.sendMessage(Component.text("  //wand で選択ツールを取得し、左クリックと右クリックで2点を選んでください。",
                             NamedTextColor.WHITE));
                 } else {
-                    sendFailure(sender, actual);
+                    handleFailure(sender, actual, invocation);
                 }
                 return;
             }
@@ -515,6 +532,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
      */
     private void applySelectionBounds(CommandSender sender, V2CommandRouteV2 route, String requestId) {
         requirePlacementAvailable();
+        Invocation invocation = currentInvocation;
         requirePlayer(sender, player -> selections.selection(player)
                 .thenCompose(bounds -> v2Workflow.setBoundsFromSelection(
                         requestId,
@@ -524,9 +542,10 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                         bounds.maximumY()))
                 .whenComplete((value, failure) -> dispatcher.run(() -> {
                     if (failure != null) {
-                        sendFailure(sender, failure);
+                        handleFailure(sender, failure, invocation);
                     } else {
                         reportAuthoredRequest(sender, route, value);
+                        audit.succeeded(invocation.actor(), invocation.command());
                     }
                 })));
     }
@@ -563,12 +582,17 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
             dispatcher.run(() -> sendWarning(event.getPlayer(), "prompt入力を取り消しました。"));
             return;
         }
+        // The prompt text is a chat capture rather than a command; audit it as the prompt-store step
+        // without ever echoing the captured prompt itself.
+        Invocation invocation = new Invocation(
+                auditActor(event.getPlayer()), "(chat) request prompt " + session.requestId());
         v2Workflow.setPrompt(session.requestId(), prompt).whenComplete((value, failure) ->
                 dispatcher.run(() -> {
                     if (failure != null) {
-                        sendFailure(event.getPlayer(), failure);
+                        handleFailure(event.getPlayer(), failure, invocation);
                     } else {
                         sendPromptStored(event.getPlayer(), value);
+                        audit.succeeded(invocation.actor(), invocation.command());
                     }
                 }));
     }
@@ -648,6 +672,23 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         sender.sendMessage(detail("updatedAt", snapshot.updatedAt()));
         sender.sendMessage(detail("message", snapshot.message()));
         sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
+    }
+
+    /**
+     * Human-readable actor identity for the audit log: a player's name paired with their UUID, or the
+     * console/RCON identity. Never throws — auditing must record even unsupported sender types.
+     */
+    private static String auditActor(CommandSender sender) {
+        if (sender instanceof Player player) {
+            return "player:" + player.getName() + "/" + player.getUniqueId();
+        }
+        if (sender instanceof ConsoleCommandSender) {
+            return "console";
+        }
+        if (sender instanceof RemoteConsoleCommandSender) {
+            return "rcon";
+        }
+        return "sender:" + sender.getName();
     }
 
     /** Stable actor string an export plan and its confirmation are bound to. */
@@ -860,13 +901,16 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     }
 
     private <T> void report(CommandSender sender, CompletionStage<T> stage, java.util.function.Consumer<T> success) {
+        // Captured synchronously on the main thread so the async outcome is attributed to this
+        // invocation even after later commands overwrite the shared field.
+        Invocation invocation = currentInvocation;
         sendPending(sender, "処理中…");
         stage.whenComplete((value, failure) -> dispatcher.run(() -> {
             if (failure != null) {
-                sendFailure(sender, failure);
-                mirrorOperatorText(sender, unwrap(failure).getMessage());
+                handleFailure(sender, failure, invocation);
             } else {
                 success.accept(value);
+                audit.succeeded(invocation.actor(), invocation.command());
             }
         }));
     }
@@ -1001,7 +1045,14 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 .append(Component.text(text, NamedTextColor.RED)));
     }
 
-    private static void sendFailure(CommandSender sender, Throwable throwable) {
+    /**
+     * Single failure path for both command surfaces (requirement: detailed errors for players and
+     * for operators). The player is shown the sanitized public failure — stable code, safe message,
+     * correlation ID, operation/stage, and a suggested action — while {@link CommandAuditLogV2#failed}
+     * writes the same failure plus the raw technical cause (with stack trace) to the server log under
+     * that identical correlation ID, so a player-reported ID leads an admin straight to the reason.
+     */
+    private void handleFailure(CommandSender sender, Throwable throwable, Invocation invocation) {
         Throwable actual = unwrap(throwable);
         LandformException failure = actual instanceof LandformException domain ? domain
                 : new LandformException(
@@ -1015,6 +1066,10 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         sender.sendMessage(detail("correlation ID", failure.correlationId().toString()));
         sender.sendMessage(detail("operation / stage", failure.operation() + " / " + failure.stage()));
         sender.sendMessage(detail("suggested action", failure.suggestedAction()));
+        sender.sendMessage(Component.text(
+                "  詳細な技術的理由はcorrelation ID付きでサーバーログに記録されました。管理者に共有してください。",
+                NamedTextColor.GRAY));
+        audit.failed(invocation.actor(), invocation.command(), failure, actual);
     }
 
     private void requirePlacementAvailable() {
@@ -1139,4 +1194,9 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
     }
 
     private record PromptSession(String requestId, Instant expiresAt) { }
+
+    /** Audit attribution for one command invocation: who issued it and the redacted command text. */
+    private record Invocation(String actor, String command) {
+        static final Invocation NONE = new Invocation("unknown", "(none)");
+    }
 }

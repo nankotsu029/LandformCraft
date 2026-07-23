@@ -181,7 +181,7 @@ public final class Landformcraft extends JavaPlugin {
         LandformCraftCommand commandHandler = new LandformCraftCommand(
                 release2Placements, release2Operations, v2Workflow, selections,
                 mainThreadDispatcher, executors, assets, storageRoot,
-                getPluginMeta().getVersion(), integrationStatus);
+                getPluginMeta().getVersion(), integrationStatus, getLogger());
         command.setExecutor(commandHandler);
         command.setTabCompleter(commandHandler);
         getServer().getPluginManager().registerEvents(commandHandler, this);
