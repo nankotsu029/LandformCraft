@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.validation.v2.hydrology;
 
 import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.generator.v2.hydrology.HydrologyIrModuleV2;
+import com.github.nankotsu029.landformcraft.model.v2.CanyonPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.DeltaPlanV2;
 import com.github.nankotsu029.landformcraft.model.v2.DiagnosticIssueV2;
 import com.github.nankotsu029.landformcraft.model.v2.FjordPlanV2;
@@ -78,6 +79,15 @@ public final class HydrologyValidatorV2 {
             metric(metrics, issues, issueSequence, plan.featureId(), "hydrology.lake.basin-cells", 1,
                     evidence.basinCells(), new TerrainIntentV2.FixedRange(1, Long.MAX_VALUE / 4), 0,
                     "cell-count", "hydrology.lake.rim-spill", "hydrology.lake.basin");
+        }
+        for (CanyonPlanV2 plan : blueprint.canyonPlans()) {
+            CanyonEvidence evidence = measureCanyon(input.fields(), plan, cancellationToken);
+            metric(metrics, issues, issueSequence, plan.featureId(), "hydrology.canyon.floor-cells", 1,
+                    evidence.floorCells(), new TerrainIntentV2.FixedRange(1, Long.MAX_VALUE / 4), 0,
+                    "cell-count", "hydrology.canyon.cross-section", "hydrology.canyon.floor-absent");
+            metric(metrics, issues, issueSequence, plan.featureId(), "hydrology.canyon.rim-cells", 1,
+                    evidence.rimCells(), new TerrainIntentV2.FixedRange(1, Long.MAX_VALUE / 4), 0,
+                    "cell-count", "hydrology.canyon.cross-section", "hydrology.canyon.rim-absent");
         }
         for (DeltaPlanV2 plan : blueprint.deltaPlans()) {
             DeltaEvidence evidence = measureDelta(input.fields(), plan, cancellationToken);
@@ -243,6 +253,21 @@ public final class HydrologyValidatorV2 {
             }
         }
         return new LakeEvidence(basin, spillway);
+    }
+
+    private static CanyonEvidence measureCanyon(
+            HydrologyFieldSamplerV2 fields, CanyonPlanV2 plan, CancellationToken token
+    ) {
+        long floor = 0;
+        long rim = 0;
+        for (int z = 0; z < fields.length(); z++) {
+            token.throwIfCancellationRequested();
+            for (int x = 0; x < fields.width(); x++) {
+                if (fields.valueAt(plan.floorMaskFieldId(), x, z) == 1) floor++;
+                if (fields.valueAt(plan.rimMaskFieldId(), x, z) == 1) rim++;
+            }
+        }
+        return new CanyonEvidence(floor, rim);
     }
 
     private static DeltaEvidence measureDelta(
@@ -448,6 +473,7 @@ public final class HydrologyValidatorV2 {
     private record RiverEvidence(long channelGaps, long reverseGradientCells, boolean sourceToMouthReachable) { }
     private record FlowEvidence(long sampledCells, long cycleCells) { }
     private record LakeEvidence(long basinCells, long spillwayCells) { }
+    private record CanyonEvidence(long floorCells, long rimCells) { }
     private record DeltaEvidence(long channelCells, long connectedMouths) { }
     private record FjordEvidence(long channelCells, boolean mouthConnected) { }
     private record WaterfallEvidence(long dropMillionths, long lipCells, long baseCells, long plungeCells) { }

@@ -10,7 +10,14 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-/** Secret-free, prompt-free audit metadata for one successful Release 2 design package. */
+/**
+ * Secret-free, prompt-free audit metadata for one successful Release 2 design package.
+ *
+ * <p>{@code supportLint} is optional (V2-19-08) and may be {@code null}: the design service always
+ * records one, while the v1→v2 migration path records none because it converts a sealed v1 asset
+ * rather than designing against the current dispatch registry. Absent, the field is omitted, so
+ * previously published packages and migration bundles keep their exact bytes.</p>
+ */
 public record DesignAuditV2(
         int schemaVersion,
         UUID jobId,
@@ -27,7 +34,8 @@ public record DesignAuditV2(
         Set<DesignCapabilityV2> negotiatedCapabilities,
         String capabilityCatalogVersion,
         Instant startedAt,
-        Instant completedAt
+        Instant completedAt,
+        DesignSupportLintV2 supportLint
 ) {
     public static final int VERSION = 1;
 
@@ -64,6 +72,16 @@ public record DesignAuditV2(
         if (completedAt.isBefore(startedAt)) {
             throw new IllegalArgumentException("completedAt must not be before startedAt");
         }
+        if (supportLint != null && !supportLint.allFindingsAreNonGating()) {
+            throw new IllegalArgumentException(
+                    "design-support-lint-v1 records advisory findings only; a GATING finding would "
+                            + "mean the design path rejects, which requires separate approval");
+        }
+    }
+
+    /** The recorded design-time support lint, or empty for a migration bundle that has none. */
+    public java.util.Optional<DesignSupportLintV2> supportLintOrEmpty() {
+        return java.util.Optional.ofNullable(supportLint);
     }
 
     private static String requireSlug(String value, String fieldName) {

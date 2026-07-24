@@ -132,8 +132,8 @@ public final class LandformCraftCli {
                     emit(standardOutput, inspected);
                 }
                 case REQUEST_CREATE, REQUEST_BOUNDS, REQUEST_CONSTRAINT_MAP, REQUEST_CONSTRAINT_SOURCE,
-                     REQUEST_GENERATION, REQUEST_FOUNDATION_BASE_LEVELS, REQUEST_PROMPT_INLINE,
-                     REQUEST_LIST ->
+                     REQUEST_GENERATION, REQUEST_FOUNDATION_BASE_LEVELS, REQUEST_FOUNDATION_DETAIL,
+                     REQUEST_MASK_RECONCILE, REQUEST_PROMPT_INLINE, REQUEST_LIST ->
                         emit(standardOutput, authorRequest(verb, tokens, route));
                 case INTENT_BIND, INTENT_BINDINGS ->
                         emit(standardOutput, authorIntentBinding(verb, tokens, route));
@@ -146,13 +146,15 @@ public final class LandformCraftCli {
                             ? Path.of(tokens.get(5)) : Path.of("build", "landformcraft-designs-v2");
                     var artifacts = joinWithInterruptCancellation(workflow.design(
                             tokens.get(2), Path.of(tokens.get(3)), tokens.get(4), designsRoot));
-                    emit(standardOutput, Map.of(
-                            "message", "Published verified v2 design package",
-                            "v2CorrelationId", route.correlationId(),
-                            "requestId", artifacts.audit().requestId(),
-                            "provider", artifacts.audit().providerId(),
-                            "intentChecksum", artifacts.audit().intentChecksum(),
-                            "directory", artifacts.directory().toString()));
+                    Map<String, Object> designSummary = new LinkedHashMap<>();
+                    designSummary.put("message", "Published verified v2 design package");
+                    designSummary.put("v2CorrelationId", route.correlationId());
+                    designSummary.put("requestId", artifacts.audit().requestId());
+                    designSummary.put("provider", artifacts.audit().providerId());
+                    designSummary.put("intentChecksum", artifacts.audit().intentChecksum());
+                    designSummary.put("directory", artifacts.directory().toString());
+                    designSummary.putAll(V2WorkflowServiceV2.summarizeSupportLint(artifacts.audit()));
+                    emit(standardOutput, designSummary);
                 }
                 case GENERATE, EXPORT -> {
                     Path exportsRoot = Path.of(tokens.get(4));
@@ -344,6 +346,10 @@ public final class LandformCraftCli {
                     Long.parseLong(tokens.get(4)), integer(tokens.get(5)));
             case REQUEST_FOUNDATION_BASE_LEVELS -> store.foundationBaseLevels(requestId,
                     integer(tokens.get(4)), integer(tokens.get(5)));
+            case REQUEST_FOUNDATION_DETAIL -> store.foundationDetail(requestId,
+                    integer(tokens.get(4)), integer(tokens.get(5)),
+                    integer(tokens.get(6)), integer(tokens.get(7)));
+            case REQUEST_MASK_RECONCILE -> store.maskFeatureReconcile(requestId, integer(tokens.get(4)));
             case REQUEST_PROMPT_INLINE -> store.prompt(requestId,
                     String.join(" ", tokens.subList(4, tokens.size())));
             default -> throw new IllegalStateException("not a request authoring verb: " + verb);
@@ -363,6 +369,26 @@ public final class LandformCraftCli {
                     Map<String, Object> declared = new LinkedHashMap<>();
                     declared.put("landSurfaceY", levels.landSurfaceY());
                     declared.put("waterBedY", levels.waterBedY());
+                    return declared;
+                })
+                .orElse("absent"));
+        // V2-19-12: the optional coherent detail is export-relevant background state, so authoring reports it.
+        result.put("foundationDetail", request.foundationDetail()
+                .<Object>map(detail -> {
+                    Map<String, Object> declared = new LinkedHashMap<>();
+                    declared.put("landAmplitudeBlocks", detail.landAmplitudeBlocks());
+                    declared.put("waterAmplitudeBlocks", detail.waterAmplitudeBlocks());
+                    declared.put("wavelengthBlocks", detail.wavelengthBlocks());
+                    declared.put("octaves", detail.octaves());
+                    return declared;
+                })
+                .orElse("absent"));
+        // V2-19-14: the optional reconcile pre-pass changes which geometry is generated, so authoring
+        // reports its declaration alongside the other export-relevant request state.
+        result.put("maskFeatureReconcile", request.maskFeatureReconcile()
+                .<Object>map(reconcile -> {
+                    Map<String, Object> declared = new LinkedHashMap<>();
+                    declared.put("toleranceBlocks", reconcile.toleranceBlocks());
                     return declared;
                 })
                 .orElse("absent"));
@@ -1070,6 +1096,11 @@ public final class LandformCraftCli {
                 "seedとtile sizeを更新（maskはseedの合成形状と一致する必要があります）");
         helpLine(output, "request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>",
                 "macro foundationのmedium別base elevationを宣言（surface-2_5d exportに必須）");
+        helpLine(output, "request foundation-detail <request-id> <land-amplitude> <water-amplitude> "
+                + "<wavelength> <octaves>",
+                "背景base levelへ連続multi-scale detailを宣言（任意、base levels必須）");
+        helpLine(output, "request mask-reconcile <request-id> <tolerance-blocks>",
+                "宣言geometryをHARD maskへ剛体平行移動で整列（任意、1..8 block、maskは動かしません）");
         helpLine(output, "request prompt <request-id> <prompt...>", "v2 requestのpromptを更新");
         helpLine(output, "request list", "保存済みv2 requestを列挙");
         helpLine(output, "design <import|fixture|openai|anthropic> <request-v2.json> <intent-or-model> "

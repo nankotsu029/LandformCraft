@@ -22,6 +22,7 @@ public record Release2ExportResultV2(
         List<String> tileIds,
         ReleasePlacementEligibilityVerifierV2.EligibilityResultV2 eligibility,
         Optional<IntentContributionCoverageV2> intentContributionCoverage,
+        Optional<MaskFeatureReconcileV2> maskFeatureReconcile,
         List<ExportWarningV2> warnings
 ) {
     public Release2ExportResultV2 {
@@ -32,6 +33,7 @@ public record Release2ExportResultV2(
         Objects.requireNonNull(manifestChecksum, "manifestChecksum");
         Objects.requireNonNull(eligibility, "eligibility");
         Objects.requireNonNull(intentContributionCoverage, "intentContributionCoverage");
+        Objects.requireNonNull(maskFeatureReconcile, "maskFeatureReconcile");
         warnings = List.copyOf(warnings);
         requiredCapabilities = List.copyOf(requiredCapabilities);
         tileIds = List.copyOf(tileIds);

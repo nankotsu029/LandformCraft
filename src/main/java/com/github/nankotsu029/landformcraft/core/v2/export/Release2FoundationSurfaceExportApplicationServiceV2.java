@@ -108,6 +108,7 @@ public final class Release2FoundationSurfaceExportApplicationServiceV2 {
                 tileIds,
                 eligibility,
                 generated.intentContributionCoverage(),
+                generated.maskFeatureReconcile(),
                 generated.warnings());
     }
 }

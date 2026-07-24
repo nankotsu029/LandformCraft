@@ -20,9 +20,22 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Builds the four V2-2 coastal generators and their transition compositor from a frozen Blueprint.
- * Layer order follows the sealed contributor order, so the runtime never depends on module
- * registration order.
+ * Builds the declared V2-2 coastal generators and their transition compositor from a frozen
+ * Blueprint. Layer order follows the sealed contributor order, so the runtime never depends on
+ * module registration order.
+ *
+ * <p>V2-19-09 (ADR 0040 D1): the contributor set is <em>any</em> subset of the four coastal kinds,
+ * including none at all. The former "all four" check was a coverage requirement placed on the
+ * modifier tier, which ADR 0038 D5-3 forbids — surface modifiers are not foundation owners and carry
+ * no coverage obligation. Domain coverage is enforced once, by the V2-18-10 foundation owner gate
+ * ({@link SurfaceFoundationOwnerGateV2}); a request with no explicit macro foundation input is
+ * rejected there whatever its contributor count, so no second coverage rule lives here (D2).</p>
+ *
+ * <p>An absent kind contributes nothing: its generator is {@code null}, it binds no compositor layer,
+ * and {@link CoastalSurfaceFieldsV2} writes the canonical OUTSIDE values of that kind's descriptor
+ * fields (D3). {@code compositor} is {@code null} only when the intent declares no coastal feature at
+ * all, because {@code CoastalTransitionPlanV2} requires at least one contributor and the blueprint
+ * compiler therefore seals no transition plan in that case.</p>
  */
 record CoastalGeneratorRuntimeV2(
         SandyBeachGeneratorV2 beach,
@@ -31,18 +44,28 @@ record CoastalGeneratorRuntimeV2(
         RockyCapeGeneratorV2 cape,
         CoastalTransitionCompositorV2 compositor
 ) {
-    private static final Set<TerrainIntentV2.FeatureKind> REQUIRED =
-            EnumSet.of(
-                    TerrainIntentV2.FeatureKind.SANDY_BEACH,
-                    TerrainIntentV2.FeatureKind.HARBOR_BASIN,
-                    TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
-                    TerrainIntentV2.FeatureKind.ROCKY_CAPE);
+    /**
+     * The coastal kinds this runtime can build a contributor for. It is the domain of the subset rule,
+     * not a requirement: {@link ProductionRoutePreconditionsV2} reports the (now empty) runtime
+     * companion requirement separately, and nothing here demands that any of these be declared.
+     */
+    static Set<TerrainIntentV2.FeatureKind> supportedKinds() {
+        return EnumSet.of(
+                TerrainIntentV2.FeatureKind.SANDY_BEACH,
+                TerrainIntentV2.FeatureKind.HARBOR_BASIN,
+                TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
+                TerrainIntentV2.FeatureKind.ROCKY_CAPE);
+    }
 
     static CoastalGeneratorRuntimeV2 create(WorldBlueprintV2 blueprint) {
         Objects.requireNonNull(blueprint, "blueprint");
-        if (blueprint.coastalTransitionPlans().size() != 1) {
+        if (blueprint.coastalTransitionPlans().size() > 1) {
             throw new IllegalArgumentException(
-                    "surface-2_5d export requires exactly one sealed coastal transition plan");
+                    "surface-2_5d export requires at most one sealed coastal transition plan");
+        }
+        if (blueprint.coastalTransitionPlans().isEmpty()) {
+            // ADR 0040 D1, size 0: no coastal modifier at all. The macro foundation owns every cell.
+            return new CoastalGeneratorRuntimeV2(null, null, null, null, null);
         }
         int width = blueprint.space().bounds().width();
         int length = blueprint.space().bounds().length();
@@ -91,12 +114,42 @@ record CoastalGeneratorRuntimeV2(
                         "surface-2_5d export does not support coastal contributor kind " + contributor.kind());
             }
         }
-        if (!seen.containsAll(REQUIRED)) {
-            throw new IllegalArgumentException(
-                    "surface-2_5d export requires all four V2-2 coastal contributors; missing "
-                            + EnumSet.copyOf(REQUIRED).stream().filter(kind -> !seen.contains(kind)).toList());
-        }
         return new CoastalGeneratorRuntimeV2(beach, harbor, breakwater, cape,
                 new CoastalTransitionCompositorV2(plan, width, length, bindings));
+    }
+
+    /**
+     * Composition at one cell, or the canonical inactive sample when no coastal modifier exists at
+     * all. This is the same answer the compositor gives for a cell no declared contributor claims, so
+     * the size-0 case needs no separate field semantics (ADR 0040 D3).
+     */
+    CoastalTransitionCompositorV2.CompositionSample composeAt(
+            int globalX,
+            int globalZ,
+            HardLandWaterSourceV2 hardSource
+    ) {
+        return compositor == null
+                ? CoastalTransitionCompositorV2.CompositionSample.outside()
+                : compositor.sampleAt(globalX, globalZ, hardSource);
+    }
+
+    /** Beach descriptor sample, or the canonical OUTSIDE values when the kind is not declared. */
+    SandyBeachGeneratorV2.BeachSample beachSampleOrNull(int globalX, int globalZ) {
+        return beach == null ? null : beach.sampleAt(globalX, globalZ, HardLandWaterSourceV2.NONE);
+    }
+
+    /** Harbor descriptor sample, or {@code null} when the kind is not declared. */
+    HarborBasinGeneratorV2.HarborSample harborSampleOrNull(int globalX, int globalZ) {
+        return harbor == null ? null : harbor.sampleAt(globalX, globalZ, HardLandWaterSourceV2.NONE);
+    }
+
+    /** Breakwater descriptor sample, or {@code null} when the kind is not declared. */
+    BreakwaterHarborGeneratorV2.BreakwaterSample breakwaterSampleOrNull(int globalX, int globalZ) {
+        return breakwater == null ? null : breakwater.sampleAt(globalX, globalZ);
+    }
+
+    /** Cape descriptor sample, or {@code null} when the kind is not declared. */
+    RockyCapeGeneratorV2.CapeSample capeSampleOrNull(int globalX, int globalZ) {
+        return cape == null ? null : cape.sampleAt(globalX, globalZ, HardLandWaterSourceV2.NONE);
     }
 }

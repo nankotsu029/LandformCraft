@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "jobId": "550e8400-e29b-41d4-a716-4466554400a8",
+  "requestId": "oblique-multi-view-64",
+  "pathKind": "FIXTURE",
+  "providerId": "fixture-v2",
+  "modelId": "terrain-intent-v2.json",
+  "promptVersion": "terrain-intent-v2-structured-guards",
+  "responseId": "fixture-0123456789abcdef01234567",
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "totalTokens": 0
+  },
+  "attempts": 1,
+  "requestChecksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "intentChecksum": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "negotiatedCapabilities": ["TERRAIN_INTENT_V2_STRUCTURED"],
+  "capabilityCatalogVersion": "provider-capability-catalog-v1",
+  "startedAt": "2026-07-24T00:00:00Z",
+  "completedAt": "2026-07-24T00:00:01Z",
+  "supportLint": {
+    "surface": {
+      "contractVersion": "design-support-lint-v1",
+      "dispatchRegistryVersion": "production-dispatch-registry-v2",
+      "dispatchRegistryChecksum": "182f713ed16309183a72f237c32429d01cb08703c3e194c99a4991d8e65de219",
+      "reachabilityChecksum": "7d46e315299d585efb47dbd0c51d5ca761b00a1e79f9c16fb901ec63459fedcc",
+      "productionConnectedKinds": ["BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "SANDY_BEACH"],
+      "offlineProductionKinds": ["MEANDERING_RIVER", "PLAIN", "RIVER"],
+      "contractOnlyKinds": ["BACKSHORE_PLAINS"],
+      "requiredCompanionKinds": ["BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "SANDY_BEACH"],
+      "designCapabilities": ["TERRAIN_INTENT_V2_STRUCTURED"]
+    },
+    "dispatchDryRun": "NOT_SELECTABLE",
+    "selectablePipelineIds": [],
+    "declaredKinds": ["PLAIN"],
+    "findings": [
+      {
+        "ruleId": "v2.design.dispatch-unselectable",
+        "gateClass": "NON_GATING",
+        "featureKinds": [],
+        "detail": "no registered capability set would accept this intent; the design is published but cannot be exported as designed"
+      },
+      {
+        "ruleId": "v2.design.route-companion-missing",
+        "gateClass": "NON_GATING",
+        "featureKinds": ["BREAKWATER_HARBOR", "HARBOR_BASIN", "ROCKY_CAPE", "SANDY_BEACH"],
+        "detail": "a pipeline runtime requires these companion kinds in full; the intent declares a routed subset only"
+      }
+    ]
+  }
+}

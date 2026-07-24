@@ -5,6 +5,9 @@ import com.github.nankotsu029.landformcraft.core.v2.EcologyPlanCompilerV2;
 import com.github.nankotsu029.landformcraft.core.v2.FeatureMaterialProfilePlanCompilerV2;
 import com.github.nankotsu029.landformcraft.core.v2.MaterialProfilePlanCompilerV2;
 import com.github.nankotsu029.landformcraft.core.v2.MinecraftPalettePlanCompilerV2;
+import com.github.nankotsu029.landformcraft.core.v2.material.EnvironmentSurfaceMaterialV2;
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterialProfileV2;
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterializationV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.release.EnvironmentReleaseSourceV2;
 import com.github.nankotsu029.landformcraft.format.v2.release.ReleaseArtifactCatalogV2;
@@ -20,8 +23,6 @@ import com.github.nankotsu029.landformcraft.model.v2.material.feature.FeatureMat
 import com.github.nankotsu029.landformcraft.model.v2.minecraft.MinecraftPalettePlanV2;
 import com.github.nankotsu029.landformcraft.preview.v2.EnvironmentDiagnosticFieldFactoryV2;
 import com.github.nankotsu029.landformcraft.preview.v2.EnvironmentDiagnosticPreviewRendererV2;
-import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentCellSnapshotV2;
-import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentFieldSamplerV2;
 import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentValidationInputV2;
 import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentValidationReportV2;
 import com.github.nankotsu029.landformcraft.validation.v2.environment.EnvironmentValidatorV2;
@@ -127,9 +128,12 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
         Path environmentRoot = workRoot.resolve("environment-work");
         Files.createDirectories(environmentRoot);
 
-        GeneratedHydrology hydrologyGenerated = hydrology.generateHydrology(
+        // V2-19-10: the shared hydrology chain is prepared without its tiles, so the sealed material
+        // and palette plans below can be bound to the resolver before the final canonical block
+        // stream is written. Nothing re-derives a second block vocabulary per tile.
+        HydrologyPlanExportPipelineV2.PreparedHydrologyV2 preparedHydrology = hydrology.prepareHydrology(
                 request, requestSource, draftIntent, baseline, hydrologyRoot, budget, token);
-        WorldBlueprintV2 blueprint = hydrologyGenerated.blueprint();
+        WorldBlueprintV2 blueprint = preparedHydrology.blueprint();
         int width = request.bounds().width();
         int length = request.bounds().length();
         requireSharedEnvironmentOnly(blueprint);
@@ -178,7 +182,24 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
         Path featurePath = environmentRoot.resolve("feature-material-profile-plan.json");
         data.writeFeatureMaterialProfilePlan(featurePath, featureMaterial);
 
-        EnvironmentFieldSamplerV2 sampler = sharedCoastalFieldSampler();
+        // V2-19-10: the sealed material profile and palette plan now decide blocks. The override is
+        // resolved once, over the whole release-local domain, and bound to the single resolver every
+        // tile is written from — an environment plan that a Release publishes is therefore an
+        // environment the published blocks actually show.
+        CoastalEnvironmentFieldStackV2 sampler = CoastalEnvironmentFieldStackV2.create(
+                request.bounds(),
+                preparedHydrology.fields(),
+                preparedHydrology.routing(),
+                blueprint.geologyPlan(),
+                blueprint.lithologyPlan(),
+                blueprint.strataPlan(),
+                blueprint.climatePlan(),
+                blueprint.waterConditionPlan(),
+                snow,
+                material,
+                ecology);
+        EnvironmentSurfaceMaterialV2 surfaceMaterial = EnvironmentSurfaceMaterialV2.resolve(
+                palette, material, width, length, sampler.materialClasses(), token);
         EnvironmentValidationInputV2 validationInput = new EnvironmentValidationInputV2(
                 width, length, blueprint.canonicalChecksum(), sampler);
         EnvironmentValidationReportV2 report = validator.validate(validationInput, token);
@@ -194,6 +215,14 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
                 environmentPreviewRoot,
                 blueprint.canonicalChecksum(),
                 EnvironmentDiagnosticFieldFactoryV2.create(width, length, sampler),
+                token);
+
+        // The final canonical block stream is written last, after every environment gate has
+        // passed, so a rejected run never produces tiles at all.
+        GeneratedHydrology hydrologyGenerated = hydrology.completeHydrology(
+                preparedHydrology,
+                SurfaceMaterializationV2.withNaturalSurface(
+                        SurfaceMaterialProfileV2.builtIn(), surfaceMaterial),
                 token);
 
         EnvironmentReleaseSourceV2 source = new EnvironmentReleaseSourceV2(
@@ -270,22 +299,16 @@ final class EnvironmentFieldsExportPipelineV2 implements ProductionExportPipelin
         }
     }
 
-    /**
-     * Shared coastal environment stack without individual environment Feature overlays. Cells stay
-     * within HARD environment thresholds so validation measures the public sampler only.
-     */
-    private static EnvironmentFieldSamplerV2 sharedCoastalFieldSampler() {
-        EnvironmentCellSnapshotV2 healthy = new EnvironmentCellSnapshotV2(
-                400, 500, 500, 400, 500, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-        return (x, z) -> healthy;
-    }
-
     private static void requireSharedEnvironmentOnly(WorldBlueprintV2 blueprint) throws IOException {
         if (!blueprint.mangroveWetlandPlans().isEmpty()
                 || !blueprint.coralReefPlans().isEmpty()
                 || !blueprint.mountainPlans().isEmpty()
                 || !blueprint.volcanicPlans().isEmpty()
                 || !blueprint.fjordPlans().isEmpty()
+                // V2-19-10: the environment field stack reports no river／lake／tidal proximity because
+                // this pipeline declares no such executable kind. Rejecting the plan keeps that honest
+                // instead of silently sampling a coast-only water condition beside a declared river.
+                || !blueprint.meanderingRiverPlans().isEmpty()
                 || !blueprint.canyonPlans().isEmpty()) {
             throw new IOException(
                     "environment-fields shared pipeline rejects individual environment Feature plans; "

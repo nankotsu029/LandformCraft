@@ -61,13 +61,18 @@ class PublicDispatchReachabilityV2Test {
         // The V2-15-10 OFFLINE_PRODUCTION routes were displayed PLAN_ONLY because they changed no
         // block (the cross-cutting audit's finding). V2-19-05 carved and filled the bed and measured
         // the effect per kind from a published Release, which is the only thing that flips this axis;
-        // V2-19-07 added the PLAIN macro foundation producer the same way, on the coastal pipeline.
+        // V2-19-07 added the PLAIN macro foundation producer the same way, on the coastal pipeline;
+        // V2-15-11 added LAKE, V2-15-12 added CANYON and V2-15-13 added WATERFALL the same way, on
+        // the shared hydrology-plan pipeline.
         PublicDispatchReachabilityV2 projection = PublicDispatchReachabilityV2.builtIn();
 
         assertEquals(EnumSet.of(
                         TerrainIntentV2.FeatureKind.RIVER,
                         TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
-                        TerrainIntentV2.FeatureKind.PLAIN),
+                        TerrainIntentV2.FeatureKind.PLAIN,
+                        TerrainIntentV2.FeatureKind.LAKE,
+                        TerrainIntentV2.FeatureKind.CANYON,
+                        TerrainIntentV2.FeatureKind.WATERFALL),
                 projection.kindsWith(PublicDispatchReachabilityV2.ReachabilityV2.OFFLINE_PRODUCTION));
         for (TerrainIntentV2.FeatureKind kind
                 : projection.kindsWith(PublicDispatchReachabilityV2.ReachabilityV2.OFFLINE_PRODUCTION)) {
@@ -78,6 +83,12 @@ class PublicDispatchReachabilityV2Test {
                 projection.entry(TerrainIntentV2.FeatureKind.RIVER).pipelineId());
         assertEquals("v2.production.hydrology-plan.shared",
                 projection.entry(TerrainIntentV2.FeatureKind.MEANDERING_RIVER).pipelineId());
+        assertEquals("v2.production.hydrology-plan.shared",
+                projection.entry(TerrainIntentV2.FeatureKind.LAKE).pipelineId());
+        assertEquals("v2.production.hydrology-plan.shared",
+                projection.entry(TerrainIntentV2.FeatureKind.CANYON).pipelineId());
+        assertEquals("v2.production.hydrology-plan.shared",
+                projection.entry(TerrainIntentV2.FeatureKind.WATERFALL).pipelineId());
         // The producer runs in the surface pipeline's foundation tier, not the hydrology overlay.
         assertEquals("v2.production.surface-2_5d.coastal",
                 projection.entry(TerrainIntentV2.FeatureKind.PLAIN).pipelineId());

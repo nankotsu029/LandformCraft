@@ -219,6 +219,9 @@ class SchemaContractTest {
         v2.readTerrainIntent(Path.of("examples/v2/migration/mountain-stream.terrain-intent-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.design.DesignPackageCodecV2()
                 .readAudit(Path.of("examples/v2/design/design-audit-v2.json"));
+        // V2-19-08: both branches of the optional support lint have an example.
+        new com.github.nankotsu029.landformcraft.format.v2.design.DesignPackageCodecV2()
+                .readAudit(Path.of("examples/v2/design/design-audit-with-support-lint-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.design.DesignPackageCodecV2()
                 .readDraftEvidence(Path.of("examples/v2/design/image-draft-evidence-v2.json"));
         new com.github.nankotsu029.landformcraft.format.v2.constraint.extract.ExtractedMaskDraftArtifactCodecV2()

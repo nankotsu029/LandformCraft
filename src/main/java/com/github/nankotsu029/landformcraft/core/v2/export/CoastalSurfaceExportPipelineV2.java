@@ -5,6 +5,7 @@ import com.github.nankotsu029.landformcraft.core.v2.DiagnosticBlueprintCompilerV
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticCompileRequestV2;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticGateContractV2;
 import com.github.nankotsu029.landformcraft.core.v2.foundation.SurfaceFoundationExceptionV2;
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterializationV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.field.ConstraintFieldIndexCodecV2;
 import com.github.nankotsu029.landformcraft.format.v2.field.FieldValueSource;
@@ -92,6 +93,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
     private final DiagnosticGateContractV2 gateContract = DiagnosticGateContractV2.builtIn();
     private final TargetDrivenValidatorV2 targetValidator = TargetDrivenValidatorV2.builtIn();
     private final MacroFoundationStageV2 foundationStage = new MacroFoundationStageV2();
+    private final MaskFeatureReconcileStageV2 reconcileStage = new MaskFeatureReconcileStageV2();
     private final SurfaceFoundationOwnerGateV2 ownerGate = new SurfaceFoundationOwnerGateV2();
 
     @Override
@@ -128,7 +130,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
     ) throws IOException {
         return completeWithTiles(
                 prepare(request, requestSource, draftIntent, baseline, workRoot, budget, token),
-                Optional.empty(), token);
+                Optional.empty(), SurfaceMaterializationV2.builtIn(), token);
     }
 
     /**
@@ -175,15 +177,53 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
         data.writeGenerationRequest(requestPath, request);
         String requestChecksum = data.generationRequestChecksum(request);
 
-        WorldBlueprintV2 draftBlueprint = compile(request, draftIntent, requestChecksum, bounds);
-        CoastalGeneratorRuntimeV2 runtime = CoastalGeneratorRuntimeV2.create(draftBlueprint);
         // V2-18-09 macro foundation stage (ADR 0038 D5-1): with a complete explicit foundation input
         // (HARD LAND_WATER_MASK + declared per-medium base levels) the coastal four compose as
         // modifiers over the mask-derived background owner and the baseline argument is ignored
-        // (D8-1). Without it the legacy baseline path stays byte-identical (D8-2).
+        // (D8-1). Without it the legacy baseline path stays byte-identical (D8-2). The maps are bound
+        // once here (V2-19-14) because the reconcile pre-pass needs the HARD mask before the producer
+        // layers — which the pre-pass may move — are built.
+        Optional<MacroFoundationStageV2.FoundationInputsV2> foundationInputs;
+        try {
+            foundationInputs = foundationStage.bindInputs(request, requestSource, draftIntent, token);
+        } catch (SurfaceFoundationExceptionV2 exception) {
+            throw new IOException("macro foundation resolution failed [" + exception.failureCode() + "]: "
+                    + exception.getMessage(), exception);
+        }
+        WorldBlueprintV2 draftBlueprint = compile(request, draftIntent, requestChecksum, bounds);
+        CoastalGeneratorRuntimeV2 runtime = CoastalGeneratorRuntimeV2.create(draftBlueprint);
+        // V2-19-14 (ADR 0043): align the declared geometry with the HARD mask by one bounded rigid
+        // translation, before anything is compiled for keeps. Declared-only and opt-in: without the
+        // request field, and without an explicit foundation input to align against, nothing runs and
+        // the whole path is byte-identical. The pre-pass never moves the mask and never relaxes a
+        // gate — geometry that already agrees is left exactly where the author put it.
+        Optional<MaskFeatureReconcileV2> reconcile = Optional.empty();
+        TerrainIntentV2 alignedIntent = draftIntent;
+        if (foundationInputs.isPresent() && request.maskFeatureReconcile().isPresent()) {
+            MaskFeatureReconcileStageV2.ReconciledIntentV2 reconciled;
+            try {
+                reconciled = reconcileStage.reconcile(
+                        request.maskFeatureReconcile().get(), draftIntent, runtime,
+                        foundationInputs.get().mask(), width, length, token);
+            } catch (SurfaceFoundationExceptionV2 exception) {
+                throw new IOException("mask feature reconcile failed [" + exception.failureCode()
+                        + "]: " + exception.getMessage(), exception);
+            } catch (CoastalTransitionException exception) {
+                throw new IOException("coastal modifier composition rejected the declared geometry ["
+                        + exception.ruleId() + "]: " + exception.getMessage(), exception);
+            }
+            reconcile = Optional.of(reconciled.report());
+            if (reconciled.report().applied()) {
+                alignedIntent = reconciled.intent();
+                draftBlueprint = compile(request, alignedIntent, requestChecksum, bounds);
+                runtime = CoastalGeneratorRuntimeV2.create(draftBlueprint);
+            }
+        }
         Optional<MacroFoundationV2> foundation;
         try {
-            foundation = foundationStage.resolve(request, requestSource, draftIntent, token);
+            TerrainIntentV2 foundationIntent = alignedIntent;
+            foundation = foundationInputs.map(
+                    inputs -> foundationStage.resolve(inputs, request, foundationIntent));
         } catch (SurfaceFoundationExceptionV2 exception) {
             throw new IOException("macro foundation resolution failed [" + exception.failureCode() + "]: "
                     + exception.getMessage(), exception);
@@ -221,7 +261,9 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
         // "desired" indistinguishable from "actual"; binding to the request's declared constraint-map
         // digest records the honest provenance (the input map the desired field is meant to reproduce).
         // V2-19-06 does this per declared source instead of for the single map the path used to allow.
-        TerrainIntentV2 intent = withDeclaredInputDigests(draftIntent, request, foundation.isPresent());
+        // V2-19-14 (ADR 0043 D5): the sealed intent carries the reconciled geometry, so the published
+        // Release describes the terrain it actually contains; the applied offset is reported instead.
+        TerrainIntentV2 intent = withDeclaredInputDigests(alignedIntent, request, foundation.isPresent());
         Path intentPath = workRoot.resolve("terrain-intent.json");
         data.writeTerrainIntent(intentPath, intent);
         String intentChecksum = data.terrainIntentChecksum(intent);
@@ -286,25 +328,28 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                 ? List.of(ExportWarningV2.surfaceBaselineDeprecated())
                 : List.of();
         return new PreparedCoastalSurfaceV2(
-                bounds, tilePlan, blueprint, fields, coverage, warnings,
+                bounds, tilePlan, blueprint, fields, coverage, reconcile, warnings,
                 workRoot.resolve("tiles"), requestPath, intentPath, blueprintPath, indexPath,
                 constraintRoot, validationPath, previewRoot);
     }
 
     /**
      * Writes the final canonical block stream and assembles the Release source. The optional overlay
-     * is applied once, to the single resolver every tile is written from, so a route frozen before
-     * this call cannot drift between tiles or across a seam.
+     * and the surface materialization are applied once, to the single resolver every tile is written
+     * from, so a route or a material decision frozen before this call cannot drift between tiles or
+     * across a seam.
      */
     GeneratedCoastalSurface completeWithTiles(
             PreparedCoastalSurfaceV2 prepared,
             Optional<SurfaceBlockOverlayV2> overlay,
+            SurfaceMaterializationV2 materialization,
             CancellationToken token
     ) throws IOException {
         Objects.requireNonNull(prepared, "prepared");
         Objects.requireNonNull(overlay, "overlay");
+        Objects.requireNonNull(materialization, "materialization");
         GenerationRequestV2.Bounds bounds = prepared.bounds();
-        TerrainBlockResolver resolver = prepared.resolver(overlay);
+        TerrainBlockResolver resolver = prepared.resolver(overlay, materialization);
         List<SurfaceReleaseSourceV2.TileSource> tiles = writeTiles(
                 prepared.tilesRoot(), prepared.tilePlan(), prepared.blueprint(), resolver,
                 bounds.minY(), bounds.maxY(), token);
@@ -315,7 +360,8 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
                 prepared.previewRoot().resolve("index.json"), prepared.previewRoot(), tiles);
         return new GeneratedCoastalSurface(
                 new GeneratedSurface(source, prepared.blueprint(),
-                        Optional.of(prepared.coverage()), prepared.warnings()),
+                        Optional.of(prepared.coverage()), prepared.maskFeatureReconcile(),
+                        prepared.warnings()),
                 prepared.fields(), resolver);
     }
 
@@ -336,6 +382,7 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             WorldBlueprintV2 blueprint,
             CoastalSurfaceFieldsV2 fields,
             IntentContributionCoverageV2 coverage,
+            Optional<MaskFeatureReconcileV2> maskFeatureReconcile,
             List<ExportWarningV2> warnings,
             Path tilesRoot,
             Path requestPath,
@@ -352,11 +399,16 @@ final class CoastalSurfaceExportPipelineV2 implements ProductionExportPipelineV2
             Objects.requireNonNull(blueprint, "blueprint");
             Objects.requireNonNull(fields, "fields");
             Objects.requireNonNull(coverage, "coverage");
+            Objects.requireNonNull(maskFeatureReconcile, "maskFeatureReconcile");
             warnings = List.copyOf(warnings);
         }
 
-        TerrainBlockResolver resolver(Optional<SurfaceBlockOverlayV2> overlay) {
-            TerrainBlockResolver base = fields.resolver(bounds.minY(), bounds.waterLevel());
+        TerrainBlockResolver resolver(
+                Optional<SurfaceBlockOverlayV2> overlay,
+                SurfaceMaterializationV2 materialization
+        ) {
+            TerrainBlockResolver base =
+                    fields.resolver(bounds.minY(), bounds.waterLevel(), materialization);
             return overlay.map(value -> value.decorate(base)).orElse(base);
         }
     }

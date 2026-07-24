@@ -363,3 +363,11 @@ Taskを完了しても、依頼されていない次Taskを開始しない。
 * Schema、example、ADR、docs、roadmapが実装と一致している
 * 未実装機能を実装済みと表現していない
 * secret、server artifact、生成物、`.task-context/`が差分へ混入していない
+
+## 16. Commit message規約
+
+Task Scopeの変更をcommitする先頭行は、対象Task IDを`<Task ID>: <変更内容の要約>`の形式で記す（例: `V2-19-15: AGENTS.mdへcommit message規約を追加`）。複数Taskにまたがる変更は分割し、1 commitへ複数Task IDを混在させない。単一Taskに紐付かない変更（横断監査文書、roadmap構造の是正、CI／依存更新等）は、Task IDの代わりに`docs:`／`chore:`／`build:`／`audit:`のいずれかを先頭に置く。
+
+先頭行は変更対象と内容を具体的に記す。`test`／`tset`／`修正`／`更新`／`作業`のように対象と内容を特定できない語だけの先頭行を禁止する（根拠: [2026-07-23横断監査](docs/audits/cross-cutting-audit-2026-07-23.md) §6-6「commit hygiene」、提案T-Q2）。bodyは変更理由（なぜ）を簡潔に記すことを推奨する。
+
+本規約は今後のcommitへ適用する。既存commitのrebase／amend／force-pushによる書き換えは行わない。

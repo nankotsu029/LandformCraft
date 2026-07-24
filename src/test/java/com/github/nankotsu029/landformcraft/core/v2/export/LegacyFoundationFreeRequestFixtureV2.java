@@ -39,7 +39,8 @@ final class LegacyFoundationFreeRequestFixtureV2 {
         codec.writeGenerationRequest(target, new GenerationRequestV2(
                 honored.requestVersion(), honored.requestId(), honored.bounds(), honored.prompt(),
                 honored.referenceImages(), honored.constraintMaps(), honored.generation(),
-                honored.constraintMapBudget(), Optional.empty()));
+                honored.constraintMapBudget(), Optional.empty(), Optional.empty(),
+                Optional.empty()));
         return target;
     }
 }

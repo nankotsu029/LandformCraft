@@ -11,8 +11,11 @@ import com.github.nankotsu029.landformcraft.model.v2.design.SoftDraftConfirmatio
 import com.github.nankotsu029.landformcraft.core.GenerationExecutors;
 import com.github.nankotsu029.landformcraft.format.Sha256;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
+import com.github.nankotsu029.landformcraft.format.v2.design.DesignArtifactVerifierV2;
 import com.github.nankotsu029.landformcraft.format.v2.design.DesignArtifactsV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
+import com.github.nankotsu029.landformcraft.model.v2.design.DesignAuditV2;
+import com.github.nankotsu029.landformcraft.model.v2.design.DesignSupportLintV2;
 import com.github.nankotsu029.landformcraft.model.v2.design.ImageDraftEvidenceV2;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -31,6 +34,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -307,6 +311,61 @@ class TerrainDesignApplicationServiceV2Test {
         assertFalse(body.contains(Base64.getEncoder().encodeToString(secret.getBytes(StandardCharsets.UTF_8))),
                 "source metadata must not survive re-encoding");
         assertFalse(body.contains(secret));
+    }
+
+    /**
+     * V2-19-08: the reachable set reaches the provider before it designs, and the dispatch dry-run of
+     * whatever it returns is recorded on the published audit. Both are advisory — this fixture is
+     * fully selectable, and the unselectable case is covered by the CLI and Paper surfaces.
+     */
+    @Test
+    void theProviderIsToldTheReachableSetAndTheAuditRecordsTheDryRun(@TempDir Path root) throws Exception {
+        Path workspace = copyAzureCoast(root.resolve("support-lint"));
+        String intentJson = Files.readString(workspace.resolve("terrain-intent-v2.json"));
+        AtomicReference<String> captured = new AtomicReference<>("");
+
+        try (GenerationExecutors executors = GenerationExecutors.create(2, 1, 4);
+             TestServer anthropicServer = new TestServer(exchange -> {
+                 captured.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+                 respondAnthropic(exchange, intentJson);
+             })) {
+            TerrainDesignPolicy policy = new TerrainDesignPolicy(
+                    Duration.ofSeconds(5), 2, Duration.ofMillis(10), 4_096, 20, 100_000);
+            TerrainDesignApplicationServiceV2 service = new TerrainDesignApplicationServiceV2(
+                    executors,
+                    (path, model) -> new AnthropicTerrainDesignProviderV2(
+                            executors, "test-secret", model, anthropicServer.uri(), policy,
+                            Clock.systemUTC(), HttpClient.newHttpClient()));
+
+            DesignArtifactsV2 artifacts = service.design(new DesignDispatchRequestV2(
+                    2,
+                    DesignPathKindV2.ANTHROPIC,
+                    EnumSet.of(DesignCapabilityV2.TERRAIN_INTENT_V2_STRUCTURED),
+                    workspace.resolve("request-v2.json"),
+                    root.resolve("designs-support-lint"),
+                    "claude-test-v2",
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty()
+            )).get(30, TimeUnit.SECONDS);
+
+            String body = captured.get();
+            assertTrue(body.contains("design-support-lint-v1"), "the advisory block is missing");
+            assertTrue(body.contains("SANDY_BEACH") && body.contains("Offline export only"), body);
+            // The frozen guard contract keeps its own version; the advisory is versioned separately.
+            assertEquals("terrain-intent-v2-structured-guards", artifacts.audit().promptVersion());
+
+            DesignSupportLintV2 lint = artifacts.audit().supportLintOrEmpty().orElseThrow();
+            assertEquals(DesignSupportLintV2.DispatchDryRunV2.SELECTABLE, lint.dispatchDryRun());
+            assertEquals(List.of("BACKSHORE_PLAINS"),
+                    lint.kindsWith(DesignSupportLintV2.RULE_KIND_CONTRACT_ONLY));
+            assertTrue(lint.allFindingsAreNonGating());
+
+            // Strict read-back: the lint survives the schema-validated design package round trip.
+            DesignAuditV2 readBack = new DesignArtifactVerifierV2().verify(artifacts.directory()).audit();
+            assertEquals(lint, readBack.supportLintOrEmpty().orElseThrow());
+            assertEquals(artifacts.audit(), readBack);
+        }
     }
 
     private static int countOccurrences(String haystack, String needle) {

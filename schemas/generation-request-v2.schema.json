@@ -24,7 +24,9 @@
     },
     "generation": { "$ref": "#/$defs/generation" },
     "constraintMapBudget": { "$ref": "#/$defs/budget" },
-    "foundationBaseLevels": { "$ref": "#/$defs/foundationBaseLevels" }
+    "foundationBaseLevels": { "$ref": "#/$defs/foundationBaseLevels" },
+    "foundationDetail": { "$ref": "#/$defs/foundationDetail" },
+    "maskFeatureReconcile": { "$ref": "#/$defs/maskFeatureReconcile" }
   },
   "$defs": {
     "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
@@ -246,6 +248,25 @@
       "properties": {
         "landSurfaceY": { "type": "integer", "minimum": -2147, "maximum": 2147 },
         "waterBedY": { "type": "integer", "minimum": -2147, "maximum": 2147 }
+      }
+    },
+    "foundationDetail": {
+      "type": "object", "additionalProperties": false,
+      "description": "ADR 0041 D3 (V2-19-12): optional coherent multi-scale detail for the macro foundation background elevation. Replaces the flat per-medium base level on background base-level cells only; never changes the land-water medium, and never touches HEIGHT_GUIDE, producer or surface-modifier cells. wavelengthBlocks is a power of two (frequency = 1 / wavelength); the amplitude is a hard bound. Requires foundationBaseLevels. Absent leaves the request byte-identical to a pre-V2-19-12 one.",
+      "required": [ "landAmplitudeBlocks", "waterAmplitudeBlocks", "wavelengthBlocks", "octaves" ],
+      "properties": {
+        "landAmplitudeBlocks": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "waterAmplitudeBlocks": { "type": "integer", "minimum": 0, "maximum": 32 },
+        "wavelengthBlocks": { "type": "integer", "minimum": 8, "maximum": 1024 },
+        "octaves": { "type": "integer", "minimum": 1, "maximum": 6 }
+      }
+    },
+    "maskFeatureReconcile": {
+      "type": "object", "additionalProperties": false,
+      "description": "ADR 0043 D3 (V2-19-14): optional mask <-> feature reconcile pre-pass. The export spine aligns the declared feature geometry with the HARD LAND_WATER_MASK by one rigid integer-block translation bounded by toleranceBlocks on each axis, chosen before the Blueprint is compiled. The mask is never moved, no fail-closed gate is relaxed, and geometry that already agrees with the mask is never translated. Requires foundationBaseLevels, and width * length * (2*toleranceBlocks+1)^2 must stay within the 128000000 evaluation budget. Absent leaves the request byte-identical to a pre-V2-19-14 one.",
+      "required": [ "toleranceBlocks" ],
+      "properties": {
+        "toleranceBlocks": { "type": "integer", "minimum": 1, "maximum": 8 }
       }
     }
   }

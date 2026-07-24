@@ -72,17 +72,86 @@ support列でもPaper到達性でもない: 両kindの`paper_apply`は`EXPERIMEN
 `v2.production.surface-2_5d.coastal`である。実測は`harbor-cove-64-honored-plain`と
 baseline `harbor-cove-64-honored`のfinal canonical block stream差分（changed 1238＝`SOLID_SHAPE` 713／
 `MATERIAL` 525／`FLUID` 0）で、`paper_apply`は`UNSUPPORTED`のまま（V2-17専管）、
-`standalone_usage`も`PARTIAL`のまま（coastal 4種必須の緩和は`V2-19-09`）である。
+`standalone_usage`も`PARTIAL`のままである。`V2-19-09`（[ADR 0040](../adr/0040-coastal-contributor-set-cardinality.md) D1）が
+coastal 4種必須を撤廃したため`PLAIN`単体intentは実際にexportできる（fixture
+`harbor-cove-64-honored-coastless`）が、`SUPPORTED`昇格には単体構成でのblock materialization証拠が
+別途必要であり、ADR 0040 D7が後続leafへ委ねている。本registryのprojection（reachability・
+materialization分類・binding件数）は`V2-19-09`で不変である。
+
+3件目の適用は`V2-15-11`（`LAKE`基本 public wiring）で、`LAKE`を`OFFLINE_PRODUCTION`＋
+MATERIALIZEDとして追加した。`LAKE`は既に`HydrologyLakeModuleV2`（V2-3-04起源）へdedicated
+bindingが確定していたためmodule binding件数は不変で、`hydrology-plan`共有pipeline（RIVER／
+MEANDERING_RIVERと同一pipeline id）へ配線した。`LakeBedMaterializationV2`（`lake-bed-materialization-v1`）
+がCLOSED terminal policyの基本だけをCARVE_SOLID→ADD_FLUIDで実体化する（OPEN_SPILLの
+spillway出口はまだblock効果へ配線されておらず、`v2.lake.spill-not-wired`でfail closed拒否する —
+RIVERのmarine mouth「まだ配線されていない」と同じ姿勢）。実測は`harbor-cove-64-honored-lake`と
+baseline `harbor-cove-64-honored`のfinal canonical block stream差分で、宣言effect class
+`{SOLID_SHAPE, FLUID}`と完全一致する。oxbow cutoff subtype（`OXBOW_LAKE`）は既存の
+`OxbowLakePlanCompilerV2`／`OxbowLakeGeneratorV2`（V2-10起源）が関係graph束縛（HARD
+`SUPPORTED_BY`host＋HARD `ORIGINATES_AT`parent river）を要求する構造的に別の生成経路であり、
+LAKEの基本ring/spill生成経路と同一kernelを共有しない。1 Taskで2個目の独立generatorを抱えない
+という実行規約（task-execution-guide.md §4）に従い本Taskの対象外とし、後続leaf`V2-15-48`へ
+分離した（詳細は[Task Index](task-index.md) §15.2 `V2-15-11`／`V2-15-48`行）。
+
+4件目の適用は`V2-15-12`（`CANYON` public wiring）で、`CANYON`を`OFFLINE_PRODUCTION`＋
+MATERIALIZEDとして追加した。`CANYON`は既に`LandformCanyonModuleV2`（V2-3-05起源）へdedicated
+bindingが確定していたためmodule binding件数は不変で、`hydrology-plan`共有pipeline（RIVER／
+LAKEと同一pipeline id）へ配線した。CANYONは独立した地形ではなく既存の`MEANDERING_RIVER` reach
+へHARD `WITHIN`で束縛され共有bedを持つ横断面のみで、fluidを一切所有しない
+（`CanyonBedMaterializationV2`、`canyon-bed-materialization-v1`、CARVE_SOLIDのみ。共有channel
+列は常にRIVERのCARVE_SOLID→ADD_FLUIDが優先するcomposition順序）。実測は
+`harbor-cove-64-honored-canyon`とbaseline `harbor-cove-64-honored`のfinal canonical block
+stream差分（宣言effect class`{SOLID_SHAPE, FLUID}`、FLUIDは共有RIVERの寄与）に加え、
+`CanyonBlockConformanceV2`がfinal tile streamだけからcanyon自身の彫り込みがdry（fluid非所有）
+であることを構造的に確認する。本leafの着手中、HARD relationの評価に使われていた
+`HardPreflightGateV2`／`DiagnosticGateContractV2`の「production-connected」判定が
+`PRODUCTION_CONNECTED`（coastal 4、Paper完全接続）だけを見ており、ADR 0039の
+`OFFLINE_PRODUCTION`route（RIVER／LAKE／CANYON自身を含む）を宛先とするHARD relationを
+誤って`v2.preflight.hard-relation-unconsumed`で拒否する潜在的gapが判明したため、
+`HardPreflightGateV2`が`PublicDispatchReachabilityV2`も参照するよう是正した
+（`DiagnosticGateContractV2.isProductionConnected`自体の意味・戻り値は不変。他箇所での
+利用・pinned testへの影響なし）。generator field math・v1 golden・coastal既存Release
+checksum・Release format不変、full `./gradlew test`／`./gradlew build` PASS。
+
+5件目の適用は`V2-15-13`（`WATERFALL` public wiring）で、`WATERFALL`を`OFFLINE_PRODUCTION`＋
+MATERIALIZEDとして追加した。`WATERFALL`は既に`HydrologyWaterfallModuleV2`（V2-3-06起源）へ
+dedicated bindingが確定していたためmodule binding件数は不変で、`hydrology-plan`共有pipeline
+（RIVER／LAKE／CANYONと同一pipeline id）へ配線した。WATERFALLは独立した地形ではなく既存の
+`MEANDERING_RIVER` reachへHARD `ON_PATH_OF`で束縛される落差であり、本leafが実体化するのは
+**2.5D surfaceが所有する範囲＝落ち口下流のplunge basin**だけである
+（`WaterfallBasinMaterializationV2`、`waterfall-basin-materialization-v1`、
+CARVE_SOLID→ADD_FLUID）。basinのfootprintはhost riverのfrozen channel cellを構成上すべて除外し
+（`HOST_CHANNEL`）、lip crestの下流半平面へclipされる（`CREST_HALF_PLANE`）ため、host channelの
+bed／water決定と衝突しない。実測は`harbor-cove-64-honored-waterfall`とbaseline
+`harbor-cove-64-honored`のfinal canonical block stream差分（宣言effect class
+`{SOLID_SHAPE, FLUID}`、host reachの寄与を含む）に加え、`WaterfallBlockConformanceV2`が
+final tile streamだけからbasin深さ・host reachとの水continuity・**実測落差＝宣言drop**・
+containment envelopeを構造的に確認する。
+
+**本leafのScopeはsurface側だけである。** `WATERFALL_VOLUME`（falling column `ADD_FLUID`＋
+behind-fall `CARVE_SOLID`、`WaterfallVolumePlanV2`／`waterfall-volume-contract-v1`）は
+`sparse-volume` capability prefixを要し、そのprefixは`environment-fields`を含む。
+`EnvironmentFieldsExportPipelineV2`は`V2-19-10`の判断で`meanderingRiverPlans`を持つBlueprintを
+fail-closedで拒否する（environment field stackがriver proximity／freshwater discharge入力を
+実測できず、coast-onlyのwater conditionを宣言済みriverの傍らで黙って報告しないため）。
+WATERFALLはhost riverなしに宣言できないので、volume overlayの配線はこのenvironment側の
+実測化を前提とする。両者はそれぞれ独立したsubsystemであり、task-execution-guide.md §4に従い
+本leafでは抱えず、後続leaf`V2-15-49`（environment stackのhydrology proximity実測化）と
+`V2-15-50`（`WATERFALL_VOLUME` sparse-volume overlay配線）へ分離した
+（詳細は[Task Index](task-index.md) §15.2 `V2-15-13`／`V2-15-49`／`V2-15-50`行）。
+`WATERFALL_VOLUME`はFeatureKindではなくVOLUME_OVERLAYのままであり、本leafでも
+FeatureKind化していない。generator field math・v1 golden・coastal既存Release checksum・
+Release format不変。
 
 <!-- public-dispatch-reachability-v1:start -->
 
 - Contract: `public-dispatch-reachability-v1`
 - Axes: Feature Support Catalog support columns, public dispatch reachability, and block materialization are independent; none implies another, and an intentional no-op route is never Feature-promotion evidence
-- Reachability: production-connected=4, offline-production=3, contract-only=1, not-publicly-dispatchable=52
+- Reachability: production-connected=4, offline-production=6, contract-only=1, not-publicly-dispatchable=49
 - Production-connected (materialized surface owners): `BREAKWATER_HARBOR`, `HARBOR_BASIN`, `ROCKY_CAPE`, `SANDY_BEACH`
-- Offline-production, block-effect measured by the portfolio: `MEANDERING_RIVER`, `PLAIN`, `RIVER`
+- Offline-production, block-effect measured by the portfolio: `CANYON`, `LAKE`, `MEANDERING_RIVER`, `PLAIN`, `RIVER`, `WATERFALL`
 - Offline-production, plan-only until portfolio block-effect evidence: (none)
 - Contract-only diagnostic inputs: `BACKSHORE_PLAINS`
-- Canonical projection SHA-256: `7d46e315299d585efb47dbd0c51d5ca761b00a1e79f9c16fb901ec63459fedcc`
+- Canonical projection SHA-256: `1c11c1207d666d7a9f91a74f23149b987252fc03eee67dda67d037d723ca058d`
 
 <!-- public-dispatch-reachability-v1:end -->

@@ -2,6 +2,7 @@ package com.github.nankotsu029.landformcraft.core.v2.export;
 
 import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticGateContractV2;
+import com.github.nankotsu029.landformcraft.core.v2.catalog.PublicDispatchReachabilityV2;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapDecodeLimits;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapInputException;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapPngHeaderV2;
@@ -47,7 +48,10 @@ import java.util.Set;
 public final class HardPreflightGateV2 {
     /** A HARD constraint compiles to a validation target rule no evaluator consumes yet. */
     public static final String RULE_HARD_CONSTRAINT_UNEVALUATED = "v2.preflight.hard-constraint-unevaluated";
-    /** A HARD relation points at a not-production-connected (contract-only / unconnected) endpoint kind. */
+    /**
+     * A HARD relation points at an endpoint kind no production route consumes (contract-only, or not
+     * publicly dispatchable at all — V2-15-12 excludes any {@code OFFLINE_PRODUCTION}-routed kind).
+     */
     public static final String RULE_HARD_RELATION_UNCONSUMED = "v2.preflight.hard-relation-unconsumed";
     /** A HARD map reference cannot be resolved: missing file, digest mismatch, or dimension mismatch. */
     public static final String RULE_MAP_REFERENCE_UNRESOLVED = "v2.preflight.map-reference-unresolved";
@@ -66,6 +70,7 @@ public final class HardPreflightGateV2 {
             TargetDrivenValidatorV2.BUILT_IN_EVALUATED_CONSTRAINT_RULES;
 
     private final DiagnosticGateContractV2 gateContract;
+    private final PublicDispatchReachabilityV2 reachability;
     private final SecureConstraintMapSourceLoader mapLoader;
     private final ConstraintMapDecodeLimits mapLimits;
 
@@ -74,15 +79,18 @@ public final class HardPreflightGateV2 {
     }
 
     public HardPreflightGateV2(DiagnosticGateContractV2 gateContract) {
-        this(gateContract, new SecureConstraintMapSourceLoader(), ConstraintMapDecodeLimits.defaults());
+        this(gateContract, PublicDispatchReachabilityV2.builtIn(),
+                new SecureConstraintMapSourceLoader(), ConstraintMapDecodeLimits.defaults());
     }
 
     HardPreflightGateV2(
             DiagnosticGateContractV2 gateContract,
+            PublicDispatchReachabilityV2 reachability,
             SecureConstraintMapSourceLoader mapLoader,
             ConstraintMapDecodeLimits mapLimits
     ) {
         this.gateContract = Objects.requireNonNull(gateContract, "gateContract");
+        this.reachability = Objects.requireNonNull(reachability, "reachability");
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.mapLimits = Objects.requireNonNull(mapLimits, "mapLimits");
     }
@@ -239,22 +247,36 @@ public final class HardPreflightGateV2 {
     }
 
     /**
-     * The relation is unconsumed when a resolvable endpoint feature's kind is not production-connected
-     * (the same criterion the V2-18-02 report uses, so the gate rejects exactly what the report flags).
+     * The relation is unconsumed when a resolvable endpoint feature's kind has no production
+     * consumer at all: neither {@code PRODUCTION_CONNECTED} (the strict, Paper-complete
+     * {@link DiagnosticGateContractV2#isProductionConnected} sense the V2-18-02 report also uses) nor
+     * an ADR 0039 {@code OFFLINE_PRODUCTION} dispatch route (V2-15-10 onward). A kind on the latter
+     * route is genuinely compiled by production code — {@code CanyonPlanCompilerV2}'s HARD
+     * {@code WITHIN} resolution is exactly such a consumer for a {@code MEANDERING_RIVER} endpoint —
+     * so treating only the narrower, Paper-complete axis as "consumed" would reject an honorable
+     * relation the export spine actually enforces.
      */
     private TerrainIntentV2.FeatureKind unconnectedEndpointKind(
             TerrainIntentV2.Relation relation,
             Map<String, TerrainIntentV2.FeatureKind> featureKinds
     ) {
         TerrainIntentV2.FeatureKind from = endpointKind(relation.from(), featureKinds);
-        if (from != null && !gateContract.isProductionConnected(from)) {
+        if (from != null && !hasProductionConsumer(from)) {
             return from;
         }
         TerrainIntentV2.FeatureKind to = endpointKind(relation.to(), featureKinds);
-        if (to != null && !gateContract.isProductionConnected(to)) {
+        if (to != null && !hasProductionConsumer(to)) {
             return to;
         }
         return null;
+    }
+
+    private boolean hasProductionConsumer(TerrainIntentV2.FeatureKind kind) {
+        if (gateContract.isProductionConnected(kind)) {
+            return true;
+        }
+        return reachability.entry(kind).reachability()
+                == PublicDispatchReachabilityV2.ReachabilityV2.OFFLINE_PRODUCTION;
     }
 
     private static TerrainIntentV2.FeatureKind endpointKind(

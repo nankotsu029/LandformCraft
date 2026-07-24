@@ -278,7 +278,13 @@ public final class WaterfallGeneratorV2 {
             int plungePoolFloor,
             int bedElevation
     ) {
-        int rawValue(WaterfallField field) {
+        /**
+         * Read-only field projection. V2-15-13 widened it to {@code public} so the shared
+         * {@code hydrology-plan} field sampler can merge waterfall fields the same way it merges
+         * river, lake and canyon fields; the returned values and the generator's field math are
+         * unchanged.
+         */
+        public int rawValue(WaterfallField field) {
             return switch (field) {
                 case LIP_MASK -> lipMask;
                 case BASE_MASK -> baseMask;

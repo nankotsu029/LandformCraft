@@ -148,7 +148,8 @@ class ManualConstraintMapGenerationServiceV2Test {
                 fixture.request().requestVersion(), fixture.request().requestId(), fixture.request().bounds(),
                 fixture.request().prompt(), fixture.request().referenceImages(), sources,
                 fixture.request().generation(), fixture.request().constraintMapBudget(),
-                fixture.request().foundationBaseLevels());
+                fixture.request().foundationBaseLevels(), fixture.request().foundationDetail(),
+                java.util.Optional.empty());
         List<TerrainIntentV2.ConstraintMapBinding> bindings = new ArrayList<>(fixture.intent().mapReferences());
         bindings.add(new TerrainIntentV2.ConstraintMapBinding(
                 "land-water-two-binding", "constraint-source:land-water-two",
@@ -186,7 +187,8 @@ class ManualConstraintMapGenerationServiceV2Test {
                 fixture.request().requestVersion(), fixture.request().requestId(), fixture.request().bounds(),
                 fixture.request().prompt(), fixture.request().referenceImages(), sources,
                 fixture.request().generation(), fixture.request().constraintMapBudget(),
-                fixture.request().foundationBaseLevels());
+                fixture.request().foundationBaseLevels(), fixture.request().foundationDetail(),
+                java.util.Optional.empty());
         List<TerrainIntentV2.ConstraintMapBinding> bindings = new ArrayList<>(fixture.intent().mapReferences());
         bindings.add(new TerrainIntentV2.ConstraintMapBinding(
                 "land-water-soft-binding", "constraint-source:land-water-soft",
@@ -343,6 +345,7 @@ class ManualConstraintMapGenerationServiceV2Test {
                 "explicit height meaning", List.of(), List.of(source),
                 new GenerationRequestV2.GenerationSettings(1L, 32),
                 GenerationRequestV2.ConstraintMapBudget.defaults(),
+                java.util.Optional.empty(), java.util.Optional.empty(),
                 java.util.Optional.empty());
         TerrainIntentV2.ConstraintMapBinding binding = new TerrainIntentV2.ConstraintMapBinding(
                 "height-binding", source.sourceId(), TerrainIntentV2.ConstraintMapRole.HEIGHT_GUIDE,
@@ -398,6 +401,7 @@ class ManualConstraintMapGenerationServiceV2Test {
                 2, "manual-constraint-island", new GenerationRequestV2.Bounds(width, length, 0, 100, 50),
                 "AI-free constraint fixture", List.of(), sources,
                 new GenerationRequestV2.GenerationSettings(827_413L, 32), budget,
+                java.util.Optional.empty(), java.util.Optional.empty(),
                 java.util.Optional.empty());
     }
 
@@ -455,7 +459,8 @@ class ManualConstraintMapGenerationServiceV2Test {
         return new GenerationRequestV2(
                 source.requestVersion(), source.requestId(), source.bounds(), source.prompt(),
                 source.referenceImages(), source.constraintMaps(), source.generation(), budget,
-                source.foundationBaseLevels());
+                source.foundationBaseLevels(), source.foundationDetail(),
+                java.util.Optional.empty());
     }
 
     private static GenerationRequestV2 replaceChecksum(
@@ -474,7 +479,8 @@ class ManualConstraintMapGenerationServiceV2Test {
         return new GenerationRequestV2(
                 request.requestVersion(), request.requestId(), request.bounds(), request.prompt(),
                 request.referenceImages(), sources, request.generation(), request.constraintMapBudget(),
-                request.foundationBaseLevels());
+                request.foundationBaseLevels(), request.foundationDetail(),
+                java.util.Optional.empty());
     }
 
     private static GenerationRequestV2.CoordinateMapping mapping(int width, int length) {

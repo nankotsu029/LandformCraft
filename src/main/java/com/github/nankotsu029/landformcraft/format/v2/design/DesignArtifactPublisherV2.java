@@ -115,7 +115,8 @@ public final class DesignArtifactPublisherV2 {
                 audit.negotiatedCapabilities(),
                 audit.capabilityCatalogVersion(),
                 audit.startedAt(),
-                audit.completedAt()
+                audit.completedAt(),
+                audit.supportLint()
         );
     }
 

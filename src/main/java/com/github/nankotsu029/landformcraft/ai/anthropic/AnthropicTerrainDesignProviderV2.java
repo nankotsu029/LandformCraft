@@ -66,6 +66,7 @@ public final class AnthropicTerrainDesignProviderV2 extends AbstractHttpTerrainD
         message.put("role", "user");
         ArrayNode content = message.putArray("content");
         addText(content, TerrainIntentPromptV2.userText(request.generationRequest()));
+        addText(content, TerrainIntentPromptV2.supportSurfaceText(request.supportSurface()));
         request.images().forEach(image -> {
             addText(content, TerrainIntentPromptV2.imageRoleText(image));
             ObjectNode imageContent = content.addObject();

@@ -247,7 +247,8 @@ class HeightGuideMacroFoundationV2Test {
         return new GenerationRequestV2(
                 request.requestVersion(), request.requestId(), request.bounds(), request.prompt(),
                 request.referenceImages(), sources, request.generation(),
-                request.constraintMapBudget(), request.foundationBaseLevels());
+                request.constraintMapBudget(), request.foundationBaseLevels(), request.foundationDetail(),
+                java.util.Optional.empty());
     }
 
     private static GenerationRequestV2 withBounds(
@@ -257,7 +258,8 @@ class HeightGuideMacroFoundationV2Test {
         return new GenerationRequestV2(
                 request.requestVersion(), request.requestId(), bounds, request.prompt(),
                 request.referenceImages(), request.constraintMaps(), request.generation(),
-                request.constraintMapBudget(), request.foundationBaseLevels());
+                request.constraintMapBudget(), request.foundationBaseLevels(), request.foundationDetail(),
+                java.util.Optional.empty());
     }
 
     private static TerrainIntentV2 withGuideStrength(

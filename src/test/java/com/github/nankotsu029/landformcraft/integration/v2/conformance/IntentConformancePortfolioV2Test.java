@@ -7,6 +7,7 @@ import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportRequest
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2ExportResultV2;
 import com.github.nankotsu029.landformcraft.core.v2.export.Release2HydrologyExportApplicationServiceV2;
 import com.github.nankotsu029.landformcraft.model.v2.FieldArtifactDescriptorV2;
+import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.HydrologyValidationArtifactV2;
 import com.github.nankotsu029.landformcraft.model.v2.MetricResultV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -120,8 +122,21 @@ class IntentConformancePortfolioV2Test {
     void theBeachLandBandsStayConnectedToTheDeclaredBackshore(
             IntentConformancePortfolioV2.CaseV2 portfolioCase) {
         IntentConformancePortfolioV2.MeasurementsV2 measurements = MEASUREMENTS.get(portfolioCase.id());
-        IntentConformancePortfolioV2.BeachContinuityV2 beach = measurements.beach();
-        IntentConformancePortfolioV2.HinterlandV2 hinterland = measurements.backshorePlains();
+        // V2-19-09 (ADR 0040): a case may declare any coastal subset, so first pin that what is
+        // measured is exactly what the case declares — a silently dropped beach still fails here.
+        assertEquals(
+                portfolioCase.declaredCoastalKinds().contains(TerrainIntentV2.FeatureKind.SANDY_BEACH),
+                measurements.beach().isPresent(), "beach measurement presence");
+        assertEquals(
+                portfolioCase.declaredCoastalKinds()
+                        .contains(TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS),
+                measurements.backshorePlains().isPresent(), "backshore measurement presence");
+        if (measurements.beach().isEmpty()) {
+            return;
+        }
+        IntentConformancePortfolioV2.BeachContinuityV2 beach = measurements.beach().orElseThrow();
+        IntentConformancePortfolioV2.HinterlandV2 hinterland =
+                measurements.backshorePlains().orElseThrow();
 
         assertTrue(beach.landBandCells() > 0, "the beach owns no foreshore/backshore cell");
         // A foreshore or backshore cell that is water is a beach the terrain never actually built.
@@ -377,6 +392,155 @@ class IntentConformancePortfolioV2Test {
         assertEquals(175, changedBackgroundColumns);
     }
 
+    @Test
+    void theCoherentDetailReachesTheFinalCanonicalBlockStream() throws Exception {
+        // V2-19-12 (ADR 0041), measured the V2-19-01 way: the detail Release against the otherwise
+        // identical one without foundationDetail. Detail moves the background land surface (SOLID_SHAPE)
+        // and the background sea bed under the water column (FLUID); the surface material rides along
+        // (MATERIAL). A detail that only reached the height sidecar would show up here as an empty diff.
+        FeatureMaterializationV2.BlockEffectV2 block = FeatureMaterializationV2.measureBlockEffect(
+                RELEASES.get("harbor-cove-64-honored"), RELEASES.get("harbor-cove-64-honored-detail"));
+
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertTrue(block.changedCells() > 0, () -> "coherent detail changed no block: " + block);
+        assertEquals(DETAIL_CHANGED_CELLS, block.changedCells(), block::toString);
+        assertEquals(DETAIL_SOLID_SHAPE_CHANGES, block.solidShapeChanges(), block::toString);
+        assertEquals(DETAIL_FLUID_CHANGES, block.fluidChanges(), block::toString);
+        assertEquals(DETAIL_MATERIAL_CHANGES, block.materialChanges(), block::toString);
+        assertEquals(Set.of(FeatureMaterializationV2.EffectClassV2.SOLID_SHAPE,
+                        FeatureMaterializationV2.EffectClassV2.FLUID,
+                        FeatureMaterializationV2.EffectClassV2.MATERIAL),
+                block.observedClasses(), block::toString);
+    }
+
+    @Test
+    void theCoherentDetailVariesTheBackgroundCoherentlyAndLeavesModifiersUntouched() throws Exception {
+        // ADR 0041 D2/D8: the background surface really varies (not a flat regression), it varies
+        // coherently (bounded 4-neighbour steps — the property a cell-hash field would break; the tight
+        // millionth bound and the cell-hash contrast are pinned in CoherentDetailKernelV2Test), no
+        // background land dropped below the water level and no sea bed rose into it, and every coastal
+        // modifier column is block-identical to the baseline.
+        FoundationDetailBlockConformanceV2.MeasurementsV2 detail =
+                FoundationDetailBlockConformanceV2.measure(
+                        RELEASES.get("harbor-cove-64-honored"), RELEASES.get("harbor-cove-64-honored-detail"));
+
+        assertTrue(detail.distinctLandSurfaceY() >= 2,
+                () -> "background land surface stayed flat: " + detail);
+        assertTrue(detail.distinctWaterBedY() >= 2,
+                () -> "background sea bed stayed flat: " + detail);
+        assertEquals(DETAIL_DISTINCT_LAND_SURFACE_Y, detail.distinctLandSurfaceY(), detail::toString);
+        assertEquals(DETAIL_DISTINCT_WATER_BED_Y, detail.distinctWaterBedY(), detail::toString);
+        // Coherence: land amplitude 3, water amplitude 2, so the worst same-medium neighbour step stays
+        // within a few blocks — never the whole-range jump an independent hash would give.
+        assertTrue(detail.maxAdjacentBackgroundStepBlocks() <= 3,
+                () -> "background detail is not spatially coherent: " + detail);
+        assertEquals(0, detail.backgroundLandBelowWater(), detail::toString);
+        assertEquals(0, detail.backgroundWaterAtOrAboveWater(), detail::toString);
+        assertTrue(detail.modifierColumns() > 0, "the case has no coastal modifier column to protect");
+        assertEquals(0, detail.changedModifierColumns(),
+                () -> "coherent detail overwrote a surface modifier's column: " + detail);
+    }
+
+    @Test
+    void theCoherentDetailBlockStreamIsDeterministicAcrossLocaleAndReexport() throws Exception {
+        // ADR 0041 D8-6: re-export the detail case under a hostile locale/timezone and prove the final
+        // canonical block stream is byte-for-byte the same (an empty diff against the original).
+        IntentConformancePortfolioV2.CaseV2 detailCase = IntentConformancePortfolioV2.cases().stream()
+                .filter(portfolioCase -> portfolioCase.id().equals("harbor-cove-64-honored-detail"))
+                .findFirst().orElseThrow();
+        Path reexport = root.resolve("reexport-detail");
+        Release2ExportRequestV2 request = new Release2ExportRequestV2(
+                detailCase.request(), detailCase.intent(),
+                reexport.resolve("work"), reexport.resolve("exports"),
+                detailCase.id(), detailCase.baseline());
+
+        Locale previousLocale = Locale.getDefault();
+        TimeZone previousZone = TimeZone.getDefault();
+        Path reexportedRelease;
+        try {
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+            TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Chatham"));
+            reexportedRelease =
+                    new Release2ExportApplicationServiceV2(executors).exportNow(request).releaseDirectory();
+        } finally {
+            Locale.setDefault(previousLocale);
+            TimeZone.setDefault(previousZone);
+        }
+
+        FeatureMaterializationV2.BlockEffectV2 diff = FeatureMaterializationV2.measureBlockEffect(
+                RELEASES.get("harbor-cove-64-honored-detail"), reexportedRelease);
+        assertTrue(diff.comparedCells() > 0);
+        assertEquals(0L, diff.changedCells(),
+                () -> "detail is not deterministic across locale/timezone/re-export: " + diff);
+    }
+
+    @Test
+    void theReconciledDriftCaseRepublishesTheAuthoredTerrainExactly() throws Exception {
+        // V2-19-14 (ADR 0043 D8-2), measured the V2-19-01 way but with the opposite expectation: the
+        // drift case declares geometry two blocks off its mask, and the pre-pass puts it back. Two
+        // independently exported Releases from two different intents therefore carry the same final
+        // canonical block stream. This is not the "identity slice" V2-19-01 forbids as materialization
+        // evidence — the case claims no Feature promotion, the two sides are different published
+        // Releases rather than one Release compared with itself, and the zero is the measurement.
+        FeatureMaterializationV2.BlockEffectV2 block = FeatureMaterializationV2.measureBlockEffect(
+                RELEASES.get("harbor-cove-64-honored"), RELEASES.get("harbor-cove-64-honored-drift"));
+
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertEquals(0L, block.changedCells(),
+                () -> "the reconcile pre-pass did not restore the authored terrain: " + block);
+        assertTrue(block.observedClasses().isEmpty(), block::toString);
+    }
+
+    @Test
+    void theDriftCaseIsOnlyExportableBecauseOfThePrePass() throws Exception {
+        // The control for the case above: without the opt-in declaration the very same intent is
+        // rejected by the pre-existing HARD gate, so "identical blocks" is evidence that the pre-pass
+        // did the work rather than evidence that the fixture was never drifted.
+        IntentConformancePortfolioV2.CaseV2 driftCase = IntentConformancePortfolioV2.cases().stream()
+                .filter(portfolioCase -> portfolioCase.id().equals("harbor-cove-64-honored-drift"))
+                .findFirst().orElseThrow();
+        com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec codec =
+                new com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec();
+        GenerationRequestV2 declared = codec.readGenerationRequest(driftCase.request());
+        assertEquals(4, declared.maskFeatureReconcile().orElseThrow().toleranceBlocks());
+
+        Path workspace = Files.createDirectories(root.resolve("drift-unreconciled"));
+        Path maps = Files.createDirectories(workspace.resolve("maps"));
+        try (Stream<Path> sources = Files.list(driftCase.request().resolveSibling("maps"))) {
+            for (Path map : sources.sorted().toList()) {
+                Files.copy(map, maps.resolve(map.getFileName().toString()));
+            }
+        }
+        Path withoutPrePass = workspace.resolve(driftCase.request().getFileName().toString());
+        codec.writeGenerationRequest(withoutPrePass, new GenerationRequestV2(
+                declared.requestVersion(), declared.requestId(), declared.bounds(), declared.prompt(),
+                declared.referenceImages(), declared.constraintMaps(), declared.generation(),
+                declared.constraintMapBudget(), declared.foundationBaseLevels(),
+                declared.foundationDetail(), Optional.empty()));
+
+        IOException failure = assertThrows(IOException.class,
+                () -> new Release2ExportApplicationServiceV2(executors).exportNow(
+                        new Release2ExportRequestV2(withoutPrePass, driftCase.intent(),
+                                workspace.resolve("work"), workspace.resolve("exports"),
+                                "drift-unreconciled", driftCase.baseline())));
+        StringBuilder chain = new StringBuilder();
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            chain.append(cause.getMessage()).append('\n');
+        }
+        assertTrue(chain.toString().contains("v2.coastal-transition-hard-conflict"), chain::toString);
+    }
+
+    // V2-19-12 detail block effect (harbor-cove-64-honored-detail vs baseline), pinned so a drift in
+    // the kernel or its application point is a shape regression to look at. The background land surface
+    // moves (SOLID_SHAPE), the background sea bed under the water column moves (FLUID) and the surface
+    // material rides along (MATERIAL); no coastal modifier or producer cell is touched.
+    private static final long DETAIL_CHANGED_CELLS = 4431L;
+    private static final long DETAIL_SOLID_SHAPE_CHANGES = 728L;
+    private static final long DETAIL_FLUID_CHANGES = 1191L;
+    private static final long DETAIL_MATERIAL_CHANGES = 2512L;
+    private static final int DETAIL_DISTINCT_LAND_SURFACE_Y = 4;
+    private static final int DETAIL_DISTINCT_WATER_BED_Y = 4;
+
     private static Map<String, String> declaredDigests(Path release) throws Exception {
         return new com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec()
                 .readGenerationRequest(release.resolve("source/generation-request.json"))
@@ -522,6 +686,239 @@ class IntentConformancePortfolioV2Test {
     }
 
     @Test
+    void theLakeOfflineWiringPublishesPassingHydrologyMetrics() throws Exception {
+        // V2-15-11 per-leaf intent-conformance obligation: read the basin-shape evidence back from
+        // the published hydrology-plan Release (never in-process generator state) and confirm the
+        // shared HydrologyValidatorV2 metric is computed and passes. This is the portfolio's
+        // PLAN-ONLY column; the block column is measured separately below and neither may stand in
+        // for the other (V2-19-01). The fixture's basin is CLOSED, so no spillway-cells metric exists.
+        Path release = RELEASES.get("harbor-cove-64-honored-lake");
+        HydrologyValidationArtifactV2.HydrologyValidationReport report =
+                IntentConformancePortfolioV2.readHydrologyValidationReport(release);
+        assertTrue(report.passesHardValidation(), () -> String.valueOf(report.issues()));
+
+        Map<String, MetricResultV2> lakeMetrics = report.metrics().stream()
+                .filter(metric -> IntentConformancePortfolioV2.LAKE_FEATURE_ID.equals(metric.subject()))
+                .collect(Collectors.toMap(MetricResultV2::metricId, metric -> metric));
+        assertEquals(Set.of("hydrology.lake.basin-cells"), lakeMetrics.keySet());
+        assertTrue(lakeMetrics.get("hydrology.lake.basin-cells").passed(),
+                () -> lakeMetrics.get("hydrology.lake.basin-cells").toString());
+        assertTrue(lakeMetrics.get("hydrology.lake.basin-cells").actualMillionths() > 0);
+    }
+
+    @Test
+    void theLakeRouteMaterializesTheDeclaredBlockEffectClasses() throws Exception {
+        // V2-15-11, the same V2-19-01 gate application V2-19-05 first exercised for RIVER: the
+        // offline production route must change the final canonical block stream, and exactly in the
+        // classes the leaf declares. CARVE_SOLID voids the basin above the bed (SOLID_SHAPE) and
+        // ADD_FLUID owns the water it leaves behind (FLUID); nothing re-lines the bed, so MATERIAL
+        // stays absent.
+        Path baseline = RELEASES.get("harbor-cove-64-honored");
+        Path lake = RELEASES.get("harbor-cove-64-honored-lake");
+
+        FeatureMaterializationV2.BlockEffectV2 block =
+                FeatureMaterializationV2.measureBlockEffect(baseline, lake);
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertTrue(block.changedCells() > 0, () -> "the lake route changed no block: " + block);
+        assertEquals(0L, block.materialChanges(), () -> "the lake re-lined the bed: " + block);
+
+        FeatureMaterializationV2.requireMaterialized(
+                new FeatureMaterializationV2.MaterializationClaimV2(
+                        IntentConformancePortfolioV2.LAKE_FEATURE_ID,
+                        TerrainIntentV2.FeatureKind.LAKE,
+                        Set.of("hydrology.lake.basin-mask", "hydrology.bed.elevation",
+                                "hydrology.water.surface"),
+                        Set.of(FeatureMaterializationV2.EffectClassV2.SOLID_SHAPE,
+                                FeatureMaterializationV2.EffectClassV2.FLUID)),
+                block);
+    }
+
+    @Test
+    void theFinalTileStreamCarriesTheDeclaredBasinDepthAndContainment() throws Exception {
+        // V2-15-11 block column, measured from the published tiles alone: basin depth, water
+        // continuity and the leak envelope. A lake has no source/mouth reachability the way a river
+        // does.
+        Path release = RELEASES.get("harbor-cove-64-honored-lake");
+        LakeBlockConformanceV2.MeasurementsV2 lake = LakeBlockConformanceV2.measure(
+                release, IntentConformancePortfolioV2.blueprintOf(release));
+
+        assertEquals(IntentConformancePortfolioV2.LAKE_FEATURE_ID, lake.featureId());
+        assertTrue(lake.basinCells() > 0, "the published basin rasterizes to no basin cell");
+        // Basin depth: every basin column is cut to its generator-declared bed, carries fluid up to
+        // the declared water surface, and is open to the sky above it. Unlike a river's constant
+        // channel depth, a lake's per-cell depth tapers from the rim to the center, so the summed
+        // water block count is not basinCells itself — only bounded below by it (every basin cell
+        // carries at least one water block).
+        assertEquals(lake.basinCells(), lake.basinCellsAtDeclaredBedDepth());
+        assertEquals(lake.basinCells(), lake.basinCellsOpenAbove());
+        assertTrue(lake.waterCells() >= lake.basinCells(), lake::toString);
+        // Water continuity: one water body.
+        assertEquals(1, lake.waterComponentCount());
+        // Leak envelope: no basin water block touches non-basin air, and the surrounding terrain
+        // stands solid at the water surface all the way around the basin.
+        assertEquals(0, lake.leakCells(), lake::toString);
+        assertTrue(lake.envelopeCells() > 0, "the basin has no containment envelope");
+        assertEquals(lake.envelopeCells(), lake.envelopeCellsSolidAtWaterSurface(), lake::toString);
+    }
+
+    @Test
+    void theCanyonOfflineWiringPublishesPassingHydrologyMetrics() throws Exception {
+        // V2-15-12 per-leaf intent-conformance obligation: read the corridor-shape evidence back from
+        // the published hydrology-plan Release (never in-process generator state) and confirm the
+        // shared HydrologyValidatorV2 metrics are computed and pass. This is the portfolio's
+        // PLAN-ONLY column; the block column is measured separately below and neither may stand in
+        // for the other (V2-19-01).
+        Path release = RELEASES.get("harbor-cove-64-honored-canyon");
+        HydrologyValidationArtifactV2.HydrologyValidationReport report =
+                IntentConformancePortfolioV2.readHydrologyValidationReport(release);
+        assertTrue(report.passesHardValidation(), () -> String.valueOf(report.issues()));
+
+        Map<String, MetricResultV2> canyonMetrics = report.metrics().stream()
+                .filter(metric -> IntentConformancePortfolioV2.CANYON_FEATURE_ID.equals(metric.subject()))
+                .collect(Collectors.toMap(MetricResultV2::metricId, metric -> metric));
+        assertEquals(Set.of("hydrology.canyon.floor-cells", "hydrology.canyon.rim-cells"),
+                canyonMetrics.keySet());
+        for (MetricResultV2 metric : canyonMetrics.values()) {
+            assertTrue(metric.passed(), metric::toString);
+        }
+    }
+
+    @Test
+    void theCanyonRouteMaterializesTheDeclaredBlockEffectClasses() throws Exception {
+        // V2-15-12, the same V2-19-01 gate application V2-19-05 first exercised for RIVER: the
+        // offline production route must change the final canonical block stream, and exactly in the
+        // classes the leaf declares. A CANYON feature cannot be declared without its shared
+        // MEANDERING_RIVER (the HARD WITHIN binding requires it), so this measures the whole route
+        // against the plain coastal baseline the same way the river/lake cases do: the companion
+        // river's own SOLID_SHAPE/FLUID effect is present alongside the canyon's dry
+        // wall/floor/rim/terrace carve. CanyonBlockConformanceV2 below independently confirms the
+        // canyon's own carve is itself dry (every corridor column open to the sky, no fluid claimed).
+        Path baseline = RELEASES.get("harbor-cove-64-honored");
+        Path canyon = RELEASES.get("harbor-cove-64-honored-canyon");
+
+        FeatureMaterializationV2.BlockEffectV2 block =
+                FeatureMaterializationV2.measureBlockEffect(baseline, canyon);
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertTrue(block.changedCells() > 0, () -> "the canyon route changed no block: " + block);
+        assertEquals(0L, block.materialChanges(), () -> "the canyon re-lined the ground: " + block);
+
+        FeatureMaterializationV2.requireMaterialized(
+                new FeatureMaterializationV2.MaterializationClaimV2(
+                        IntentConformancePortfolioV2.CANYON_FEATURE_ID,
+                        TerrainIntentV2.FeatureKind.CANYON,
+                        Set.of("landform.canyon.canyon-mask", "landform.canyon.surface-height",
+                                "hydrology.bed.elevation", "hydrology.river.channel-mask",
+                                "hydrology.water.surface"),
+                        Set.of(FeatureMaterializationV2.EffectClassV2.SOLID_SHAPE,
+                                FeatureMaterializationV2.EffectClassV2.FLUID)),
+                block);
+    }
+
+    @Test
+    void theFinalTileStreamCarriesTheDeclaredCanyonSurfaceAndSharedFloor() throws Exception {
+        // V2-15-12 block column, measured from the published tiles alone: the carved surface and the
+        // shared-bed containment with the companion river's own materialization.
+        Path release = RELEASES.get("harbor-cove-64-honored-canyon");
+        CanyonBlockConformanceV2.MeasurementsV2 canyon = CanyonBlockConformanceV2.measure(
+                release, IntentConformancePortfolioV2.blueprintOf(release));
+
+        assertEquals(IntentConformancePortfolioV2.CANYON_FEATURE_ID, canyon.featureId());
+        assertTrue(canyon.corridorCells() > 0, "the published corridor rasterizes to no corridor cell");
+        assertEquals(canyon.corridorCells(), canyon.corridorCellsAtDeclaredSurface());
+        assertEquals(canyon.corridorCells(), canyon.corridorCellsOpenAbove());
+        // The floor band that coincides with the shared river's channel reaches exactly its bed.
+        assertTrue(canyon.floorCellsAtSharedRiverBed() > 0,
+                "no floor cell reaches the shared river's own bed");
+    }
+
+    @Test
+    void theWaterfallOfflineWiringPublishesPassingHydrologyMetrics() throws Exception {
+        // V2-15-13 per-leaf intent-conformance obligation: read the fall's plan-shape evidence back
+        // from the published hydrology-plan Release (never in-process generator state) and confirm
+        // the shared HydrologyValidatorV2 metric is computed and passes. This is the portfolio's
+        // PLAN-ONLY column; the block column is measured separately below and neither may stand in
+        // for the other (V2-19-01).
+        Path release = RELEASES.get("harbor-cove-64-honored-waterfall");
+        HydrologyValidationArtifactV2.HydrologyValidationReport report =
+                IntentConformancePortfolioV2.readHydrologyValidationReport(release);
+        assertTrue(report.passesHardValidation(), () -> String.valueOf(report.issues()));
+
+        Map<String, MetricResultV2> waterfallMetrics = report.metrics().stream()
+                .filter(metric -> IntentConformancePortfolioV2.WATERFALL_FEATURE_ID.equals(metric.subject()))
+                .collect(Collectors.toMap(MetricResultV2::metricId, metric -> metric));
+        assertEquals(Set.of("hydrology.waterfall.drop-millionths"), waterfallMetrics.keySet());
+        for (MetricResultV2 metric : waterfallMetrics.values()) {
+            assertTrue(metric.passed(), metric::toString);
+        }
+    }
+
+    @Test
+    void theWaterfallRouteMaterializesTheDeclaredBlockEffectClasses() throws Exception {
+        // V2-15-13, the same V2-19-01 gate application V2-19-05 first exercised for RIVER: the
+        // offline production route must change the final canonical block stream, and exactly in the
+        // classes the leaf declares. A WATERFALL cannot be declared without its HARD ON_PATH_OF host
+        // MEANDERING_RIVER, so this measures the whole route against the plain coastal baseline the
+        // same way the river/lake/canyon cases do: the host's own SOLID_SHAPE/FLUID effect is present
+        // alongside the fall's plunge basin carve and fill. WaterfallBlockConformanceV2 below
+        // independently confirms the basin's own depth, head and containment.
+        Path baseline = RELEASES.get("harbor-cove-64-honored");
+        Path waterfall = RELEASES.get("harbor-cove-64-honored-waterfall");
+
+        FeatureMaterializationV2.BlockEffectV2 block =
+                FeatureMaterializationV2.measureBlockEffect(baseline, waterfall);
+        assertEquals(64L * 64L * 41L, block.comparedCells());
+        assertTrue(block.changedCells() > 0, () -> "the waterfall route changed no block: " + block);
+        assertEquals(0L, block.materialChanges(), () -> "the waterfall re-lined the ground: " + block);
+
+        FeatureMaterializationV2.requireMaterialized(
+                new FeatureMaterializationV2.MaterializationClaimV2(
+                        IntentConformancePortfolioV2.WATERFALL_FEATURE_ID,
+                        TerrainIntentV2.FeatureKind.WATERFALL,
+                        Set.of("hydrology.waterfall.plunge-pool-mask",
+                                "hydrology.waterfall.plunge-pool-floor",
+                                "hydrology.waterfall.base-elevation",
+                                "hydrology.bed.elevation"),
+                        Set.of(FeatureMaterializationV2.EffectClassV2.SOLID_SHAPE,
+                                FeatureMaterializationV2.EffectClassV2.FLUID)),
+                block);
+    }
+
+    @Test
+    void theFinalTileStreamCarriesTheDeclaredPlungeBasinAndFallHead() throws Exception {
+        // V2-15-13 block column, measured from the published tiles alone: basin depth, water
+        // continuity with the host reach, the measured fall head and the containment envelope.
+        Path release = RELEASES.get("harbor-cove-64-honored-waterfall");
+        WaterfallBlockConformanceV2.MeasurementsV2 fall = WaterfallBlockConformanceV2.measure(
+                release, IntentConformancePortfolioV2.blueprintOf(release));
+
+        assertEquals(IntentConformancePortfolioV2.WATERFALL_FEATURE_ID, fall.featureId());
+        assertTrue(fall.basinCells() > 0, "the published fall rasterizes to no plunge basin cell");
+        // Basin depth: every basin column is cut to its generator-declared pool floor, carries fluid
+        // up to the declared base bed, and is open to the sky above it.
+        assertEquals(fall.basinCells(), fall.basinCellsAtDeclaredFloorDepth(), fall::toString);
+        assertEquals(fall.basinCells(), fall.basinCellsOpenAbove(), fall::toString);
+        assertTrue(fall.waterCells() >= fall.basinCells(), fall::toString);
+        // Water continuity: the host channel runs through the basin and is left to the host, so the
+        // basin's own water sits in the two banks either side of it; taken together with the host's
+        // own water the fall is one continuous body, which is what makes it a plunge pool rather
+        // than an isolated pond beside the reach.
+        assertEquals(2, fall.waterComponentCount(), fall::toString);
+        assertEquals(1, fall.waterComponentCountWithHostChannel(), fall::toString);
+        // Fall head: every host-channel column touching the basin stands above the pool's water
+        // surface, and the smallest such head is exactly the drop the plan selected — the basin is
+        // the foot of a descent, not a widening of the channel.
+        assertTrue(fall.hostChannelContactCells() > 0, "the basin never touches its host channel");
+        assertEquals(fall.hostChannelContactCells(), fall.hostChannelContactCellsAbovePool(),
+                fall::toString);
+        assertEquals(fall.declaredDropBlocks(), fall.measuredHeadBlocks(), fall::toString);
+        // Leak envelope: no basin water block touches non-basin, non-host air, and the surrounding
+        // terrain stands solid at the water surface all the way around the basin.
+        assertEquals(0, fall.leakCells(), fall::toString);
+        assertTrue(fall.envelopeCells() > 0, "the basin has no containment envelope");
+        assertEquals(fall.envelopeCells(), fall.envelopeCellsSolidAtWaterSurface(), fall::toString);
+    }
+
+    @Test
     void aPassingPlanColumnStillCannotSubstituteForAnEmptyBlockColumn() throws Exception {
         // V2-19-01's mandated separation, kept executable after V2-19-05 filled the block column:
         // the gate accepts nothing but a measured BlockEffectV2, and an empty one fails however
@@ -580,7 +977,7 @@ class IntentConformancePortfolioV2Test {
                 blueprint, intent,
                 IntentConformancePortfolioV2.withFloodedHinterland(intent, land, 64, 64));
 
-        IntentConformancePortfolioV2.HinterlandV2 hinterland = damaged.backshorePlains();
+        IntentConformancePortfolioV2.HinterlandV2 hinterland = damaged.backshorePlains().orElseThrow();
         assertTrue(hinterland.polygonCells() > 0);
         assertEquals(0, hinterland.onLand());
         assertEquals(0, hinterland.inMainland());

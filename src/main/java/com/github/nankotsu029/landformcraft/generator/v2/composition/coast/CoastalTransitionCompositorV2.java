@@ -391,6 +391,15 @@ public final class CoastalTransitionCompositorV2 {
     ) {
         private static final CompositionSample OUTSIDE = new CompositionSample(false, 0, NO_DATA, 0, 0, 0, false);
 
+        /**
+         * The canonical sample of a cell no contributor claims. V2-19-09 (ADR 0040 D1) exposes it so
+         * an export with no coastal contributor at all can answer with exactly the value a declared
+         * contributor set produces outside its footprints, instead of inventing a second sentinel.
+         */
+        public static CompositionSample outside() {
+            return OUTSIDE;
+        }
+
         public int rawValue(CompositionField field) {
             return switch (Objects.requireNonNull(field, "field")) {
                 case LAND_WATER -> landWater;

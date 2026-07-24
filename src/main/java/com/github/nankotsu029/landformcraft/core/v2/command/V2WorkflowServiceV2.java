@@ -16,8 +16,10 @@ import com.github.nankotsu029.landformcraft.format.v2.release.VerifiedReleaseVie
 import com.github.nankotsu029.landformcraft.generator.v2.coast.HardLandWaterSourceV2;
 import com.github.nankotsu029.landformcraft.model.v2.CoastalPreviewIndexV2;
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
+import com.github.nankotsu029.landformcraft.model.v2.design.DesignAuditV2;
 import com.github.nankotsu029.landformcraft.model.v2.design.DesignCapabilityV2;
 import com.github.nankotsu029.landformcraft.model.v2.design.DesignPathKindV2;
+import com.github.nankotsu029.landformcraft.model.v2.design.DesignSupportLintV2;
 import com.github.nankotsu029.landformcraft.preview.v2.CoastalPreviewIndexCodecV2;
 import com.github.nankotsu029.landformcraft.format.v2.design.DesignArtifactsV2;
 
@@ -190,6 +192,11 @@ public final class V2WorkflowServiceV2 {
         // manifest, so its presence here has no effect on any checksum.
         result.intentContributionCoverage().ifPresent(
                 coverage -> summary.put("intentContributionCoverage", coverage.toSummaryMap()));
+        // V2-19-14 report-only pre-pass result (ADR 0043 D5): the sealed intent carries the reconciled
+        // geometry, so this is where the operator sees which rigid offset was applied to their
+        // declaration. Nothing here is written into the Release.
+        result.maskFeatureReconcile().ifPresent(
+                reconcile -> summary.put("maskFeatureReconcile", reconcile.toSummaryMap()));
         // V2-18-09 NON_GATING warnings (ADR 0038 D8-1), e.g. the deprecated surface-baseline
         // argument being ignored on an explicit-foundation request. CLI summary only, never sealed.
         if (!result.warnings().isEmpty()) {
@@ -197,6 +204,37 @@ public final class V2WorkflowServiceV2 {
                     .map(warning -> Map.of("ruleId", warning.ruleId(), "message", warning.message()))
                     .toList());
         }
+        return java.util.Collections.unmodifiableMap(summary);
+    }
+
+    /**
+     * V2-19-08 report-only design lint summary for the CLI and Paper design surfaces. Empty for an
+     * audit that carries no lint (a v1 migration bundle). Nothing here gates: {@code dispatchDryRun}
+     * says what would happen at export, and the design package is already published either way.
+     */
+    public static Map<String, Object> summarizeSupportLint(DesignAuditV2 audit) {
+        Objects.requireNonNull(audit, "audit");
+        Optional<DesignSupportLintV2> lint = audit.supportLintOrEmpty();
+        if (lint.isEmpty()) {
+            return Map.of();
+        }
+        DesignSupportLintV2 report = lint.get();
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("supportLintContract", report.surface().contractVersion());
+        summary.put("dispatchDryRun", report.dispatchDryRun().name());
+        summary.put("selectablePipelines", report.selectablePipelineIds());
+        summary.put("reachableKinds", report.surface().reachableKinds());
+        summary.put("declaredKinds", report.declaredKinds());
+        summary.put("supportLintFindings", report.findings().stream()
+                .map(finding -> {
+                    Map<String, Object> entry = new LinkedHashMap<>();
+                    entry.put("ruleId", finding.ruleId());
+                    entry.put("gateClass", finding.gateClass().name());
+                    entry.put("featureKinds", finding.featureKinds());
+                    entry.put("detail", finding.detail());
+                    return entry;
+                })
+                .toList());
         return java.util.Collections.unmodifiableMap(summary);
     }
 

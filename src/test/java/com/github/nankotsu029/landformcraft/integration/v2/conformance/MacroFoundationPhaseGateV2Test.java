@@ -76,8 +76,37 @@ class MacroFoundationPhaseGateV2Test {
     private static final Map<String, TerrainIntentV2> SEALED_INTENTS = new LinkedHashMap<>();
     private static final Map<String, WorldBlueprintV2> FROZEN_BLUEPRINTS = new LinkedHashMap<>();
 
+    /**
+     * The cases this Phase gate was approved over: every portfolio case that exercises the full
+     * production-connected coastal set. V2-19-09 (ADR 0040) added contributor-subset cases to the
+     * shared portfolio, and those are deliberately outside the V2-18 gate — its assertions are about
+     * the four-contributor composition (beach continuity, breakwater landfall, sea-stack accounting)
+     * and would be silently weakened if they had to tolerate an absent contributor. The subset cases
+     * are gated by {@code IntentConformancePortfolioV2Test} and {@code CoastalContributorSubsetV2Test}
+     * until the {@code V2-19-16} Phase gate promotes them.
+     */
     static Stream<IntentConformancePortfolioV2.CaseV2> cases() {
-        return IntentConformancePortfolioV2.cases().stream();
+        return IntentConformancePortfolioV2.cases().stream()
+                .filter(portfolioCase -> portfolioCase.declaredCoastalKinds()
+                        .equals(IntentConformancePortfolioV2.CaseV2.coastalFourAndBackshore()));
+    }
+
+    @Test
+    void theGateStillCoversEveryFourContributorPortfolioCase() {
+        // Drift guard for the filter above: a four-contributor case may never fall out of this gate,
+        // and the gate may never end up with nothing to check.
+        List<String> gated = cases().map(IntentConformancePortfolioV2.CaseV2::id).toList();
+        List<String> expected = IntentConformancePortfolioV2.cases().stream()
+                .filter(portfolioCase -> portfolioCase.declaredCoastalKinds().containsAll(
+                        IntentConformancePortfolioV2.CaseV2.coastalFourAndBackshore()))
+                .map(IntentConformancePortfolioV2.CaseV2::id)
+                .toList();
+        assertEquals(expected, gated);
+        // V2-19-14 added harbor-cove-64-honored-drift, V2-15-11 added harbor-cove-64-honored-lake,
+        // V2-15-12 added harbor-cove-64-honored-canyon and V2-15-13 added
+        // harbor-cove-64-honored-waterfall, all four-contributor cases: the gate widens with them
+        // rather than being narrowed to keep the old count.
+        assertEquals(11, gated.size(), () -> "V2-18-12 gated cases changed: " + gated);
     }
 
     @BeforeAll
@@ -159,8 +188,9 @@ class MacroFoundationPhaseGateV2Test {
         }
 
         // Beach ↔ backshore land continuity: one mainland land mass carries both.
-        IntentConformancePortfolioV2.BeachContinuityV2 beach = measurements.beach();
-        IntentConformancePortfolioV2.HinterlandV2 hinterland = measurements.backshorePlains();
+        IntentConformancePortfolioV2.BeachContinuityV2 beach = measurements.beach().orElseThrow();
+        IntentConformancePortfolioV2.HinterlandV2 hinterland =
+                measurements.backshorePlains().orElseThrow();
         assertTrue(beach.landBandCells() > 0, "the beach owns no foreshore/backshore cell");
         assertEquals(beach.landBandCells(), beach.landBandOnLand());
         assertEquals(1, beach.landBandComponentCount());
@@ -281,7 +311,10 @@ class MacroFoundationPhaseGateV2Test {
         // ADR 0038 D4: NORMATIVE 6 / PROVISIONAL 54 originally. Every PROVISIONAL kind is confirmed
         // only by its own V2-15 wiring Task's field audit — the per-kind obligation the stage-gate
         // release decision converts the blanket hold into. V2-15-10 / ADR 0039 Candidate A confirms
-        // RIVER (confidence-only amendment), moving the tiers to NORMATIVE 7 / PROVISIONAL 53.
+        // RIVER (confidence-only amendment), moving the tiers to NORMATIVE 7 / PROVISIONAL 53;
+        // V2-15-11 confirms LAKE the same way (NORMATIVE 8 / PROVISIONAL 52); V2-15-12 confirms
+        // CANYON the same way (NORMATIVE 9 / PROVISIONAL 51); V2-15-13 confirms WATERFALL the same
+        // way, moving the tiers to NORMATIVE 10 / PROVISIONAL 50.
         Set<TerrainIntentV2.FeatureKind> normative = kinds.stream()
                 .filter(kind -> registry.registration(kind).confidence()
                         == CompositionProfileRegistryV2.Confidence.NORMATIVE)
@@ -294,9 +327,12 @@ class MacroFoundationPhaseGateV2Test {
                         TerrainIntentV2.FeatureKind.ROCKY_CAPE,
                         TerrainIntentV2.FeatureKind.PLAIN,
                         TerrainIntentV2.FeatureKind.HILL_RANGE,
-                        TerrainIntentV2.FeatureKind.RIVER),
+                        TerrainIntentV2.FeatureKind.RIVER,
+                        TerrainIntentV2.FeatureKind.LAKE,
+                        TerrainIntentV2.FeatureKind.CANYON,
+                        TerrainIntentV2.FeatureKind.WATERFALL),
                 normative);
-        assertEquals(53, kinds.size() - normative.size());
+        assertEquals(50, kinds.size() - normative.size());
         assertEquals(17, registry.foundationEligibleKinds().size());
 
         // D4 reclassification: ABYSSAL_PLAIN is a basin-floor modifier, never a foundation producer.

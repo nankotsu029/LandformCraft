@@ -28,7 +28,9 @@ import java.util.TreeSet;
  * Immutable application registry for production generator/validator/preview/export dispatch
  * (V2-15-05 spine, V2-15-06 hydrology, V2-15-07 environment, V2-15-08 sparse-volume capability
  * overlays, and the V2-15-10 {@code v2} contract bump adding {@link RouteClass#OFFLINE_PRODUCTION}
- * per Accepted ADR 0039 Candidate A). The registry is assembled only from compile-time handlers and
+ * per Accepted ADR 0039 Candidate A, extended by V2-15-11 to also route {@code LAKE}, by V2-15-12
+ * to also route {@code CANYON} and by V2-15-13 to also route {@code WATERFALL}). The registry is
+ * assembled only from compile-time handlers and
  * the V2-15-02 current source-state projection. It does not change Feature Support Catalog levels or
  * Release contracts, and {@code PRODUCTION_CONNECTED} keeps its existing meaning (Paper-and-export
  * complete; coastal four only).
@@ -97,12 +99,18 @@ public final class ProductionDispatchRegistryV2 {
                         coastalDescriptor.requiredCapabilities(),
                         RouteClass.PRODUCTION_CONNECTED))
                 .toList());
-        // V2-15-10 / ADR 0039 Candidate A: the one explicit OFFLINE_PRODUCTION allowlist entry for
-        // this Task. RIVER and MEANDERING_RIVER are export-SUPPORTED but stay below Paper SUPPORTED
-        // (coastal 4 only); they run on the shared hydrology-plan pipeline that already executes
-        // MeanderingRiverGeneratorV2. No other export-SUPPORTED kind is admitted here.
+        // V2-15-10 / ADR 0039 Candidate A: RIVER and MEANDERING_RIVER are export-SUPPORTED but stay
+        // below Paper SUPPORTED (coastal 4 only); they run on the shared hydrology-plan pipeline that
+        // already executes MeanderingRiverGeneratorV2. V2-15-11 applies the same pattern to LAKE
+        // (LakeGeneratorV2), V2-15-12 to CANYON (CanyonGeneratorV2, always alongside its shared
+        // MEANDERING_RIVER) and V2-15-13 to WATERFALL (WaterfallGeneratorV2, always alongside the
+        // MEANDERING_RIVER it falls on). No other export-SUPPORTED kind is admitted here.
         for (TerrainIntentV2.FeatureKind offlineKind : List.of(
-                TerrainIntentV2.FeatureKind.RIVER, TerrainIntentV2.FeatureKind.MEANDERING_RIVER)) {
+                TerrainIntentV2.FeatureKind.RIVER,
+                TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
+                TerrainIntentV2.FeatureKind.LAKE,
+                TerrainIntentV2.FeatureKind.CANYON,
+                TerrainIntentV2.FeatureKind.WATERFALL)) {
             routes.add(new Route(
                     offlineKind,
                     sourceEntries.get(offlineKind).moduleId(),
@@ -349,6 +357,24 @@ public final class ProductionDispatchRegistryV2 {
      */
     public Map<TerrainIntentV2.FeatureKind, String> contractOnlyKinds() {
         return contractOnlyPipelines;
+    }
+
+    /**
+     * Every registered capability set, in the order {@link #select(TerrainIntentV2, List)} accepts
+     * them. Read-only: the V2-19-08 design lint enumerates them to dry-run an intent against each
+     * pipeline without selecting or executing one.
+     */
+    public List<List<String>> pipelineCapabilitySets() {
+        return pipelinesByCapabilities.keySet().stream()
+                .sorted(Comparator.comparing(capabilities -> String.join(",", capabilities)))
+                .toList();
+    }
+
+    /** Pipeline id owning {@code capabilities}, or empty when no pipeline declares that exact set. */
+    public String pipelineIdFor(List<String> capabilities) {
+        ProductionExportPipelineV2 pipeline = pipelinesByCapabilities.get(
+                List.copyOf(Objects.requireNonNull(capabilities, "capabilities")));
+        return pipeline == null ? "" : pipeline.descriptor().pipelineId();
     }
 
     private List<String> canonicalRegistryLines() {

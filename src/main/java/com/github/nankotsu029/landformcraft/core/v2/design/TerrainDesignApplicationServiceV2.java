@@ -24,6 +24,7 @@ import com.github.nankotsu029.landformcraft.model.ProviderUsage;
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 import com.github.nankotsu029.landformcraft.model.v2.design.DesignAuditV2;
+import com.github.nankotsu029.landformcraft.model.v2.design.DesignSupportSurfaceV2;
 import com.github.nankotsu029.landformcraft.model.v2.design.ImageDraftEvidenceV2;
 
 import java.io.IOException;
@@ -56,6 +57,7 @@ public final class TerrainDesignApplicationServiceV2 {
     private final ManualConstraintMapGenerationServiceV2 manualService;
     private final ReferenceImageSoftDraftServiceV2 softDraftService;
     private final ReferenceImagePreparationServiceV2 imageService;
+    private final DesignSupportLintServiceV2 lintService = new DesignSupportLintServiceV2();
 
     public TerrainDesignApplicationServiceV2(GenerationExecutors executors, ProviderFactory providerFactory) {
         this(executors, providerFactory, Clock.systemUTC());
@@ -129,15 +131,20 @@ public final class TerrainDesignApplicationServiceV2 {
                 request.capabilities());
         GenerationRequestV2 generationRequest = readRequest(request.requestPath());
         String requestChecksum = requestChecksum(request.requestPath());
+        // V2-19-08: the reachable set is resolved once, before any provider is called, and the same
+        // surface is later linted against whatever intent the run produces.
+        DesignSupportSurfaceV2 surface = lintService.surface(descriptor.capabilities());
         return switch (request.path()) {
             case OPENAI, ANTHROPIC -> publishProviderResult(
-                    request, jobId, startedAt, generationRequest, requestChecksum, descriptor, cancellationToken);
+                    request, jobId, startedAt, generationRequest, requestChecksum, surface, cancellationToken);
             case IMPORT, FIXTURE -> publishBuiltInProviderResult(
-                    request, jobId, startedAt, generationRequest, requestChecksum, descriptor, cancellationToken);
+                    request, jobId, startedAt, generationRequest, requestChecksum, surface, cancellationToken);
             case MANUAL_CONSTRAINT -> publishManualResult(
-                    request, jobId, startedAt, generationRequest, requestChecksum, descriptor, cancellationToken);
+                    request, jobId, startedAt, generationRequest, requestChecksum, descriptor, surface,
+                    cancellationToken);
             case REFERENCE_IMAGE_DRAFT -> publishSoftDraftResult(
-                    request, jobId, startedAt, generationRequest, requestChecksum, descriptor, cancellationToken);
+                    request, jobId, startedAt, generationRequest, requestChecksum, descriptor, surface,
+                    cancellationToken);
         };
     }
 
@@ -147,7 +154,7 @@ public final class TerrainDesignApplicationServiceV2 {
             Instant startedAt,
             GenerationRequestV2 generationRequest,
             String requestChecksum,
-            ProviderCapabilityDescriptorV2 descriptor,
+            DesignSupportSurfaceV2 surface,
             CancellationToken cancellationToken
     ) {
         if (providerFactory == null) {
@@ -163,10 +170,11 @@ public final class TerrainDesignApplicationServiceV2 {
         }
         TerrainDesignResultV2 result = awaitProvider(
                 provider.design(buildProviderRequest(
-                        request, generationRequest, jobId, cancellationToken)),
+                        request, generationRequest, jobId, surface, cancellationToken)),
                 cancellationToken);
         return publishStructured(
-                request, jobId, startedAt, generationRequest, requestChecksum, result, Optional.empty());
+                request, jobId, startedAt, generationRequest, requestChecksum, result, surface,
+                Optional.empty());
     }
 
     private DesignArtifactsV2 publishBuiltInProviderResult(
@@ -175,7 +183,7 @@ public final class TerrainDesignApplicationServiceV2 {
             Instant startedAt,
             GenerationRequestV2 generationRequest,
             String requestChecksum,
-            ProviderCapabilityDescriptorV2 descriptor,
+            DesignSupportSurfaceV2 surface,
             CancellationToken cancellationToken
     ) {
         Path intentPath = resolveModelPath(request.requestPath(), request.modelOrIntentPath());
@@ -186,10 +194,11 @@ public final class TerrainDesignApplicationServiceV2 {
         };
         TerrainDesignResultV2 result = awaitProvider(
                 provider.design(buildProviderRequest(
-                        request, generationRequest, jobId, cancellationToken)),
+                        request, generationRequest, jobId, surface, cancellationToken)),
                 cancellationToken);
         return publishStructured(
-                request, jobId, startedAt, generationRequest, requestChecksum, result, Optional.empty());
+                request, jobId, startedAt, generationRequest, requestChecksum, result, surface,
+                Optional.empty());
     }
 
     private DesignArtifactsV2 publishManualResult(
@@ -199,6 +208,7 @@ public final class TerrainDesignApplicationServiceV2 {
             GenerationRequestV2 generationRequest,
             String requestChecksum,
             ProviderCapabilityDescriptorV2 descriptor,
+            DesignSupportSurfaceV2 surface,
             CancellationToken cancellationToken
     ) {
         Path draftIntentPath = request.draftIntentPath()
@@ -238,7 +248,8 @@ public final class TerrainDesignApplicationServiceV2 {
                     startedAt,
                     result,
                     requestChecksum,
-                    intentChecksum);
+                    intentChecksum,
+                    surface);
             return publisher.publish(
                     request.requestPath(),
                     request.designsRoot(),
@@ -260,6 +271,7 @@ public final class TerrainDesignApplicationServiceV2 {
             GenerationRequestV2 generationRequest,
             String requestChecksum,
             ProviderCapabilityDescriptorV2 descriptor,
+            DesignSupportSurfaceV2 surface,
             CancellationToken cancellationToken
     ) {
         SoftDraftPixelInputV2 draftInput = request.draftInput()
@@ -304,7 +316,8 @@ public final class TerrainDesignApplicationServiceV2 {
                 startedAt,
                 result,
                 requestChecksum,
-                intentChecksum);
+                intentChecksum,
+                surface);
         try {
             return publisher.publish(
                     request.requestPath(),
@@ -327,6 +340,7 @@ public final class TerrainDesignApplicationServiceV2 {
             GenerationRequestV2 generationRequest,
             String requestChecksum,
             TerrainDesignResultV2 result,
+            DesignSupportSurfaceV2 surface,
             Optional<ImageDraftEvidenceV2> draftEvidence
     ) {
         if (!generationRequest.requestId().equals(result.intent().intentId())) {
@@ -342,7 +356,8 @@ public final class TerrainDesignApplicationServiceV2 {
                 startedAt,
                 result,
                 requestChecksum,
-                intentChecksum);
+                intentChecksum,
+                surface);
         try {
             return publisher.publish(
                     request.requestPath(),
@@ -367,6 +382,7 @@ public final class TerrainDesignApplicationServiceV2 {
             DesignDispatchRequestV2 request,
             GenerationRequestV2 generationRequest,
             UUID jobId,
+            DesignSupportSurfaceV2 surface,
             CancellationToken cancellationToken
     ) {
         return new TerrainDesignRequestV2(
@@ -375,18 +391,24 @@ public final class TerrainDesignApplicationServiceV2 {
                 request.capabilities(),
                 generationRequest,
                 imageService.prepare(request.requestPath(), generationRequest, cancellationToken),
-                jobId
+                jobId,
+                surface
         );
     }
 
-    private static DesignAuditV2 buildAudit(
+    /**
+     * V2-19-08: the dispatch dry-run runs here, after the intent exists and before the publisher
+     * writes anything. It classifies only; a design naming unreachable kinds is still published.
+     */
+    private DesignAuditV2 buildAudit(
             UUID jobId,
             String requestId,
             DesignPathKindV2 pathKind,
             Instant startedAt,
             TerrainDesignResultV2 result,
             String requestChecksum,
-            String intentChecksum
+            String intentChecksum,
+            DesignSupportSurfaceV2 surface
     ) {
         return new DesignAuditV2(
                 DesignAuditV2.VERSION,
@@ -404,7 +426,8 @@ public final class TerrainDesignApplicationServiceV2 {
                 sortedCapabilities(result.negotiatedCapabilities()),
                 result.capabilityCatalogVersion(),
                 startedAt,
-                result.createdAt()
+                result.createdAt(),
+                lintService.lint(surface, result.intent())
         );
     }
 

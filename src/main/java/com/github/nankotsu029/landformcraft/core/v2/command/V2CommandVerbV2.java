@@ -82,6 +82,24 @@ public enum V2CommandVerbV2 {
     REQUEST_FOUNDATION_BASE_LEVELS("request", "foundation-base-levels", 6, 6,
             "v2 request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>",
             "request.edit", Surface.BOTH, null),
+    /**
+     * Declares the optional coherent detail (V2-19-12, ADR 0041) that replaces the flat per-medium
+     * base level on the macro foundation background with a bounded, deterministic multi-scale relief.
+     * Requires foundation base levels; the amplitude is a hard bound that may not cross the water level.
+     */
+    REQUEST_FOUNDATION_DETAIL("request", "foundation-detail", 8, 8,
+            "v2 request foundation-detail <request-id> <land-amplitude> <water-amplitude> "
+                    + "<wavelength> <octaves>",
+            "request.edit", Surface.BOTH, null),
+    /**
+     * Declares the optional mask ⇔ feature reconcile pre-pass (V2-19-14, ADR 0043): the export spine
+     * aligns the declared feature geometry with the HARD land-water mask by one rigid integer-block
+     * translation bounded by the declared tolerance. Requires foundation base levels; the mask itself
+     * is never moved and no fail-closed gate is relaxed.
+     */
+    REQUEST_MASK_RECONCILE("request", "mask-reconcile", 5, 5,
+            "v2 request mask-reconcile <request-id> <tolerance-blocks>",
+            "request.edit", Surface.BOTH, null),
     REQUEST_LIST("request", "list", 3, 3,
             "v2 request list", "request", Surface.BOTH, null),
     DESIGN("design", null, 5, 6,

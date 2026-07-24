@@ -436,6 +436,10 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                 sender.sendMessage(detail("requestId", artifacts.audit().requestId()));
                 sender.sendMessage(detail("provider", artifacts.audit().providerId()));
                 sender.sendMessage(detail("intent checksum", artifacts.audit().intentChecksum()));
+                // V2-19-08 report-only lint: the package is published either way, so this is shown
+                // after the identity lines rather than in place of them.
+                V2WorkflowServiceV2.summarizeSupportLint(artifacts.audit())
+                        .forEach((key, value) -> sender.sendMessage(detail(key, String.valueOf(value))));
                 sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
             });
             case GENERATE, EXPORT -> report(sender, v2Workflow.export(
@@ -462,6 +466,13 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
                     request -> reportAuthoredRequest(sender, route, request));
             case REQUEST_FOUNDATION_BASE_LEVELS -> report(sender,
                     v2Workflow.setFoundationBaseLevels(tokens[3], integer(tokens[4]), integer(tokens[5])),
+                    request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_FOUNDATION_DETAIL -> report(sender,
+                    v2Workflow.setFoundationDetail(tokens[3], integer(tokens[4]), integer(tokens[5]),
+                            integer(tokens[6]), integer(tokens[7])),
+                    request -> reportAuthoredRequest(sender, route, request));
+            case REQUEST_MASK_RECONCILE -> report(sender,
+                    v2Workflow.setMaskFeatureReconcile(tokens[3], integer(tokens[4])),
                     request -> reportAuthoredRequest(sender, route, request));
             case REQUEST_SELECTION -> applySelectionBounds(sender, route, tokens[3]);
             case REQUEST_PROMPT -> beginV2PromptCapture(sender, route, tokens[3]);
@@ -523,6 +534,14 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         sender.sendMessage(detail("seed", Long.toString(request.generation().globalSeed())));
         sender.sendMessage(detail("foundation base levels", request.foundationBaseLevels()
                 .map(levels -> "land=" + levels.landSurfaceY() + " waterBed=" + levels.waterBedY())
+                .orElse("(none)")));
+        sender.sendMessage(detail("foundation detail", request.foundationDetail()
+                .map(detail -> "land=" + detail.landAmplitudeBlocks() + " water="
+                        + detail.waterAmplitudeBlocks() + " wavelength=" + detail.wavelengthBlocks()
+                        + " octaves=" + detail.octaves())
+                .orElse("(none)")));
+        sender.sendMessage(detail("mask reconcile", request.maskFeatureReconcile()
+                .map(reconcile -> "tolerance=" + reconcile.toleranceBlocks() + " blocks")
                 .orElse("(none)")));
         sender.sendMessage(detail("argument", v2Workflow.requestArgument(request.requestId())));
         sender.sendMessage(detail("v2CorrelationId", route.correlationId()));
@@ -975,7 +994,7 @@ public final class LandformCraftCommand implements CommandExecutor, TabCompleter
         if (v2Workflow != null) {
             help(sender, "/" + label
                             + " request create|bounds|selection|constraint-map|constraint-source|generation"
-                            + "|foundation-base-levels|prompt|list …",
+                            + "|foundation-base-levels|foundation-detail|mask-reconcile|prompt|list …",
                     "v2 requestを作成・編集・列挙");
             help(sender, "/" + label + " request validate|info <request-v2.json>",
                     "v2 requestを厳密に検証");

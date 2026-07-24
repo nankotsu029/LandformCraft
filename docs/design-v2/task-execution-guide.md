@@ -70,6 +70,7 @@ docs/design-v2/task-index.mdと対象Taskの関連docsを読み、
 5. artifactはstrict read-backとcorruption test前にcapabilityを有効化しない。
 6. 作業後に対象test、`./gradlew test`、`./gradlew build`、`git diff --check`、`git status --short`を確認する。
 7. TaskのAcceptance証拠をroadmapへ短く記録し、詳細は関連docs／testへ置く。
+8. commitする場合は [AGENTS.md](../../AGENTS.md) §16のcommit message規約（Task ID必須、情報量ゼロの先頭行禁止）に従う。
 
 ## 6. 親Phaseと統合Task
 

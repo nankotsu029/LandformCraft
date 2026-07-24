@@ -65,6 +65,8 @@ public final class V2RequestStoreV2 {
                 List.of(),
                 DEFAULT_GENERATION,
                 GenerationRequestV2.ConstraintMapBudget.defaults(),
+                java.util.Optional.empty(),
+                java.util.Optional.empty(),
                 java.util.Optional.empty());
         publish(target, request);
         return request;
@@ -160,7 +162,8 @@ public final class V2RequestStoreV2 {
         GenerationRequestV2 updated = new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
                 current.referenceImages(), List.of(source), current.generation(),
-                current.constraintMapBudget(), current.foundationBaseLevels());
+                current.constraintMapBudget(), current.foundationBaseLevels(), current.foundationDetail(),
+                current.maskFeatureReconcile());
         publish(target, updated);
         return updated;
     }
@@ -204,7 +207,8 @@ public final class V2RequestStoreV2 {
         GenerationRequestV2 updated = new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
                 current.referenceImages(), sources, current.generation(),
-                current.constraintMapBudget(), current.foundationBaseLevels());
+                current.constraintMapBudget(), current.foundationBaseLevels(), current.foundationDetail(),
+                current.maskFeatureReconcile());
         publish(target, updated);
         return updated;
     }
@@ -228,7 +232,8 @@ public final class V2RequestStoreV2 {
                 current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
                 current.referenceImages(), current.constraintMaps(),
                 new GenerationRequestV2.GenerationSettings(globalSeed, tileSize),
-                current.constraintMapBudget(), current.foundationBaseLevels());
+                current.constraintMapBudget(), current.foundationBaseLevels(), current.foundationDetail(),
+                current.maskFeatureReconcile());
         publish(target, updated);
         return updated;
     }
@@ -256,7 +261,60 @@ public final class V2RequestStoreV2 {
                 current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
                 current.referenceImages(), current.constraintMaps(), current.generation(),
                 current.constraintMapBudget(),
-                java.util.Optional.of(new GenerationRequestV2.FoundationBaseLevels(landSurfaceY, waterBedY)));
+                java.util.Optional.of(new GenerationRequestV2.FoundationBaseLevels(landSurfaceY, waterBedY)),
+                current.foundationDetail(), current.maskFeatureReconcile());
+        publish(target, updated);
+        return updated;
+    }
+
+    /**
+     * Declares the optional coherent detail for the macro foundation background elevation (V2-19-12,
+     * ADR 0041). It replaces the flat per-medium base level on background base-level cells with a
+     * bounded, deterministic, multi-scale relief; {@link GenerationRequestV2} validates it against the
+     * bounds and base levels (it requires the base levels to be present and rejects an amplitude that
+     * would cross the water level). Nothing about the relief is inferred from the mask or the bounds.
+     */
+    public GenerationRequestV2 foundationDetail(
+            String requestId,
+            int landAmplitudeBlocks,
+            int waterAmplitudeBlocks,
+            int wavelengthBlocks,
+            int octaves
+    ) throws IOException {
+        String id = requireRequestId(requestId);
+        Path target = resolve(id);
+        GenerationRequestV2 current = read(target, id);
+        GenerationRequestV2 updated = new GenerationRequestV2(
+                current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
+                current.referenceImages(), current.constraintMaps(), current.generation(),
+                current.constraintMapBudget(), current.foundationBaseLevels(),
+                java.util.Optional.of(new GenerationRequestV2.FoundationDetail(
+                        landAmplitudeBlocks, waterAmplitudeBlocks, wavelengthBlocks, octaves)),
+                current.maskFeatureReconcile());
+        publish(target, updated);
+        return updated;
+    }
+
+    /**
+     * Declares the optional mask ⇔ feature reconcile pre-pass (V2-19-14, ADR 0043). Before the
+     * Blueprint is compiled, the export spine aligns the declared feature geometry with the HARD
+     * {@code LAND_WATER_MASK} by one rigid integer-block translation bounded by {@code toleranceBlocks}
+     * on each axis. The mask is never moved and no fail-closed gate is relaxed;
+     * {@link GenerationRequestV2} rejects a tolerance outside 1..8, a request without declared
+     * foundation base levels, and a domain × tolerance combination above the evaluation budget.
+     */
+    public GenerationRequestV2 maskFeatureReconcile(String requestId, int toleranceBlocks)
+            throws IOException {
+        String id = requireRequestId(requestId);
+        Path target = resolve(id);
+        GenerationRequestV2 current = read(target, id);
+        GenerationRequestV2 updated = new GenerationRequestV2(
+                current.requestVersion(), current.requestId(), current.bounds(), current.prompt(),
+                current.referenceImages(), current.constraintMaps(), current.generation(),
+                current.constraintMapBudget(), current.foundationBaseLevels(),
+                current.foundationDetail(),
+                java.util.Optional.of(
+                        new GenerationRequestV2.MaskFeatureReconcile(toleranceBlocks)));
         publish(target, updated);
         return updated;
     }
@@ -275,7 +333,8 @@ public final class V2RequestStoreV2 {
         GenerationRequestV2 updated = new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), current.bounds(), prompt,
                 current.referenceImages(), current.constraintMaps(), current.generation(),
-                current.constraintMapBudget(), current.foundationBaseLevels());
+                current.constraintMapBudget(), current.foundationBaseLevels(), current.foundationDetail(),
+                current.maskFeatureReconcile());
         publish(target, updated);
         return updated;
     }
@@ -360,7 +419,8 @@ public final class V2RequestStoreV2 {
         return new GenerationRequestV2(
                 current.requestVersion(), current.requestId(), bounds, current.prompt(),
                 current.referenceImages(), current.constraintMaps(), current.generation(),
-                current.constraintMapBudget(), current.foundationBaseLevels());
+                current.constraintMapBudget(), current.foundationBaseLevels(), current.foundationDetail(),
+                current.maskFeatureReconcile());
     }
 
     private static String requireRequestId(String value) {

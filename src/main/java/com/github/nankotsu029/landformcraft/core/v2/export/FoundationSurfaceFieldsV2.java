@@ -1,5 +1,7 @@
 package com.github.nankotsu029.landformcraft.core.v2.export;
 
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterialProfileV2;
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterializationV2;
 import com.github.nankotsu029.landformcraft.generator.v2.TerrainBlockResolver;
 import com.github.nankotsu029.landformcraft.generator.v2.composition.coast.CoastalTransitionModuleV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalFoundationModuleV2;
@@ -151,27 +153,38 @@ final class FoundationSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
      * Canonical surface block mapping shared with coastal offline tiles: bedrock floor, grass／stone
      * land columns, gravel／water seabed, air above. No fluid simulation and no volume overlay.
      */
-    TerrainBlockResolver resolver(int minY, int waterLevel) {
-        return (x, y, z) -> {
-            int index = z * width + x;
-            if (y == minY) {
-                return "minecraft:bedrock";
+    TerrainBlockResolver resolver(int minY, int waterLevel, SurfaceMaterializationV2 materialization) {
+        Objects.requireNonNull(materialization, "materialization");
+        return (x, y, z) -> materialization.blockStateAt(roleAt(minY, waterLevel, x, y, z), x, z);
+    }
+
+    /**
+     * V2-19-10: the same closed role catalog the coastal resolver uses, so this adapter cannot
+     * drift into a second, private block vocabulary. The mapping is unchanged byte for byte under
+     * {@link SurfaceMaterializationV2#builtIn()}.
+     */
+    private SurfaceMaterialProfileV2.RoleV2 roleAt(int minY, int waterLevel, int x, int y, int z) {
+        int index = z * width + x;
+        if (y == minY) {
+            return SurfaceMaterialProfileV2.RoleV2.BEDROCK_FLOOR;
+        }
+        int surface = Math.floorDiv(surfaceHeight[index], SCALE);
+        if (landWater[index] == 0) {
+            if (y <= surface) {
+                return y == surface
+                        ? SurfaceMaterialProfileV2.RoleV2.SEABED_SURFACE
+                        : SurfaceMaterialProfileV2.RoleV2.SEABED_SUBSURFACE;
             }
-            int surface = Math.floorDiv(surfaceHeight[index], SCALE);
-            if (landWater[index] == 0) {
-                if (y <= surface) {
-                    return y == surface ? "minecraft:gravel" : "minecraft:stone";
-                }
-                if (y <= waterLevel) {
-                    return "minecraft:water";
-                }
-                return "minecraft:air";
+            if (y <= waterLevel) {
+                return SurfaceMaterialProfileV2.RoleV2.OPEN_WATER;
             }
-            if (y > surface) {
-                return "minecraft:air";
-            }
-            return y == surface ? "minecraft:grass_block"
-                    : y >= surface - 2 ? "minecraft:dirt" : "minecraft:stone";
-        };
+            return SurfaceMaterialProfileV2.RoleV2.OPEN_AIR;
+        }
+        if (y > surface) {
+            return SurfaceMaterialProfileV2.RoleV2.OPEN_AIR;
+        }
+        return y == surface ? SurfaceMaterialProfileV2.RoleV2.VEGETATED_SURFACE
+                : y >= surface - 2 ? SurfaceMaterialProfileV2.RoleV2.SUBSOIL
+                : SurfaceMaterialProfileV2.RoleV2.DEEP_SUBSTRATE;
     }
 }

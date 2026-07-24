@@ -133,6 +133,7 @@ public final class Release2ExportApplicationServiceV2 {
                 tileIds,
                 eligibility,
                 generated.intentContributionCoverage(),
+                generated.maskFeatureReconcile(),
                 generated.warnings());
     }
 }

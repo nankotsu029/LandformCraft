@@ -98,7 +98,8 @@ class MacroFoundationStageV2Test {
         GenerationRequestV2 withoutLevels = new GenerationRequestV2(
                 request.requestVersion(), request.requestId(), request.bounds(), request.prompt(),
                 request.referenceImages(), request.constraintMaps(), request.generation(),
-                request.constraintMapBudget(), Optional.empty());
+                request.constraintMapBudget(), Optional.empty(), Optional.empty(),
+                java.util.Optional.empty());
         TerrainIntentV2 intent = codec.readTerrainIntent(INTENT);
 
         assertTrue(stage.resolve(withoutLevels, REQUEST, intent, TOKEN).isEmpty(),
@@ -419,6 +420,87 @@ class MacroFoundationStageV2Test {
             Locale.setDefault(locale);
             TimeZone.setDefault(timeZone);
         }
+    }
+
+    @Test
+    void detailReplacesTheBaseLevelOfBackgroundCellsButNeverGuideCells(@TempDir Path root)
+            throws IOException {
+        // ADR 0041 D2: coherent detail replaces the flat per-medium base level on background cells the
+        // guide does not specify, and nothing else. Cell 0 is guided (55) and must stay exactly 55; the
+        // other two are background base-level cells and gain the kernel's offset over their base level.
+        MacroFoundationV2.BackgroundDetailV2 detail = detail(4, 3, 8, 2);
+        MacroFoundationV2 foundation = new MacroFoundationV2(
+                boundField(root, new int[] {1, 1, 0}, 3, 1, false),
+                Optional.of(new MacroFoundationV2.HeightGuideV2(
+                        heightGuideField(root, new int[] {55, 255, 255}),
+                        TerrainIntentV2.Strength.SOFT, 0, 32_000_000L, 72_000_000L)),
+                new GenerationRequestV2.FoundationBaseLevels(54, 46), EXTENT,
+                List.of(), Optional.of(detail), 50_000_000);
+
+        assertEquals(55_000_000, foundation.elevationMillionthsAt(0, 0),
+                "a guided cell must keep the guide's height, not a detailed one");
+        assertEquals(54_000_000 + detail.land().valueMillionthsAt(1, 0),
+                foundation.elevationMillionthsAt(1, 0));
+        assertEquals(46_000_000 + detail.water().valueMillionthsAt(2, 0),
+                foundation.elevationMillionthsAt(2, 0));
+        // The medium is never touched: it stays the mask's alone (ADR 0041 凍結4).
+        assertEquals(1, foundation.mediumAt(1, 0));
+        assertEquals(0, foundation.mediumAt(2, 0));
+    }
+
+    @Test
+    void detailLeavesProducerOwnedCellsAtTheProducerElevation(@TempDir Path root) throws IOException {
+        // ADR 0041 D2: a producer owns the elevation of the cells in its footprint, so detail — which
+        // only replaces the background base level — must not touch a producer cell.
+        MacroFoundationV2.BackgroundDetailV2 detail = detail(4, 3, 8, 2);
+        MacroFoundationV2 foundation = new MacroFoundationV2(
+                fullMaskField(root), Optional.empty(),
+                new GenerationRequestV2.FoundationBaseLevels(54, 46), EXTENT,
+                List.of(producer(2, "inland-plain", (x, z) -> x == 0)),
+                Optional.of(detail), 50_000_000);
+
+        assertEquals(60_000_000, foundation.elevationMillionthsAt(0, 0),
+                "a producer cell must keep the producer's elevation, not a detailed one");
+        assertEquals(46_000_000 + detail.water().valueMillionthsAt(1, 0),
+                foundation.elevationMillionthsAt(1, 0));
+    }
+
+    @Test
+    void aDetailedElevationOutsideTheVerticalContractIsRejected(@TempDir Path root) throws IOException {
+        // ADR 0041 D5 defence in depth: unreachable through the request gate (the amplitude is bounded
+        // and validated), but a directly assembled foundation whose extent excludes any non-zero detail
+        // fails closed rather than clamping. Pinned to the extent of exactly the base level.
+        MacroFoundationV2.BackgroundDetailV2 detail = detail(8, 0, 8, 2);
+        MacroFoundationV2 foundation = new MacroFoundationV2(
+                boundField(root, new int[] {1, 1, 1, 1}, 4, 1, false), Optional.empty(),
+                new GenerationRequestV2.FoundationBaseLevels(54, 46),
+                new MacroFoundationV2.VerticalExtentV2(54_000_000L, 54_000_000L),
+                List.of(), Optional.of(detail), 32_000_000);
+
+        int cellWithDetail = -1;
+        for (int x = 0; x < 4; x++) {
+            if (detail.land().valueMillionthsAt(x, 0) != 0) {
+                cellWithDetail = x;
+                break;
+            }
+        }
+        assertTrue(cellWithDetail >= 0, "the kernel produced no non-zero detail to exercise the guard");
+        int cell = cellWithDetail;
+        SurfaceFoundationExceptionV2 rejection = assertThrows(SurfaceFoundationExceptionV2.class,
+                () -> foundation.elevationMillionthsAt(cell, 0));
+        assertEquals(SurfaceFoundationFailureCodeV2.CONTRACT_VIOLATION, rejection.failureCode());
+        assertTrue(rejection.getMessage().contains(MacroFoundationV2.RULE_DETAIL_OUT_OF_CONTRACT),
+                rejection::getMessage);
+    }
+
+    /** A resolved coherent detail for both mediums built from the fixtures' own request seed. */
+    private static MacroFoundationV2.BackgroundDetailV2 detail(
+            int landAmplitudeBlocks, int waterAmplitudeBlocks, int wavelengthBlocks, int octaves) {
+        return new MacroFoundationV2.BackgroundDetailV2(
+                com.github.nankotsu029.landformcraft.generator.v2.detail.CoherentDetailKernelV2.forMedium(
+                        827_413L, "land", landAmplitudeBlocks, wavelengthBlocks, octaves),
+                com.github.nankotsu029.landformcraft.generator.v2.detail.CoherentDetailKernelV2.forMedium(
+                        827_413L, "water", waterAmplitudeBlocks, wavelengthBlocks, octaves));
     }
 
     /** A land producer at a fixed elevation of Y=60, so only the tested condition varies. */

@@ -3,6 +3,7 @@ package com.github.nankotsu029.landformcraft.ai.spi.v2;
 import com.github.nankotsu029.landformcraft.model.v2.design.DesignPathKindV2;
 
 import com.github.nankotsu029.landformcraft.model.v2.design.DesignCapabilityV2;
+import com.github.nankotsu029.landformcraft.model.v2.design.DesignSupportSurfaceV2;
 
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 
@@ -11,14 +12,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-/** Versioned provider request. Intent contract version is explicit; there is no auto-upgrade. */
+/**
+ * Versioned provider request. Intent contract version is explicit; there is no auto-upgrade.
+ *
+ * <p>{@code supportSurface} (V2-19-08) states which FeatureKinds the current production dispatch
+ * registry can actually route, so a provider is told the reachable set before it designs rather than
+ * discovering it at export time. It is advisory: nothing here narrows the historic 60-kind Schema a
+ * provider may return.</p>
+ */
 public record TerrainDesignRequestV2(
         int intentContractVersion,
         DesignPathKindV2 path,
         Set<DesignCapabilityV2> requestedCapabilities,
         GenerationRequestV2 generationRequest,
         List<PreparedReferenceImageV2> images,
-        UUID operationId
+        UUID operationId,
+        DesignSupportSurfaceV2 supportSurface
 ) {
     public static final long MAX_TOTAL_IMAGE_BYTES = 16L * 1024L * 1024L;
 
@@ -33,6 +42,7 @@ public record TerrainDesignRequestV2(
         Objects.requireNonNull(generationRequest, "generationRequest");
         Objects.requireNonNull(images, "images");
         Objects.requireNonNull(operationId, "operationId");
+        Objects.requireNonNull(supportSurface, "supportSurface");
         images = List.copyOf(images);
         if (images.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("images must not contain null elements");

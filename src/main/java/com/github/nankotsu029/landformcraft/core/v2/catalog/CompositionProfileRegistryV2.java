@@ -59,7 +59,17 @@ public final class CompositionProfileRegistryV2 {
             TerrainIntentV2.FeatureKind.PLAIN,
             TerrainIntentV2.FeatureKind.HILL_RANGE,
             // V2-15-10 / ADR 0039 Candidate A: confidence-only amendment, profile fields unchanged.
-            TerrainIntentV2.FeatureKind.RIVER);
+            TerrainIntentV2.FeatureKind.RIVER,
+            // V2-15-11: same confidence-only amendment for the LAKE offline production route.
+            TerrainIntentV2.FeatureKind.LAKE,
+            // V2-15-12: same confidence-only amendment for the CANYON offline production route.
+            TerrainIntentV2.FeatureKind.CANYON,
+            // V2-15-13: same confidence-only amendment for the WATERFALL offline production route.
+            // The profile fields are unchanged: WATERFALL stays a STANDALONE multi-stage kind whose
+            // SURFACE_MODIFICATION stage is the plunge basin this leaf wires and whose
+            // VOLUME_OPERATION / FLUID_OPERATION stages are the WATERFALL_VOLUME overlay a later
+            // Task wires on the sparse-volume capability prefix.
+            TerrainIntentV2.FeatureKind.WATERFALL);
 
     private final Map<TerrainIntentV2.FeatureKind, Registration> registrations;
 

@@ -1,10 +1,10 @@
 # Implementation Roadmap v2
 
-> Status: v2の詳細設計とgate。完了履歴と現在の状態は[進捗の正本](../roadmap.md)に従う。2026-07-22の[全地形カタログ監査](../audits/terrain-catalog-full-audit-2026-07-22.md)により、既存5 Track制のまま`V2-14-03`、Track E続編`V2-15`／`V2-16`、Track A follow-up `V2-17`を登録した。`V2-15-01`〜`04`は完了し、[ADR 0036](../adr/0036-canonical-feature-identifier-disposition.md)のcanonical target projectionとmigrationを実装した。現在の次Taskは`V2-15-05`である（未着手）。
+> Status: v2の詳細設計とgate。完了履歴と現在の状態は[進捗の正本](../roadmap.md)に従う。2026-07-22の[全地形カタログ監査](../audits/terrain-catalog-full-audit-2026-07-22.md)により、既存5 Track制のまま`V2-14-03`、Track E続編`V2-15`／`V2-16`、Track A follow-up `V2-17`を登録し、同日の[macro foundation監査](../audits/macro-foundation-conformance-audit-2026-07-22.md)でTrack AへV2-18（13 Task）を、2026-07-23の[横断監査](../audits/cross-cutting-audit-2026-07-23.md)でTrack AへV2-19（16 Task）を追加登録した。`V2-15-01`〜`13`、V2-18全13 Task、V2-19全16 Taskが完了している（Phase gate `V2-19-16`は2026-07-24の人間承認で完了し親Phaseを閉じた。[audit](audits/v2-19-16-phase-gate.md)）。`V2-15-11`はLAKE基本を配線し、oxbow cutoff subtypeは新ID`V2-15-48`へ分離した（総Task数47→48）。`V2-15-12`はCANYON基本を配線し、着手中に発見した`HardPreflightGateV2`のOFFLINE_PRODUCTION relation誤検出gapも是正した。`V2-15-13`はWATERFALLのsurface側（plunge basin）を配線し、`WATERFALL_VOLUME` overlayとその前提であるenvironment field stackの実測化を新ID`V2-15-49`／`V2-15-50`へ分離した（総Task数48→50）。Track AはV2-17（`V2-15-47`／`V2-16-19`完了待ち）を残すのみで、Track Eの次Taskは`V2-15-14`である。
 
 ## 1. Roadmapの読み方
 
-このroadmapはV2-0〜V2-17の依存関係と親Phase gateを示す。日付や完了を約束せず、各Phaseは前提gateを満たすまで能力をsupportedとしない。実行単位は [Task Index](task-index.md)、運用規則は [Task Execution Guide](task-execution-guide.md)、モデル割当は [Model Assignment](model-assignment.md) を正本とする。現行Beta hardeningのrelease checklist未完了を消さない。`V2-6-16`／`V2-6-17`は無効化済み。現行地形inventoryは2026-07-22監査、2026-07-18 Gap監査は履歴資料として扱う。
+このroadmapはV2-0〜V2-19の依存関係と親Phase gateを示す。日付や完了を約束せず、各Phaseは前提gateを満たすまで能力をsupportedとしない。実行単位は [Task Index](task-index.md)、運用規則は [Task Execution Guide](task-execution-guide.md)、モデル割当は [Model Assignment](model-assignment.md) を正本とする。現行Beta hardeningのrelease checklist未完了を消さない。`V2-6-16`／`V2-6-17`は無効化済み。現行地形inventoryは2026-07-22監査、2026-07-18 Gap監査は履歴資料として扱う。
 
 ```text
 Track A（コア地形）:
@@ -16,6 +16,8 @@ V2-0 Compatibility spine
   → V2-5 Sparse local volume
   → V2-6 Release 2 placement / hardening / capability catalog
   → V2-11 Capability promotion → V2-12 V2 production path
+  → V2-18 Macro foundation / intent conformance
+  → V2-19 Input integrity / block materialization
   → V2-17 Paper placement evidence / promotion（V2-15 / V2-16 gate後）
 
 Track B（画像忠実性、前提はV2-1のみ）:
@@ -140,6 +142,8 @@ security／corruption testはmalformed PNG、format／sample mismatch、unknown 
 | V2-15 | 47 | inventory→canonical registry／dispatch spine→family別public wiring→gate | `V2-15-47` |
 | V2-16 | 19 | composition engine→preset／deferred／new terrain→gate | `V2-16-19` |
 | V2-17 | 7 | measurement harness→runtime別実機matrix→evidence-bound promotion→gate | `V2-17-07` |
+| V2-18 | 13 | 診断gate正常化→coverage report-only→HARD preflight→target-driven validator→map binding→ConformanceTargetSet→foundation ADR→spine→owner gate→E2E portfolio→fixture是正→Phase gate | `V2-18-12` |
+| V2-19 | 16 | materialization gate→Gradle input→画像design修理→binding authoring→RIVER実体化→HEIGHT_GUIDE consumer→producer tier→lint→coastal緩和→material palette→detail kernel ADR→Blueprint ADR→SOFT reconcile ADR→commit規約→Phase gate | `V2-19-16` |
 
 V2-7の設計正本は [image-constraint-maps.md](image-constraint-maps.md) と [ADR 0017](../adr/0017-deterministic-image-mask-extraction.md)、V2-8の設計正本は [scale-and-streaming.md](scale-and-streaming.md) と [ADR 0016](../adr/0016-scale-classes-and-execution-planning.md) である。
 
@@ -274,4 +278,4 @@ TerrainIntentV2の最小record/Schema
 + v1 checksum不変test
 ```
 
-V2-0ではAzure Coastの5 featureをmodule／field diagnosticまでcompileし、残り10 scenarioもfallbackせずround-tripする。v1出力はquery adapterを含むgolden testで固定した。V2-1ではprecision mapをAI referenceから分離し、numeric decodeからfield sidecar、constraint reconciliation、diagnostic previewまでを縦に完成した。`V2-2-01`〜`V2-5-18`で各offline Phase gateを閉じ、V2-6のplacement safety／RecoveryとV2-12のproduction pathも完了した。V2-9／V2-10は各Phase gateまで完了した（[V2-9 audit](audits/v2-9-phase-gate.md)、[V2-10 audit](audits/v2-10-phase-gate.md)）。`V2-14-03`でREADME current-stateを同期し、`V2-15-01`で全地形inventoryを現行HEADへ再照合、`V2-15-02`で[60 FeatureKindのcurrent-state projection](current-feature-state-machine-registry.md)をCI固定した。`V2-15-03`では[ADR 0036](../adr/0036-canonical-feature-identifier-disposition.md)が人間承認され、`V2-15-04`で[46-kind canonical target projection](canonical-feature-target-registry.md)と明示migrationを実装した。現在の次Taskは`V2-15-05`であり、主依存順は`V2-15`→`V2-16`→`V2-17`である。
+V2-0ではAzure Coastの5 featureをmodule／field diagnosticまでcompileし、残り10 scenarioもfallbackせずround-tripする。v1出力はquery adapterを含むgolden testで固定した。V2-1ではprecision mapをAI referenceから分離し、numeric decodeからfield sidecar、constraint reconciliation、diagnostic previewまでを縦に完成した。`V2-2-01`〜`V2-5-18`で各offline Phase gateを閉じ、V2-6のplacement safety／RecoveryとV2-12のproduction pathも完了した。V2-9／V2-10は各Phase gateまで完了した（[V2-9 audit](audits/v2-9-phase-gate.md)、[V2-10 audit](audits/v2-10-phase-gate.md)）。`V2-14-03`でREADME current-stateを同期し、`V2-15-01`で全地形inventoryを現行HEADへ再照合、`V2-15-02`で[60 FeatureKindのcurrent-state projection](current-feature-state-machine-registry.md)をCI固定した。`V2-15-03`では[ADR 0036](../adr/0036-canonical-feature-identifier-disposition.md)が人間承認され、`V2-15-04`で[46-kind canonical target projection](canonical-feature-target-registry.md)と明示migrationを実装した。`V2-15-05`〜`10`はcompile-time dispatch registry、shared capability pipeline（`hydrology-plan`／`environment-fields`／`sparse-volume`）、foundation→`surface-2_5d` adapter（[ADR 0037](../adr/0037-foundation-surface-to-surface-2_5d-mapping.md)）、RIVER／MEANDERING_RIVERの最初のoffline production route（[ADR 0039](../adr/0039-offline-production-route-eligibility.md)）を追加した。`V2-15-11`は同パターンでLAKE基本（CLOSED basin）を配線・実体化し、oxbow cutoff subtype（`OXBOW_LAKE`）は関係graph束縛の別生成経路のため新ID`V2-15-48`へ分離した。`V2-15-12`は同パターンでCANYON基本（既存MEANDERING_RIVER reachへHARD WITHIN束縛、fluid非所有）を配線・実体化した。`V2-15-13`は同パターンでWATERFALLのsurface側（既存MEANDERING_RIVER reachへHARD `ON_PATH_OF`束縛、落ち口下流のplunge basinのみ）を配線・実体化し、`WATERFALL_VOLUME` overlayは`sparse-volume` prefixが含む`environment-fields` pipelineのriver拒否（`V2-19-10`の明示判断）が前提となるため`V2-15-49`／`V2-15-50`へ分離した。2026-07-22の[macro foundation監査](../audits/macro-foundation-conformance-audit-2026-07-22.md)で登録したV2-18（全13 Task）は[ADR 0038](../adr/0038-macro-foundation-contract.md)のmacro foundation契約とfoundation owner gateを実装して完了し、2026-07-23の[横断監査](../audits/cross-cutting-audit-2026-07-23.md)で登録したV2-19は`V2-19-15`まで完了した（semantic materialization gate、RIVER block materialization、`HEIGHT_GUIDE` consumer、`PLAIN` foundation producer、[ADR 0040](../adr/0040-coastal-contributor-set-cardinality.md)によるcoastal 4種必須の緩和、material／palette block反映、[ADR 0041](../adr/0041-coherent-detail-kernel.md)のcoherent detail kernel、[ADR 0042](../adr/0042-blueprint-typed-plan-envelope.md)の`Proposed`著述、[ADR 0043](../adr/0043-mask-feature-reconcile-pre-pass.md)のmask⇔feature reconcile pre-pass、`AGENTS.md`へのcommit message規約を含む）。Phase gate `V2-19-16`は2026-07-24の人間承認で完了しV2-19親Phaseを閉じた（[audit](audits/v2-19-16-phase-gate.md)）。現在の次TaskはTrack E `V2-15-14`であり、主依存順は`V2-18`→`V2-19`（Track A）／`V2-15`→`V2-16`→`V2-17`（Track E以降）である。

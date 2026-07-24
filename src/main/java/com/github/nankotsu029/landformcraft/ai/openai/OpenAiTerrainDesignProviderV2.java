@@ -70,6 +70,7 @@ public final class OpenAiTerrainDesignProviderV2 extends AbstractHttpTerrainDesi
         user.put("role", "user");
         ArrayNode content = user.putArray("content");
         addText(content, TerrainIntentPromptV2.userText(request.generationRequest()));
+        addText(content, TerrainIntentPromptV2.supportSurfaceText(request.supportSurface()));
         request.images().forEach(image -> {
             addText(content, TerrainIntentPromptV2.imageRoleText(image));
             ObjectNode imageContent = content.addObject();

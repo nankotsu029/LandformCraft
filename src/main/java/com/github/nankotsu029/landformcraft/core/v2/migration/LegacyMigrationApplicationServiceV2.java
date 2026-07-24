@@ -183,7 +183,10 @@ public final class LegacyMigrationApplicationServiceV2 {
                 Set.of(DesignCapabilityV2.TERRAIN_INTENT_V2_STRUCTURED),
                 CATALOG_VERSION,
                 source.sealedAt(),
-                source.sealedAt());
+                source.sealedAt(),
+                // V2-19-08: a migration converts a sealed v1 asset; it designs nothing against the
+                // current dispatch registry, so it records no support lint and its bytes are unchanged.
+                null);
     }
 
     private static UUID deterministicJobId(String kind, String digest) {

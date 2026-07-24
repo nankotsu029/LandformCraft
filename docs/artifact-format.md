@@ -20,6 +20,8 @@ designs/<request-id>/<job-uuid>/
 
 publisherは一時directoryへIntent、画像証跡、監査をwriteして厳格に読み戻し、job UUID directoryへatomic moveした後もdirectory identityを含めて再検証します。検証失敗時は公開directoryを除去します。`design-verify`は移送後にも同じ検査を行い、改変、欠損、未知file、job／request directory名の不一致、監査と画像証跡のrequest ID不一致に加え、evidenceのprovider／response／prompt versionとauditの不一致も拒否します。Design PackageがREADYでも地形生成やworld配置は自動実行しません。
 
+Release 2のdesign packageは`terrain-intent-v2.json`／`audit-v2.json`／任意`image-draft-evidence-v2.json`／`checksums.sha256`で、`audit-v2.json`は`design-audit-v2.schema.json`に従います。V2-19-08以降、同auditは任意の`supportLint`を持ちます。`surface`はprovider呼出し前に提示したreachable kind／capability集合（`production-dispatch-registry-v2`の投影。registry checksumとreachability projection checksumを含む）、`findings`はprovider応答intentに対するdispatch dry-runの結果で、`gateClass`は`NON_GATING`だけを受理します。lintは何も拒否せず、v1→v2 migration bundleのauditは`supportLint`を持たないため既存byteは不変です。
+
 ## V2-1 offline constraint field bundle
 
 V2-1のmanual constraint pathは、Release Packageとは別のoffline canonical input bundleを生成します。公開CLI／Paper、Release format 1、配置、Undoのartifactではありません。Release format 2へ収容する方法はV2-2以降で別途version化します。

@@ -1,6 +1,6 @@
 # v1からv2への移行計画
 
-> Status: V2-12-06を完了し、v2を唯一のproduction writer／generator／placement／通常command経路とした。v1 production codeはADR 0035 D2a R1〜R8の範囲だけ削除し、既存v1 artifact向けのpackaged legacy read／verify／migrate、immutable golden、custom asset catalogは維持する。Track Aの次は`V2-12-07`である。
+> Status: V2-12-06を完了し、v2を唯一のproduction writer／generator／placement／通常command経路とした。v1 production codeはADR 0035 D2a R1〜R8の範囲だけ削除し、既存v1 artifact向けのpackaged legacy read／verify／migrate、immutable golden、custom asset catalogは維持する。V2-12はPhase gate `V2-12-07`（2026-07-21）で完了し、Track Aはその後V2-18（macro foundation、13/13完了）を経てV2-19（Input integrity／block materialization）を実行中である。V2-19は全16 Taskを完了し、Phase gate `V2-19-16`は2026-07-24の人間承認で完了して親Phaseを閉じた（[V2-19-16 Phase gate audit](audits/v2-19-16-phase-gate.md)）。Track Aの残りはV2-17（`V2-15-47`／`V2-16-19`完了待ち）のみである。
 
 ## 1. 移行原則
 

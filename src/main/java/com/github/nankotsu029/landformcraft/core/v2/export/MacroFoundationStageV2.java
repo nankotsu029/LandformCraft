@@ -11,6 +11,7 @@ import com.github.nankotsu029.landformcraft.core.v2.foundation.SurfaceFoundation
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapDecodeLimits;
 import com.github.nankotsu029.landformcraft.format.v2.constraint.ConstraintMapInputException;
+import com.github.nankotsu029.landformcraft.generator.v2.detail.CoherentDetailKernelV2;
 import com.github.nankotsu029.landformcraft.generator.v2.foundation.plain.PlainGeneratorV2;
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
@@ -97,6 +98,26 @@ final class MacroFoundationStageV2 {
             TerrainIntentV2 intent,
             CancellationToken token
     ) throws IOException {
+        return bindInputs(request, requestSource, intent, token)
+                .map(inputs -> resolve(inputs, request, intent));
+    }
+
+    /**
+     * Decodes the declared foundation maps once (V2-19-14). The bound rasters depend only on the
+     * intent's {@code mapReferences}, which the reconcile pre-pass never touches, so the pipeline can
+     * read the HARD mask <em>before</em> the pre-pass and still build the foundation from the
+     * reconciled intent afterwards without decoding anything twice.
+     *
+     * <p>Empty means "no explicit foundation input": the request declares no per-medium base levels or
+     * the intent carries no HARD {@code LAND_WATER_MASK} binding, and the legacy surface-baseline path
+     * applies (ADR 0038 D8-2).</p>
+     */
+    Optional<FoundationInputsV2> bindInputs(
+            GenerationRequestV2 request,
+            Path requestSource,
+            TerrainIntentV2 intent,
+            CancellationToken token
+    ) throws IOException {
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(requestSource, "requestSource");
         Objects.requireNonNull(intent, "intent");
@@ -119,10 +140,59 @@ final class MacroFoundationStageV2 {
                     Math.multiplyExact((long) request.bounds().minY(), MacroFoundationV2.SCALE),
                     Math.multiplyExact((long) request.bounds().maxY(), MacroFoundationV2.SCALE)));
         }
-        return Optional.of(new MacroFoundationV2(
-                mask, guide, request.foundationBaseLevels().get(),
+        return Optional.of(new FoundationInputsV2(mask, guide));
+    }
+
+    /**
+     * Builds the foundation from already bound inputs and the intent whose producer features it must
+     * honor. Pure: no I/O, no decoding — the producer layers are the only part that depends on the
+     * intent's features, which is why V2-19-14 can run the reconcile pre-pass between the two halves.
+     */
+    MacroFoundationV2 resolve(
+            FoundationInputsV2 inputs,
+            GenerationRequestV2 request,
+            TerrainIntentV2 intent
+    ) {
+        Objects.requireNonNull(inputs, "inputs");
+        Objects.requireNonNull(request, "request");
+        Objects.requireNonNull(intent, "intent");
+        return new MacroFoundationV2(
+                inputs.mask(), inputs.heightGuide(), request.foundationBaseLevels().orElseThrow(),
                 MacroFoundationV2.VerticalExtentV2.of(request.bounds()),
-                producerLayers(request, intent)));
+                producerLayers(request, intent),
+                backgroundDetail(request),
+                Math.multiplyExact(request.bounds().waterLevel(), MacroFoundationV2.SCALE));
+    }
+
+    /** The decoded foundation maps of one run: the HARD land-water mask and the optional guide. */
+    record FoundationInputsV2(
+            BoundConstraintFieldV2 mask,
+            Optional<MacroFoundationV2.HeightGuideV2> heightGuide
+    ) {
+        FoundationInputsV2 {
+            Objects.requireNonNull(mask, "mask");
+            Objects.requireNonNull(heightGuide, "heightGuide");
+        }
+    }
+
+    /**
+     * Resolves the optional coherent detail (V2-19-12, ADR 0041) into one kernel per medium. Absent
+     * detail leaves the background elevation as the flat per-medium base level, so the whole path is
+     * byte-identical to a pre-V2-19-12 request.
+     */
+    private static Optional<MacroFoundationV2.BackgroundDetailV2> backgroundDetail(
+            GenerationRequestV2 request
+    ) {
+        if (request.foundationDetail().isEmpty()) {
+            return Optional.empty();
+        }
+        GenerationRequestV2.FoundationDetail declared = request.foundationDetail().get();
+        long seed = request.generation().globalSeed();
+        return Optional.of(new MacroFoundationV2.BackgroundDetailV2(
+                CoherentDetailKernelV2.forMedium(seed, "land", declared.landAmplitudeBlocks(),
+                        declared.wavelengthBlocks(), declared.octaves()),
+                CoherentDetailKernelV2.forMedium(seed, "water", declared.waterAmplitudeBlocks(),
+                        declared.wavelengthBlocks(), declared.octaves())));
     }
 
     /**

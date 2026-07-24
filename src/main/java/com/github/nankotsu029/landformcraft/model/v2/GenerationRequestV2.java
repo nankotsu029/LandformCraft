@@ -22,7 +22,9 @@ public record GenerationRequestV2(
         List<ConstraintMapSource> constraintMaps,
         GenerationSettings generation,
         ConstraintMapBudget constraintMapBudget,
-        Optional<FoundationBaseLevels> foundationBaseLevels
+        Optional<FoundationBaseLevels> foundationBaseLevels,
+        Optional<FoundationDetail> foundationDetail,
+        Optional<MaskFeatureReconcile> maskFeatureReconcile
 ) {
     public static final int VERSION = 2;
     public static final int MAX_REFERENCE_IMAGES = 16;
@@ -56,6 +58,30 @@ public record GenerationRequestV2(
         Objects.requireNonNull(constraintMapBudget, "constraintMapBudget");
         Objects.requireNonNull(foundationBaseLevels, "foundationBaseLevels");
         foundationBaseLevels.ifPresent(levels -> levels.requireWithin(bounds));
+        Objects.requireNonNull(foundationDetail, "foundationDetail");
+        foundationDetail.ifPresent(detail -> {
+            // ADR 0041 D3: coherent detail replaces the per-medium base level, so it is only meaningful
+            // on the explicit-foundation path and its amplitude must not push a background cell out of
+            // the request's vertical extent or across the water level (a dry pit / a vanished water
+            // column). Both checks need the water level and the base levels, so they live here where the
+            // whole request is visible rather than inside FoundationDetail alone.
+            if (foundationBaseLevels.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "foundation detail requires declared foundation base levels");
+            }
+            detail.requireCompatibleWith(bounds, foundationBaseLevels.get());
+        });
+        Objects.requireNonNull(maskFeatureReconcile, "maskFeatureReconcile");
+        maskFeatureReconcile.ifPresent(reconcile -> {
+            // ADR 0043 D3: the pre-pass aligns the declared geometry with the HARD land-water mask, so
+            // it is only meaningful on the explicit-foundation path. The evaluation budget needs the
+            // domain, so both checks live here where the whole request is visible.
+            if (foundationBaseLevels.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "mask feature reconcile requires declared foundation base levels");
+            }
+            reconcile.requireAffordableFor(bounds);
+        });
         validateSources(referenceImages, constraintMaps, bounds, constraintMapBudget);
     }
 
@@ -70,6 +96,126 @@ public record GenerationRequestV2(
                     || waterBedY < bounds.minY() || waterBedY > bounds.maxY()) {
                 throw new IllegalArgumentException(
                         "foundation base levels are outside the request bounds");
+            }
+        }
+    }
+
+    /**
+     * ADR 0041 D3: optional coherent multi-scale detail for the macro foundation's background
+     * elevation. It replaces the flat per-medium {@link FoundationBaseLevels} on cells the background
+     * owns and no {@code HEIGHT_GUIDE}, producer or surface modifier claims; it never changes the
+     * land-water medium. {@code wavelengthBlocks} is a power of two and {@code frequency = 1 /
+     * wavelength}; the amplitude is a hard bound (kernel {@code coherent-detail-fixed-v1}). Absent
+     * leaves every pre-V2-19-12 request byte-identical, so the field is Optional.
+     */
+    public record FoundationDetail(
+            int landAmplitudeBlocks,
+            int waterAmplitudeBlocks,
+            int wavelengthBlocks,
+            int octaves
+    ) {
+        public static final int MAX_AMPLITUDE_BLOCKS = 32;
+        public static final int MIN_WAVELENGTH_BLOCKS = 8;
+        public static final int MAX_WAVELENGTH_BLOCKS = 1024;
+        public static final int MIN_OCTAVES = 1;
+        public static final int MAX_OCTAVES = 6;
+        /** The finest octave's grid spacing (wavelength >> (octaves-1)) must stay a usable grid. */
+        public static final int MIN_GRID_SPACING_BLOCKS = 4;
+
+        public FoundationDetail {
+            if (landAmplitudeBlocks < 0 || landAmplitudeBlocks > MAX_AMPLITUDE_BLOCKS
+                    || waterAmplitudeBlocks < 0 || waterAmplitudeBlocks > MAX_AMPLITUDE_BLOCKS) {
+                throw new IllegalArgumentException(
+                        "foundation detail amplitudes must be within 0.." + MAX_AMPLITUDE_BLOCKS + " blocks");
+            }
+            if (landAmplitudeBlocks == 0 && waterAmplitudeBlocks == 0) {
+                throw new IllegalArgumentException(
+                        "foundation detail declares zero amplitude on both mediums (a no-op)");
+            }
+            if (wavelengthBlocks < MIN_WAVELENGTH_BLOCKS || wavelengthBlocks > MAX_WAVELENGTH_BLOCKS
+                    || Integer.bitCount(wavelengthBlocks) != 1) {
+                throw new IllegalArgumentException(
+                        "foundation detail wavelength must be a power of two within "
+                                + MIN_WAVELENGTH_BLOCKS + ".." + MAX_WAVELENGTH_BLOCKS + " blocks");
+            }
+            if (octaves < MIN_OCTAVES || octaves > MAX_OCTAVES) {
+                throw new IllegalArgumentException(
+                        "foundation detail octaves must be within " + MIN_OCTAVES + ".." + MAX_OCTAVES);
+            }
+            if ((wavelengthBlocks >> (octaves - 1)) < MIN_GRID_SPACING_BLOCKS) {
+                throw new IllegalArgumentException(
+                        "foundation detail wavelength " + wavelengthBlocks + " cannot carry " + octaves
+                                + " octaves (finest grid spacing below " + MIN_GRID_SPACING_BLOCKS + ")");
+            }
+        }
+
+        /**
+         * ADR 0041 D5 declaration-time fail-closed: with the request's water level and the declared
+         * base levels visible, verify that {@code base ± amplitude} stays inside the vertical extent
+         * and never crosses the water level. Rejected, not clamped.
+         */
+        void requireCompatibleWith(Bounds bounds, FoundationBaseLevels levels) {
+            if (landAmplitudeBlocks > 0) {
+                requireBandWithin(levels.landSurfaceY(), landAmplitudeBlocks, bounds, "land surface");
+                if (levels.landSurfaceY() - landAmplitudeBlocks < bounds.waterLevel()) {
+                    throw new IllegalArgumentException(
+                            "foundation land detail would sink a land surface below the water level");
+                }
+            }
+            if (waterAmplitudeBlocks > 0) {
+                requireBandWithin(levels.waterBedY(), waterAmplitudeBlocks, bounds, "water bed");
+                if (levels.waterBedY() + waterAmplitudeBlocks > bounds.waterLevel() - 1) {
+                    throw new IllegalArgumentException(
+                            "foundation water detail would raise a sea bed into the water surface");
+                }
+            }
+        }
+
+        private static void requireBandWithin(int center, int amplitude, Bounds bounds, String label) {
+            if (center - amplitude < bounds.minY() || center + amplitude > bounds.maxY()) {
+                throw new IllegalArgumentException(
+                        "foundation detail " + label + " band leaves the request vertical extent");
+            }
+        }
+    }
+
+    /**
+     * ADR 0043 D3 (V2-19-14): optional mask ⇔ feature reconcile pre-pass. When declared, the export
+     * spine aligns the declared feature geometry with the HARD {@code LAND_WATER_MASK} by a single
+     * rigid integer-block translation bounded by {@code toleranceBlocks} on each axis, before the
+     * Blueprint is compiled. The mask itself is never moved and no fail-closed gate is relaxed;
+     * absent leaves every pre-V2-19-14 request byte-identical, so the field is Optional.
+     */
+    public record MaskFeatureReconcile(int toleranceBlocks) {
+        public static final int MIN_TOLERANCE_BLOCKS = 1;
+        public static final int MAX_TOLERANCE_BLOCKS = 8;
+        /**
+         * ADR 0043 D6: the search evaluates at most one candidate per domain cell per offset, so the
+         * declared domain and tolerance bound the whole pre-pass up front. Rejected, never clamped.
+         */
+        public static final long MAX_CANDIDATE_EVALUATIONS = 128_000_000L;
+
+        public MaskFeatureReconcile {
+            if (toleranceBlocks < MIN_TOLERANCE_BLOCKS || toleranceBlocks > MAX_TOLERANCE_BLOCKS) {
+                throw new IllegalArgumentException("mask feature reconcile tolerance must be within "
+                        + MIN_TOLERANCE_BLOCKS + ".." + MAX_TOLERANCE_BLOCKS + " blocks");
+            }
+        }
+
+        /** Candidate offsets of the Chebyshev ball this tolerance describes, {@code (0,0)} included. */
+        public long candidateCount() {
+            long side = 2L * toleranceBlocks + 1L;
+            return Math.multiplyExact(side, side);
+        }
+
+        void requireAffordableFor(Bounds bounds) {
+            long evaluations = Math.multiplyExact(
+                    Math.multiplyExact((long) bounds.width(), (long) bounds.length()), candidateCount());
+            if (evaluations > MAX_CANDIDATE_EVALUATIONS) {
+                throw new IllegalArgumentException("mask feature reconcile tolerance " + toleranceBlocks
+                        + " needs " + evaluations + " candidate evaluations over a " + bounds.width()
+                        + "x" + bounds.length() + " domain, above the " + MAX_CANDIDATE_EVALUATIONS
+                        + " budget");
             }
         }
     }

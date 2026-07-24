@@ -15,6 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** V2-12-03 CLI surface for the official {@code lfc v2 <verb>} path. */
@@ -181,6 +182,67 @@ class LandformCraftCliV2Test {
                 root.resolve("exports").toString(), "authored-export", "water", "54", "46");
         assertEquals(0, exported.exitCode(), exported.error());
         assertTrue(exported.output().contains("placementEligible: true"), exported.output());
+    }
+
+    @Test
+    void theFoundationDetailVerbAuthorsCoherentBackgroundRelief(@TempDir Path root) throws Exception {
+        // V2-19-12 (ADR 0041): coherent detail is export-relevant background state, so authoring must be
+        // able to declare it — but only over an explicit foundation, and never in a way that crosses the
+        // water level (fail closed, not clamped).
+        String data = root.resolve("data").toString();
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "detail-request").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "detail-request",
+                "64", "64", "32", "72", "50").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "foundation-base-levels",
+                "detail-request", "54", "46").exitCode());
+
+        Result detail = run("--data-dir", data, "v2", "request", "foundation-detail",
+                "detail-request", "3", "2", "16", "3");
+        assertEquals(0, detail.exitCode(), detail.error());
+        assertTrue(detail.output().contains("landAmplitudeBlocks=3"), detail.output());
+        assertTrue(detail.output().contains("wavelengthBlocks=16"), detail.output());
+        assertTrue(detail.output().contains("octaves=3"), detail.output());
+
+        Path stored = root.resolve("data").resolve("v2").resolve("requests")
+                .resolve("detail-request.request-v2.json");
+        assertTrue(Files.readString(stored).contains("foundationDetail"));
+
+        // Fail closed: an amplitude that would sink a land surface below the water level is rejected.
+        Result rejected = run("--data-dir", data, "v2", "request", "foundation-detail",
+                "detail-request", "8", "2", "16", "3");
+        assertNotEquals(0, rejected.exitCode());
+    }
+
+    @Test
+    void theMaskReconcileVerbAuthorsThePrePassDeclaration(@TempDir Path root) throws Exception {
+        // V2-19-14 (ADR 0043 D3): the pre-pass changes which geometry is generated, so it has to be
+        // declarable from authoring — over an explicit foundation only, and within its own tolerance
+        // and evaluation budget (fail closed, not clamped).
+        String data = root.resolve("data").toString();
+        assertEquals(0, run("--data-dir", data, "v2", "request", "create", "reconcile-request").exitCode());
+        assertEquals(0, run("--data-dir", data, "v2", "request", "bounds", "reconcile-request",
+                "64", "64", "32", "72", "50").exitCode());
+
+        // No explicit foundation input yet: the declaration has nothing to align against.
+        assertNotEquals(0, run("--data-dir", data, "v2", "request", "mask-reconcile",
+                "reconcile-request", "4").exitCode());
+
+        assertEquals(0, run("--data-dir", data, "v2", "request", "foundation-base-levels",
+                "reconcile-request", "54", "46").exitCode());
+        Result declared = run("--data-dir", data, "v2", "request", "mask-reconcile",
+                "reconcile-request", "4");
+        assertEquals(0, declared.exitCode(), declared.error());
+        assertTrue(declared.output().contains("toleranceBlocks=4"), declared.output());
+
+        Path stored = root.resolve("data").resolve("v2").resolve("requests")
+                .resolve("reconcile-request.request-v2.json");
+        assertTrue(Files.readString(stored).contains("maskFeatureReconcile"));
+
+        // Fail closed: a tolerance outside 1..8 is rejected rather than clamped into range.
+        assertNotEquals(0, run("--data-dir", data, "v2", "request", "mask-reconcile",
+                "reconcile-request", "9").exitCode());
+        assertNotEquals(0, run("--data-dir", data, "v2", "request", "mask-reconcile",
+                "reconcile-request", "0").exitCode());
     }
 
     @Test
@@ -824,6 +886,43 @@ class LandformCraftCliV2Test {
         assertTrue(Files.isRegularFile(published.resolve("audit-v2.json")), result.output());
         // The design package seals the intent only; images are AI cues, not published artifacts.
         assertFalse(Files.exists(published.resolve("references")), result.output());
+    }
+
+    /**
+     * V2-19-08: the CLI design summary states what the production dispatch registry would do with the
+     * designed intent, and the audit records it. This fixture declares {@code PLAIN} alone.
+     *
+     * <p>V2-19-09 (ADR 0040) changed the answer, not the reporting: the surface runtime no longer
+     * requires the coastal four, so a {@code PLAIN}-only design is now {@code SELECTABLE} and carries
+     * neither a missing-companion nor an unselectable finding. The lint contract, rule ids and
+     * NON_GATING classification are unchanged.</p>
+     */
+    @Test
+    void designSummaryAndAuditCarryTheReportOnlySupportLint(@TempDir Path root) throws Exception {
+        Path workspace = copyObliqueMultiView(root);
+
+        Result result = run("v2", "design", "fixture",
+                workspace.resolve("request-v2.json").toString(),
+                "terrain-intent-v2.json",
+                root.resolve("designs").toString());
+
+        assertEquals(0, result.exitCode(), result.error());
+        assertEquals("design-support-lint-v1", valueOf(result.output(), "supportLintContract"));
+        assertEquals("SELECTABLE", valueOf(result.output(), "dispatchDryRun"));
+        assertEquals("[PLAIN]", valueOf(result.output(), "declaredKinds"));
+        assertTrue(valueOf(result.output(), "selectablePipelines")
+                .contains("v2.production.surface-2_5d.coastal"), result.output());
+        assertTrue(valueOf(result.output(), "reachableKinds").contains("SANDY_BEACH"), result.output());
+        assertFalse(result.output().contains("v2.design.route-companion-missing"), result.output());
+        assertFalse(result.output().contains("v2.design.dispatch-unselectable"), result.output());
+
+        String audit = Files.readString(
+                Path.of(valueOf(result.output(), "directory")).resolve("audit-v2.json"),
+                java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(audit.contains("\"supportLint\""), audit);
+        assertTrue(audit.contains("\"design-support-lint-v1\""), audit);
+        assertTrue(audit.contains("\"SELECTABLE\""), audit);
+        assertFalse(audit.contains("\"GATING\""), "the lint records advisory findings only");
     }
 
     @Test

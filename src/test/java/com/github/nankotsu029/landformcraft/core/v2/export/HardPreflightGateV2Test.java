@@ -107,6 +107,20 @@ class HardPreflightGateV2Test {
     }
 
     @Test
+    void aHardRelationToAnOfflineProductionKindIsNoLongerRejectedAsUnconsumed() throws IOException {
+        // V2-15-12: harbor-cove-64-honored-canyon declares a HARD WITHIN relation from a CANYON
+        // feature to a MEANDERING_RIVER feature. MEANDERING_RIVER is an ADR 0039 OFFLINE_PRODUCTION
+        // route (V2-15-10), not PRODUCTION_CONNECTED (the coastal four), but CanyonPlanCompilerV2's
+        // own WITHIN resolution is a real production consumer of the relation — the gate must not
+        // reject an honorable relation just because its consumer's route is the offline one.
+        HardPreflightResultV2 result = evaluate("harbor-cove-64-honored-canyon");
+
+        assertTrue(subjectsFor(result, HardPreflightResultV2.Category.HARD_RELATION_UNCONSUMED)
+                        .stream().noneMatch("canyon-within-river"::equals),
+                () -> "canyon-within-river must not be reported unconsumed: " + result.rejections());
+    }
+
+    @Test
     void aTamperedMaskDigestIsRejectedAsAnUnresolvedMapReference(@TempDir Path root) throws IOException {
         Path relocated = relocateHonored64(root);
         // Break only the declared digest; the byte content and dimensions still match the file.

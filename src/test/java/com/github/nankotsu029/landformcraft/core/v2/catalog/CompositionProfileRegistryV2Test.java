@@ -15,8 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * V2-18-09 composition profile registration per ADR 0038 D3/D4 (NORMATIVE 7 / PROVISIONAL 53 as of
- * V2-15-10 / ADR 0039 Candidate A, which confirms {@code RIVER} confidence-only).
+ * V2-18-09 composition profile registration per ADR 0038 D3/D4 (NORMATIVE 9 / PROVISIONAL 51 as of
+ * V2-15-12, which adds {@code CANYON} to the V2-15-10 / ADR 0039 Candidate A confidence-only
+ * amendment pattern).
  */
 class CompositionProfileRegistryV2Test {
     private final CompositionProfileRegistryV2 registry = CompositionProfileRegistryV2.builtIn();
@@ -31,7 +32,7 @@ class CompositionProfileRegistryV2Test {
     }
 
     @Test
-    void exactlyTheAdrNormativeSevenAreConfirmed() {
+    void exactlyTheAdrNormativeNineAreConfirmed() {
         Set<TerrainIntentV2.FeatureKind> normative = EnumSet.noneOf(TerrainIntentV2.FeatureKind.class);
         for (TerrainIntentV2.FeatureKind kind : TerrainIntentV2.FeatureKind.values()) {
             if (registry.registration(kind).confidence() == CompositionProfileRegistryV2.Confidence.NORMATIVE) {
@@ -46,7 +47,13 @@ class CompositionProfileRegistryV2Test {
                 TerrainIntentV2.FeatureKind.PLAIN,
                 TerrainIntentV2.FeatureKind.HILL_RANGE,
                 // V2-15-10 / ADR 0039 Candidate A: confidence-only amendment.
-                TerrainIntentV2.FeatureKind.RIVER), normative);
+                TerrainIntentV2.FeatureKind.RIVER,
+                // V2-15-11: same confidence-only amendment for LAKE.
+                TerrainIntentV2.FeatureKind.LAKE,
+                // V2-15-12: same confidence-only amendment for CANYON.
+                TerrainIntentV2.FeatureKind.CANYON,
+                // V2-15-13: same confidence-only amendment for WATERFALL.
+                TerrainIntentV2.FeatureKind.WATERFALL), normative);
     }
 
     @Test

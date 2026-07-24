@@ -30,7 +30,7 @@ class ProductionDispatchRegistryV2Test {
             Path.of("examples/v2/diagnostic/azure-coast.terrain-intent-v2.json");
     // Updated when capability overlays change; recompute via builtIn().registryChecksum().
     private static final String EXPECTED_REGISTRY_CHECKSUM =
-            "182f713ed16309183a72f237c32429d01cb08703c3e194c99a4991d8e65de219";
+            "0d829c9dba7a58c1d252ae308735e1a068e40124cf2d1b5817218ac7d9378b0e";
     private static final String EXPECTED_ENVIRONMENT_PLAN_CHECKSUM =
             "e9064809b5864b8ed817e7a6090581cb89d96f5d9473ab7e46ccd3cefd4f4325";
 
@@ -252,10 +252,17 @@ class ProductionDispatchRegistryV2Test {
     }
 
     @Test
-    void builtInRegistrySelectsRiverAndMeanderingRiverAsOfflineProductionOnHydrologyOverlay() throws Exception {
+    void builtInRegistrySelectsRiverMeanderingRiverAndLakeAsOfflineProductionOnHydrologyOverlay() throws Exception {
+        // V2-15-11 adds LAKE, V2-15-12 adds CANYON and V2-15-13 adds WATERFALL to the same explicit
+        // OFFLINE_PRODUCTION allowlist ADR 0039 Candidate A opened for RIVER / MEANDERING_RIVER, on
+        // the same shared hydrology-plan pipeline.
         ProductionDispatchRegistryV2 registry = ProductionDispatchRegistryV2.builtIn();
         for (TerrainIntentV2.FeatureKind offlineKind : List.of(
-                TerrainIntentV2.FeatureKind.RIVER, TerrainIntentV2.FeatureKind.MEANDERING_RIVER)) {
+                TerrainIntentV2.FeatureKind.RIVER,
+                TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
+                TerrainIntentV2.FeatureKind.LAKE,
+                TerrainIntentV2.FeatureKind.CANYON,
+                TerrainIntentV2.FeatureKind.WATERFALL)) {
             ProductionDispatchRegistryV2.Route route = registry.routes().stream()
                     .filter(candidate -> candidate.featureKind() == offlineKind)
                     .findFirst().orElseThrow(() -> new AssertionError("missing route for " + offlineKind));
@@ -265,16 +272,6 @@ class ProductionDispatchRegistryV2Test {
             assertEquals(ReleaseArtifactCatalogV2.HYDROLOGY_WITH_SURFACE, route.requiredCapabilities(),
                     offlineKind.name());
         }
-    }
-
-    @Test
-    void lakeStillHasNoProductionDispatchRoute() {
-        // ADR 0039 Candidate A adds exactly one explicit OFFLINE_PRODUCTION family (RIVER /
-        // MEANDERING_RIVER); every other export-SUPPORTED kind, including LAKE, must not be
-        // auto-admitted into a dispatch route by this Task.
-        ProductionDispatchRegistryV2 registry = ProductionDispatchRegistryV2.builtIn();
-        assertTrue(registry.routes().stream()
-                .noneMatch(route -> route.featureKind() == TerrainIntentV2.FeatureKind.LAKE));
     }
 
     @Test
@@ -297,11 +294,15 @@ class ProductionDispatchRegistryV2Test {
                 .collect(java.util.stream.Collectors.toCollection(
                         () -> java.util.EnumSet.noneOf(TerrainIntentV2.FeatureKind.class)));
         // V2-19-07 added the PLAIN macro foundation producer to the same offline class, on the
-        // coastal surface pipeline rather than the hydrology one.
+        // coastal surface pipeline rather than the hydrology one; V2-15-11 added LAKE, V2-15-12
+        // added CANYON and V2-15-13 added WATERFALL on the hydrology pipeline.
         assertEquals(java.util.EnumSet.of(
                 TerrainIntentV2.FeatureKind.RIVER,
                 TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
-                TerrainIntentV2.FeatureKind.PLAIN), offline);
+                TerrainIntentV2.FeatureKind.PLAIN,
+                TerrainIntentV2.FeatureKind.LAKE,
+                TerrainIntentV2.FeatureKind.CANYON,
+                TerrainIntentV2.FeatureKind.WATERFALL), offline);
         assertEquals(CoastalSurfaceExportPipelineV2.PIPELINE_ID, registry.routes().stream()
                 .filter(route -> route.featureKind() == TerrainIntentV2.FeatureKind.PLAIN)
                 .map(ProductionDispatchRegistryV2.Route::pipelineId)

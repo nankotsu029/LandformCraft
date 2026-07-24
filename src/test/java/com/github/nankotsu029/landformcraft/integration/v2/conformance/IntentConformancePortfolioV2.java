@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -91,13 +92,25 @@ final class IntentConformancePortfolioV2 {
             int length,
             Set<String> shoreConnectedArmIds,
             Set<String> declaredArmIds,
-            ExportRouteV2 exportRoute
+            ExportRouteV2 exportRoute,
+            Set<TerrainIntentV2.FeatureKind> declaredCoastalKinds
     ) {
         CaseV2 {
             Objects.requireNonNull(id, "id");
             shoreConnectedArmIds = Set.copyOf(shoreConnectedArmIds);
             declaredArmIds = Set.copyOf(declaredArmIds);
             Objects.requireNonNull(exportRoute, "exportRoute");
+            declaredCoastalKinds = Set.copyOf(declaredCoastalKinds);
+        }
+
+        /** The four-contributor set every pre-V2-19-09 case declares, plus the contract-only companion. */
+        static Set<TerrainIntentV2.FeatureKind> coastalFourAndBackshore() {
+            return Set.of(
+                    TerrainIntentV2.FeatureKind.SANDY_BEACH,
+                    TerrainIntentV2.FeatureKind.HARBOR_BASIN,
+                    TerrainIntentV2.FeatureKind.BREAKWATER_HARBOR,
+                    TerrainIntentV2.FeatureKind.ROCKY_CAPE,
+                    TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS);
         }
 
         @Override
@@ -118,7 +131,8 @@ final class IntentConformancePortfolioV2 {
                         // Both declared landfalls reach the mainland at this scale.
                         Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm"),
-                        ExportRouteV2.SURFACE),
+                        ExportRouteV2.SURFACE,
+                        CaseV2.coastalFourAndBackshore()),
                 new CaseV2(
                         "coastal-honored-400",
                         Path.of("examples/v2/diagnostic/coastal-honored-400.request-v2.json"),
@@ -132,7 +146,8 @@ final class IntentConformancePortfolioV2 {
                         // arms now connect to shore.
                         Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm"),
-                        ExportRouteV2.SURFACE),
+                        ExportRouteV2.SURFACE,
+                        CaseV2.coastalFourAndBackshore()),
                 new CaseV2(
                         // V2-15-10 / ADR 0039 Candidate A: the harbor-cove-64-honored coastal contract
                         // plus one RIVER feature, published through the hydrology-plan OFFLINE_PRODUCTION
@@ -148,7 +163,8 @@ final class IntentConformancePortfolioV2 {
                         64, 64,
                         Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm"),
-                        ExportRouteV2.HYDROLOGY),
+                        ExportRouteV2.HYDROLOGY,
+                        CaseV2.coastalFourAndBackshore()),
                 new CaseV2(
                         // V2-19-06: the same coastal contract plus an explicit HEIGHT_GUIDE, which the
                         // macro foundation reads as its background elevation source. The land-water
@@ -161,7 +177,8 @@ final class IntentConformancePortfolioV2 {
                         64, 64,
                         Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm"),
-                        ExportRouteV2.SURFACE),
+                        ExportRouteV2.SURFACE,
+                        CaseV2.coastalFourAndBackshore()),
                 new CaseV2(
                         // V2-19-07: the same coastal contract plus one inland PLAIN feature — the
                         // first macro foundation producer. The land-water mask is byte-identical to
@@ -174,7 +191,8 @@ final class IntentConformancePortfolioV2 {
                         64, 64,
                         Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm"),
-                        ExportRouteV2.SURFACE),
+                        ExportRouteV2.SURFACE,
+                        CaseV2.coastalFourAndBackshore()),
                 new CaseV2(
                         // V2-19-05: the same reach declared as the MEANDERING_RIVER kind. Both kinds
                         // share one materialization (V2-15-10 bridges RIVER onto the MEANDERING_RIVER
@@ -187,7 +205,117 @@ final class IntentConformancePortfolioV2 {
                         64, 64,
                         Set.of("west-arm", "east-arm"),
                         Set.of("west-arm", "east-arm"),
-                        ExportRouteV2.HYDROLOGY));
+                        ExportRouteV2.HYDROLOGY,
+                        CaseV2.coastalFourAndBackshore()),
+                new CaseV2(
+                        // V2-19-09 (ADR 0040 D1, size 1): the same contract reduced to the sandy beach
+                        // alone — the subset the 2026-07-23 audit measured as impossible to export.
+                        // Its HARD mask is regenerated by the same "active ? composed : background"
+                        // rule V2-18-13 fixed for coastal-honored-400, so the cells the removed
+                        // modifiers used to shape stay declared input owned by the macro foundation.
+                        "harbor-cove-64-honored-beach",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-beach.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-beach.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of(), Set.of(),
+                        ExportRouteV2.SURFACE,
+                        Set.of(TerrainIntentV2.FeatureKind.SANDY_BEACH,
+                                TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS)),
+                new CaseV2(
+                        // V2-19-09 (ADR 0040 D1, size 0): one inland PLAIN producer and the HARD mask,
+                        // with no coastal modifier at all. The mask is byte-identical to
+                        // harbor-cove-64-honored, so the declared EDGE contract must still be satisfied
+                        // by the macro foundation on its own.
+                        "harbor-cove-64-honored-coastless",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-coastless.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-coastless.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of(), Set.of(),
+                        ExportRouteV2.SURFACE,
+                        Set.of()),
+                new CaseV2(
+                        // V2-19-12 (ADR 0041): the same coastal contract plus coherent detail on the
+                        // macro foundation background. The intent and the land-water mask are
+                        // byte-identical to harbor-cove-64-honored — detail only moves the background
+                        // elevation, never the medium — so every shape assertion of the portfolio must
+                        // give the same answer while the background heights gain a bounded relief.
+                        "harbor-cove-64-honored-detail",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-detail.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-detail.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.SURFACE,
+                        CaseV2.coastalFourAndBackshore()),
+                new CaseV2(
+                        // V2-19-14 (ADR 0043): the same coastal contract with every declared feature
+                        // two blocks south of the land-water mask it must honor, reconciled back by the
+                        // opt-in pre-pass. The mask is byte-identical to harbor-cove-64-honored and the
+                        // pre-pass restores the authored geometry exactly, so every shape assertion of
+                        // the portfolio must give the four-contributor fixture's own answers.
+                        "harbor-cove-64-honored-drift",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-drift.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-drift.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.SURFACE,
+                        CaseV2.coastalFourAndBackshore()),
+                new CaseV2(
+                        // V2-15-11: the same coastal contract plus one closed LAKE feature, published
+                        // through the hydrology-plan OFFLINE_PRODUCTION route so this leaf's per-leaf
+                        // intent-conformance obligation is measured from a published Release rather than
+                        // in-process generator state. The coastal shape fixture and land-water mask are
+                        // otherwise identical to harbor-cove-64-honored; the basin stays on the macro
+                        // foundation background (v2.lake.coastal-owner-conflict rejects otherwise).
+                        "harbor-cove-64-honored-lake",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-lake.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-lake.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.HYDROLOGY,
+                        CaseV2.coastalFourAndBackshore()),
+                new CaseV2(
+                        // V2-15-12: the harbor-cove-64-honored coastal contract plus one MEANDERING_RIVER
+                        // reach and one CANYON feature bound HARD WITHIN it (a CANYON cannot be declared
+                        // without its shared river). Published through the hydrology-plan
+                        // OFFLINE_PRODUCTION route. The canyon owns no fluid — the shared river's
+                        // channel/water stays the river's own — so the block-effect claim declares both
+                        // kinds' classes, and CanyonBlockConformanceV2 separately confirms the canyon's
+                        // own carve is dry.
+                        "harbor-cove-64-honored-canyon",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-canyon.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-canyon.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.HYDROLOGY,
+                        CaseV2.coastalFourAndBackshore()),
+                new CaseV2(
+                        // V2-15-13: the harbor-cove-64-honored coastal contract plus one
+                        // MEANDERING_RIVER reach and one WATERFALL bound HARD ON_PATH_OF it (a
+                        // WATERFALL cannot be declared without its host river). Published through the
+                        // hydrology-plan OFFLINE_PRODUCTION route. The fall owns the plunge basin it
+                        // cuts below the host bed and the water that basin holds; the host keeps its
+                        // own channel columns, so the block-effect claim declares both kinds' classes
+                        // and WaterfallBlockConformanceV2 separately confirms the basin's depth, the
+                        // measured fall head and the containment envelope.
+                        "harbor-cove-64-honored-waterfall",
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-waterfall.request-v2.json"),
+                        Path.of("examples/v2/diagnostic/harbor-cove-64-honored-waterfall.terrain-intent-v2.json"),
+                        new SurfaceBaselineV2(HardLandWaterSourceV2.Classification.WATER, 54, 46),
+                        64, 64,
+                        Set.of("west-arm", "east-arm"),
+                        Set.of("west-arm", "east-arm"),
+                        ExportRouteV2.HYDROLOGY,
+                        CaseV2.coastalFourAndBackshore()));
     }
 
     /** The declared {@code RIVER} / {@code MEANDERING_RIVER} feature id measured by the river cases. */
@@ -195,6 +323,15 @@ final class IntentConformancePortfolioV2 {
 
     /** The declared {@code PLAIN} feature id measured by the V2-19-07 foundation producer case. */
     static final String PLAIN_FEATURE_ID = "inland-plain";
+
+    /** The declared {@code LAKE} feature id measured by the V2-15-11 case. */
+    static final String LAKE_FEATURE_ID = "north-basin";
+
+    /** The declared {@code CANYON} feature id measured by the V2-15-12 case. */
+    static final String CANYON_FEATURE_ID = "stem-canyon";
+
+    /** The declared {@code WATERFALL} feature id measured by the V2-15-13 case. */
+    static final String WATERFALL_FEATURE_ID = "stem-fall";
 
     /**
      * The two {@link ExportRouteV2#HYDROLOGY} cases, by declared FeatureKind: the block-materialization
@@ -215,12 +352,14 @@ final class IntentConformancePortfolioV2 {
             int landCells,
             int landComponentCount,
             int mainlandCells,
-            BeachContinuityV2 beach,
-            HinterlandV2 backshorePlains,
+            Optional<BeachContinuityV2> beach,
+            Optional<HinterlandV2> backshorePlains,
             List<ArmLandfallV2> arms
     ) {
         MeasurementsV2 {
             edgeEvaluations = List.copyOf(edgeEvaluations);
+            Objects.requireNonNull(beach, "beach");
+            Objects.requireNonNull(backshorePlains, "backshorePlains");
             arms = List.copyOf(arms);
         }
 
@@ -304,13 +443,18 @@ final class IntentConformancePortfolioV2 {
                 measureArms(runtime, blueprint, intent, components, land, width, length));
     }
 
-    private static BeachContinuityV2 measureBeach(
+    private static Optional<BeachContinuityV2> measureBeach(
             CoastalRuntimeV2 runtime,
             LandComponentsV2 components,
             int[] land,
             int width,
             int length
     ) {
+        // V2-19-09 (ADR 0040 D1): a case that declares no beach has no beach conformance to measure.
+        // Absence is reported, never substituted with zeroes that would read as a passing measurement.
+        if (runtime.beach() == null) {
+            return Optional.empty();
+        }
         int landBandCells = 0;
         int landBandOnLand = 0;
         int landBandInMainland = 0;
@@ -347,23 +491,25 @@ final class IntentConformancePortfolioV2 {
                 }
             }
         }
-        return new BeachContinuityV2(landBandCells, landBandOnLand, landBandInMainland,
-                bandComponents.size(), nearshoreCells, nearshoreOnWater);
+        return Optional.of(new BeachContinuityV2(landBandCells, landBandOnLand, landBandInMainland,
+                bandComponents.size(), nearshoreCells, nearshoreOnWater));
     }
 
-    private static HinterlandV2 measureHinterland(
+    private static Optional<HinterlandV2> measureHinterland(
             TerrainIntentV2 intent,
             LandComponentsV2 components,
             int[] land,
             int width,
             int length
     ) {
-        TerrainIntentV2.Feature plains = intent.features().stream()
+        Optional<TerrainIntentV2.Feature> plains = intent.features().stream()
                 .filter(feature -> feature.kind() == TerrainIntentV2.FeatureKind.BACKSHORE_PLAINS)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("portfolio case declares no backshore hinterland"));
+                .findFirst();
+        if (plains.isEmpty()) {
+            return Optional.empty();
+        }
         List<TerrainIntentV2.Point2> ring =
-                ((TerrainIntentV2.PolygonGeometry) plains.geometry()).rings().getFirst();
+                ((TerrainIntentV2.PolygonGeometry) plains.orElseThrow().geometry()).rings().getFirst();
         int cells = 0;
         int onLand = 0;
         int inMainland = 0;
@@ -382,7 +528,7 @@ final class IntentConformancePortfolioV2 {
                 }
             }
         }
-        return new HinterlandV2(cells, onLand, inMainland);
+        return Optional.of(new HinterlandV2(cells, onLand, inMainland));
     }
 
     private static List<ArmLandfallV2> measureArms(
@@ -394,6 +540,10 @@ final class IntentConformancePortfolioV2 {
             int width,
             int length
     ) {
+        // V2-19-09: no breakwater declared means no arm to measure, not a measurement of zero arms.
+        if (runtime.breakwater() == null || blueprint.breakwaterHarborPlans().isEmpty()) {
+            return List.of();
+        }
         Map<Integer, String> armIdByOrder = new LinkedHashMap<>();
         for (BreakwaterHarborPlanV2.ArmPlan arm : blueprint.breakwaterHarborPlans().getFirst().arms()) {
             armIdByOrder.put(arm.armOrder(), arm.armId());
@@ -728,6 +878,11 @@ final class IntentConformancePortfolioV2 {
             int breakwaterOwnerIndex
     ) {
         static CoastalRuntimeV2 of(WorldBlueprintV2 blueprint, int width, int length) {
+            // ADR 0040 D1 size 0: no coastal transition plan is sealed at all, so there is no
+            // compositor and every cell belongs to the macro foundation background.
+            if (blueprint.coastalTransitionPlans().isEmpty()) {
+                return new CoastalRuntimeV2(null, null, null, 0, 0);
+            }
             CoastalTransitionPlanV2 plan = blueprint.coastalTransitionPlans().getFirst();
             SandyBeachGeneratorV2 beach = null;
             BreakwaterHarborGeneratorV2 breakwater = null;
@@ -766,21 +921,18 @@ final class IntentConformancePortfolioV2 {
                             "portfolio does not model coastal contributor kind " + contributor.kind());
                 }
             }
-            if (beach == null || breakwater == null) {
-                throw new IllegalStateException("portfolio case is missing the beach or breakwater contributor");
-            }
             return new CoastalRuntimeV2(beach, breakwater,
                     new CoastalTransitionCompositorV2(plan, width, length, bindings),
                     beachOwner, breakwaterOwner);
         }
 
         int ownerAt(int x, int z) {
-            return compositor.sampleAt(x, z, HardLandWaterSourceV2.NONE).ownerIndex();
+            return compositor == null ? 0 : compositor.sampleAt(x, z, HardLandWaterSourceV2.NONE).ownerIndex();
         }
 
         /** Whether any coastal modifier contributes at the cell; false means the foundation owns it. */
         boolean activeAt(int x, int z) {
-            return compositor.sampleAt(x, z, HardLandWaterSourceV2.NONE).active();
+            return compositor != null && compositor.sampleAt(x, z, HardLandWaterSourceV2.NONE).active();
         }
     }
 }

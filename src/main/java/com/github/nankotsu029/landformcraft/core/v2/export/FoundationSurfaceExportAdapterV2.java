@@ -4,6 +4,7 @@ import com.github.nankotsu029.landformcraft.core.CancellationToken;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticBlueprintCompilerV2;
 import com.github.nankotsu029.landformcraft.core.v2.DiagnosticCompileRequestV2;
 import com.github.nankotsu029.landformcraft.core.v2.foundation.FoundationPlainHillSliceCompilerV2;
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterializationV2;
 import com.github.nankotsu029.landformcraft.format.v2.LandformV2DataCodec;
 import com.github.nankotsu029.landformcraft.format.v2.field.ConstraintFieldIndexCodecV2;
 import com.github.nankotsu029.landformcraft.format.v2.field.LfcGridWriterV1;
@@ -155,13 +156,16 @@ public final class FoundationSurfaceExportAdapterV2 {
 
         List<SurfaceReleaseSourceV2.TileSource> tiles = writeTiles(
                 workRoot.resolve("tiles"), tilePlan, blueprint,
-                fields.resolver(bounds.minY(), bounds.waterLevel()),
+                // V2-19-10: the ADR 0037 adapter shares the closed surface role catalog but binds no
+                // environment material — it publishes no environment plans to bind one from.
+                fields.resolver(bounds.minY(), bounds.waterLevel(), SurfaceMaterializationV2.builtIn()),
                 bounds.minY(), bounds.maxY(), token);
 
         SurfaceReleaseSourceV2 source = new SurfaceReleaseSourceV2(
                 requestPath, intentPath, blueprintPath, indexPath, constraintRoot,
                 validationPath, previewRoot.resolve("index.json"), previewRoot, tiles);
-        return new ProductionExportPipelineV2.GeneratedSurface(source, blueprint, Optional.empty(), List.of());
+        return new ProductionExportPipelineV2.GeneratedSurface(
+                source, blueprint, Optional.empty(), Optional.empty(), List.of());
     }
 
     private static void requireFoundationSurfaceKinds(TerrainIntentV2 intent) throws IOException {

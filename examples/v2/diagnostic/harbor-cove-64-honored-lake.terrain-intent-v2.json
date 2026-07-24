@@ -1,0 +1,500 @@
+{
+  "intentVersion": 2,
+  "intentId": "harbor-cove-64-honored-lake",
+  "theme": "V2-15-11 intent-conformance fixture: the harbor-cove-64-honored coastal contract plus one closed LAKE feature, exported through the hydrology-plan offline production route so the portfolio measures the LAKE wiring end-to-end from the final canonical block stream. The basin stays on the macro foundation background north of the beach's backshore band, because a basin cell overlapping a coastal modifier's cells is rejected fail-closed (v2.lake.coastal-owner-conflict). Same land-water mask and coastal shape as harbor-cove-64-honored",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "main-beach",
+      "kind": "SANDY_BEACH",
+      "geometry": {
+        "type": "SPLINE",
+        "points": [
+          [
+            0.02,
+            0.42
+          ],
+          [
+            0.2,
+            0.35
+          ],
+          [
+            0.42,
+            0.41
+          ]
+        ],
+        "interpolation": "CATMULL_ROM"
+      },
+      "parameters": {
+        "widthBlocks": {
+          "min": 4,
+          "max": 9
+        },
+        "shoreSlopeDegrees": {
+          "min": 2,
+          "max": 8
+        },
+        "nearshoreDepthBlocks": {
+          "atDistance": 6,
+          "target": 2
+        },
+        "foreshoreShare01": 0.6,
+        "endpointTaperBlocks": 10,
+        "landSide": "LEFT"
+      },
+      "priority": 10,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "azure-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "central-breakwater",
+      "kind": "BREAKWATER_HARBOR",
+      "geometry": {
+        "type": "MULTI_SPLINE",
+        "paths": [
+          {
+            "id": "west-arm",
+            "startEndpointId": "west-landfall",
+            "endEndpointId": "west-opening",
+            "points": [
+              [
+                0.43,
+                0.39
+              ],
+              [
+                0.46,
+                0.48
+              ],
+              [
+                0.475,
+                0.53
+              ]
+            ]
+          },
+          {
+            "id": "east-arm",
+            "startEndpointId": "east-landfall",
+            "endEndpointId": "east-opening",
+            "points": [
+              [
+                0.61,
+                0.47
+              ],
+              [
+                0.59,
+                0.51
+              ],
+              [
+                0.5625,
+                0.53
+              ]
+            ]
+          }
+        ],
+        "interpolation": "CATMULL_ROM"
+      },
+      "parameters": {
+        "crestWidthBlocks": 2,
+        "crestAboveWaterBlocks": 2,
+        "outerDepthBlocks": 4,
+        "crestProfile": "FLAT",
+        "foundationProfile": "LINEAR_SIDE_SLOPE",
+        "foundationSideSlopeRunPerRise": 1.5,
+        "opening": {
+          "betweenEndpointIds": [
+            "west-opening",
+            "east-opening"
+          ],
+          "widthBlocks": 4,
+          "measurement": "CLEAR_EDGE_TO_EDGE"
+        },
+        "innerSide": "NORTH"
+      },
+      "priority": 20,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "azure-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "harbor-basin",
+      "kind": "HARBOR_BASIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.43,
+              0.39
+            ],
+            [
+              0.61,
+              0.47
+            ],
+            [
+              0.5625,
+              0.53
+            ],
+            [
+              0.475,
+              0.53
+            ],
+            [
+              0.43,
+              0.39
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "waterDepthBlocks": {
+          "min": 3,
+          "max": 4
+        },
+        "entranceEndpointIds": [
+          "west-opening",
+          "east-opening"
+        ],
+        "entranceCorridorLengthBlocks": 4,
+        "bottomProfile": "EDGE_TO_CENTER_LINEAR",
+        "profileTransitionBlocks": 2
+      },
+      "priority": 15,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "azure-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "east-cape",
+      "kind": "ROCKY_CAPE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.62,
+              0.28
+            ],
+            [
+              0.84,
+              0.22
+            ],
+            [
+              0.86,
+              0.56
+            ],
+            [
+              0.7,
+              0.6
+            ],
+            [
+              0.62,
+              0.28
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "cliffHeightBlocks": {
+          "min": 3,
+          "max": 5
+        },
+        "localReliefAboveSeaBlocks": {
+          "min": 5,
+          "max": 7
+        },
+        "cliffBandWidthBlocks": {
+          "min": 2,
+          "max": 4
+        },
+        "seaStackCount": {
+          "min": 1,
+          "max": 2
+        },
+        "seaStackRadiusBlocks": {
+          "min": 1,
+          "max": 2
+        },
+        "seaStackOffshoreDistanceBlocks": {
+          "min": 4,
+          "max": 5
+        },
+        "channelCount": {
+          "min": 1,
+          "max": 1
+        },
+        "channelWidthBlocks": {
+          "min": 2,
+          "max": 3
+        },
+        "channelLengthBlocks": {
+          "min": 4,
+          "max": 6
+        },
+        "channelDepthBlocks": {
+          "min": 1,
+          "max": 2
+        },
+        "rockExposure01": {
+          "min": 0.68,
+          "max": 0.92
+        },
+        "seawardSide": "EAST",
+        "capeMode": "TWO_POINT_FIVE_D_ONLY"
+      },
+      "priority": 10,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "azure-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "backshore-plains",
+      "kind": "BACKSHORE_PLAINS",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.02,
+              0.02
+            ],
+            [
+              0.98,
+              0.02
+            ],
+            [
+              0.94,
+              0.2
+            ],
+            [
+              0.12,
+              0.25
+            ],
+            [
+              0.02,
+              0.02
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "elevationAboveWaterBlocks": {
+          "min": 2,
+          "max": 5
+        },
+        "grassCover01": {
+          "min": 0.45,
+          "max": 0.8
+        }
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "azure-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    },
+    {
+      "id": "north-basin",
+      "kind": "LAKE",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.2,
+              0.03
+            ],
+            [
+              0.34,
+              0.03
+            ],
+            [
+              0.34,
+              0.13
+            ],
+            [
+              0.2,
+              0.13
+            ],
+            [
+              0.2,
+              0.03
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "targetDepthBlocks": {
+          "min": 3,
+          "max": 5
+        },
+        "shoreWidthBlocks": 2,
+        "terminalPolicy": "CLOSED",
+        "spillSelection": "DECLARED_EDGE",
+        "spillEdgeStartIndex": -1,
+        "spillwayWidthBlocks": 0,
+        "spillwayCorridorLengthBlocks": 0,
+        "floorProfile": "EDGE_TO_CENTER_LINEAR"
+      },
+      "priority": 0,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "azure-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "breakwater-encloses-basin",
+      "kind": "ENCLOSES",
+      "from": "feature:central-breakwater",
+      "to": "feature:harbor-basin",
+      "strength": "HARD"
+    },
+    {
+      "id": "basin-overlaps-beach",
+      "kind": "OVERLAPS",
+      "from": "feature:harbor-basin",
+      "to": "feature:main-beach",
+      "strength": "SOFT",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 6
+      }
+    },
+    {
+      "id": "harbor-adjoins-beach",
+      "kind": "ADJACENT_TO",
+      "from": "feature:central-breakwater",
+      "to": "feature:main-beach",
+      "strength": "HARD",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 6
+      }
+    },
+    {
+      "id": "cape-adjoins-harbor",
+      "kind": "ADJACENT_TO",
+      "from": "feature:east-cape",
+      "to": "feature:central-breakwater",
+      "strength": "SOFT",
+      "transition": {
+        "transitionVersion": 1,
+        "profile": "PRIORITY_BLEND",
+        "bandBlocks": 8
+      }
+    },
+    {
+      "id": "backshore-adjoins-beach",
+      "kind": "ADJACENT_TO",
+      "from": "feature:backshore-plains",
+      "to": "feature:main-beach",
+      "strength": "SOFT"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "south-is-sea",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "SOUTH",
+        "classification": "SEA",
+        "minimumShare01": 0.9
+      }
+    },
+    {
+      "id": "north-is-land",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "NORTH",
+        "classification": "LAND",
+        "minimumShare01": 0.85
+      }
+    },
+    {
+      "id": "beach-width",
+      "strength": "SOFT",
+      "kind": "METRIC_RANGE",
+      "subject": "feature:main-beach",
+      "metric": "BEACH_WIDTH_BLOCKS_P50",
+      "range": {
+        "min": 20,
+        "max": 55
+      },
+      "tolerance": 2,
+      "weight": 0.5
+    },
+    {
+      "id": "cape-irregularity",
+      "strength": "SOFT",
+      "kind": "METRIC_RANGE",
+      "subject": "feature:east-cape",
+      "metric": "COASTLINE_TURNING_PER_100_BLOCKS",
+      "range": {
+        "min": 1.8,
+        "max": 4.2
+      },
+      "tolerance": 0.1,
+      "weight": 0.7
+    }
+  ],
+  "environment": {
+    "geologyPreset": "MIXED_SEDIMENT_AND_ANDESITE",
+    "climatePreset": "TEMPERATE_MARITIME",
+    "ecologyPreset": "SPARSE_COASTAL"
+  },
+  "mapReferences": [
+    {
+      "id": "coast-mask-binding",
+      "sourceId": "constraint-source:coast-mask",
+      "role": "LAND_WATER_MASK",
+      "artifactId": "constraint:land-water:sha256-0000000000000000000000000000000000000000000000000000000000000000",
+      "strength": "HARD",
+      "sampling": "NEAREST",
+      "toleranceBlocks": 0
+    }
+  ],
+  "structures": [
+    {
+      "id": "small-pier-request",
+      "kind": "SMALL_PIER",
+      "count": 1,
+      "preferredFeatureId": "harbor-basin"
+    }
+  ],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "azure-fixture",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "intentVersion": 2,
+  "intentId": "harbor-cove-64-honored-coastless",
+  "theme": "V2-19-09 coastal contributor subset (ADR 0040 D1, size 0): one inland PLAIN producer and the HARD land-water mask, with no coastal modifier at all. The mask is byte-identical to harbor-cove-64-honored, so the whole surface is owned by the macro foundation and the published land-water field must reproduce the mask exactly",
+  "coordinateSystem": {
+    "horizontal": "NORMALIZED_XZ",
+    "origin": "NORTH_WEST",
+    "xAxis": "EAST",
+    "zAxis": "SOUTH",
+    "vertical": "BLOCK_Y_OR_SURFACE_OFFSET"
+  },
+  "features": [
+    {
+      "id": "inland-plain",
+      "kind": "PLAIN",
+      "geometry": {
+        "type": "POLYGON",
+        "rings": [
+          [
+            [
+              0.2,
+              0.03
+            ],
+            [
+              0.6,
+              0.03
+            ],
+            [
+              0.6,
+              0.14
+            ],
+            [
+              0.2,
+              0.14
+            ],
+            [
+              0.2,
+              0.03
+            ]
+          ]
+        ]
+      },
+      "parameters": {
+        "baseElevationAboveDatumBlocks": {
+          "min": 5,
+          "max": 7
+        },
+        "microReliefBlocks": {
+          "min": 1,
+          "max": 3
+        },
+        "groundwaterHandoffDepthBlocks": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "priority": 5,
+      "provenance": {
+        "source": "MANUAL",
+        "sourceId": "azure-fixture",
+        "confidence": 1,
+        "confirmationState": "CONFIRMED"
+      }
+    }
+  ],
+  "relations": [],
+  "constraints": [
+    {
+      "id": "south-is-sea",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "SOUTH",
+        "classification": "SEA",
+        "minimumShare01": 0.9
+      }
+    },
+    {
+      "id": "north-is-land",
+      "strength": "HARD",
+      "kind": "EDGE_CLASSIFICATION",
+      "subject": "world",
+      "parameters": {
+        "edge": "NORTH",
+        "classification": "LAND",
+        "minimumShare01": 0.85
+      }
+    }
+  ],
+  "environment": {
+    "geologyPreset": "MIXED_SEDIMENT_AND_ANDESITE",
+    "climatePreset": "TEMPERATE_MARITIME",
+    "ecologyPreset": "SPARSE_COASTAL"
+  },
+  "mapReferences": [
+    {
+      "id": "coast-mask-binding",
+      "sourceId": "constraint-source:coast-mask",
+      "role": "LAND_WATER_MASK",
+      "artifactId": "constraint:land-water:sha256-0000000000000000000000000000000000000000000000000000000000000000",
+      "strength": "HARD",
+      "sampling": "NEAREST",
+      "toleranceBlocks": 0
+    }
+  ],
+  "structures": [],
+  "provenance": {
+    "source": "MANUAL",
+    "sourceId": "azure-fixture",
+    "confidence": 1,
+    "confirmationState": "CONFIRMED"
+  }
+}

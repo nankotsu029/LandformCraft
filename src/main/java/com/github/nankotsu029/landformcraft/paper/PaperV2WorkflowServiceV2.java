@@ -148,6 +148,35 @@ public final class PaperV2WorkflowServiceV2 {
                 requests().foundationBaseLevels(requestId, landSurfaceY, waterBedY)));
     }
 
+    /**
+     * Declares the optional coherent detail (V2-19-12, ADR 0041) that replaces the flat per-medium
+     * base level on the macro foundation background with a bounded, deterministic multi-scale relief.
+     * Requires the foundation base levels; the amplitude may not cross the water level.
+     */
+    public CompletionStage<GenerationRequestV2> setFoundationDetail(
+            String requestId,
+            int landAmplitudeBlocks,
+            int waterAmplitudeBlocks,
+            int wavelengthBlocks,
+            int octaves
+    ) {
+        return executors.supplyIo(() -> io(() -> requests().foundationDetail(
+                requestId, landAmplitudeBlocks, waterAmplitudeBlocks, wavelengthBlocks, octaves)));
+    }
+
+    /**
+     * Declares the optional mask ⇔ feature reconcile pre-pass (V2-19-14, ADR 0043): the export spine
+     * aligns the declared feature geometry with the HARD land-water mask by one rigid integer-block
+     * translation bounded by the declared tolerance. Requires the foundation base levels.
+     */
+    public CompletionStage<GenerationRequestV2> setMaskFeatureReconcile(
+            String requestId,
+            int toleranceBlocks
+    ) {
+        return executors.supplyIo(() -> io(() ->
+                requests().maskFeatureReconcile(requestId, toleranceBlocks)));
+    }
+
     public CompletionStage<GenerationRequestV2> setPrompt(String requestId, String prompt) {
         return executors.supplyIo(() -> io(() -> requests().prompt(requestId, prompt)));
     }

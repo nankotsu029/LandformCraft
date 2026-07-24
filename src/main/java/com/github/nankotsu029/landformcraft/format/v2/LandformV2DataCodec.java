@@ -4820,6 +4820,17 @@ public final class LandformV2DataCodec {
                         ? java.util.Optional.of(new GenerationRequestV2.FoundationBaseLevels(
                                 root.path("foundationBaseLevels").path("landSurfaceY").intValue(),
                                 root.path("foundationBaseLevels").path("waterBedY").intValue()))
+                        : java.util.Optional.empty(),
+                root.has("foundationDetail")
+                        ? java.util.Optional.of(new GenerationRequestV2.FoundationDetail(
+                                root.path("foundationDetail").path("landAmplitudeBlocks").intValue(),
+                                root.path("foundationDetail").path("waterAmplitudeBlocks").intValue(),
+                                root.path("foundationDetail").path("wavelengthBlocks").intValue(),
+                                root.path("foundationDetail").path("octaves").intValue()))
+                        : java.util.Optional.empty(),
+                root.has("maskFeatureReconcile")
+                        ? java.util.Optional.of(new GenerationRequestV2.MaskFeatureReconcile(
+                                root.path("maskFeatureReconcile").path("toleranceBlocks").intValue()))
                         : java.util.Optional.empty());
     }
 
@@ -5341,6 +5352,21 @@ public final class LandformV2DataCodec {
             ObjectNode foundation = node.putObject("foundationBaseLevels");
             foundation.put("landSurfaceY", levels.landSurfaceY());
             foundation.put("waterBedY", levels.waterBedY());
+        });
+        // V2-19-12: absent coherent detail serializes as an absent property, so every request written
+        // before the field existed keeps its canonical byte stream and checksum unchanged.
+        request.foundationDetail().ifPresent(detail -> {
+            ObjectNode foundationDetail = node.putObject("foundationDetail");
+            foundationDetail.put("landAmplitudeBlocks", detail.landAmplitudeBlocks());
+            foundationDetail.put("waterAmplitudeBlocks", detail.waterAmplitudeBlocks());
+            foundationDetail.put("wavelengthBlocks", detail.wavelengthBlocks());
+            foundationDetail.put("octaves", detail.octaves());
+        });
+        // V2-19-14: absent mask feature reconcile serializes as an absent property, so every request
+        // written before the field existed keeps its canonical byte stream and checksum unchanged.
+        request.maskFeatureReconcile().ifPresent(reconcile -> {
+            ObjectNode maskFeatureReconcile = node.putObject("maskFeatureReconcile");
+            maskFeatureReconcile.put("toleranceBlocks", reconcile.toleranceBlocks());
         });
         return node;
     }

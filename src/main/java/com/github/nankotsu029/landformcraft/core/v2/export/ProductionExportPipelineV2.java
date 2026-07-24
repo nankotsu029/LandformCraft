@@ -96,12 +96,14 @@ public interface ProductionExportPipelineV2 {
             SurfaceReleaseSourceV2 source,
             WorldBlueprintV2 blueprint,
             Optional<IntentContributionCoverageV2> intentContributionCoverage,
+            Optional<MaskFeatureReconcileV2> maskFeatureReconcile,
             List<ExportWarningV2> warnings
     ) {
         public GeneratedSurface {
             Objects.requireNonNull(source, "source");
             Objects.requireNonNull(blueprint, "blueprint");
             Objects.requireNonNull(intentContributionCoverage, "intentContributionCoverage");
+            Objects.requireNonNull(maskFeatureReconcile, "maskFeatureReconcile");
             warnings = List.copyOf(warnings);
         }
     }

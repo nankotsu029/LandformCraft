@@ -55,12 +55,27 @@ public final class PublicDispatchReachabilityV2 {
      * {@code RIVER}, {@code harbor-cove-64-honored-meander} for {@code MEANDERING_RIVER}), so
      * neither entry is inferred from the other even though both compile through one plan shape.
      * {@code V2-19-07} added {@code PLAIN}, whose macro foundation producer raises the land it owns
-     * ({@code harbor-cove-64-honored-plain} against the same baseline).</p>
+     * ({@code harbor-cove-64-honored-plain} against the same baseline). {@code V2-15-11} added
+     * {@code LAKE}, whose closed basin is carved and filled the same way
+     * ({@code harbor-cove-64-honored-lake} against the same baseline). {@code V2-15-12} added
+     * {@code CANYON}, whose corridor is carved dry alongside its required companion
+     * {@code MEANDERING_RIVER} ({@code harbor-cove-64-honored-canyon} against the same baseline; the
+     * canyon's own carve is separately confirmed dry by a final-tile-stream structural measurement,
+     * since the block diff itself also carries the companion river's SOLID_SHAPE/FLUID effect).
+     * {@code V2-15-13} added {@code WATERFALL}, whose plunge basin is cut below the host bed and
+     * filled ({@code harbor-cove-64-honored-waterfall} against the same baseline; the basin's own
+     * depth and containment are separately confirmed by a final-tile-stream structural measurement,
+     * since the block diff also carries the host {@code MEANDERING_RIVER}'s effect). The waterfall's
+     * falling column and behind-fall cavity are the {@code WATERFALL_VOLUME} overlay, which needs the
+     * {@code sparse-volume} capability prefix and is not part of this route.</p>
      */
     private static final Set<TerrainIntentV2.FeatureKind> MATERIALIZED_OFFLINE_KINDS = EnumSet.of(
             TerrainIntentV2.FeatureKind.RIVER,
             TerrainIntentV2.FeatureKind.MEANDERING_RIVER,
-            TerrainIntentV2.FeatureKind.PLAIN);
+            TerrainIntentV2.FeatureKind.PLAIN,
+            TerrainIntentV2.FeatureKind.LAKE,
+            TerrainIntentV2.FeatureKind.CANYON,
+            TerrainIntentV2.FeatureKind.WATERFALL);
 
     public record EntryV2(
             TerrainIntentV2.FeatureKind kind,

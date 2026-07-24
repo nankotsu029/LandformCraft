@@ -4,6 +4,7 @@ import com.github.nankotsu029.landformcraft.core.v2.binding.BoundConstraintField
 import com.github.nankotsu029.landformcraft.core.v2.foundation.SurfaceFoundationExceptionV2;
 import com.github.nankotsu029.landformcraft.core.v2.foundation.SurfaceFoundationFailureCodeV2;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.HardLandWaterSourceV2;
+import com.github.nankotsu029.landformcraft.generator.v2.detail.CoherentDetailKernelV2;
 import com.github.nankotsu029.landformcraft.model.v2.GenerationRequestV2;
 import com.github.nankotsu029.landformcraft.model.v2.TerrainIntentV2;
 
@@ -68,6 +69,8 @@ final class MacroFoundationV2 {
             "v2.foundation.producer-elevation-out-of-contract";
     /** A HARD guide and a foundation producer both claiming one cell's height (AGENTS.md §7). */
     static final String RULE_HEIGHT_GUIDE_PRODUCER_CONFLICT = "v2.foundation.height-guide-producer-conflict";
+    /** Coherent detail pushed a background cell out of the extent or across the water level (V2-19-12). */
+    static final String RULE_DETAIL_OUT_OF_CONTRACT = "v2.foundation.detail-out-of-contract";
 
     /**
      * The resolved {@code HEIGHT_GUIDE} background elevation source (ADR 0038 D2-2 alternative (a)).
@@ -148,12 +151,32 @@ final class MacroFoundationV2 {
         boolean contains(int globalX, int globalZ);
     }
 
+    /**
+     * Resolved coherent detail (V2-19-12, ADR 0041) for the background owner's base-level cells, one
+     * kernel per medium. It only ever adds an offset to the per-medium base level; the medium itself
+     * always comes from the mask (ADR 0041 凍結4).
+     */
+    record BackgroundDetailV2(CoherentDetailKernelV2 land, CoherentDetailKernelV2 water) {
+        BackgroundDetailV2 {
+            Objects.requireNonNull(land, "land");
+            Objects.requireNonNull(water, "water");
+        }
+
+        int millionthsAt(int medium, int globalX, int globalZ) {
+            return medium == 1
+                    ? land.valueMillionthsAt(globalX, globalZ)
+                    : water.valueMillionthsAt(globalX, globalZ);
+        }
+    }
+
     private final BoundConstraintFieldV2 mask;
     private final HeightGuideV2 heightGuide;
     private final VerticalExtentV2 verticalExtent;
     private final List<ProducerLayer> producers;
     private final int landElevationMillionths;
     private final int waterElevationMillionths;
+    private final BackgroundDetailV2 detail;
+    private final int waterLevelMillionths;
 
     MacroFoundationV2(
             BoundConstraintFieldV2 mask,
@@ -171,11 +194,25 @@ final class MacroFoundationV2 {
             VerticalExtentV2 verticalExtent,
             List<ProducerLayer> producers
     ) {
+        this(mask, heightGuide, baseLevels, verticalExtent, producers, Optional.empty(), 0);
+    }
+
+    MacroFoundationV2(
+            BoundConstraintFieldV2 mask,
+            Optional<HeightGuideV2> heightGuide,
+            GenerationRequestV2.FoundationBaseLevels baseLevels,
+            VerticalExtentV2 verticalExtent,
+            List<ProducerLayer> producers,
+            Optional<BackgroundDetailV2> detail,
+            int waterLevelMillionths
+    ) {
         this.mask = Objects.requireNonNull(mask, "mask");
         this.heightGuide = Objects.requireNonNull(heightGuide, "heightGuide").orElse(null);
         Objects.requireNonNull(baseLevels, "baseLevels");
         this.verticalExtent = Objects.requireNonNull(verticalExtent, "verticalExtent");
         this.producers = List.copyOf(Objects.requireNonNull(producers, "producers"));
+        this.detail = Objects.requireNonNull(detail, "detail").orElse(null);
+        this.waterLevelMillionths = waterLevelMillionths;
         Set<Integer> ownerIndexes = new LinkedHashSet<>();
         for (ProducerLayer producer : this.producers) {
             if (!ownerIndexes.add(producer.ownerIndex())) {
@@ -322,7 +359,43 @@ final class MacroFoundationV2 {
         if (guided != NO_HEIGHT) {
             return guided;
         }
-        return mediumAt(globalX, globalZ) == 1 ? landElevationMillionths : waterElevationMillionths;
+        int medium = mediumAt(globalX, globalZ);
+        int base = medium == 1 ? landElevationMillionths : waterElevationMillionths;
+        if (detail == null) {
+            return base;
+        }
+        // V2-19-12: coherent detail replaces the flat per-medium base level here — the one cell class
+        // ADR 0041 D2 allows. Guide cells returned above, producer cells returned before this method's
+        // base branch, and modifier cells never reach the background path, so no other declared height
+        // is touched. |detail| ≤ amplitude and the declaration-time checks keep base ± amplitude in
+        // contract; the per-cell check is defence in depth (ADR 0041 D5).
+        int elevation = Math.addExact(base, detail.millionthsAt(medium, globalX, globalZ));
+        requireDetailWithinContract(elevation, medium, globalX, globalZ);
+        return elevation;
+    }
+
+    /**
+     * Defence-in-depth for a detailed background cell (V2-19-12, ADR 0041 D5). The declaration-time
+     * checks already bound {@code base ± amplitude}, so a violation here means the kernel or the datum
+     * disagreed with the request; it fails closed rather than clamping.
+     */
+    private void requireDetailWithinContract(int elevation, int medium, int globalX, int globalZ) {
+        if (elevation < verticalExtent.minimumMillionths()
+                || elevation > verticalExtent.maximumMillionths()) {
+            throw new SurfaceFoundationExceptionV2(SurfaceFoundationFailureCodeV2.CONTRACT_VIOLATION,
+                    RULE_DETAIL_OUT_OF_CONTRACT + ": detailed background elevation at " + globalX + ','
+                            + globalZ + " leaves the request's vertical extent");
+        }
+        if (medium == 1 && elevation < waterLevelMillionths) {
+            throw new SurfaceFoundationExceptionV2(SurfaceFoundationFailureCodeV2.CONTRACT_VIOLATION,
+                    RULE_DETAIL_OUT_OF_CONTRACT + ": detail sank a land surface below the water level at "
+                            + globalX + ',' + globalZ);
+        }
+        if (medium == 0 && elevation > waterLevelMillionths - SCALE) {
+            throw new SurfaceFoundationExceptionV2(SurfaceFoundationFailureCodeV2.CONTRACT_VIOLATION,
+                    RULE_DETAIL_OUT_OF_CONTRACT + ": detail raised a sea bed into the water surface at "
+                            + globalX + ',' + globalZ);
+        }
     }
 
     /**

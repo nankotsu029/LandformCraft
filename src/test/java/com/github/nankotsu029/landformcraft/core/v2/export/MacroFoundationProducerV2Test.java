@@ -120,10 +120,12 @@ class MacroFoundationProducerV2Test {
     }
 
     @Test
-    void aProducerOnlyIntentStillCannotSelectTheSurfacePath(@TempDir Path root) throws Exception {
-        // The surface path still requires the four coastal contributors (V2-2), which is why PLAIN's
-        // standalone_usage column stays PARTIAL. Relaxing that requirement is V2-19-09's Task; until
-        // then the limitation is fail-closed and stated, never a silent partial Release.
+    void aProducerOnlyIntentNowExportsOnTheSurfacePath(@TempDir Path root) throws Exception {
+        // V2-19-09 (ADR 0040 D1, size 0) removed the coastal-four runtime requirement that used to
+        // reject this intent. The producer plus the HARD mask is a complete foundation input, so the
+        // export succeeds — and the shipped fixture harbor-cove-64-honored-coastless pins the
+        // resulting Release. PLAIN's standalone_usage column stays PARTIAL until its own standalone
+        // materialization evidence exists (ADR 0040 D7).
         Path workspace = relocatePlain(root);
         Path intent = workspace.resolve("producer-only-intent.json");
         TerrainIntentV2 declared = codec.readTerrainIntent(workspace.resolve("terrain-intent-v2.json"));
@@ -136,12 +138,12 @@ class MacroFoundationProducerV2Test {
                 List.of(), List.of(), declared.environment(), declared.mapReferences(),
                 List.of(), declared.provenance()));
 
-        Exception rejected = assertThrows(Exception.class, () -> exportWorkspace(
-                root, workspace.resolve("request-v2.json"), intent, "producer-only-export"));
+        Path release = exportWorkspace(
+                root, workspace.resolve("request-v2.json"), intent, "producer-only-export");
 
-        assertTrue(rejected.getMessage().contains("coastal contributors")
-                        || rejected.getMessage().contains("coastal transition plan"),
-                rejected::getMessage);
+        assertTrue(Files.isRegularFile(release.resolve("manifest.json")));
+        assertTrue(codec.readWorldBlueprint(release.resolve("blueprint/world-blueprint.json"))
+                .coastalTransitionPlans().isEmpty());
     }
 
     @Test

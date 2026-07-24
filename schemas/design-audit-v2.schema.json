@@ -36,10 +36,76 @@
     },
     "capabilityCatalogVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" },
     "startedAt": { "type": "string", "format": "date-time" },
-    "completedAt": { "type": "string", "format": "date-time" }
+    "completedAt": { "type": "string", "format": "date-time" },
+    "supportLint": { "$ref": "#/$defs/supportLint" }
   },
   "$defs": {
     "checksum": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "featureKindName": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" },
+    "featureKindList": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/featureKindName" }
+    },
+    "supportLint": {
+      "description": "V2-19-08 design-time support lint. Optional: the design service always records one, the v1 migration path records none. Report-only; every finding is NON_GATING and nothing here rejects a design.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface", "dispatchDryRun", "selectablePipelineIds", "declaredKinds", "findings"],
+      "properties": {
+        "surface": { "$ref": "#/$defs/supportSurface" },
+        "dispatchDryRun": { "enum": ["SELECTABLE", "NOT_SELECTABLE"] },
+        "selectablePipelineIds": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }
+        },
+        "declaredKinds": { "$ref": "#/$defs/featureKindList" },
+        "findings": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ruleId", "gateClass", "featureKinds", "detail"],
+            "properties": {
+              "ruleId": { "type": "string", "pattern": "^[a-z0-9]+([.-][a-z0-9]+)*$", "maxLength": 64 },
+              "gateClass": { "const": "NON_GATING" },
+              "featureKinds": { "$ref": "#/$defs/featureKindList" },
+              "detail": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" }
+            }
+          }
+        }
+      }
+    },
+    "supportSurface": {
+      "description": "Reachable kind and capability set presented before the provider call, projected from the production dispatch registry rather than from the Feature Support Catalog.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion", "dispatchRegistryVersion", "dispatchRegistryChecksum",
+        "reachabilityChecksum", "productionConnectedKinds", "offlineProductionKinds",
+        "contractOnlyKinds", "requiredCompanionKinds", "designCapabilities"
+      ],
+      "properties": {
+        "contractVersion": { "const": "design-support-lint-v1" },
+        "dispatchRegistryVersion": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,63}$" },
+        "dispatchRegistryChecksum": { "$ref": "#/$defs/checksum" },
+        "reachabilityChecksum": { "$ref": "#/$defs/checksum" },
+        "productionConnectedKinds": { "$ref": "#/$defs/featureKindList" },
+        "offlineProductionKinds": { "$ref": "#/$defs/featureKindList" },
+        "contractOnlyKinds": { "$ref": "#/$defs/featureKindList" },
+        "requiredCompanionKinds": { "$ref": "#/$defs/featureKindList" },
+        "designCapabilities": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capability" }
+        }
+      }
+    },
     "capability": {
       "enum": [
         "TERRAIN_INTENT_V2_STRUCTURED",

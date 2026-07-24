@@ -1,6 +1,8 @@
 package com.github.nankotsu029.landformcraft.core.v2.export;
 
 import com.github.nankotsu029.landformcraft.core.CancellationToken;
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterialProfileV2;
+import com.github.nankotsu029.landformcraft.core.v2.material.SurfaceMaterializationV2;
 import com.github.nankotsu029.landformcraft.generator.v2.BuiltInLandformModuleCatalogV2;
 import com.github.nankotsu029.landformcraft.generator.v2.TerrainBlockResolver;
 import com.github.nankotsu029.landformcraft.generator.v2.coast.CoastalFoundationModuleV2;
@@ -18,6 +20,7 @@ import com.github.nankotsu029.landformcraft.validation.v2.coast.CoastalValidatio
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Release-local coastal descriptor fields sampled once from a frozen Blueprint (V2-12-02).
@@ -107,7 +110,7 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
             for (int x = 0; x < width; x++) {
                 int index = z * width + x;
                 CoastalTransitionCompositorV2.CompositionSample sample =
-                        runtime.compositor().sampleAt(x, z, HardLandWaterSourceV2.NONE);
+                        runtime.composeAt(x, z, HardLandWaterSourceV2.NONE);
                 active[index] = sample.active();
                 desiredLandWater[index] = sample.active() ? sample.landWater() : baselineLandWater;
                 desiredHeight[index] = sample.active()
@@ -124,29 +127,11 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
             cancellationToken.throwIfCancellationRequested();
             for (int x = 0; x < width; x++) {
                 int index = z * width + x;
-                SandyBeachGeneratorV2.BeachSample beach =
-                        runtime.beach().sampleAt(x, z, HardLandWaterSourceV2.NONE);
-                HarborBasinGeneratorV2.HarborSample harbor =
-                        runtime.harbor().sampleAt(x, z, HardLandWaterSourceV2.NONE);
-                BreakwaterHarborGeneratorV2.BreakwaterSample breakwater = runtime.breakwater().sampleAt(x, z);
-                RockyCapeGeneratorV2.CapeSample cape =
-                        runtime.cape().sampleAt(x, z, HardLandWaterSourceV2.NONE);
-                put(fields, CoastalFoundationModuleV2.BEACH_LOCAL_WIDTH_FIELD_ID, index,
-                        beach.localWidthMillionths());
-                put(fields, CoastalFoundationModuleV2.BEACH_BAND_FIELD_ID, index, beach.band().rawValue());
-                put(fields, CoastalFoundationModuleV2.HARBOR_REGION_FIELD_ID, index, harbor.region().rawValue());
-                put(fields, CoastalFoundationModuleV2.HARBOR_WATER_FIELD_ID, index, harbor.water());
-                put(fields, CoastalFoundationModuleV2.HARBOR_DEPTH_FIELD_ID, index, harbor.depthMillionths());
-                put(fields, CoastalFoundationModuleV2.BREAKWATER_REGION_FIELD_ID, index,
-                        breakwater.region().rawValue());
-                put(fields, CoastalFoundationModuleV2.CAPE_REGION_FIELD_ID, index, cape.region().rawValue());
-                put(fields, CoastalFoundationModuleV2.CAPE_ROCK_EXPOSURE_FIELD_ID, index, cape.rockExposure());
-                put(fields, CoastalFoundationModuleV2.CAPE_DESCRIPTOR_INDEX_FIELD_ID, index,
-                        cape.descriptorIndex());
+                writeDescriptorFields(fields, runtime, index, x, z);
 
                 if (active[index]) {
                     CoastalTransitionCompositorV2.CompositionSample composed =
-                            runtime.compositor().sampleAt(x, z, hard);
+                            runtime.composeAt(x, z, hard);
                     if (!composed.hardProtected() || composed.landWater() != desiredLandWater[index]) {
                         throw new IllegalStateException(
                                 "coastal export did not preserve the HARD land-water cell at " + x + ',' + z);
@@ -201,8 +186,7 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
             cancellationToken.throwIfCancellationRequested();
             for (int x = 0; x < width; x++) {
                 int index = z * width + x;
-                active[index] = runtime.compositor()
-                        .sampleAt(x, z, HardLandWaterSourceV2.NONE).active();
+                active[index] = runtime.composeAt(x, z, HardLandWaterSourceV2.NONE).active();
                 foundationOwner[index] = foundation.effectiveOwnerIndexAt(x, z);
             }
         }
@@ -213,30 +197,12 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
             cancellationToken.throwIfCancellationRequested();
             for (int x = 0; x < width; x++) {
                 int index = z * width + x;
-                SandyBeachGeneratorV2.BeachSample beach =
-                        runtime.beach().sampleAt(x, z, HardLandWaterSourceV2.NONE);
-                HarborBasinGeneratorV2.HarborSample harbor =
-                        runtime.harbor().sampleAt(x, z, HardLandWaterSourceV2.NONE);
-                BreakwaterHarborGeneratorV2.BreakwaterSample breakwater = runtime.breakwater().sampleAt(x, z);
-                RockyCapeGeneratorV2.CapeSample cape =
-                        runtime.cape().sampleAt(x, z, HardLandWaterSourceV2.NONE);
-                put(fields, CoastalFoundationModuleV2.BEACH_LOCAL_WIDTH_FIELD_ID, index,
-                        beach.localWidthMillionths());
-                put(fields, CoastalFoundationModuleV2.BEACH_BAND_FIELD_ID, index, beach.band().rawValue());
-                put(fields, CoastalFoundationModuleV2.HARBOR_REGION_FIELD_ID, index, harbor.region().rawValue());
-                put(fields, CoastalFoundationModuleV2.HARBOR_WATER_FIELD_ID, index, harbor.water());
-                put(fields, CoastalFoundationModuleV2.HARBOR_DEPTH_FIELD_ID, index, harbor.depthMillionths());
-                put(fields, CoastalFoundationModuleV2.BREAKWATER_REGION_FIELD_ID, index,
-                        breakwater.region().rawValue());
-                put(fields, CoastalFoundationModuleV2.CAPE_REGION_FIELD_ID, index, cape.region().rawValue());
-                put(fields, CoastalFoundationModuleV2.CAPE_ROCK_EXPOSURE_FIELD_ID, index, cape.rockExposure());
-                put(fields, CoastalFoundationModuleV2.CAPE_DESCRIPTOR_INDEX_FIELD_ID, index,
-                        cape.descriptorIndex());
+                writeDescriptorFields(fields, runtime, index, x, z);
 
                 HardLandWaterSourceV2.Classification maskClass = hard.classificationAt(x, z);
                 if (active[index]) {
                     CoastalTransitionCompositorV2.CompositionSample composed =
-                            runtime.compositor().sampleAt(x, z, hard);
+                            runtime.composeAt(x, z, hard);
                     if (maskClass != HardLandWaterSourceV2.Classification.UNSPECIFIED) {
                         if (!composed.hardProtected() || composed.landWater() != maskClass.rawValue()) {
                             throw new IllegalStateException(
@@ -267,6 +233,48 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
             }
         }
         return new CoastalSurfaceFieldsV2(fields, width, length, protectedCells, foundationOwner);
+    }
+
+    /**
+     * Writes the nine per-kind descriptor fields of one cell (V2-19-09, ADR 0040 D3).
+     *
+     * <p>An undeclared kind writes exactly the canonical OUTSIDE values its generator emits outside
+     * its own footprint — {@code NO_DATA} widths and depths, region and band {@code 0} — so an absent
+     * contributor is indistinguishable from a declared contributor whose footprint is empty. The field
+     * id set and its order stay fixed for every contributor subset: the published sidecar shape must
+     * not depend on which kinds an intent happens to declare.</p>
+     */
+    private static void writeDescriptorFields(
+            Map<String, int[]> fields,
+            CoastalGeneratorRuntimeV2 runtime,
+            int index,
+            int x,
+            int z
+    ) {
+        SandyBeachGeneratorV2.BeachSample beach = runtime.beachSampleOrNull(x, z);
+        HarborBasinGeneratorV2.HarborSample harbor = runtime.harborSampleOrNull(x, z);
+        BreakwaterHarborGeneratorV2.BreakwaterSample breakwater = runtime.breakwaterSampleOrNull(x, z);
+        RockyCapeGeneratorV2.CapeSample cape = runtime.capeSampleOrNull(x, z);
+        put(fields, CoastalFoundationModuleV2.BEACH_LOCAL_WIDTH_FIELD_ID, index,
+                beach == null ? SandyBeachGeneratorV2.NO_DATA : beach.localWidthMillionths());
+        put(fields, CoastalFoundationModuleV2.BEACH_BAND_FIELD_ID, index,
+                (beach == null ? SandyBeachGeneratorV2.BeachBand.OUTSIDE : beach.band()).rawValue());
+        put(fields, CoastalFoundationModuleV2.HARBOR_REGION_FIELD_ID, index,
+                (harbor == null ? HarborBasinGeneratorV2.HarborRegion.OUTSIDE : harbor.region()).rawValue());
+        put(fields, CoastalFoundationModuleV2.HARBOR_WATER_FIELD_ID, index,
+                harbor == null ? 0 : harbor.water());
+        put(fields, CoastalFoundationModuleV2.HARBOR_DEPTH_FIELD_ID, index,
+                harbor == null ? HarborBasinGeneratorV2.NO_DATA : harbor.depthMillionths());
+        put(fields, CoastalFoundationModuleV2.BREAKWATER_REGION_FIELD_ID, index,
+                (breakwater == null
+                        ? BreakwaterHarborGeneratorV2.BreakwaterRegion.OUTSIDE
+                        : breakwater.region()).rawValue());
+        put(fields, CoastalFoundationModuleV2.CAPE_REGION_FIELD_ID, index,
+                (cape == null ? RockyCapeGeneratorV2.CapeRegion.OUTSIDE : cape.region()).rawValue());
+        put(fields, CoastalFoundationModuleV2.CAPE_ROCK_EXPOSURE_FIELD_ID, index,
+                cape == null ? 0 : cape.rockExposure());
+        put(fields, CoastalFoundationModuleV2.CAPE_DESCRIPTOR_INDEX_FIELD_ID, index,
+                cape == null ? 0 : cape.descriptorIndex());
     }
 
     private static void put(Map<String, int[]> fields, String id, int index, int value) {
@@ -319,38 +327,71 @@ final class CoastalSurfaceFieldsV2 implements CoastalFieldSamplerV2 {
     /**
      * Canonical V2-2 surface block mapping: bedrock floor, semantic coastal surfaces, water up to
      * the request water level, air above. It owns no fluid simulation and no volume overlay.
+     *
+     * <p>V2-19-10 replaced the eleven inlined block-state literals with the closed role catalog of
+     * {@link SurfaceMaterialProfileV2}: this method now decides a <em>role</em> per cell and the
+     * bound {@link SurfaceMaterializationV2} decides the block state. With
+     * {@link SurfaceMaterializationV2#builtIn()} the mapping is unchanged byte for byte.</p>
      */
-    TerrainBlockResolver resolver(int minY, int waterLevel) {
+    TerrainBlockResolver resolver(int minY, int waterLevel, SurfaceMaterializationV2 materialization) {
+        Objects.requireNonNull(materialization, "materialization");
         int[] beach = values.get(CoastalFoundationModuleV2.BEACH_BAND_FIELD_ID);
         int[] breakwater = values.get(CoastalFoundationModuleV2.BREAKWATER_REGION_FIELD_ID);
         int[] cape = values.get(CoastalFoundationModuleV2.CAPE_REGION_FIELD_ID);
-        return (x, y, z) -> {
-            int index = z * width + x;
-            if (y == minY) return "minecraft:bedrock";
-            int surface = Math.floorDiv(surfaceHeight[index], SCALE);
-            int breakwaterRegion = breakwater[index];
-            boolean submergedBreakwater = breakwaterRegion == 2 || breakwaterRegion == 3;
-            if (landWater[index] == 0 || submergedBreakwater) {
-                if (y <= surface) {
-                    if (breakwaterRegion != 0 && y >= surface - 1) return "minecraft:stone_bricks";
-                    return y == surface ? "minecraft:gravel" : "minecraft:stone";
+        return (x, y, z) -> materialization.blockStateAt(
+                roleAt(beach, breakwater, cape, minY, waterLevel, x, y, z), x, z);
+    }
+
+    /** The surface role of one column cell. Pure and independent of tile order. */
+    private SurfaceMaterialProfileV2.RoleV2 roleAt(
+            int[] beach,
+            int[] breakwater,
+            int[] cape,
+            int minY,
+            int waterLevel,
+            int x,
+            int y,
+            int z
+    ) {
+        int index = z * width + x;
+        if (y == minY) return SurfaceMaterialProfileV2.RoleV2.BEDROCK_FLOOR;
+        int surface = Math.floorDiv(surfaceHeight[index], SCALE);
+        int breakwaterRegion = breakwater[index];
+        boolean submergedBreakwater = breakwaterRegion == 2 || breakwaterRegion == 3;
+        if (landWater[index] == 0 || submergedBreakwater) {
+            if (y <= surface) {
+                if (breakwaterRegion != 0 && y >= surface - 1) {
+                    return SurfaceMaterialProfileV2.RoleV2.STRUCTURE_CREST;
                 }
-                if (y <= waterLevel) return "minecraft:water";
-                return "minecraft:air";
+                return y == surface
+                        ? SurfaceMaterialProfileV2.RoleV2.SEABED_SURFACE
+                        : SurfaceMaterialProfileV2.RoleV2.SEABED_SUBSURFACE;
             }
-            if (y > surface) return "minecraft:air";
-            if (breakwaterRegion != 0) {
-                return y >= surface - 1 ? "minecraft:stone_bricks" : "minecraft:cobblestone";
-            }
-            if (beach[index] == 2 || beach[index] == 3) {
-                return y == surface ? "minecraft:sand"
-                        : y >= surface - 2 ? "minecraft:sandstone" : "minecraft:stone";
-            }
-            if (cape[index] != 0) {
-                return y == surface ? "minecraft:cobblestone" : "minecraft:stone";
-            }
-            return y == surface ? "minecraft:grass_block"
-                    : y >= surface - 2 ? "minecraft:dirt" : "minecraft:stone";
-        };
+            if (y <= waterLevel) return SurfaceMaterialProfileV2.RoleV2.OPEN_WATER;
+            return SurfaceMaterialProfileV2.RoleV2.OPEN_AIR;
+        }
+        if (y > surface) return SurfaceMaterialProfileV2.RoleV2.OPEN_AIR;
+        if (breakwaterRegion != 0) {
+            return y >= surface - 1
+                    ? SurfaceMaterialProfileV2.RoleV2.STRUCTURE_CREST
+                    : SurfaceMaterialProfileV2.RoleV2.STRUCTURE_CORE;
+        }
+        if (beach[index] == 2 || beach[index] == 3) {
+            return y == surface ? SurfaceMaterialProfileV2.RoleV2.BEACH_SURFACE
+                    : y >= surface - 2 ? SurfaceMaterialProfileV2.RoleV2.BEACH_SUBSURFACE
+                    : SurfaceMaterialProfileV2.RoleV2.DEEP_SUBSTRATE;
+        }
+        if (cape[index] != 0) {
+            return y == surface
+                    ? SurfaceMaterialProfileV2.RoleV2.ROCK_SURFACE
+                    : SurfaceMaterialProfileV2.RoleV2.DEEP_SUBSTRATE;
+        }
+        return y == surface ? SurfaceMaterialProfileV2.RoleV2.VEGETATED_SURFACE
+                : y >= surface - 2 ? SurfaceMaterialProfileV2.RoleV2.SUBSOIL
+                : SurfaceMaterialProfileV2.RoleV2.DEEP_SUBSTRATE;
+    }
+
+    int surfaceYAt(int index) {
+        return Math.floorDiv(surfaceHeight[index], SCALE);
     }
 }

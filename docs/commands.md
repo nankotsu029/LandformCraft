@@ -66,6 +66,8 @@ lfc v2 request constraint-map <request-id> <source-slug> <file> <sha256> <width>
 lfc v2 request constraint-source <request-id> <source-slug> <land-water|height-guide|zone-label> <promotion-dir> <request-relative-file>
 lfc v2 request generation <request-id> <global-seed> <tile-size>
 lfc v2 request foundation-base-levels <request-id> <land-surface-y> <water-bed-y>
+lfc v2 request foundation-detail <request-id> <land-amplitude> <water-amplitude> <wavelength> <octaves>
+lfc v2 request mask-reconcile <request-id> <tolerance-blocks>
 lfc v2 request prompt <request-id> <prompt...>
 lfc v2 intent bind <request-v2.json> <intent-in> <intent-out> <source-slug> <land-water|height-guide|zone-label> <hard|soft> <nearest|bilinear-fixed> <tolerance-blocks> [weight-millionths]
 lfc v2 intent bindings <request-v2.json> <terrain-intent-v2.json>
@@ -90,7 +92,7 @@ lfc v2 migrate apply   <intent|design|release> <v1-source> <output-root> <migrat
 
 ### v2 request authoring（V2-12-08）
 
-`create`／`bounds`／`selection`／`constraint-map`／`constraint-source`／`generation`／`foundation-base-levels`／`prompt`／`list` はv2 requestを**作成・編集**します。`V2-12-05`のカバレッジ監査で、v1にはあった request authoring がv2に無い（F1）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。`validate`／`info` の意味は従来どおりで、**pathを引数に取ります**。
+`create`／`bounds`／`selection`／`constraint-map`／`constraint-source`／`generation`／`foundation-base-levels`／`foundation-detail`／`mask-reconcile`／`prompt`／`list` はv2 requestを**作成・編集**します。`V2-12-05`のカバレッジ監査で、v1にはあった request authoring がv2に無い（F1）ことが判明したため追加しました（[ADR 0035](adr/0035-v1-retirement-governance.md) D11）。`validate`／`info` の意味は従来どおりで、**pathを引数に取ります**。
 
 保存先はPaperが`plugins/LandformCraft/data/v2/requests/<request-id>.request-v2.json`、CLIが`<--data-dir>/v2/requests/<request-id>.request-v2.json`です。`request-id` はlowercaseのportable slug（`[a-z0-9][a-z0-9._-]{0,63}`）で、pathは受け取りません。作成・編集は毎回strict schemaで検証してからatomicに publish するため、途中状態のrequestは残りません。
 
@@ -103,10 +105,12 @@ lfc v2 migrate apply   <intent|design|release> <v1-source> <output-root> <migrat
 | `constraint-source <id> <slug> <land-water｜height-guide｜zone-label> <promotion-dir> <file>` | `promote` が封印したrecordからrole・encoding・寸法・digestを読み、constraint map sourceを1件**追加または更新**します（他の宣言は保持）。3 role共通で、height guideのvalue meaning／scale／sample範囲やzoneのlabel legendはrecordの値をそのまま使い、command引数からは推測しません。map file自体はコピーせず、`<file>`（request相対path）へ置くのはoperatorの作業です（`constraint-map`と同じ） |
 | `generation <id> <global-seed> <tile-size>` | 生成settings（seedとtile size）を置換します。`V2-18-09`以降maskは生成へ解決され合成形状と一致する必要があるため、**maskはそれを作ったseedに束縛されます**。authoringがmask側のseedを再現できるよう公開しています（`V2-18-10`） |
 | `foundation-base-levels <id> <land-surface-y> <water-bed-y>` | macro foundationのmedium別provisional base elevationを宣言します（[ADR 0038](adr/0038-macro-foundation-contract.md) D2-2(b)）。HARD `LAND_WATER_MASK`と併せて**明示foundation入力**を構成し、`V2-18-10`のowner gateを通過するために必須です。値はrequest boundsの範囲内である必要があり、推測はしません |
+| `foundation-detail <id> <land-amplitude> <water-amplitude> <wavelength> <octaves>` | macro foundation背景の平坦なbase levelを、空間的に連続なmulti-scale detailで置換します（[ADR 0041](adr/0041-coherent-detail-kernel.md)、任意）。振幅はblock単位のhard bound（0..32、両medium同時0は不可）、`wavelength`は2冪（8..1024）、`octaves`は1..6です。`foundation-base-levels`が必須で、振幅がwater levelを跨ぐ／vertical extentを外れる場合は宣言時点で拒否します（clampしません）。detailは**背景base level cellの標高のみ**を動かし、`HEIGHT_GUIDE`・producer・coastal modifierが所有するcellやland-water mediumには一切触れません |
+| `mask-reconcile <id> <tolerance-blocks>` | mask ⇔ feature reconcile pre-passを宣言します（[ADR 0043](adr/0043-mask-feature-reconcile-pre-pass.md)、任意）。export時、Blueprint compileの前に宣言feature geometry**全体**をHARD `LAND_WATER_MASK`へ1回の剛体平行移動（各軸±`tolerance-blocks`、1..8）で整列します。**maskは動かさず**、既存のfail-closed gateも一切緩めません。既にmaskと一致しているgeometryは動かしません（同点時は移動量最小が勝つため）。`foundation-base-levels`が必須で、`width × length × (2×tolerance+1)²`が評価予算（128,000,000）を超える宣言は拒否します（clampしません） |
 | `prompt <id>` / `prompt <id> <text...>` | Paperは**次のchat 1件**をpromptとして保存します（5分で失効、`cancel`で取消）。CLIは引数のtextを保存します。いずれもcredentialに見えるtextは拒否します |
 | `list` | 保存済みrequest IDを決定的な順序で列挙します |
 
-permissionは`landformcraft.v2.request.create`（作成）と`landformcraft.v2.request.edit`（`bounds`／`selection`／`constraint-map`／`constraint-source`／`generation`／`foundation-base-levels`／`prompt`／`intent bind`）、read系（`validate`／`info`／`list`）は従来どおり`landformcraft.v2.request`です。
+permissionは`landformcraft.v2.request.create`（作成）と`landformcraft.v2.request.edit`（`bounds`／`selection`／`constraint-map`／`constraint-source`／`generation`／`foundation-base-levels`／`foundation-detail`／`mask-reconcile`／`prompt`／`intent bind`）、read系（`validate`／`info`／`list`）は従来どおり`landformcraft.v2.request`です。
 
 authoringからexportまでの最短経路は次のとおりです。`export`はrequestの`requestId`と intentの`intentId`が一致することを要求します。
 
@@ -129,6 +133,10 @@ lfc v2 export <上記request path> <intent path> <exports-root> <release-id> wat
 `V2-18-10`以降、surface exportは**foundation owner被覆100%**を必須とします（[ADR 0038](adr/0038-macro-foundation-contract.md) D7-2）。明示foundation入力（HARD `LAND_WATER_MASK`＋`foundationBaseLevels`）を持たないrequestは、feature非所有cellにfoundation ownerが存在しないため、生成後・publish前に安定rule `v2.export.foundation-owner-coverage-incomplete` でfail closedに拒否されます。**override flagはなく、baseline引数でも回避できません**（D8-2）。gateの対象はsurface foundation ownerだけで、modifier（active contributor）被覆・volume／material被覆・request domain外は対象外です。coverage分母はrequest domainの全cell（width×length）であり、no-data cellを分母から除外することはありません。HARD maskのno-dataはbinding（`INVALID_NO_DATA`）が生成前に、ownerを持たないcellはkernel不変条件（`OWNERLESS_CELL`）が生成時に拒否するため、gateへ到達するfieldに未所有cellが「covered扱い」で混入することはできません。owner候補（candidate）は0..N個許容されますが、merge後のeffective ownerは各cellちょうど1つで、未解決tie／undeclared overlapはmerge kernelがgate到達前に拒否します（ADR 0038 D1）。
 
 `V2-19-06`以降、requestは任意で`HEIGHT_GUIDE` source（`request constraint-source … height-guide …`＋`intent bind … height-guide …`）を1件宣言でき、macro foundationがそれをbackground elevation sourceとして読みます。**優先順位はcellごとにguide＞`foundation-base-levels`**で、guideがno-dataを宣言したcellだけがmedium別base levelへ戻ります。guideが宣言するvalue rangeがrequestのvertical extentを外れる場合はrequest宣言時点で拒否されます（clampしません）。coastal featureが所有するcellの高さはfeature側のものであり、HARD guideが同じcellをtolerance超で指定した場合は`v2.foundation.height-guide-modifier-conflict`でexport拒否、SOFT guideの差は公開Releaseの`constraint.coast.height.residual` sidecarへ記録されます。
+
+`V2-19-12`以降、requestは任意で`foundation-detail`（[ADR 0041](adr/0041-coherent-detail-kernel.md)、`coherent-detail-fixed-v1`）を宣言でき、macro foundation背景の平坦な`foundation-base-levels`を空間的に連続なmulti-scale detailへ置換します。適用対象は**背景base level cellの標高だけ**で、`HEIGHT_GUIDE`が値を指定したcell・producer（`PLAIN`等）所有cell・coastal modifier所有cellには適用せず、land-water mediumも変えません（優先順位表に行を増やしません）。振幅はhard boundで、隣接cell段差の上限（`maximumAdjacentStepMillionths`）が契約として公開されるため、`PlainGeneratorV2`のcell-hash micro reliefのような空間的に非連続なノイズとは機械的に区別できます（cell-hashの流用ではありません）。整数演算のみ・closed formのためhalo／support radiusは0で、whole生成とtile生成は一致します。erosion等の近傍filterはScope外です。
+
+`V2-19-14`以降、requestは任意で`mask-reconcile`（[ADR 0043](adr/0043-mask-feature-reconcile-pre-pass.md)、`mask-feature-reconcile-v1`）を宣言でき、export spineがBlueprint compileの前に宣言feature geometry**全体**を1回の剛体平行移動（各軸±tolerance、整数block）でHARD `LAND_WATER_MASK`へ整列します。これは「maskを先に固定し、geometryを後から寄せる」運用のための機構で、`V2-18-13`以降の実務手順（geometryやseedを触るたびにmaskを再生成する）を数block分の位置ずれについて不要にします。**補正は常に一方向**（geometry→mask）で、maskの値・digest・bindingは変更しません。**per-featureのoffset・回転・拡大縮小・形状変形は行わない**ため、宣言済みrelation（`ENCLOSES`／`ADJACENT_TO`／`OVERLAPS`）の相対geometryは厳密に保存されます。既にmaskと一致しているgeometryは動きません（同点は移動量最小が勝つ）。**新しい拒否ruleは追加していません**: toleranceの内側に一致する配置が無いrunは、従来どおり`v2.coastal-transition-hard-conflict`等の既存HARD gateが拒否します。適用したoffsetは`v2 export`／`/lfc v2 export`のsummaryへ`maskFeatureReconcile`として表示され、公開Releaseの`source/terrain-intent.json`には**整列後のgeometry**が封印されます（Releaseが実際に含む地形を記述するため）。任意形状への追従（手描きmaskへのcell単位の追従）はScope外です。
 
 `V2-18-09`以降、requestがHARD `LAND_WATER_MASK`と`foundationBaseLevels`（medium別のprovisional base elevation宣言）の両方を持つ場合、macro foundation stageがmaskを解決して全cellのland-water＋provisional elevationを確定し、coastal featureはその基礎の上のsurface modifierとして合成されます（ADR 0038）。この**foundation経路**では末尾のbaseline引数（`<land|water> <land-y> <water-y>`）は受理されますが**無視**され、CLI summaryへNON_GATING警告 `v2.cli.surface-baseline-deprecated` が表示されます。maskとfeature形状が矛盾するcell（HARD maskをmodifierが上書きしようとする等）はexport拒否です。maskの大域構図はEDGE実測を充足できるため、edge意図をHARDで宣言できます。
 

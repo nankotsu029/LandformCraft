@@ -1,0 +1,74 @@
+{
+  "requestVersion": 2,
+  "requestId": "harbor-cove-64-honored-beach",
+  "bounds": {
+    "width": 64,
+    "length": 64,
+    "minY": 32,
+    "maxY": 72,
+    "waterLevel": 50
+  },
+  "prompt": "Generate the gate-passing 64x64 coastal contract reduced to the sandy beach alone, the ADR 0040 size-1 contributor subset.",
+  "referenceImages": [],
+  "constraintMaps": [
+    {
+      "sourceId": "constraint-source:beach-mask",
+      "file": "maps/harbor-cove-64-honored-beach-land-water-u8.png",
+      "expectedSha256": "9127fa3ef03be4c4788cd52c20facc6a65de3cdefb9c755a792cefec48de508b",
+      "expectedWidth": 64,
+      "expectedLength": 64,
+      "decoderKind": "CATEGORICAL_RASTER",
+      "coordinateMapping": {
+        "origin": "NORTH_WEST",
+        "xAxis": "EAST",
+        "zAxis": "SOUTH",
+        "pixelReference": "PIXEL_CENTER",
+        "aspectMismatchPolicy": "REJECT",
+        "rotation": "DEGREES_0",
+        "flipX": false,
+        "flipZ": false,
+        "crop": {
+          "x": 0,
+          "z": 0,
+          "width": 64,
+          "length": 64
+        }
+      },
+      "encoding": {
+        "kind": "CATEGORICAL",
+        "encodingVersion": 1,
+        "sampleType": "U8",
+        "channel": "GRAY",
+        "labels": [
+          {
+            "sample": 0,
+            "label": "water"
+          },
+          {
+            "sample": 1,
+            "label": "land"
+          }
+        ],
+        "noData": {
+          "mode": "FORBIDDEN"
+        }
+      }
+    }
+  ],
+  "generation": {
+    "globalSeed": 827413,
+    "tileSize": 64
+  },
+  "constraintMapBudget": {
+    "maximumMapCount": 8,
+    "maximumTotalSourceBytes": 33554432,
+    "maximumDecodedBytes": 33554432,
+    "maximumPixels": 16000000,
+    "maximumArtifactBytes": 67108864,
+    "maximumResidentBytes": 100663296
+  },
+  "foundationBaseLevels": {
+    "landSurfaceY": 54,
+    "waterBedY": 46
+  }
+}
